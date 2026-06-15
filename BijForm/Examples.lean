@@ -268,6 +268,42 @@ syntax through generated layer coding. -/
 def SortedSyntaxIso (i : SortedIx) : Mu SortedPoly i ≃ᵢ SortedSyntax i :=
   SortedGeneratedLayerCode.iso i
 
+/-- At the empty finite interval `(1, some 0)`, sorted trees have no branch
+constructor because no pivot can satisfy both bounds. -/
+theorem Sorted_empty_interval_subsingleton :
+    Subsingleton (SortedSyntax (1, some 0)) := by
+  constructor
+  intro a b
+  cases a with
+  | leaf =>
+      cases b with
+      | leaf => rfl
+      | branch pivot lhs rhs =>
+          rcases pivot with ⟨x, hx⟩
+          dsimp [BoundedPivot, Bound.le] at hx
+          omega
+  | branch pivot lhs rhs =>
+      rcases pivot with ⟨x, hx⟩
+      dsimp [BoundedPivot, Bound.le] at hx
+      omega
+
+theorem Sorted_empty_interval_no_nat_iso :
+    (SortedSyntax (1, some 0) ≃ᵢ Nat) → False := by
+  haveI : Subsingleton (SortedSyntax (1, some 0)) :=
+    Sorted_empty_interval_subsingleton
+  exact Iso.noNatIsoOfSubsingleton
+
+/-- A constant-`Nat` generated code for all sorted-tree indices is impossible:
+finite bounded intervals are not all bijective with `Nat`.  A generated coding
+for this example must use an index-dependent code family instead. -/
+theorem noSortedNatGeneratedCode : GeneratedNatCode SortedPoly → False := by
+  intro C
+  let i : SortedIx := (1, some 0)
+  have eMu : Mu SortedPoly i ≃ᵢ Nat := C.iso i
+  have eSyntax : SortedSyntax i ≃ᵢ Nat :=
+    Iso.trans (Iso.symm (SortedSyntaxIso i)) eMu
+  exact Sorted_empty_interval_no_nat_iso eSyntax
+
 /-- The fiber of branch constructors at height zero is empty. -/
 theorem no_zero_height_branch (f : Fiber HBTPoly 0) (hctor : f.ctor = .branch) :
     False := by

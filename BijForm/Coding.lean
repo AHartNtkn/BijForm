@@ -75,6 +75,17 @@ def sum {α : Type u} {β : Type v} {γ : Type w} {δ : Type x}
     intro x
     cases x <;> simp
 
+theorem noNatIsoOfSubsingleton {α : Type u} [Subsingleton α] :
+    (α ≃ᵢ Nat) → False := by
+  intro e
+  have hpre : e.invFun 0 = e.invFun 1 := Subsingleton.elim _ _
+  have h01 : (0 : Nat) = 1 := by
+    calc
+      (0 : Nat) = e.toFun (e.invFun 0) := (e.right_inv 0).symm
+      _ = e.toFun (e.invFun 1) := by rw [hpre]
+      _ = 1 := e.right_inv 1
+  exact Nat.zero_ne_one h01
+
 end Iso
 
 end BijForm
