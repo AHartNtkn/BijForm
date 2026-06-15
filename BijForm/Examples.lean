@@ -1191,5 +1191,193 @@ child is in context `k + 1`. -/
 def PeanoSyntaxIso (k : Nat) : Mu PeanoPoly k ≃ᵢ PeanoSyntax k :=
   PeanoGeneratedLayerCode.iso k
 
+abbrev PeanoNatLayerShape :=
+  (Nat × Nat) ⊕ (Nat ⊕ ((Nat × Nat) ⊕ Nat))
+
+def PeanoNatLayerShapeTo (k : Nat) :
+    CodeLayer PeanoPoly PeanoInversion (fun _ => Nat) k → PeanoNatLayerShape
+  | ⟨.eq lhs rhs, _child⟩ => Sum.inl ((NumNatIso k).toFun lhs, (NumNatIso k).toFun rhs)
+  | ⟨.not, child⟩ => Sum.inr (Sum.inl (child ()))
+  | ⟨.implies, child⟩ => Sum.inr (Sum.inr (Sum.inl (child false, child true)))
+  | ⟨.forallE, child⟩ => Sum.inr (Sum.inr (Sum.inr (child ())))
+
+def PeanoNatLayerShapeInv (k : Nat) :
+    PeanoNatLayerShape → CodeLayer PeanoPoly PeanoInversion (fun _ => Nat) k
+  | Sum.inl p =>
+      ⟨.eq ((NumNatIso k).invFun p.1) ((NumNatIso k).invFun p.2),
+        fun q => nomatch q⟩
+  | Sum.inr (Sum.inl child) => ⟨.not, fun _ => child⟩
+  | Sum.inr (Sum.inr (Sum.inl p)) => ⟨.implies, fun
+      | false => p.1
+      | true => p.2⟩
+  | Sum.inr (Sum.inr (Sum.inr child)) => ⟨.forallE, fun _ => child⟩
+
+theorem PeanoNatLayerShape_left_inv (k : Nat) :
+    Function.LeftInverse (PeanoNatLayerShapeInv k) (PeanoNatLayerShapeTo k) := by
+  intro x
+  cases x with
+  | mk code child =>
+      cases code with
+      | eq lhs rhs =>
+          dsimp [PeanoNatLayerShapeTo, PeanoNatLayerShapeInv]
+          have hchild : (fun q => nomatch q) = child := by
+            funext q
+            cases q
+          cases hchild
+          rw [(NumNatIso k).left_inv lhs, (NumNatIso k).left_inv rhs]
+          refine Sigma.ext rfl ?_
+          apply heq_of_eq
+          funext q
+          cases q
+      | not =>
+          dsimp [PeanoNatLayerShapeTo, PeanoNatLayerShapeInv]
+          have hchild : (fun _ => child ()) = child := by
+            funext q
+            cases q
+            rfl
+          cases hchild
+          refine Sigma.ext rfl ?_
+          apply heq_of_eq
+          funext q
+          cases q
+          rfl
+      | implies =>
+          dsimp [PeanoNatLayerShapeTo, PeanoNatLayerShapeInv]
+          have hchild : child = (fun
+              | false => child false
+              | true => child true) := by
+            funext q
+            cases q <;> rfl
+          rw [hchild]
+      | forallE =>
+          dsimp [PeanoNatLayerShapeTo, PeanoNatLayerShapeInv]
+          have hchild : (fun _ => child ()) = child := by
+            funext q
+            cases q
+            rfl
+          cases hchild
+          refine Sigma.ext rfl ?_
+          apply heq_of_eq
+          funext q
+          cases q
+          rfl
+
+theorem PeanoNatLayerShape_right_inv (k : Nat) :
+    Function.RightInverse (PeanoNatLayerShapeInv k) (PeanoNatLayerShapeTo k) := by
+  intro x
+  cases x with
+  | inl p =>
+      cases p
+      simp [PeanoNatLayerShapeTo, PeanoNatLayerShapeInv]
+  | inr tail =>
+      cases tail with
+      | inl child => rfl
+      | inr rest =>
+          cases rest with
+          | inl p =>
+              cases p
+              rfl
+          | inr child => rfl
+
+def PeanoNatLayerShapeIso (k : Nat) :
+    CodeLayer PeanoPoly PeanoInversion (fun _ => Nat) k ≃ᵢ PeanoNatLayerShape where
+  toFun := PeanoNatLayerShapeTo k
+  invFun := PeanoNatLayerShapeInv k
+  left_inv := PeanoNatLayerShape_left_inv k
+  right_inv := PeanoNatLayerShape_right_inv k
+
+def PeanoNatLayerIso (k : Nat) :
+    CodeLayer PeanoPoly PeanoInversion (fun _ => Nat) k ≃ᵢ Nat :=
+  Iso.trans (PeanoNatLayerShapeIso k)
+    (Iso.trans (Iso.sum NatCoding.prodNat
+      (Iso.sum (Iso.refl Nat) (Iso.sum NatCoding.prodNat (Iso.refl Nat))))
+      NatCoding.sum4Nat)
+
+theorem PeanoNat_child_lt :
+    ∀ {k : Nat} (n : Nat)
+      (q : PeanoPoly.Pos
+          (PeanoInversion.decode k ((PeanoNatLayerIso k).invFun n).1).ctor
+          (PeanoInversion.decode k ((PeanoNatLayerIso k).invFun n).1).param),
+      (((PeanoNatLayerIso k).invFun n).2 q) < n := by
+  intro k n
+  generalize hz : (PeanoNatLayerIso k).invFun n = z
+  have hn : (PeanoNatLayerIso k).toFun z = n := by
+    rw [← hz]
+    exact (PeanoNatLayerIso k).right_inv n
+  change ∀ q : PeanoPoly.Pos (PeanoInversion.decode k z.1).ctor
+      (PeanoInversion.decode k z.1).param,
+    z.2 q < n
+  cases z with
+  | mk code child =>
+      cases code with
+      | eq lhs rhs =>
+          intro q
+          cases q
+      | not =>
+          intro q
+          cases q
+          let c := child ()
+          have hn' : 2 * (2 * c) + 1 = n := by
+            simpa [c, PeanoNatLayerIso, PeanoNatLayerShapeIso, PeanoNatLayerShapeTo,
+              NatCoding.sum4Nat, Iso.trans, Iso.sum, NatCoding.sum3Nat,
+              NatCoding.sumNat] using hn
+          change c < n
+          rw [← hn']
+          exact Nat.lt_succ_of_le (by
+            rw [Nat.two_mul, Nat.two_mul]
+            simp [Nat.add_assoc])
+      | implies =>
+          intro q
+          let pcode := NatCoding.prodNat.toFun (child false, child true)
+          have hn' : 2 * (2 * (2 * pcode) + 1) + 1 = n := by
+            simpa [pcode, PeanoNatLayerIso, PeanoNatLayerShapeIso, PeanoNatLayerShapeTo,
+              NatCoding.sum4Nat, Iso.trans, Iso.sum, NatCoding.sum3Nat,
+              NatCoding.sumNat] using hn
+          cases q
+          · change child false < n
+            rw [← hn']
+            have hchild_le : child false ≤ pcode := by
+              simpa [pcode, NatCoding.prodNat] using
+                NatCoding.prodNat_fst_le (NatCoding.prodNat.toFun (child false, child true))
+            have hpair_lt : pcode < 2 * (2 * (2 * pcode) + 1) + 1 :=
+              Nat.lt_succ_of_le (by
+                rw [Nat.two_mul, Nat.two_mul, Nat.two_mul]
+                simp [Nat.add_assoc])
+            exact Nat.lt_of_le_of_lt hchild_le hpair_lt
+          · change child true < n
+            rw [← hn']
+            have hchild_le : child true ≤ pcode := by
+              simpa [pcode, NatCoding.prodNat] using
+                NatCoding.prodNat_snd_le (NatCoding.prodNat.toFun (child false, child true))
+            have hpair_lt : pcode < 2 * (2 * (2 * pcode) + 1) + 1 :=
+              Nat.lt_succ_of_le (by
+                rw [Nat.two_mul, Nat.two_mul, Nat.two_mul]
+                simp [Nat.add_assoc])
+            exact Nat.lt_of_le_of_lt hchild_le hpair_lt
+      | forallE =>
+          intro q
+          cases q
+          let c := child ()
+          have hn' : 2 * (2 * (2 * c + 1) + 1) + 1 = n := by
+            simpa [c, PeanoNatLayerIso, PeanoNatLayerShapeIso, PeanoNatLayerShapeTo,
+              NatCoding.sum4Nat, Iso.trans, Iso.sum, NatCoding.sum3Nat,
+              NatCoding.sumNat] using hn
+          change c < n
+          rw [← hn']
+          exact Nat.lt_succ_of_le (by
+            rw [Nat.two_mul, Nat.two_mul, Nat.two_mul]
+            simp [Nat.add_assoc])
+
+def PeanoNatGeneratedCode : GeneratedNatCode PeanoPoly where
+  inversion := PeanoInversion
+  layer := PeanoNatLayerIso
+  child_lt := PeanoNat_child_lt
+
+def PeanoNatIso (k : Nat) : Mu PeanoPoly k ≃ᵢ Nat :=
+  PeanoNatGeneratedCode.iso k
+
+def PeanoSyntaxNatIso (k : Nat) : PeanoSyntax k ≃ᵢ Nat :=
+  Iso.trans (Iso.symm (PeanoSyntaxIso k)) (PeanoNatIso k)
+
 end Examples
 end BijForm

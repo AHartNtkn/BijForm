@@ -100,6 +100,9 @@ theorem sumNat_inr_le {n a : Nat}
 def sum3Nat : (Nat ⊕ (Nat ⊕ Nat)) ≃ᵢ Nat :=
   Iso.trans (Iso.sum (Iso.refl Nat) sumNat) sumNat
 
+def sum4Nat : (Nat ⊕ (Nat ⊕ (Nat ⊕ Nat))) ≃ᵢ Nat :=
+  Iso.trans (Iso.sum (Iso.refl Nat) sum3Nat) sumNat
+
 /-- Product coding delegates to the proved simplified pairing function. -/
 def prodNat : (Nat × Nat) ≃ᵢ Nat :=
   Pairing.iso
