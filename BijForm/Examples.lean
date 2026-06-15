@@ -299,10 +299,10 @@ for this example must use an index-dependent code family instead. -/
 theorem noSortedNatGeneratedCode : GeneratedNatCode SortedPoly → False := by
   intro C
   let i : SortedIx := (1, some 0)
-  have eMu : Mu SortedPoly i ≃ᵢ Nat := C.iso i
-  have eSyntax : SortedSyntax i ≃ᵢ Nat :=
-    Iso.trans (Iso.symm (SortedSyntaxIso i)) eMu
-  exact Sorted_empty_interval_no_nat_iso eSyntax
+  haveI : Subsingleton (SortedSyntax i) := Sorted_empty_interval_subsingleton
+  haveI : Subsingleton (Mu SortedPoly i) :=
+    Iso.subsingletonLeft (SortedSyntaxIso i)
+  exact C.noSubsingletonFiber i
 
 /-- The fiber of branch constructors at height zero is empty. -/
 theorem no_zero_height_branch (f : Fiber HBTPoly 0) (hctor : f.ctor = .branch) :

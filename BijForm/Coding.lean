@@ -86,6 +86,16 @@ theorem noNatIsoOfSubsingleton {α : Type u} [Subsingleton α] :
       _ = 1 := e.right_inv 1
   exact Nat.zero_ne_one h01
 
+theorem subsingletonLeft {α : Type u} {β : Type v}
+    (e : α ≃ᵢ β) [Subsingleton β] : Subsingleton α := by
+  constructor
+  intro a b
+  have h : e.toFun a = e.toFun b := Subsingleton.elim _ _
+  calc
+    a = e.invFun (e.toFun a) := (e.left_inv a).symm
+    _ = e.invFun (e.toFun b) := by rw [h]
+    _ = b := e.left_inv b
+
 end Iso
 
 end BijForm

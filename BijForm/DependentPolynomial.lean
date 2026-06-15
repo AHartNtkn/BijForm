@@ -330,6 +330,10 @@ def toWellFoundedCode (C : GeneratedNatCode P) :
 def iso (C : GeneratedNatCode P) (i : ι) : Mu P i ≃ᵢ Nat :=
   C.toGeneratedLayerCode.iso i
 
+theorem noSubsingletonFiber (C : GeneratedNatCode P) (i : ι)
+    [Subsingleton (Mu P i)] : False := by
+  exact Iso.noNatIsoOfSubsingleton (C.iso i)
+
 end GeneratedNatCode
 
 /-- A well-founded one-step coding of each same-fiber polynomial layer induces
