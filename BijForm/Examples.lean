@@ -182,6 +182,90 @@ theorem no_zero_height_branch (f : Fiber HBTPoly 0) (hctor : f.ctor = .branch) :
 def branchAtSucc (m : Nat) : Fiber HBTPoly (m + 1) :=
   HBTDecode (m + 1) (.branch m rfl)
 
+/-- Readable syntax family for height-bounded trees. -/
+inductive HBTSyntax : Nat → Type
+  | leaf {i : Nat} (label : Nat) : HBTSyntax i
+  | branch {m : Nat} : HBTSyntax m → HBTSyntax m → HBTSyntax (m + 1)
+
+namespace HBTSyntax
+
+def rank : ∀ {i : Nat}, HBTSyntax i → Nat
+  | _, leaf _ => 0
+  | _, branch lhs rhs => Nat.max (rank lhs) (rank rhs) + 1
+
+end HBTSyntax
+
+def HBTObjToSyntax (i : Nat) : Obj HBTPoly HBTSyntax i → HBTSyntax i
+  | ⟨.leaf, p, h, _child⟩ =>
+      have _ : p.1 = i := h
+      .leaf p.2
+  | ⟨.branch, _m, h, child⟩ =>
+      h ▸ (.branch (child false) (child true))
+
+def HBTSyntaxToObj (i : Nat) : HBTSyntax i → Obj HBTPoly HBTSyntax i
+  | .leaf label => ⟨.leaf, (i, label), rfl, fun q => nomatch q⟩
+  | @HBTSyntax.branch m lhs rhs =>
+      ⟨.branch, m, rfl, fun (b : Bool) => if b then rhs else lhs⟩
+
+theorem HBTObj_left_inv (i : Nat) :
+    Function.LeftInverse (HBTSyntaxToObj i) (HBTObjToSyntax i) := by
+  intro layer
+  cases layer with
+  | mk ctor param out_eq child =>
+    cases ctor with
+    | leaf =>
+        cases param with
+        | mk n label =>
+          cases out_eq
+          have hchild : (fun q => nomatch q) = child := by
+            funext q
+            cases q
+          cases hchild
+          rfl
+    | branch =>
+        cases out_eq
+        have hchild : child = (fun (b : Bool) => if b then child true else child false) := by
+          funext q
+          cases q <;> rfl
+        rw [hchild]
+        rfl
+
+theorem HBTObj_right_inv (i : Nat) :
+    Function.RightInverse (HBTSyntaxToObj i) (HBTObjToSyntax i) := by
+  intro t
+  cases t <;> simp [HBTObjToSyntax, HBTSyntaxToObj]
+
+def HBTObjIso (i : Nat) : Obj HBTPoly HBTSyntax i ≃ᵢ HBTSyntax i where
+  toFun := HBTObjToSyntax i
+  invFun := HBTSyntaxToObj i
+  left_inv := HBTObj_left_inv i
+  right_inv := HBTObj_right_inv i
+
+theorem HBT_child_rank_lt :
+    ∀ {i : Nat} (z : HBTSyntax i)
+      (q : HBTPoly.Pos ((HBTObjIso i).invFun z).ctor ((HBTObjIso i).invFun z).param),
+      HBTSyntax.rank (((HBTObjIso i).invFun z).child q) < HBTSyntax.rank z := by
+  intro i z q
+  cases z with
+  | leaf label => cases q
+  | branch lhs rhs =>
+      cases q
+      · simpa [HBTObjIso, HBTSyntaxToObj, HBTSyntax.rank] using
+          Nat.lt_succ_of_le (Nat.le_max_left (HBTSyntax.rank lhs) (HBTSyntax.rank rhs))
+      · simpa [HBTObjIso, HBTSyntaxToObj, HBTSyntax.rank] using
+          Nat.lt_succ_of_le (Nat.le_max_right (HBTSyntax.rank lhs) (HBTSyntax.rank rhs))
+
+def HBTWellFoundedCode : WellFoundedCode HBTPoly HBTSyntax where
+  step := HBTObjIso
+  rank := fun _ t => HBTSyntax.rank t
+  child_rank_lt := HBT_child_rank_lt
+
+/-- Height-bounded trees as the generic initial algebra are bijective with
+readable syntax.  The branch case is the output-index-change example: it
+constructs a tree at height `m + 1` from two children at height `m`. -/
+def HBTSyntaxIso (i : Nat) : Mu HBTPoly i ≃ᵢ HBTSyntax i :=
+  initialAlgebraCoding HBTPoly HBTSyntax HBTWellFoundedCode i
+
 /-- Constructors for the numeric-expression family from the Peano-expression
 section: variables, zero, successor, addition, and multiplication. -/
 inductive NumCtor where
@@ -509,6 +593,121 @@ def PeanoInversion : OutputIndexInversion PeanoPoly where
   encode := PeanoEncode
   decode_encode := Peano_decode_encode
   encode_decode := Peano_encode_decode
+
+/-- Readable syntax family for Peano formulas. -/
+inductive PeanoSyntax : Nat → Type
+  | eq {k : Nat} (lhs rhs : Mu NumPoly k) : PeanoSyntax k
+  | not {k : Nat} : PeanoSyntax k → PeanoSyntax k
+  | implies {k : Nat} : PeanoSyntax k → PeanoSyntax k → PeanoSyntax k
+  | forallE {k : Nat} : PeanoSyntax (k + 1) → PeanoSyntax k
+
+namespace PeanoSyntax
+
+def rank : ∀ {k : Nat}, PeanoSyntax k → Nat
+  | _, eq _ _ => 0
+  | _, not e => rank e + 1
+  | _, implies lhs rhs => Nat.max (rank lhs) (rank rhs) + 1
+  | _, forallE e => rank e + 1
+
+end PeanoSyntax
+
+def PeanoObjToSyntax (k : Nat) : Obj PeanoPoly PeanoSyntax k → PeanoSyntax k
+  | ⟨.eq, p, h, _child⟩ =>
+      .eq (h ▸ p.2.1) (h ▸ p.2.2)
+  | ⟨.not, _p, h, child⟩ =>
+      .not (h ▸ child ())
+  | ⟨.implies, _p, h, child⟩ =>
+      .implies (h ▸ child false) (h ▸ child true)
+  | ⟨.forallE, _p, h, child⟩ =>
+      h ▸ (.forallE (child ()))
+
+def PeanoSyntaxToObj (k : Nat) : PeanoSyntax k → Obj PeanoPoly PeanoSyntax k
+  | .eq lhs rhs => ⟨.eq, ⟨k, (lhs, rhs)⟩, rfl, fun q => nomatch q⟩
+  | .not e => ⟨.not, k, rfl, fun _ => e⟩
+  | .implies lhs rhs => ⟨.implies, k, rfl, fun (b : Bool) => if b then rhs else lhs⟩
+  | .forallE e => ⟨.forallE, k, rfl, fun _ => e⟩
+
+theorem PeanoObj_left_inv (k : Nat) :
+    Function.LeftInverse (PeanoSyntaxToObj k) (PeanoObjToSyntax k) := by
+  intro layer
+  cases layer with
+  | mk ctor param out_eq child =>
+    cases ctor with
+    | eq =>
+        cases param with
+        | mk k' pair =>
+          cases pair with
+          | mk lhs rhs =>
+            cases out_eq
+            have hchild : (fun q => nomatch q) = child := by
+              funext q
+              cases q
+            cases hchild
+            rfl
+    | not =>
+        cases out_eq
+        have hchild : (fun _ => child ()) = child := by
+          funext q
+          cases q
+          rfl
+        cases hchild
+        rfl
+    | implies =>
+        cases out_eq
+        have hchild : child = (fun (b : Bool) => if b then child true else child false) := by
+          funext q
+          cases q <;> rfl
+        rw [hchild]
+        rfl
+    | forallE =>
+        cases out_eq
+        have hchild : (fun _ => child ()) = child := by
+          funext q
+          cases q
+          rfl
+        cases hchild
+        rfl
+
+theorem PeanoObj_right_inv (k : Nat) :
+    Function.RightInverse (PeanoSyntaxToObj k) (PeanoObjToSyntax k) := by
+  intro e
+  cases e <;> simp [PeanoObjToSyntax, PeanoSyntaxToObj]
+
+def PeanoObjIso (k : Nat) : Obj PeanoPoly PeanoSyntax k ≃ᵢ PeanoSyntax k where
+  toFun := PeanoObjToSyntax k
+  invFun := PeanoSyntaxToObj k
+  left_inv := PeanoObj_left_inv k
+  right_inv := PeanoObj_right_inv k
+
+theorem Peano_child_rank_lt :
+    ∀ {k : Nat} (z : PeanoSyntax k)
+      (q : PeanoPoly.Pos ((PeanoObjIso k).invFun z).ctor ((PeanoObjIso k).invFun z).param),
+      PeanoSyntax.rank (((PeanoObjIso k).invFun z).child q) < PeanoSyntax.rank z := by
+  intro k z q
+  cases z with
+  | eq lhs rhs => cases q
+  | not e =>
+      cases q
+      simp [PeanoObjIso, PeanoSyntaxToObj, PeanoSyntax.rank]
+  | implies lhs rhs =>
+      cases q
+      · simpa [PeanoObjIso, PeanoSyntaxToObj, PeanoSyntax.rank] using
+          Nat.lt_succ_of_le (Nat.le_max_left (PeanoSyntax.rank lhs) (PeanoSyntax.rank rhs))
+      · simpa [PeanoObjIso, PeanoSyntaxToObj, PeanoSyntax.rank] using
+          Nat.lt_succ_of_le (Nat.le_max_right (PeanoSyntax.rank lhs) (PeanoSyntax.rank rhs))
+  | forallE e =>
+      cases q
+      simp [PeanoObjIso, PeanoSyntaxToObj, PeanoSyntax.rank]
+
+def PeanoWellFoundedCode : WellFoundedCode PeanoPoly PeanoSyntax where
+  step := PeanoObjIso
+  rank := fun _ e => PeanoSyntax.rank e
+  child_rank_lt := Peano_child_rank_lt
+
+/-- Peano formulas as the generic initial algebra are bijective with readable
+syntax, including the `forall` branch whose child is in context `k + 1`. -/
+def PeanoSyntaxIso (k : Nat) : Mu PeanoPoly k ≃ᵢ PeanoSyntax k :=
+  initialAlgebraCoding PeanoPoly PeanoSyntax PeanoWellFoundedCode k
 
 end Examples
 end BijForm
