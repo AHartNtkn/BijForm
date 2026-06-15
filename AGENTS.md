@@ -2,38 +2,48 @@
 
 ## Goal
 
-This repository formalizes bijective encodings in Lean, starting from the two
-source blog posts named in `prompt`. The deliverable is a Lean development that
-proves the simpler optimal-feasible pairing function is a bijection and develops
-a useful general theorem for bijective codings of dependent inductive types
-defined as initial algebras of dependent polynomial functors.
+This repository develops bijective encodings in Lean. External writeups named
+in `prompt` are motivation and examples, not the authority for completion.
 
-The formalization targets are the pairing-function construction in
-"An Optimal And Feasible Pairing Function" and the dependent Gödel-encoding
-scheme in "Basic Bijective Godel Encodings". The target is not merely an
-existence theorem that assumes constructor-level isomorphisms as opaque input;
-the formalization should expose reusable conditions under which the required
-fiberwise constructor isomorphisms are generated, especially conditions based
-on invertible changes to output indices.
+The deliverable is a clean Lean development that proves the simpler
+optimal-feasible pairing function is a bijection and develops a useful theorem
+for bijective codings of dependent inductive types defined as initial algebras
+of dependent polynomial functors. The target is not merely an existence theorem
+that assumes constructor-level isomorphisms as opaque input; the formalization
+must expose reusable conditions under which the required fiberwise constructor
+isomorphisms are generated, especially conditions based on invertible changes
+to output indices.
+
+Examples must start from standard, readable inductive syntax families; prove
+their isomorphism to the corresponding dependent-polynomial initial algebras;
+instantiate the reusable coding construction; and compose those isomorphisms to
+obtain actual encodings. Hand-written final encoders for examples do not
+satisfy the goal unless they are explicitly marked as diagnostic comparisons.
 
 ## Formalization Standard
 
-Formalize every paper claim that can be formalized faithfully under the
-definitions already established in Lean. When a claim needs a stronger
-assumption, a different statement, a missing definition, or a counterexample
-appears, record the issue explicitly and stop only the work that depends on
-that unresolved issue. Continue formalizing independent later claims.
-Unattempted or not-yet-reached paper targets are pending inventory, not proof
-gaps. Do not record a proof gap merely because a target is pending. If you claim
-that blockers have been identified for any scope, then every unformalized target
-in that scope must be explicitly linked to an open proof gap that blocks that
-target. Do not stop globally unless every remaining avenue for faithful
-formalization is stopped by recorded open issues.
+Formalize clean mathematical objects and reusable constructions. Do not treat
+external prose, notation, examples, or presentation order as the completion
+standard. If external material is ambiguous or inconsistent with a clean Lean
+interface, choose the Lean interface that serves the repository goal and record
+unfinished mathematical obligations directly at the relevant declaration.
+
+A useful coding condition must generate or construct the required fiberwise
+constructor isomorphisms from explicit data. Rephrasing "assume the
+constructors are isomorphic" as an index-local code, an opaque equivalence, or a
+caller-supplied hypothesis is not a useful answer unless the construction of
+that code or equivalence is itself provided by the framework.
+
+Examples are not complete when they only prove an isomorphism to readable
+syntax. A completed encoding example must show the path from the standard syntax
+family through the dependent-polynomial presentation to a generated code family
+and, when the example claims a Gödel encoding, to `Nat`. Do not replace that
+path with a hand-written recursive encoder for the example.
 
 Committed `sorry` declarations are allowed for standard Lean blueprinting,
 pending proof work, and proof-gap marking. They must be labeled as unfinished
-and must not be counted as completed proofs or faithful closed formalizations of
-paper targets. Never make Lean accept a paper flaw by weakening a theorem
+and must not be counted as completed proofs or closed formalizations of
+intended targets. Never make Lean accept a mathematical gap by weakening a theorem
 silently, adding an unstated assumption silently, changing a definition to fit a
 later proof, or using `sorry`, `admit`, `axiom`, unsafe declarations, or opaque
 placeholders as completed proof evidence.
@@ -76,56 +86,24 @@ elaboration errors, compilation failures, source searches, and exploratory Lean
 probes may be used for proof search, but they are not TDD evidence unless they
 lead to the typechecked theorem-with-`sorry` to proved-theorem progression.
 
-If Lean exposes a blocker, preserve the original claim's identity and paper
-location in the proof-gap record. Do not implement or package hypothetical
-replacement statements as tracked Lean declarations for a paper claim stopped by
-an open proof gap. Needed corrections remain proof gaps until the paper actually
-changes. A theorem with stronger assumptions or a changed conclusion may be kept
-only as a conditional auxiliary lemma when its hypotheses explicitly name the
-missing obligation and its comment does not claim to formalize the original
-paper theorem. Do not create corrected predicates, repaired definitions, or
-substitute theorem packages for paper claims stopped by an open proof gap.
-
 Conditional auxiliaries are diagnostic evidence only. Do not describe them as
-finishing, discharging, repairing, or formalizing a paper target stopped by an
-open proof gap, and do not count them as removing a proof gap. If a declaration
+finishing, discharging, repairing, or formalizing a target whose intended proof
+is still open, and do not count them as removing a proof gap. If a declaration
 depends on an unresolved proof gap, its comment must name the added premise or
-changed conclusion before relating it to the paper location.
-Do not use context-dependent shorthand that identifies a conditional or
-proof-gap evidence declaration only by its relation to paper indices. The
-comment must first state the diagnostic status and the explicit added
-obligations.
-The existence of a tracked auxiliary near a paper theorem is never completion
-evidence for the paper theorem unless the declaration is the faithful theorem
-itself.
+changed conclusion before relating it to the intended construction.
 
-Do not silently normalize source-level defects in paper symbols or formulas. If
-the paper uses an undefined name, misspelled notation, wrong arity, or ill-typed
-expression, record the defect before tracking any Lean declaration that uses an
-intended reading. The declaration comment must identify the literal source
-defect and state that the intended reading is boundary evidence, not a literal
-formalization of the defective text.
+Lean comments are part of the formalization boundary. Comments on diagnostic
+auxiliaries, interpreted variants, strict variants, counterexamples, and
+proof-gap evidence lemmas must say so at the declaration site and must not imply
+that the intended theorem or construction has been completed.
 
-Lean comments are part of the formalization boundary. Use an unqualified
-"Paper line ..." declaration comment only for a faithful paper statement or a
-direct faithful component. Conditional auxiliaries, interpreted variants,
-strict variants, counterexamples, and proof-gap evidence lemmas must say so at the
-declaration site and must not imply that the original paper claim has been
-formalized.
-
-Proof-gap records are blockers for dependent paper targets, not blocked targets
-themselves. Do not describe a proof gap as something to bypass, fix in Lean, or
-discharge by inventing a corrected statement. A dependent target can resume only
-after the paper statement changes or the missing paper obligation is supplied
-explicitly by the paper.
-
-Recording a proof gap is never a global stop condition by itself. If the gap
-currently blocks no named downstream paper target, say so in the record and
-continue formalizing independent claims.
+Recording a proof gap is never a global stop condition by itself. Continue
+formalizing independent definitions, examples, and theorems whose correctness
+does not depend on that gap.
 
 ## Repository Boundaries
 
-`references/` is local source evidence and must stay ignored by git. Do not
+`references/` is local reference material and must stay ignored by git. Do not
 edit, normalize, or commit reference materials as part of formalization work.
 
 Lean source files are the formalization surface. Proof gaps, missing
@@ -150,9 +128,9 @@ check for hidden unfinished work expressed as artificial hypotheses, weakened
 statements, conditional wrappers, or substitute targets.
 
 Before committing Lean or formalization-boundary text, audit tracked source for
-misleading status labels. Do not use hyphenated paper/index status wording in
-tracked source; use neutral Lean-indexed wording for index translations and
-diagnostic conditional wording for conditional auxiliaries.
+misleading status labels, artificial hypotheses, weakened targets, conditional
+wrappers, and example-specific final encoders that bypass the reusable coding
+construction.
 
 After changing repository setup or project policy, verify that `references/`
 does not appear as an untracked path in `git status --short`.
