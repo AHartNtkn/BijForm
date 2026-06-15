@@ -284,79 +284,92 @@ def rank : ∀ {i : Nat}, HBTSyntax i → Nat
 
 end HBTSyntax
 
-def HBTObjToSyntax (i : Nat) : Obj HBTPoly HBTSyntax i → HBTSyntax i
-  | ⟨.leaf, p, h, _child⟩ =>
-      have _ : p.1 = i := h
-      .leaf p.2
-  | ⟨.branch, _m, h, child⟩ =>
+def HBTLayerToSyntax (i : Nat) :
+    CodeLayer HBTPoly HBTInversion HBTSyntax i → HBTSyntax i
+  | ⟨.leaf label, _child⟩ =>
+      .leaf label
+  | ⟨.branch _m h, child⟩ =>
       h ▸ (.branch (child false) (child true))
 
-def HBTSyntaxToObj (i : Nat) : HBTSyntax i → Obj HBTPoly HBTSyntax i
-  | .leaf label => ⟨.leaf, (i, label), rfl, fun q => nomatch q⟩
+def HBTSyntaxToLayer (i : Nat) :
+    HBTSyntax i → CodeLayer HBTPoly HBTInversion HBTSyntax i
+  | .leaf label =>
+      ⟨.leaf label, fun q => nomatch q⟩
   | @HBTSyntax.branch m lhs rhs =>
-      ⟨.branch, m, rfl, fun (b : Bool) => if b then rhs else lhs⟩
+      ⟨.branch m rfl, fun (b : Bool) => if b then rhs else lhs⟩
 
-theorem HBTObj_left_inv (i : Nat) :
-    Function.LeftInverse (HBTSyntaxToObj i) (HBTObjToSyntax i) := by
+theorem HBTLayer_left_inv (i : Nat) :
+    Function.LeftInverse (HBTSyntaxToLayer i) (HBTLayerToSyntax i) := by
   intro layer
   cases layer with
-  | mk ctor param out_eq child =>
-    cases ctor with
-    | leaf =>
-        cases param with
-        | mk n label =>
-          cases out_eq
-          have hchild : (fun q => nomatch q) = child := by
-            funext q
-            cases q
-          cases hchild
-          rfl
-    | branch =>
-        cases out_eq
+  | mk code child =>
+    cases code with
+    | leaf label =>
+        have hchild : (fun q => nomatch q) = child := by
+          funext q
+          cases q
+        cases hchild
+        rfl
+    | branch m h =>
+        cases h
         have hchild : child = (fun (b : Bool) => if b then child true else child false) := by
           funext q
           cases q <;> rfl
         rw [hchild]
         rfl
 
-theorem HBTObj_right_inv (i : Nat) :
-    Function.RightInverse (HBTSyntaxToObj i) (HBTObjToSyntax i) := by
+theorem HBTLayer_right_inv (i : Nat) :
+    Function.RightInverse (HBTSyntaxToLayer i) (HBTLayerToSyntax i) := by
   intro t
-  cases t <;> simp [HBTObjToSyntax, HBTSyntaxToObj]
+  cases t <;> simp [HBTLayerToSyntax, HBTSyntaxToLayer]
 
-def HBTObjIso (i : Nat) : Obj HBTPoly HBTSyntax i ≃ᵢ HBTSyntax i where
-  toFun := HBTObjToSyntax i
-  invFun := HBTSyntaxToObj i
-  left_inv := HBTObj_left_inv i
-  right_inv := HBTObj_right_inv i
+def HBTLayerIso (i : Nat) :
+    CodeLayer HBTPoly HBTInversion HBTSyntax i ≃ᵢ HBTSyntax i where
+  toFun := HBTLayerToSyntax i
+  invFun := HBTSyntaxToLayer i
+  left_inv := HBTLayer_left_inv i
+  right_inv := HBTLayer_right_inv i
 
-theorem HBT_child_rank_lt :
+theorem HBT_layer_child_rank_lt :
     ∀ {i : Nat} (z : HBTSyntax i)
-      (q : HBTPoly.Pos ((HBTObjIso i).invFun z).ctor ((HBTObjIso i).invFun z).param),
-      HBTSyntax.rank (((HBTObjIso i).invFun z).child q) < HBTSyntax.rank z := by
+      (q : HBTPoly.Pos
+          (HBTInversion.decode i ((HBTLayerIso i).invFun z).1).ctor
+          (HBTInversion.decode i ((HBTLayerIso i).invFun z).1).param),
+      HBTSyntax.rank (((HBTLayerIso i).invFun z).2 q) < HBTSyntax.rank z := by
   intro i z q
   cases z with
   | leaf label => cases q
   | branch lhs rhs =>
       cases q
-      · simpa [HBTObjIso, HBTSyntaxToObj, HBTSyntax.rank] using
+      · simpa [HBTLayerIso, HBTSyntaxToLayer, HBTInversion, HBTDecode,
+          HBTSyntax.rank] using
           Nat.lt_succ_of_le (Nat.le_max_left (HBTSyntax.rank lhs) (HBTSyntax.rank rhs))
-      · simpa [HBTObjIso, HBTSyntaxToObj, HBTSyntax.rank] using
+      · simpa [HBTLayerIso, HBTSyntaxToLayer, HBTInversion, HBTDecode,
+          HBTSyntax.rank] using
           Nat.lt_succ_of_le (Nat.le_max_right (HBTSyntax.rank lhs) (HBTSyntax.rank rhs))
 
-def HBTWellFoundedCode : WellFoundedCode HBTPoly HBTSyntax where
-  step := HBTObjIso
+/--
+Generated-layer coding data for height-bounded trees. The example supplies only
+the local layer coding over `HBTInversion`; the full object-layer step is
+produced by `GeneratedLayerCode.toWellFoundedCode`.
+-/
+def HBTGeneratedLayerCode : GeneratedLayerCode HBTPoly HBTSyntax where
+  inversion := HBTInversion
+  layer := HBTLayerIso
   rank := fun _ t => HBTSyntax.rank t
-  child_rank_lt := HBT_child_rank_lt
+  child_rank_lt := HBT_layer_child_rank_lt
+
+def HBTWellFoundedCode : WellFoundedCode HBTPoly HBTSyntax :=
+  HBTGeneratedLayerCode.toWellFoundedCode
 
 /-- Height-bounded trees as the generic initial algebra are bijective with
-readable syntax.  The branch case is the output-index-change example: it
-constructs a tree at height `m + 1` from two children at height `m`. -/
+readable syntax through generated layer coding. The generic transport proof in
+`fiberObjCodeLayerIso` is still an explicit open proof gap. -/
 def HBTSyntaxIso (i : Nat) : Mu HBTPoly i ≃ᵢ HBTSyntax i :=
-  initialAlgebraCoding HBTPoly HBTSyntax HBTWellFoundedCode i
+  HBTGeneratedLayerCode.iso i
 
-/-- Constructors for the numeric-expression family from the Peano-expression
-section: variables, zero, successor, addition, and multiplication. -/
+/-- Constructors for numeric expressions: variables, zero, successor, addition,
+and multiplication. -/
 inductive NumCtor where
   | var
   | zero
