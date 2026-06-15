@@ -421,24 +421,31 @@ theorem locateShell_of_bounds {s n : Nat}
   simpa [p, Nat.zero_add] using
     locateShellFromCore_gap 0 s p (by simpa [Nat.zero_add] using hp)
 
-theorem decodeFast_eq_decode_of_clw_bounds (n : Nat)
-    (hl : shellStartClosed (clw n) ≤ n)
-    (hu : n < shellStartClosed (clw n + 1)) :
-    decodeFast n = decode n := by
-  have hloc : locateShell n = (clw n, n - shellStart (clw n)) := by
+theorem decodeInShell_eq_decode_of_bounds {s n : Nat}
+    (hl : shellStartClosed s ≤ n)
+    (hu : n < shellStartClosed (s + 1)) :
+    decodeInShell s (n - shellStartClosed s) = decode n := by
+  have hloc : locateShell n = (s, n - shellStart s) := by
     exact locateShell_of_bounds
-      (s := clw n) (n := n)
+      (s := s) (n := n)
       (by simpa [shellStartClosed_eq_shellStart] using hl)
       (by simpa [shellStartClosed_eq_shellStart] using hu)
-  simp [decodeFast, decode, hloc, shellStartClosed_eq_shellStart]
+  simp [decode, hloc, shellStartClosed_eq_shellStart]
 
-def ShellIndexBounds (shellOf : Nat → Nat) : Prop :=
-  ∀ n, shellStartClosed (shellOf n) ≤ n ∧
-    n < shellStartClosed (shellOf n + 1)
+/--
+Unfinished optimization proof: the closed `clw` formula must select exactly
+the shell containing `n`.
+-/
+theorem clw_shell_bounds (n : Nat) :
+    shellStartClosed (clw n) ≤ n ∧ n < shellStartClosed (clw n + 1) := by
+  sorry
 
-theorem decodeFast_eq_decode (hclw : ShellIndexBounds clw) (n : Nat) :
-    decodeFast n = decode n :=
-  decodeFast_eq_decode_of_clw_bounds n (hclw n).1 (hclw n).2
+/--
+Unfinished optimization target: the non-recursive decoder agrees with the
+proved shell-scan decoder.
+-/
+theorem decodeFast_eq_decode (n : Nat) : decodeFast n = decode n := by
+  sorry
 
 theorem decodeInShell_encodeInShell (x y : Nat) :
     let g := len x
@@ -550,34 +557,16 @@ theorem encode_decode (n : Nat) : encode (decode n).1 (decode n).2 = n := by
   rw [encode_decodeInShell hs, hoff]
 
 /--
-The optimized executable pairing functions are a bijection once the closed
-shell-index function is shown to satisfy the shell bounds.  This keeps the
-remaining `clw` proof obligation explicit while allowing downstream code to use
-the faster formulas behind that single arithmetic condition.
+Unfinished optimization target: the executable closed-form encoder and decoder
+should form the same bijection as `iso` without using the shell scan.
 -/
-def isoFastOfBounds (hclw : ShellIndexBounds clw) : (Nat × Nat) ≃ᵢ Nat where
+def isoFast : (Nat × Nat) ≃ᵢ Nat where
   toFun p := encodeFast p.1 p.2
   invFun := decodeFast
   left_inv := by
-    intro p
-    cases p with
-    | mk x y =>
-        calc
-          decodeFast (encodeFast x y)
-              = decodeFast (encode x y) := by
-                  rw [encodeFast_eq_encode]
-          _ = decode (encode x y) := decodeFast_eq_decode hclw (encode x y)
-          _ = (x, y) := decode_encode x y
+    sorry
   right_inv := by
-    intro n
-    have hd : decodeFast n = decode n := decodeFast_eq_decode hclw n
-    calc
-      encodeFast (decodeFast n).1 (decodeFast n).2
-          = encode (decodeFast n).1 (decodeFast n).2 := by
-              rw [encodeFast_eq_encode]
-      _ = encode (decode n).1 (decode n).2 := by
-              rw [hd]
-      _ = n := encode_decode n
+    sorry
 
 /-- The simplified pairing function from the blog, packaged as a bijection. -/
 def iso : (Nat × Nat) ≃ᵢ Nat where
