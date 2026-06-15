@@ -130,6 +130,13 @@ def castFiberChild {P : DepPoly ι} {Code : ι → Type u} {i : ι}
   cases h
   exact child
 
+theorem castFiberChild_heq {P : DepPoly ι} {Code : ι → Type u} {i : ι}
+    {f g : Fiber P i} (h : f = g)
+    (child : (q : P.Pos f.ctor f.param) → Code (P.input f.param q)) :
+    castFiberChild h child ≍ child := by
+  cases h
+  rfl
+
 def fiberObjCodeLayerTo {P : DepPoly ι} {Code : ι → Type u} {i : ι}
     (H : OutputIndexInversion P) (x : FiberObj P Code i) :
     CodeLayer P H Code i := by
@@ -142,22 +149,25 @@ def fiberObjCodeLayerInv {P : DepPoly ι} {Code : ι → Type u} {i : ι}
     FiberObj P Code i :=
   ⟨H.decode i x.1, x.2⟩
 
-/--
-Unfinished generated-layer proof gap: output-index inversion should transport
-the child function back and forth to give an equivalence between same-fiber
-objects and index-local code layers.
--/
 def fiberObjCodeLayerIso {P : DepPoly ι} (H : OutputIndexInversion P)
     (Code : ι → Type u) (i : ι) :
     FiberObj P Code i ≃ᵢ CodeLayer P H Code i where
   toFun := fiberObjCodeLayerTo H
   invFun := fiberObjCodeLayerInv H
   left_inv := by
-    -- Unfinished: dependent function transport over `H.decode_encode`.
-    sorry
+    intro x
+    cases x with
+    | mk f child =>
+        dsimp [fiberObjCodeLayerTo, fiberObjCodeLayerInv]
+        refine Sigma.ext (H.decode_encode i f) ?_
+        exact castFiberChild_heq (H.decode_encode i f).symm child
   right_inv := by
-    -- Unfinished: dependent function transport over `H.encode_decode`.
-    sorry
+    intro x
+    cases x with
+    | mk c child =>
+        dsimp [fiberObjCodeLayerTo, fiberObjCodeLayerInv]
+        refine Sigma.ext (H.encode_decode i c) ?_
+        exact castFiberChild_heq (H.decode_encode i (H.decode i c)).symm child
 
 def objCodeLayerIso {P : DepPoly ι} (H : OutputIndexInversion P)
     (Code : ι → Type u) (i : ι) :
