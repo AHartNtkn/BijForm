@@ -3,9 +3,10 @@ import BijForm.Coding
 namespace BijForm
 
 /-
-This file starts the general formalization for the dependent Gödel-encoding
-post.  The key design choice is to make the useful condition explicit rather
-than hide the hard part behind an opaque constructor isomorphism:
+This file develops the dependent-polynomial layer used by the coding
+framework. The key design requirement is to make constructor-fiber data
+explicit rather than hide the hard part behind an opaque constructor
+isomorphism:
 
 * constructors are presented as dependent polynomial containers over an index
   type `ι`;
@@ -13,8 +14,8 @@ than hide the hard part behind an opaque constructor isomorphism:
 * `OutputIndexInversion` supplies, for each target index, a fiberwise inverse
   description of the parameters whose `out` lands there.
 
-This is the formal counterpart of the "Trees of Bounded Height" refactoring:
-move an invertible output-index change into an explicit same-fiber precondition.
+Output-index inversion is represented as same-fiber constructor data; examples
+must still show how this data is generated from their concrete constructors.
 -/
 
 universe u
@@ -67,11 +68,9 @@ def objFiberIso (P : DepPoly ι) (X : ι → Type u) (i : ι) :
       rfl
 
 /--
-The useful condition missing from a bare "assume constructors are isomorphic"
-answer.  For every target index, the constructor parameters landing in that
-index can be described by an index-local code.  This is exactly where examples
-like bounded-height trees invert `n + 1` into the same-fiber premise
-`∃ m, n = m + 1`.
+Index-local constructor data for each output fiber. This structure records the
+same-fiber representation used by later layer-coding definitions; by itself it
+is not a completed solution to constructor-code generation.
 -/
 structure OutputIndexInversion (P : DepPoly ι) where
   Code : ι → Type u

@@ -4,14 +4,13 @@ namespace BijForm
 namespace Pairing
 
 /-
-This module formalizes the simplified pairing function from the
-"further simplification" section of "An Optimal And Feasible Pairing Function".
-The blog presents the closed arithmetic expression
+This module proves a shell-based natural-number pairing function and records a
+closed-form optimization target. The closed arithmetic expression is
 
   (g + s - 2) * 2^s + y * 2^g + x + 2
 
-after measuring `x` and `y` as binary strings.  Over `Nat`, the leading
-integer offset is negative in the first shells, so the Lean definition uses the
+after measuring `x` and `y` as binary strings. Over `Nat`, the leading integer
+offset is negative in the first shells, so the proved definition uses the
 equivalent shell start plus within-shell position.
 -/
 
@@ -568,7 +567,7 @@ def isoFast : (Nat × Nat) ≃ᵢ Nat where
   right_inv := by
     sorry
 
-/-- The simplified pairing function from the blog, packaged as a bijection. -/
+/-- The proved shell-based pairing function, packaged as a bijection. -/
 def iso : (Nat × Nat) ≃ᵢ Nat where
   toFun p := encode p.1 p.2
   invFun := decode

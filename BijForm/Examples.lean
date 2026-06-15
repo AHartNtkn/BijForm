@@ -5,8 +5,8 @@ namespace Examples
 
 open DepPoly
 
-/-- Constructors for the height-bounded-tree example from the Gödel-encoding
-post: leaves carry a natural label, branches have two children. -/
+/-- Constructors for height-bounded trees: leaves carry a natural label,
+branches have two children. -/
 inductive HBTCtor where
   | leaf
   | branch
@@ -37,9 +37,8 @@ def HBTPoly : DepPoly Nat where
   Pos := HBTPos
   input := HBTInput
 
-/-- Index-local constructor codes for height-bounded trees.  At target height
-`i`, a branch code must include an explicit predecessor `m` with `m + 1 = i`.
-This is the Lean form of the bounded-height-tree refactoring from the post. -/
+/-- Index-local constructor codes for height-bounded trees. At target height
+`i`, a branch code must include an explicit predecessor `m` with `m + 1 = i`. -/
 inductive HBTCode (i : Nat) where
   | leaf (label : Nat)
   | branch (m : Nat) (out_eq : m + 1 = i)
