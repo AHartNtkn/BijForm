@@ -147,6 +147,25 @@ theorem pow2_bitLen_pred_le {n : Nat} (hn : 0 < n) :
       unfold bitLen pow2
       simpa using Nat.log2_self_le (n := n + 1) (by omega)
 
+theorem pow2_bitLen_le_two_mul {n : Nat} (hn : 0 < n) :
+    pow2 (bitLen n) ≤ 2 * n := by
+  have hpred := pow2_bitLen_pred_le hn
+  cases hb : bitLen n with
+  | zero =>
+      have hlt := lt_pow2_bitLen n
+      rw [hb] at hlt
+      simp [pow2] at hlt
+      omega
+  | succ b =>
+      have hpred' : pow2 b ≤ n := by
+        simpa [hb] using hpred
+      have hpow : pow2 (b + 1) = 2 * pow2 b := by
+        unfold pow2
+        rw [Nat.pow_succ]
+        omega
+      rw [hpow]
+      exact Nat.mul_le_mul_left 2 hpred'
+
 theorem bitLen_le_self (n : Nat) : bitLen n ≤ n := by
   cases n with
   | zero =>
@@ -166,6 +185,69 @@ theorem bitLen_le_of_lt_pow2 {n k : Nat} (h : n < pow2 k) :
       unfold bitLen
       apply Nat.succ_le_of_lt
       exact (Nat.log2_lt (by omega)).mpr (by simpa [pow2] using h)
+
+theorem shellStartClosed_le_pow2_add_bitLen_pred (s : Nat) :
+    shellStartClosed s ≤ pow2 (s + bitLen (s - 1)) := by
+  cases s with
+  | zero =>
+      simp [shellStartClosed, pow2]
+  | succ t =>
+      let P := pow2 (t + 1)
+      have hPpos : 0 < P := by
+        simpa [P] using pow2_pos (t + 1)
+      have htlt : t < pow2 (bitLen t) := lt_pow2_bitLen t
+      have hmul : t * P + 1 ≤ (t + 1) * P := by
+        calc
+          t * P + 1 ≤ t * P + P := Nat.add_le_add_left hPpos (t * P)
+          _ = (t + 1) * P := by rw [Nat.succ_mul]
+      have hle : (t + 1) * P ≤ pow2 (bitLen t) * P := by
+        exact Nat.mul_le_mul_right P (Nat.succ_le_of_lt htlt)
+      have hpow : pow2 (t + 1 + bitLen t) = pow2 (bitLen t) * P := by
+        calc
+          pow2 (t + 1 + bitLen t) = pow2 (t + 1) * pow2 (bitLen t) := by
+            unfold pow2
+            rw [Nat.pow_add]
+          _ = pow2 (bitLen t) * P := by
+            rw [Nat.mul_comm]
+      change t * P + 1 ≤ pow2 (t + 1 + bitLen t)
+      rw [hpow]
+      exact Nat.le_trans hmul hle
+
+theorem pow2_succ_le_shellStartClosed_add_two {r s : Nat}
+    (h : r ≤ s + bitLen (s + 1)) :
+    pow2 (r + 1) ≤ shellStartClosed (s + 2) := by
+  have hmono : pow2 (r + 1) ≤ pow2 (s + bitLen (s + 1) + 1) := by
+    exact Nat.pow_le_pow_right (by decide : 0 < 2) (by omega)
+  have hbit : pow2 (bitLen (s + 1)) ≤ 2 * (s + 1) :=
+    pow2_bitLen_le_two_mul (by omega : 0 < s + 1)
+  have hmul :
+      pow2 (s + bitLen (s + 1) + 1) ≤ (s + 1) * pow2 (s + 2) := by
+    have hpow :
+        pow2 (s + bitLen (s + 1) + 1) =
+          pow2 (bitLen (s + 1)) * pow2 (s + 1) := by
+      unfold pow2
+      rw [show s + bitLen (s + 1) + 1 = bitLen (s + 1) + (s + 1) by omega]
+      rw [Nat.pow_add]
+    rw [hpow]
+    have hmul_le :
+        pow2 (bitLen (s + 1)) * pow2 (s + 1) ≤
+          (2 * (s + 1)) * pow2 (s + 1) :=
+      Nat.mul_le_mul_right (pow2 (s + 1)) hbit
+    have heq :
+        (2 * (s + 1)) * pow2 (s + 1) = (s + 1) * pow2 (s + 2) := by
+      have hpow_succ : pow2 (s + 2) = 2 * pow2 (s + 1) := by
+        unfold pow2
+        rw [show s + 2 = (s + 1) + 1 by omega]
+        rw [Nat.pow_succ]
+        omega
+      rw [hpow_succ]
+      ac_rfl
+    rw [← heq]
+    exact hmul_le
+  have hstart : (s + 1) * pow2 (s + 2) ≤ shellStartClosed (s + 2) := by
+    change (s + 1) * pow2 (s + 2) ≤ (s + 1) * pow2 (s + 2) + 1
+    omega
+  exact Nat.le_trans hmono (Nat.le_trans hmul hstart)
 
 theorem mul_add_mod_of_lt {k m r : Nat} (hr : r < k) :
     (m * k + r) % k = r := by
@@ -431,14 +513,43 @@ theorem decodeInShell_eq_decode_of_bounds {s n : Nat}
       (by simpa [shellStartClosed_eq_shellStart] using hu)
   simp [decode, hloc, shellStartClosed_eq_shellStart]
 
-/--
-Unfinished core arithmetic proof for the optimized shell locator: the first
-closed estimate is always within one shell of the true interval.
--/
+/-- Unfinished index arithmetic for `clwCore`: it approximates the inverse of
+`s ↦ s + bitLen s` closely enough to bracket the true shell. -/
+theorem clwCore_index_bounds (n : Nat) :
+    let w := clwCore n
+    w + bitLen (w - 1) ≤ bitLen n - 1 ∧
+      bitLen n - 1 ≤ w + bitLen (w + 1) := by
+  sorry
+
 theorem clwCore_shell_window (n : Nat) :
     let w := clwCore n
     shellStartClosed w ≤ n ∧ n < shellStartClosed (w + 2) := by
-  sorry
+  by_cases hn : n = 0
+  · subst n
+    simp [clwCore, bitLen, shellStartClosed, pow2]
+  · have hnpos : 0 < n := Nat.pos_of_ne_zero hn
+    let w := clwCore n
+    let r := bitLen n - 1
+    have hidx : w + bitLen (w - 1) ≤ r ∧ r ≤ w + bitLen (w + 1) := by
+      simpa [w, r] using clwCore_index_bounds n
+    have hstart : shellStartClosed w ≤ pow2 (w + bitLen (w - 1)) :=
+      shellStartClosed_le_pow2_add_bitLen_pred w
+    have hmonoLower : pow2 (w + bitLen (w - 1)) ≤ pow2 r := by
+      exact Nat.pow_le_pow_right (by decide : 0 < 2) hidx.1
+    have hrpow : pow2 r ≤ n := by
+      simpa [r] using pow2_bitLen_pred_le hnpos
+    have hlower : shellStartClosed w ≤ n :=
+      Nat.le_trans hstart (Nat.le_trans hmonoLower hrpow)
+    have hnlt : n < pow2 (r + 1) := by
+      have hbitpos : 0 < bitLen n := by
+        cases n with
+        | zero => contradiction
+        | succ n => simp [bitLen]
+      have hr : r + 1 = bitLen n := by omega
+      simpa [r, hr] using lt_pow2_bitLen n
+    have hupperPow : pow2 (r + 1) ≤ shellStartClosed (w + 2) :=
+      pow2_succ_le_shellStartClosed_add_two hidx.2
+    exact ⟨hlower, Nat.lt_of_lt_of_le hnlt hupperPow⟩
 
 /--
 The closed `clw` formula selects exactly the shell containing `n`, assuming
@@ -687,7 +798,7 @@ theorem encode_decode (n : Nat) : encode (decode n).1 (decode n).2 = n := by
 /--
 The executable closed-form encoder and decoder form the same bijection as
 `iso`, modulo the remaining open core arithmetic proof
-`clwCore_shell_window`.
+`clwCore_index_bounds`.
 -/
 def isoFast : (Nat × Nat) ≃ᵢ Nat where
   toFun p := encodeFast p.1 p.2
