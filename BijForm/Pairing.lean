@@ -440,11 +440,13 @@ theorem clw_shell_bounds (n : Nat) :
   sorry
 
 /--
-Unfinished optimization target: the non-recursive decoder agrees with the
-proved shell-scan decoder.
+The non-recursive decoder agrees with the proved shell-scan decoder, once the
+open arithmetic shell-bound proof for `clw` is supplied.
 -/
 theorem decodeFast_eq_decode (n : Nat) : decodeFast n = decode n := by
-  sorry
+  unfold decodeFast
+  exact decodeInShell_eq_decode_of_bounds
+    (s := clw n) (n := n) (clw_shell_bounds n).1 (clw_shell_bounds n).2
 
 theorem decodeInShell_encodeInShell (x y : Nat) :
     let g := len x
@@ -556,16 +558,22 @@ theorem encode_decode (n : Nat) : encode (decode n).1 (decode n).2 = n := by
   rw [encode_decodeInShell hs, hoff]
 
 /--
-Unfinished optimization target: the executable closed-form encoder and decoder
-should form the same bijection as `iso` without using the shell scan.
+The executable closed-form encoder and decoder form the same bijection as
+`iso`, modulo the remaining open arithmetic proof `clw_shell_bounds`.
 -/
 def isoFast : (Nat × Nat) ≃ᵢ Nat where
   toFun p := encodeFast p.1 p.2
   invFun := decodeFast
   left_inv := by
-    sorry
+    intro p
+    cases p with
+    | mk x y =>
+        change decodeFast (encodeFast x y) = (x, y)
+        rw [decodeFast_eq_decode, encodeFast_eq_encode, decode_encode]
   right_inv := by
-    sorry
+    intro n
+    change encodeFast (decodeFast n).1 (decodeFast n).2 = n
+    rw [decodeFast_eq_decode, encodeFast_eq_encode, encode_decode]
 
 /-- The proved shell-based pairing function, packaged as a bijection. -/
 def iso : (Nat × Nat) ≃ᵢ Nat where
