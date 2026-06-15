@@ -170,6 +170,96 @@ def SortedInversion : OutputIndexInversion SortedPoly where
   decode_encode := Sorted_decode_encode
   encode_decode := Sorted_encode_decode
 
+/-- Readable syntax family for sorted trees. -/
+inductive SortedSyntax : SortedIx → Type
+  | leaf {i : SortedIx} : SortedSyntax i
+  | branch {i : SortedIx} (pivot : BoundedPivot i) :
+      SortedSyntax (i.1, some pivot.1) → SortedSyntax (pivot.1, i.2) →
+        SortedSyntax i
+
+namespace SortedSyntax
+
+def rank : ∀ {i : SortedIx}, SortedSyntax i → Nat
+  | _, leaf => 0
+  | _, branch _ lhs rhs => Nat.max (rank lhs) (rank rhs) + 1
+
+end SortedSyntax
+
+def SortedObjToSyntax (i : SortedIx) : Obj SortedPoly SortedSyntax i → SortedSyntax i
+  | ⟨.leaf, _p, _h, _child⟩ =>
+      .leaf
+  | ⟨.branch, p, h, child⟩ =>
+      h ▸ (.branch p.2 (child false) (child true))
+
+def SortedSyntaxToObj (i : SortedIx) : SortedSyntax i → Obj SortedPoly SortedSyntax i
+  | .leaf => ⟨.leaf, i, rfl, fun q => nomatch q⟩
+  | .branch pivot lhs rhs =>
+      ⟨.branch, ⟨i, pivot⟩, rfl, fun
+        | false => lhs
+        | true => rhs⟩
+
+theorem SortedObj_left_inv (i : SortedIx) :
+    Function.LeftInverse (SortedSyntaxToObj i) (SortedObjToSyntax i) := by
+  intro layer
+  cases layer with
+  | mk ctor param out_eq child =>
+    cases ctor with
+    | leaf =>
+        cases out_eq
+        have hchild : (fun q => nomatch q) = child := by
+          funext q
+          cases q
+        cases hchild
+        rfl
+    | branch =>
+        cases param with
+        | mk i' pivot =>
+          cases out_eq
+          have hchild : child = (fun
+              | false => child false
+              | true => child true) := by
+            funext q
+            cases q <;> rfl
+          rw [hchild]
+          rfl
+
+theorem SortedObj_right_inv (i : SortedIx) :
+    Function.RightInverse (SortedSyntaxToObj i) (SortedObjToSyntax i) := by
+  intro t
+  cases t with
+  | leaf => rfl
+  | branch pivot lhs rhs => rfl
+
+def SortedObjIso (i : SortedIx) : Obj SortedPoly SortedSyntax i ≃ᵢ SortedSyntax i where
+  toFun := SortedObjToSyntax i
+  invFun := SortedSyntaxToObj i
+  left_inv := SortedObj_left_inv i
+  right_inv := SortedObj_right_inv i
+
+theorem Sorted_child_rank_lt :
+    ∀ {i : SortedIx} (z : SortedSyntax i)
+      (q : SortedPoly.Pos ((SortedObjIso i).invFun z).ctor ((SortedObjIso i).invFun z).param),
+      SortedSyntax.rank (((SortedObjIso i).invFun z).child q) < SortedSyntax.rank z := by
+  intro i z q
+  cases z with
+  | leaf => cases q
+  | branch pivot lhs rhs =>
+      cases q
+      · simpa [SortedObjIso, SortedSyntaxToObj, SortedSyntax.rank] using
+          Nat.lt_succ_of_le (Nat.le_max_left (SortedSyntax.rank lhs) (SortedSyntax.rank rhs))
+      · simpa [SortedObjIso, SortedSyntaxToObj, SortedSyntax.rank] using
+          Nat.lt_succ_of_le (Nat.le_max_right (SortedSyntax.rank lhs) (SortedSyntax.rank rhs))
+
+def SortedWellFoundedCode : WellFoundedCode SortedPoly SortedSyntax where
+  step := SortedObjIso
+  rank := fun _ t => SortedSyntax.rank t
+  child_rank_lt := Sorted_child_rank_lt
+
+/-- Sorted trees as the generic initial algebra are bijective with readable
+syntax.  The branch children are indexed by the pivot-adjusted bounds. -/
+def SortedSyntaxIso (i : SortedIx) : Mu SortedPoly i ≃ᵢ SortedSyntax i :=
+  initialAlgebraCoding SortedPoly SortedSyntax SortedWellFoundedCode i
+
 /-- The fiber of branch constructors at height zero is empty. -/
 theorem no_zero_height_branch (f : Fiber HBTPoly 0) (hctor : f.ctor = .branch) :
     False := by
