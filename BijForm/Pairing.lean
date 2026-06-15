@@ -546,6 +546,110 @@ theorem shellStart_locateShell (n : Nat) :
       + (locateShellFromCore (0, n)).2 = n
   simpa [shellStart] using h
 
+theorem blockStart_mono {a b : Nat} (h : a ≤ b) :
+    blockStart a ≤ blockStart b := by
+  unfold blockStart
+  have hp : pow2 a ≤ pow2 b := by
+    exact Nat.pow_le_pow_right (by decide : 0 < 2) h
+  omega
+
+theorem blockStart_le_shellStart (s : Nat) :
+    blockStart s ≤ shellStart s := by
+  cases s with
+  | zero =>
+      simp [blockStart, shellStart, pow2]
+  | succ s =>
+      rw [← shellStartClosed_eq_shellStart]
+      cases s with
+      | zero =>
+          simp [shellStartClosed, blockStart, pow2]
+      | succ s =>
+          simp [shellStartClosed, blockStart]
+          have hmul :
+              pow2 (s + 1 + 1) ≤ (s + 1) * pow2 (s + 1 + 1) := by
+            exact Nat.le_mul_of_pos_left (pow2 (s + 1 + 1)) (Nat.succ_pos s)
+          omega
+
+theorem blockStart_le_shellStart_of_le {a s : Nat} (h : a ≤ s) :
+    blockStart a ≤ shellStart s :=
+  Nat.le_trans (blockStart_mono h) (blockStart_le_shellStart s)
+
+theorem blockStart_le_mul_pow2 {g s : Nat} (hg : g ≤ s) :
+    blockStart g ≤ g * pow2 s := by
+  cases g with
+  | zero =>
+      simp [blockStart, pow2]
+  | succ g =>
+      have hpow : pow2 (g + 1) ≤ pow2 s := by
+        exact Nat.pow_le_pow_right (by decide : 0 < 2) hg
+      have hmul : pow2 s ≤ (g + 1) * pow2 s := by
+        exact Nat.le_mul_of_pos_left (pow2 s) (Nat.succ_pos g)
+      unfold blockStart
+      omega
+
+theorem decodeInShell_fst_le {s p : Nat} (hp : p < shellSize s) :
+    (decodeInShell s p).1 ≤ shellStart s + p := by
+  let g := p / pow2 s
+  let q := p % pow2 s
+  let xp := q % pow2 g
+  let yp := q / pow2 g
+  have hg : g ≤ s := by
+    simpa [g] using div_pow2_le_shell (s := s) (p := p) hp
+  have hblock : blockStart g ≤ g * pow2 s := blockStart_le_mul_pow2 hg
+  have hqrec : yp * pow2 g + xp = q := by
+    calc
+      yp * pow2 g + xp = pow2 g * yp + xp := by rw [Nat.mul_comm yp (pow2 g)]
+      _ = q := by
+        simpa [yp, xp, q] using Nat.div_add_mod q (pow2 g)
+  have hprec : g * pow2 s + q = p := by
+    calc
+      g * pow2 s + q = pow2 s * g + q := by rw [Nat.mul_comm g (pow2 s)]
+      _ = p := by
+        simpa [g, q] using Nat.div_add_mod p (pow2 s)
+  change blockStart g + xp ≤ shellStart s + p
+  omega
+
+theorem decodeInShell_snd_le {s p : Nat} (hp : p < shellSize s) :
+    (decodeInShell s p).2 ≤ shellStart s + p := by
+  let g := p / pow2 s
+  let q := p % pow2 s
+  let yp := q / pow2 g
+  have hg : g ≤ s := by
+    simpa [g] using div_pow2_le_shell (s := s) (p := p) hp
+  have hsuble : s - g ≤ s := Nat.sub_le s g
+  have hblock : blockStart (s - g) ≤ shellStart s :=
+    blockStart_le_shellStart_of_le hsuble
+  have hypq : yp ≤ q := by
+    simpa [yp] using Nat.div_le_self q (pow2 g)
+  have hqp : q ≤ p := by
+    simpa [q] using Nat.mod_le p (pow2 s)
+  change blockStart (s - g) + yp ≤ shellStart s + p
+  omega
+
+theorem decode_fst_le (n : Nat) : (decode n).1 ≤ n := by
+  unfold decode
+  generalize hsp : locateShell n = sp
+  change (decodeInShell sp.1 sp.2).1 ≤ n
+  have hs : sp.2 < shellSize sp.1 := by
+    rw [← hsp]
+    exact locateShellFrom_sound 0 n
+  have hoff : shellStart sp.1 + sp.2 = n := by
+    simpa [hsp] using shellStart_locateShell n
+  have hle := decodeInShell_fst_le (s := sp.1) (p := sp.2) hs
+  omega
+
+theorem decode_snd_le (n : Nat) : (decode n).2 ≤ n := by
+  unfold decode
+  generalize hsp : locateShell n = sp
+  change (decodeInShell sp.1 sp.2).2 ≤ n
+  have hs : sp.2 < shellSize sp.1 := by
+    rw [← hsp]
+    exact locateShellFrom_sound 0 n
+  have hoff : shellStart sp.1 + sp.2 = n := by
+    simpa [hsp] using shellStart_locateShell n
+  have hle := decodeInShell_snd_le (s := sp.1) (p := sp.2) hs
+  omega
+
 /-- The simplified pairing encoder is a right inverse of the decoder. -/
 theorem encode_decode (n : Nat) : encode (decode n).1 (decode n).2 = n := by
   unfold decode

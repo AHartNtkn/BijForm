@@ -1,4 +1,5 @@
 import BijForm.DependentPolynomial
+import BijForm.NatCoding
 
 namespace BijForm
 namespace Examples
@@ -371,10 +372,125 @@ def HBTWellFoundedCode : WellFoundedCode HBTPoly HBTSyntax :=
   HBTGeneratedLayerCode.toWellFoundedCode
 
 /-- Height-bounded trees as the generic initial algebra are bijective with
-readable syntax through generated layer coding. The generic transport proof in
-`fiberObjCodeLayerIso` is still an explicit open proof gap. -/
+readable syntax through generated layer coding. -/
 def HBTSyntaxIso (i : Nat) : Mu HBTPoly i ≃ᵢ HBTSyntax i :=
   HBTGeneratedLayerCode.iso i
+
+def HBTNatZeroLayerIso :
+    CodeLayer HBTPoly HBTInversion (fun _ => Nat) 0 ≃ᵢ Nat where
+  toFun
+    | ⟨.leaf label, _child⟩ => label
+    | ⟨.branch _ h, _child⟩ => by cases h
+  invFun n := ⟨.leaf n, fun q => nomatch q⟩
+  left_inv := by
+    intro x
+    cases x with
+    | mk code child =>
+        cases code with
+        | leaf label =>
+            have hchild : (fun q => nomatch q) = child := by
+              funext q
+              cases q
+            cases hchild
+            rfl
+        | branch m h => cases h
+  right_inv := by
+    intro n
+    rfl
+
+def HBTNatSuccLayerSumIso (m : Nat) :
+    CodeLayer HBTPoly HBTInversion (fun _ => Nat) (m + 1) ≃ᵢ
+      (Nat ⊕ (Nat × Nat)) where
+  toFun
+    | ⟨.leaf label, _child⟩ => Sum.inl label
+    | ⟨.branch _ _h, child⟩ => Sum.inr (child false, child true)
+  invFun
+    | Sum.inl label => ⟨.leaf label, fun q => nomatch q⟩
+    | Sum.inr p => ⟨.branch m rfl, fun
+        | false => p.1
+        | true => p.2⟩
+  left_inv := by
+    intro x
+    cases x with
+    | mk code child =>
+        cases code with
+        | leaf label =>
+            have hchild : (fun q => nomatch q) = child := by
+              funext q
+              cases q
+            cases hchild
+            rfl
+        | branch k h =>
+            cases h
+            have hchild : child = (fun
+                | false => child false
+                | true => child true) := by
+              funext q
+              cases q <;> rfl
+            rw [hchild]
+            rfl
+  right_inv := by
+    intro x
+    cases x with
+    | inl label => rfl
+    | inr p =>
+        cases p
+        rfl
+
+def HBTNatSuccLayerIso (m : Nat) :
+    CodeLayer HBTPoly HBTInversion (fun _ => Nat) (m + 1) ≃ᵢ Nat :=
+  Iso.trans (HBTNatSuccLayerSumIso m)
+    (Iso.trans (Iso.sum (Iso.refl Nat) NatCoding.prodNat) NatCoding.sumNat)
+
+def HBTNatLayerIso :
+    ∀ i, CodeLayer HBTPoly HBTInversion (fun _ => Nat) i ≃ᵢ Nat
+  | 0 => HBTNatZeroLayerIso
+  | m + 1 => HBTNatSuccLayerIso m
+
+theorem HBTNat_child_lt :
+    ∀ {i : Nat} (n : Nat)
+      (q : HBTPoly.Pos
+          (HBTInversion.decode i ((HBTNatLayerIso i).invFun n).1).ctor
+          (HBTInversion.decode i ((HBTNatLayerIso i).invFun n).1).param),
+      (((HBTNatLayerIso i).invFun n).2 q) < n := by
+  intro i n
+  cases i with
+  | zero =>
+      intro q
+      cases q
+  | succ m =>
+      dsimp [HBTNatLayerIso, HBTNatSuccLayerIso, Iso.trans, Iso.sum]
+      generalize hsum : NatCoding.sumNat.invFun n = s
+      cases s with
+      | inl label =>
+          intro q
+          cases q
+      | inr pairCode =>
+          intro q
+          have hright := NatCoding.sumNat.right_inv n
+          rw [hsum] at hright
+          simp [NatCoding.sumNat] at hright
+          cases q
+          · change (NatCoding.prodNat.invFun pairCode).1 < n
+            have hle := NatCoding.prodNat_fst_le pairCode
+            omega
+          · change (NatCoding.prodNat.invFun pairCode).2 < n
+            have hle := NatCoding.prodNat_snd_le pairCode
+            omega
+
+/-- Generated Nat coding data for height-bounded trees. The recursive encoder
+and decoder are produced by `GeneratedNatCode`, not by an example-specific
+recursive function. -/
+def HBTNatGeneratedCode : GeneratedNatCode HBTPoly where
+  inversion := HBTInversion
+  layer := HBTNatLayerIso
+  child_lt := HBTNat_child_lt
+
+def HBTNatIso (i : Nat) : Mu HBTPoly i ≃ᵢ Nat :=
+  HBTNatGeneratedCode.iso i
+
+def HBTSyntaxNatIso (i : Nat) : HBTSyntax i ≃ᵢ Nat :=
+  Iso.trans (Iso.symm (HBTSyntaxIso i)) (HBTNatIso i)
 
 /-- Constructors for numeric expressions: variables, zero, successor, addition,
 and multiplication. -/

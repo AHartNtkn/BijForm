@@ -60,6 +60,21 @@ def prod {α : Type u} {β : Type v} {γ : Type w} {δ : Type x}
     cases p
     simp
 
+def sum {α : Type u} {β : Type v} {γ : Type w} {δ : Type x}
+    (e₁ : α ≃ᵢ β) (e₂ : γ ≃ᵢ δ) : (α ⊕ γ) ≃ᵢ (β ⊕ δ) where
+  toFun
+    | Sum.inl a => Sum.inl (e₁.toFun a)
+    | Sum.inr c => Sum.inr (e₂.toFun c)
+  invFun
+    | Sum.inl b => Sum.inl (e₁.invFun b)
+    | Sum.inr d => Sum.inr (e₂.invFun d)
+  left_inv := by
+    intro x
+    cases x <;> simp
+  right_inv := by
+    intro x
+    cases x <;> simp
+
 end Iso
 
 end BijForm

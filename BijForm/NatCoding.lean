@@ -80,5 +80,11 @@ def sumNat : (Nat ⊕ Nat) ≃ᵢ Nat where
 def prodNat : (Nat × Nat) ≃ᵢ Nat :=
   Pairing.iso
 
+theorem prodNat_fst_le (n : Nat) : (prodNat.invFun n).1 ≤ n :=
+  Pairing.decode_fst_le n
+
+theorem prodNat_snd_le (n : Nat) : (prodNat.invFun n).2 ≤ n :=
+  Pairing.decode_snd_le n
+
 end NatCoding
 end BijForm
