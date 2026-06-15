@@ -6,8 +6,22 @@ namespace Examples
 
 open DepPoly
 
-/-- Constructors for height-bounded trees: leaves carry a natural label,
-branches have two children. -/
+/-- Reference syntax family for height-bounded trees: leaves may appear at any
+height, while branches increase the height bound by one. -/
+inductive HBTSyntax : Nat → Type
+  | leaf {i : Nat} (label : Nat) : HBTSyntax i
+  | branch {m : Nat} : HBTSyntax m → HBTSyntax m → HBTSyntax (m + 1)
+
+namespace HBTSyntax
+
+def rank : ∀ {i : Nat}, HBTSyntax i → Nat
+  | _, leaf _ => 0
+  | _, branch lhs rhs => Nat.max (rank lhs) (rank rhs) + 1
+
+end HBTSyntax
+
+/-- Polynomial constructors for height-bounded trees: leaves carry a natural
+label, branches have two children. -/
 inductive HBTCtor where
   | leaf
   | branch
@@ -95,7 +109,23 @@ abbrev SortedIx :=
 def BoundedPivot (i : SortedIx) : Type :=
   { x : Nat // i.1 ≤ x ∧ Bound.le x i.2 }
 
-/-- Constructors for the sorted-tree example. -/
+/-- Reference syntax family for sorted trees indexed by lower and upper bounds.
+A branch chooses a pivot in bounds, then recursively narrows the child bounds. -/
+inductive SortedSyntax : SortedIx → Type
+  | leaf {i : SortedIx} : SortedSyntax i
+  | branch {i : SortedIx} (pivot : BoundedPivot i) :
+      SortedSyntax (i.1, some pivot.1) → SortedSyntax (pivot.1, i.2) →
+        SortedSyntax i
+
+namespace SortedSyntax
+
+def rank : ∀ {i : SortedIx}, SortedSyntax i → Nat
+  | _, leaf => 0
+  | _, branch _ lhs rhs => Nat.max (rank lhs) (rank rhs) + 1
+
+end SortedSyntax
+
+/-- Polynomial constructors for the sorted-tree example. -/
 inductive SortedCtor where
   | leaf
   | branch
@@ -169,21 +199,6 @@ def SortedInversion : OutputIndexInversion SortedPoly where
   encode := SortedEncode
   decode_encode := Sorted_decode_encode
   encode_decode := Sorted_encode_decode
-
-/-- Readable syntax family for sorted trees. -/
-inductive SortedSyntax : SortedIx → Type
-  | leaf {i : SortedIx} : SortedSyntax i
-  | branch {i : SortedIx} (pivot : BoundedPivot i) :
-      SortedSyntax (i.1, some pivot.1) → SortedSyntax (pivot.1, i.2) →
-        SortedSyntax i
-
-namespace SortedSyntax
-
-def rank : ∀ {i : SortedIx}, SortedSyntax i → Nat
-  | _, leaf => 0
-  | _, branch _ lhs rhs => Nat.max (rank lhs) (rank rhs) + 1
-
-end SortedSyntax
 
 def SortedLayerToSyntax (i : SortedIx) :
     CodeLayer SortedPoly SortedInversion SortedSyntax i → SortedSyntax i
@@ -315,19 +330,6 @@ theorem no_zero_height_branch (f : Fiber HBTPoly 0) (hctor : f.ctor = .branch) :
 /-- The fiber of branch constructors at `m+1` contains the predecessor `m`. -/
 def branchAtSucc (m : Nat) : Fiber HBTPoly (m + 1) :=
   HBTDecode (m + 1) (.branch m rfl)
-
-/-- Readable syntax family for height-bounded trees. -/
-inductive HBTSyntax : Nat → Type
-  | leaf {i : Nat} (label : Nat) : HBTSyntax i
-  | branch {m : Nat} : HBTSyntax m → HBTSyntax m → HBTSyntax (m + 1)
-
-namespace HBTSyntax
-
-def rank : ∀ {i : Nat}, HBTSyntax i → Nat
-  | _, leaf _ => 0
-  | _, branch lhs rhs => Nat.max (rank lhs) (rank rhs) + 1
-
-end HBTSyntax
 
 def HBTLayerToSyntax (i : Nat) :
     CodeLayer HBTPoly HBTInversion HBTSyntax i → HBTSyntax i
@@ -528,8 +530,28 @@ def HBTNatIso (i : Nat) : Mu HBTPoly i ≃ᵢ Nat :=
 def HBTSyntaxNatIso (i : Nat) : HBTSyntax i ≃ᵢ Nat :=
   Iso.trans (Iso.symm (HBTSyntaxIso i)) (HBTNatIso i)
 
-/-- Constructors for numeric expressions: variables, zero, successor, addition,
-and multiplication. -/
+/-- Reference syntax family for numeric expressions indexed by the number of
+available variables. -/
+inductive NumSyntax : Nat → Type
+  | var {k : Nat} (v : Fin (k + 1)) : NumSyntax k
+  | zero {k : Nat} : NumSyntax k
+  | succ {k : Nat} : NumSyntax k → NumSyntax k
+  | plus {k : Nat} : NumSyntax k → NumSyntax k → NumSyntax k
+  | times {k : Nat} : NumSyntax k → NumSyntax k → NumSyntax k
+
+namespace NumSyntax
+
+def rank : ∀ {k : Nat}, NumSyntax k → Nat
+  | _, var _ => 0
+  | _, zero => 0
+  | _, succ e => rank e + 1
+  | _, plus lhs rhs => Nat.max (rank lhs) (rank rhs) + 1
+  | _, times lhs rhs => Nat.max (rank lhs) (rank rhs) + 1
+
+end NumSyntax
+
+/-- Polynomial constructors for numeric expressions: variables, zero,
+successor, addition, and multiplication. -/
 inductive NumCtor where
   | var
   | zero
@@ -632,25 +654,6 @@ def NumInversion : OutputIndexInversion NumPoly where
   encode := NumEncode
   decode_encode := Num_decode_encode
   encode_decode := Num_encode_decode
-
-/-- Readable syntax family for numeric expressions. -/
-inductive NumSyntax : Nat → Type
-  | var {k : Nat} (v : Fin (k + 1)) : NumSyntax k
-  | zero {k : Nat} : NumSyntax k
-  | succ {k : Nat} : NumSyntax k → NumSyntax k
-  | plus {k : Nat} : NumSyntax k → NumSyntax k → NumSyntax k
-  | times {k : Nat} : NumSyntax k → NumSyntax k → NumSyntax k
-
-namespace NumSyntax
-
-def rank : ∀ {k : Nat}, NumSyntax k → Nat
-  | _, var _ => 0
-  | _, zero => 0
-  | _, succ e => rank e + 1
-  | _, plus lhs rhs => Nat.max (rank lhs) (rank rhs) + 1
-  | _, times lhs rhs => Nat.max (rank lhs) (rank rhs) + 1
-
-end NumSyntax
 
 def NumLayerToSyntax (k : Nat) :
     CodeLayer NumPoly NumInversion NumSyntax k → NumSyntax k
@@ -1011,7 +1014,25 @@ def NumNatIso (k : Nat) : Mu NumPoly k ≃ᵢ Nat :=
 def NumSyntaxNatIso (k : Nat) : NumSyntax k ≃ᵢ Nat :=
   Iso.trans (Iso.symm (NumSyntaxIso k)) (NumNatIso k)
 
-/-- Constructors for Peano formulas indexed by context size. -/
+/-- Reference syntax family for Peano formulas indexed by context size.
+Equality compares already-coded numeric terms in the same context. -/
+inductive PeanoSyntax : Nat → Type
+  | eq {k : Nat} (lhs rhs : Mu NumPoly k) : PeanoSyntax k
+  | not {k : Nat} : PeanoSyntax k → PeanoSyntax k
+  | implies {k : Nat} : PeanoSyntax k → PeanoSyntax k → PeanoSyntax k
+  | forallE {k : Nat} : PeanoSyntax (k + 1) → PeanoSyntax k
+
+namespace PeanoSyntax
+
+def rank : ∀ {k : Nat}, PeanoSyntax k → Nat
+  | _, eq _ _ => 0
+  | _, not e => rank e + 1
+  | _, implies lhs rhs => Nat.max (rank lhs) (rank rhs) + 1
+  | _, forallE e => rank e + 1
+
+end PeanoSyntax
+
+/-- Polynomial constructors for Peano formulas indexed by context size. -/
 inductive PeanoCtor where
   | eq
   | not
@@ -1105,23 +1126,6 @@ def PeanoInversion : OutputIndexInversion PeanoPoly where
   encode := PeanoEncode
   decode_encode := Peano_decode_encode
   encode_decode := Peano_encode_decode
-
-/-- Readable syntax family for Peano formulas. -/
-inductive PeanoSyntax : Nat → Type
-  | eq {k : Nat} (lhs rhs : Mu NumPoly k) : PeanoSyntax k
-  | not {k : Nat} : PeanoSyntax k → PeanoSyntax k
-  | implies {k : Nat} : PeanoSyntax k → PeanoSyntax k → PeanoSyntax k
-  | forallE {k : Nat} : PeanoSyntax (k + 1) → PeanoSyntax k
-
-namespace PeanoSyntax
-
-def rank : ∀ {k : Nat}, PeanoSyntax k → Nat
-  | _, eq _ _ => 0
-  | _, not e => rank e + 1
-  | _, implies lhs rhs => Nat.max (rank lhs) (rank rhs) + 1
-  | _, forallE e => rank e + 1
-
-end PeanoSyntax
 
 def PeanoLayerToSyntax (k : Nat) :
     CodeLayer PeanoPoly PeanoInversion PeanoSyntax k → PeanoSyntax k
