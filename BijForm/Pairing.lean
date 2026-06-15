@@ -670,8 +670,7 @@ theorem clw_shell_bounds (n : Nat) :
       simpa [shellStartClosed] using Nat.lt_succ_of_le hle
 
 /--
-The non-recursive decoder agrees with the proved shell-scan decoder, once the
-open core arithmetic proof for `clwCore` is supplied.
+The non-recursive decoder agrees with the proved shell-scan decoder.
 -/
 theorem decodeFast_eq_decode (n : Nat) : decodeFast n = decode n := by
   unfold decodeFast
