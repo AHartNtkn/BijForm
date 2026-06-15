@@ -29,6 +29,13 @@ def finPlusNat (k : Nat) : (Fin k ⊕ Nat) ≃ᵢ Nat where
     · have hk : k ≤ n := Nat.le_of_not_gt h
       simp [h, Nat.add_sub_of_le hk]
 
+theorem finPlusNat_inr_lt {k n tail : Nat} (hk : 0 < k)
+    (h : (finPlusNat k).invFun n = Sum.inr tail) : tail < n := by
+  have hright := (finPlusNat k).right_inv n
+  rw [h] at hright
+  simp [finPlusNat] at hright
+  omega
+
 /-- Binary sum coding via parity. -/
 def sumNat : (Nat ⊕ Nat) ≃ᵢ Nat where
   toFun
@@ -75,6 +82,23 @@ def sumNat : (Nat ⊕ Nat) ≃ᵢ Nat where
     · have hne : n % 2 ≠ 0 := by omega
       simp [hne]
       omega
+
+theorem sumNat_inl_le {n a : Nat}
+    (h : sumNat.invFun n = Sum.inl a) : a ≤ n := by
+  have hright := sumNat.right_inv n
+  rw [h] at hright
+  simp [sumNat] at hright
+  omega
+
+theorem sumNat_inr_le {n a : Nat}
+    (h : sumNat.invFun n = Sum.inr a) : a ≤ n := by
+  have hright := sumNat.right_inv n
+  rw [h] at hright
+  simp [sumNat] at hright
+  omega
+
+def sum3Nat : (Nat ⊕ (Nat ⊕ Nat)) ≃ᵢ Nat :=
+  Iso.trans (Iso.sum (Iso.refl Nat) sumNat) sumNat
 
 /-- Product coding delegates to the proved simplified pairing function. -/
 def prodNat : (Nat × Nat) ≃ᵢ Nat :=
