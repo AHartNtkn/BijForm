@@ -1,0 +1,10 @@
+name = "BijForm"
+version = "0.1.0"
+defaultTargets = ["bijform"]
+
+[[lean_lib]]
+name = "BijForm"
+
+[[lean_exe]]
+name = "bijform"
+root = "Main"
