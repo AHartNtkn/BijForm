@@ -166,6 +166,44 @@ theorem pow2_bitLen_le_two_mul {n : Nat} (hn : 0 < n) :
       rw [hpow]
       exact Nat.mul_le_mul_left 2 hpred'
 
+theorem two_mul_le_pow2_pred_add_two (b : Nat) :
+    2 * b ≤ pow2 (b - 1) + 2 := by
+  induction b with
+  | zero =>
+      simp [pow2]
+  | succ b ih =>
+      cases b with
+      | zero =>
+          simp [pow2]
+      | succ b =>
+          cases b with
+          | zero =>
+              simp [pow2]
+          | succ b =>
+              have hpow_ge_two : 2 ≤ pow2 (b + 1) := by
+                simpa [pow2] using
+                  Nat.pow_le_pow_right (by decide : 0 < 2) (show 1 ≤ b + 1 by omega)
+              have ih' : 2 * (b + 2) ≤ pow2 (b + 1) + 2 := by
+                simpa [Nat.add_assoc] using ih
+              change 2 * (b + 3) ≤ pow2 (b + 2) + 2
+              have hpow : pow2 (b + 2) = 2 * pow2 (b + 1) := by
+                unfold pow2
+                rw [show b + 2 = (b + 1) + 1 by omega]
+                rw [Nat.pow_succ]
+                omega
+              rw [hpow]
+              omega
+
+theorem two_mul_bitLen_le_self_add_two (n : Nat) :
+    2 * bitLen n ≤ n + 2 := by
+  by_cases hn : n = 0
+  · subst n
+    simp [bitLen]
+  · have hnpos : 0 < n := Nat.pos_of_ne_zero hn
+    have hpred := pow2_bitLen_pred_le hnpos
+    have hbase := two_mul_le_pow2_pred_add_two (bitLen n)
+    omega
+
 theorem bitLen_le_self (n : Nat) : bitLen n ≤ n := by
   cases n with
   | zero =>
@@ -185,6 +223,26 @@ theorem bitLen_le_of_lt_pow2 {n k : Nat} (h : n < pow2 k) :
       unfold bitLen
       apply Nat.succ_le_of_lt
       exact (Nat.log2_lt (by omega)).mpr (by simpa [pow2] using h)
+
+theorem bitLen_sub_bitLen_add_two (r : Nat) :
+    bitLen r ≤ bitLen (r - bitLen r + 2) + 1 := by
+  let a := r - bitLen r + 2
+  have htwob := two_mul_bitLen_le_self_add_two r
+  have hra : r < 2 * a := by
+    have hb_le : bitLen r ≤ r := bitLen_le_self r
+    dsimp [a]
+    omega
+  have halt : a < pow2 (bitLen a) := lt_pow2_bitLen a
+  have htwo_lt : 2 * a < 2 * pow2 (bitLen a) :=
+    Nat.mul_lt_mul_of_pos_left halt (by decide : 0 < 2)
+  have hpow : 2 * pow2 (bitLen a) = pow2 (bitLen a + 1) := by
+    unfold pow2
+    rw [Nat.pow_succ]
+    omega
+  have hrlt : r < pow2 (bitLen a + 1) := by
+    rw [← hpow]
+    exact Nat.lt_trans hra htwo_lt
+  simpa [a] using bitLen_le_of_lt_pow2 hrlt
 
 theorem shellStartClosed_le_pow2_add_bitLen_pred (s : Nat) :
     shellStartClosed s ≤ pow2 (s + bitLen (s - 1)) := by
@@ -513,13 +571,51 @@ theorem decodeInShell_eq_decode_of_bounds {s n : Nat}
       (by simpa [shellStartClosed_eq_shellStart] using hu)
   simp [decode, hloc, shellStartClosed_eq_shellStart]
 
-/-- Unfinished index arithmetic for `clwCore`: it approximates the inverse of
+/-- Index arithmetic for `clwCore`: it approximates the inverse of
 `s ↦ s + bitLen s` closely enough to bracket the true shell. -/
 theorem clwCore_index_bounds (n : Nat) :
     let w := clwCore n
     w + bitLen (w - 1) ≤ bitLen n - 1 ∧
       bitLen n - 1 ≤ w + bitLen (w + 1) := by
-  sorry
+  let r := bitLen n - 1
+  let a := r - bitLen r
+  have hbr : bitLen r ≤ r := bitLen_le_self r
+  have hadd : a + bitLen r = r := by
+    dsimp [a]
+    exact Nat.sub_add_cancel hbr
+  have ha_le_r : a ≤ r := by
+    dsimp [a]
+    exact Nat.sub_le r (bitLen r)
+  have hbit_a_le : bitLen a ≤ bitLen r := bitLen_mono ha_le_r
+  have hbit_pred_le : bitLen (a - 1) ≤ bitLen a := bitLen_mono (Nat.sub_le a 1)
+  have hbit_succ_le : bitLen a ≤ bitLen (a + 1) := bitLen_mono (Nat.le_succ a)
+  have hmain_le : a + bitLen a ≤ r := by
+    exact Nat.le_trans (Nat.add_le_add_left hbit_a_le a) (by omega)
+  change (if bitLen a + a = r then a else a + 1) +
+        bitLen ((if bitLen a + a = r then a else a + 1) - 1) ≤ r ∧
+      r ≤ (if bitLen a + a = r then a else a + 1) +
+        bitLen ((if bitLen a + a = r then a else a + 1) + 1)
+  by_cases h : bitLen a + a = r
+  · have hcomm : a + bitLen a = r := by omega
+    simp [h]
+    constructor
+    · exact Nat.le_trans (Nat.add_le_add_left hbit_pred_le a) (by omega)
+    · exact Nat.le_trans (by omega : r ≤ a + bitLen a)
+        (Nat.add_le_add_left hbit_succ_le a)
+  · have hlt : a + bitLen a < r := by
+      have hne : a + bitLen a ≠ r := by omega
+      exact Nat.lt_of_le_of_ne hmain_le hne
+    have hupperBit : bitLen r ≤ bitLen (a + 2) + 1 := by
+      simpa [a] using bitLen_sub_bitLen_add_two r
+    have hupper : r ≤ a + 1 + bitLen (a + 2) := by
+      calc
+        r = a + bitLen r := hadd.symm
+        _ ≤ a + (bitLen (a + 2) + 1) := Nat.add_le_add_left hupperBit a
+        _ = a + 1 + bitLen (a + 2) := by omega
+    simp [h]
+    constructor
+    · omega
+    · simpa [Nat.add_assoc] using hupper
 
 theorem clwCore_shell_window (n : Nat) :
     let w := clwCore n
@@ -797,8 +893,7 @@ theorem encode_decode (n : Nat) : encode (decode n).1 (decode n).2 = n := by
 
 /--
 The executable closed-form encoder and decoder form the same bijection as
-`iso`, modulo the remaining open core arithmetic proof
-`clwCore_index_bounds`.
+`iso`.
 -/
 def isoFast : (Nat × Nat) ≃ᵢ Nat where
   toFun p := encodeFast p.1 p.2
