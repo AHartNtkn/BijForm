@@ -31,6 +31,10 @@ def shellStart : Nat → Nat
   | 0 => 0
   | s + 1 => shellStart s + shellSize s
 
+def shellGap : Nat → Nat → Nat
+  | _, 0 => 0
+  | s, k + 1 => shellSize s + shellGap (s + 1) k
+
 def shellPos (x y : Nat) : Nat :=
   let g := len x
   let h := len y
@@ -130,6 +134,49 @@ theorem block_recompose (x : Nat) :
   have h := (block_bounds x).1
   exact Nat.add_sub_of_le h
 
+theorem len_block {g r : Nat} (hr : r < pow2 g) :
+    len (blockStart g + r) = g := by
+  have hpos : 0 < pow2 g := pow2_pos g
+  have hsucc : blockStart g + r + 1 = pow2 g + r := by
+    unfold blockStart
+    omega
+  have hxpos : blockStart g + r + 1 ≠ 0 := by omega
+  have hupper : blockStart g + r + 1 < pow2 (g + 1) := by
+    rw [hsucc]
+    have hpow : pow2 (g + 1) = pow2 g + pow2 g := by
+      unfold pow2
+      rw [Nat.pow_succ]
+      omega
+    rw [hpow]
+    omega
+  have hlower : ¬blockStart g + r + 1 < pow2 g := by
+    rw [hsucc]
+    omega
+  have hlt_succ : len (blockStart g + r) < g + 1 := by
+    unfold len
+    exact (Nat.log2_lt hxpos).mpr hupper
+  have hnot_lt : ¬len (blockStart g + r) < g := by
+    intro hlt
+    have hsmall : blockStart g + r + 1 < pow2 g := by
+      unfold len at hlt
+      exact (Nat.log2_lt hxpos).mp hlt
+    exact hlower hsmall
+  exact Nat.eq_of_lt_succ_of_not_lt hlt_succ hnot_lt
+
+theorem div_pow2_lt_pow2_sub {s g q : Nat} (hg : g ≤ s) (hq : q < pow2 s) :
+    q / pow2 g < pow2 (s - g) := by
+  have hpow : pow2 (s - g) * pow2 g = pow2 s := by
+    unfold pow2
+    exact Nat.pow_sub_mul_pow 2 hg
+  exact (Nat.div_lt_iff_lt_mul (pow2_pos g)).mpr (by simpa [hpow] using hq)
+
+theorem div_pow2_le_shell {s p : Nat} (hp : p < shellSize s) :
+    p / pow2 s ≤ s := by
+  have hlt : p / pow2 s < s + 1 := by
+    exact (Nat.div_lt_iff_lt_mul (pow2_pos s)).mpr (by
+      simpa [shellSize] using hp)
+  exact Nat.le_of_lt_succ hlt
+
 theorem shellTail_lt (x y : Nat) :
     let g := len x
     let h := len y
@@ -181,6 +228,25 @@ theorem shellStart_succ (s : Nat) :
     shellStart (s + 1) = shellStart s + shellSize s := by
   rfl
 
+theorem shellStart_add (s k : Nat) :
+    shellStart (s + k) = shellStart s + shellGap s k := by
+  induction k generalizing s with
+  | zero =>
+      simp [shellGap]
+  | succ k ih =>
+      calc
+        shellStart (s + (k + 1)) = shellStart ((s + 1) + k) := by
+          congr 1
+          omega
+        _ = shellStart (s + 1) + shellGap (s + 1) k := ih (s + 1)
+        _ = shellStart s + shellGap s (k + 1) := by
+          simp [shellGap, shellStart_succ, Nat.add_assoc]
+
+theorem shellGap_zero (s : Nat) :
+    shellGap 0 s = shellStart s := by
+  have h := shellStart_add 0 s
+  simpa [shellStart] using h.symm
+
 theorem locateShellFromCore_sound (sn : Nat × Nat) :
     let sp := locateShellFromCore sn
     sp.2 < shellSize sp.1 := by
@@ -209,6 +275,33 @@ theorem shellStart_locateShellFromCore (sn : Nat × Nat) :
       have hsle : shellSize s ≤ n := Nat.le_of_not_gt h
       rw [shellStart_succ]
       omega
+
+theorem locateShellFromCore_gap (s k p : Nat) (hp : p < shellSize (s + k)) :
+    locateShellFromCore (s, shellGap s k + p) = (s + k, p) := by
+  induction k generalizing s with
+  | zero =>
+      have hp0 : p < shellSize s := by
+        simpa using hp
+      simp only [shellGap, Nat.add_zero]
+      rw [locateShellFromCore]
+      simp [hp0]
+  | succ k ih =>
+      have hnot :
+          ¬shellSize s + shellGap (s + 1) k + p < shellSize s := by
+        omega
+      simp only [shellGap]
+      rw [locateShellFromCore]
+      simp [hnot]
+      change locateShellFromCore
+          (s + 1, shellSize s + shellGap (s + 1) k + p - shellSize s)
+        = (s + (k + 1), p)
+      rw [show shellSize s + shellGap (s + 1) k + p - shellSize s
+          = shellGap (s + 1) k + p by omega]
+      have htarget : s + (k + 1) = (s + 1) + k := by
+        omega
+      have hp' : p < shellSize ((s + 1) + k) := by
+        simpa [htarget] using hp
+      simpa [htarget] using ih (s + 1) hp'
 
 theorem decodeInShell_encodeInShell (x y : Nat) :
     let g := len x
@@ -245,10 +338,16 @@ theorem decodeInShell_encodeInShell (x y : Nat) :
 
 theorem locateShell_encode (x y : Nat) :
     locateShell (encode x y) = (len x + len y, shellPos x y) := by
-  -- Pending proof work, tracked by BF-PAIRING-001: cumulative shell sizes place
-  -- the encoding in exactly the shell determined by the two binary-string
-  -- lengths.
-  sorry
+  let s := len x + len y
+  let p := shellPos x y
+  have hp : p < shellSize s := by
+    simpa [s, p] using shellPos_lt_shellSize x y
+  have hgap : shellGap 0 s = shellStart s := shellGap_zero s
+  unfold locateShell locateShellFrom encode
+  change locateShellFromCore (0, shellStart s + p) = (s, p)
+  rw [← hgap]
+  simpa [Nat.zero_add] using
+    locateShellFromCore_gap 0 s p (by simpa [Nat.zero_add] using hp)
 
 /-- The simplified pairing decoder is a left inverse of the encoder. -/
 theorem decode_encode (x y : Nat) : decode (encode x y) = (x, y) := by
@@ -258,9 +357,41 @@ theorem decode_encode (x y : Nat) : decode (encode x y) = (x, y) := by
 
 theorem encode_decodeInShell {s p : Nat} (hp : p < shellSize s) :
     encode (decodeInShell s p).1 (decodeInShell s p).2 = shellStart s + p := by
-  -- Pending proof work, tracked by BF-PAIRING-001: inverse arithmetic for group
-  -- index and residual bits.
-  sorry
+  let g := p / pow2 s
+  let q := p % pow2 s
+  let xp := q % pow2 g
+  let yp := q / pow2 g
+  let x := blockStart g + xp
+  let y := blockStart (s - g) + yp
+  have hg : g ≤ s := by
+    simpa [g] using div_pow2_le_shell (s := s) (p := p) hp
+  have hq : q < pow2 s := by
+    simpa [q] using Nat.mod_lt p (pow2_pos s)
+  have hxlt : xp < pow2 g := by
+    simpa [xp] using Nat.mod_lt q (pow2_pos g)
+  have hylt : yp < pow2 (s - g) := by
+    simpa [g, q, yp] using div_pow2_lt_pow2_sub (s := s) (g := g) (q := q) hg hq
+  have hlenx : len x = g := by
+    simpa [x, xp] using len_block (g := g) (r := xp) hxlt
+  have hleny : len y = s - g := by
+    simpa [y, yp] using len_block (g := s - g) (r := yp) hylt
+  have hsadd : g + (s - g) = s := Nat.add_sub_of_le hg
+  have hxsub : x - blockStart g = xp := by
+    simp [x]
+  have hysub : y - blockStart (s - g) = yp := by
+    simp [y]
+  have hqrec : yp * pow2 g + xp = q := by
+    calc
+      yp * pow2 g + xp = pow2 g * yp + xp := by rw [Nat.mul_comm yp (pow2 g)]
+      _ = q := by
+        simpa [yp, xp, q] using Nat.div_add_mod q (pow2 g)
+  have hprec : g * pow2 s + q = p := by
+    calc
+      g * pow2 s + q = pow2 s * g + q := by rw [Nat.mul_comm g (pow2 s)]
+      _ = p := by
+        simpa [g, q] using Nat.div_add_mod p (pow2 s)
+  simp [decodeInShell, encode, shellPos, g, q, xp, yp, x, y,
+    hlenx, hleny, hsadd, hxsub, hysub, hqrec, hprec, Nat.add_assoc]
 
 theorem shellStart_locateShell (n : Nat) :
     let sp := locateShell n

@@ -4,24 +4,6 @@ This ledger records open proof gaps and formalization boundary issues.  A
 tracked Lean declaration that depends on an entry here is blueprint or boundary
 evidence, not a completed formalization of the target claim.
 
-## BF-PAIRING-001: Global Shell Location And Reverse Arithmetic
-
-Status: open proof work.
-
-Scope: `BijForm.Pairing.locateShell_encode` and
-`BijForm.Pairing.encode_decodeInShell`.
-
-The simplified pairing function is implemented using the shell decomposition
-from the pairing-function post, and the fixed-shell decoder calculation is
-proved in `decodeInShell_encodeInShell`.  The remaining pairing proof work is
-to prove that global shell search locates `shellStart s + p` in shell `s`, and
-to prove that decoding an arbitrary valid shell position reconstructs numbers
-whose binary-string lengths and residuals re-encode to the same position.
-
-This is not a source defect in the blog post.  It is pending Lean arithmetic
-proof work around recursive shell search, `Nat.log2`, division, modulo, and
-truncated subtraction.
-
 ## BF-POLY-001: Initial-Algebra Hylomorphism Construction
 
 Status: open proof work.
