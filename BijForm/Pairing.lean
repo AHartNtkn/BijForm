@@ -31,6 +31,10 @@ def shellStart : Nat → Nat
   | 0 => 0
   | s + 1 => shellStart s + shellSize s
 
+def shellStartClosed : Nat → Nat
+  | 0 => 0
+  | s + 1 => s * pow2 (s + 1) + 1
+
 def shellGap : Nat → Nat → Nat
   | _, 0 => 0
   | s, k + 1 => shellSize s + shellGap (s + 1) k
@@ -46,6 +50,11 @@ def encode (x y : Nat) : Nat :=
   let g := len x
   let h := len y
   shellStart (g + h) + shellPos x y
+
+def encodeFast (x y : Nat) : Nat :=
+  let g := len x
+  let h := len y
+  shellStartClosed (g + h) + shellPos x y
 
 def locateShellFromCore : Nat × Nat → Nat × Nat
   | (s, n) =>
@@ -76,6 +85,29 @@ def decodeInShell (s p : Nat) : Nat × Nat :=
   let y := blockStart (s - g) + q / pow2 g
   (x, y)
 
+def bitLen : Nat → Nat
+  | 0 => 0
+  | n + 1 => Nat.log2 (n + 1) + 1
+
+def clwCore (n : Nat) : Nat :=
+  let r := bitLen n - 1
+  let w := r - bitLen r
+  if bitLen w + w = r then
+    w
+  else
+    w + 1
+
+def clw (n : Nat) : Nat :=
+  let w := clwCore n
+  if w * pow2 (w + 1) < n then
+    w + 1
+  else
+    w
+
+def decodeFast (n : Nat) : Nat × Nat :=
+  let s := clw n
+  decodeInShell s (n - shellStartClosed s)
+
 def decode (n : Nat) : Nat × Nat :=
   let sp := locateShell n
   decodeInShell sp.1 sp.2
@@ -83,6 +115,58 @@ def decode (n : Nat) : Nat × Nat :=
 theorem pow2_pos (n : Nat) : 0 < pow2 n := by
   unfold pow2
   exact Nat.two_pow_pos n
+
+theorem bitLen_mono {a b : Nat} (h : a ≤ b) : bitLen a ≤ bitLen b := by
+  cases a with
+  | zero =>
+      simp [bitLen]
+  | succ a =>
+      cases b with
+      | zero =>
+          omega
+      | succ b =>
+          unfold bitLen
+          apply Nat.succ_le_succ
+          have ha : a + 1 ≠ 0 := by omega
+          have hb : b + 1 ≠ 0 := by omega
+          exact (Nat.le_log2 hb).mpr (Nat.le_trans (Nat.log2_self_le ha) h)
+
+theorem lt_pow2_bitLen (n : Nat) : n < pow2 (bitLen n) := by
+  cases n with
+  | zero =>
+      simp [bitLen, pow2]
+  | succ n =>
+      unfold bitLen pow2
+      exact Nat.lt_log2_self
+
+theorem pow2_bitLen_pred_le {n : Nat} (hn : 0 < n) :
+    pow2 (bitLen n - 1) ≤ n := by
+  cases n with
+  | zero =>
+      omega
+  | succ n =>
+      unfold bitLen pow2
+      simpa using Nat.log2_self_le (n := n + 1) (by omega)
+
+theorem bitLen_le_self (n : Nat) : bitLen n ≤ n := by
+  cases n with
+  | zero =>
+      simp [bitLen]
+  | succ n =>
+      simp [bitLen]
+      have h : Nat.log2 (n + 1) < n + 1 := by
+        exact (Nat.log2_lt (by omega)).mpr Nat.lt_two_pow_self
+      omega
+
+theorem bitLen_le_of_lt_pow2 {n k : Nat} (h : n < pow2 k) :
+    bitLen n ≤ k := by
+  cases n with
+  | zero =>
+      simp [bitLen]
+  | succ n =>
+      unfold bitLen
+      apply Nat.succ_le_of_lt
+      exact (Nat.log2_lt (by omega)).mpr (by simpa [pow2] using h)
 
 theorem mul_add_mod_of_lt {k m r : Nat} (hr : r < k) :
     (m * k + r) % k = r := by
@@ -228,6 +312,24 @@ theorem shellStart_succ (s : Nat) :
     shellStart (s + 1) = shellStart s + shellSize s := by
   rfl
 
+theorem shellStartClosed_eq_shellStart (s : Nat) :
+    shellStartClosed s = shellStart s := by
+  induction s with
+  | zero =>
+      rfl
+  | succ s ih =>
+      rw [shellStart_succ, ← ih]
+      cases s with
+      | zero =>
+          simp [shellStartClosed, shellSize, pow2]
+      | succ s =>
+          simp [shellStartClosed, shellSize, pow2, Nat.pow_succ, Nat.mul_two,
+            Nat.two_mul, Nat.add_mul, Nat.mul_add, Nat.add_assoc, Nat.add_comm,
+            Nat.add_left_comm]
+
+theorem encodeFast_eq_encode (x y : Nat) : encodeFast x y = encode x y := by
+  simp [encodeFast, encode, shellStartClosed_eq_shellStart]
+
 theorem shellStart_add (s k : Nat) :
     shellStart (s + k) = shellStart s + shellGap s k := by
   induction k generalizing s with
@@ -302,6 +404,41 @@ theorem locateShellFromCore_gap (s k p : Nat) (hp : p < shellSize (s + k)) :
       have hp' : p < shellSize ((s + 1) + k) := by
         simpa [htarget] using hp
       simpa [htarget] using ih (s + 1) hp'
+
+theorem locateShell_of_bounds {s n : Nat}
+    (hl : shellStart s ≤ n) (hu : n < shellStart (s + 1)) :
+    locateShell n = (s, n - shellStart s) := by
+  let p := n - shellStart s
+  have hrec : shellStart s + p = n := by
+    exact Nat.add_sub_of_le hl
+  have hp : p < shellSize s := by
+    rw [shellStart_succ] at hu
+    omega
+  have hgap : shellGap 0 s = shellStart s := shellGap_zero s
+  unfold locateShell locateShellFrom
+  change locateShellFromCore (0, n) = (s, p)
+  rw [← hrec, ← hgap]
+  simpa [p, Nat.zero_add] using
+    locateShellFromCore_gap 0 s p (by simpa [Nat.zero_add] using hp)
+
+theorem decodeFast_eq_decode_of_clw_bounds (n : Nat)
+    (hl : shellStartClosed (clw n) ≤ n)
+    (hu : n < shellStartClosed (clw n + 1)) :
+    decodeFast n = decode n := by
+  have hloc : locateShell n = (clw n, n - shellStart (clw n)) := by
+    exact locateShell_of_bounds
+      (s := clw n) (n := n)
+      (by simpa [shellStartClosed_eq_shellStart] using hl)
+      (by simpa [shellStartClosed_eq_shellStart] using hu)
+  simp [decodeFast, decode, hloc, shellStartClosed_eq_shellStart]
+
+def ShellIndexBounds (shellOf : Nat → Nat) : Prop :=
+  ∀ n, shellStartClosed (shellOf n) ≤ n ∧
+    n < shellStartClosed (shellOf n + 1)
+
+theorem decodeFast_eq_decode (hclw : ShellIndexBounds clw) (n : Nat) :
+    decodeFast n = decode n :=
+  decodeFast_eq_decode_of_clw_bounds n (hclw n).1 (hclw n).2
 
 theorem decodeInShell_encodeInShell (x y : Nat) :
     let g := len x
@@ -411,6 +548,36 @@ theorem encode_decode (n : Nat) : encode (decode n).1 (decode n).2 = n := by
   have hoff : shellStart sp.1 + sp.2 = n := by
     simpa [hsp] using shellStart_locateShell n
   rw [encode_decodeInShell hs, hoff]
+
+/--
+The optimized executable pairing functions are a bijection once the closed
+shell-index function is shown to satisfy the shell bounds.  This keeps the
+remaining `clw` proof obligation explicit while allowing downstream code to use
+the faster formulas behind that single arithmetic condition.
+-/
+def isoFastOfBounds (hclw : ShellIndexBounds clw) : (Nat × Nat) ≃ᵢ Nat where
+  toFun p := encodeFast p.1 p.2
+  invFun := decodeFast
+  left_inv := by
+    intro p
+    cases p with
+    | mk x y =>
+        calc
+          decodeFast (encodeFast x y)
+              = decodeFast (encode x y) := by
+                  rw [encodeFast_eq_encode]
+          _ = decode (encode x y) := decodeFast_eq_decode hclw (encode x y)
+          _ = (x, y) := decode_encode x y
+  right_inv := by
+    intro n
+    have hd : decodeFast n = decode n := decodeFast_eq_decode hclw n
+    calc
+      encodeFast (decodeFast n).1 (decodeFast n).2
+          = encode (decodeFast n).1 (decodeFast n).2 := by
+              rw [encodeFast_eq_encode]
+      _ = encode (decode n).1 (decode n).2 := by
+              rw [hd]
+      _ = n := encode_decode n
 
 /-- The simplified pairing function from the blog, packaged as a bijection. -/
 def iso : (Nat × Nat) ≃ᵢ Nat where
