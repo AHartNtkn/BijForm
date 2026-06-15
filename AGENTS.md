@@ -40,6 +40,14 @@ placeholders as completed proof evidence.
 Never introduce or restore a blanket ban on committed `sorry` declarations.
 The invariant is honest unfinished status and non-completion claims, not the
 absence of all `sorry` scaffolding from tracked Lean source.
+When an intended theorem, definition, or formalization target is unfinished,
+state the intended claim directly and close the missing proof with a labeled
+`sorry`. Do not avoid `sorry` by adding hypotheses, parameters, typeclass
+arguments, conditional wrappers, weakened conclusions, or substitute theorem
+statements unless those assumptions are genuinely part of the intended claim.
+Such conditional declarations may exist only as explicitly diagnostic
+auxiliaries and must not be named, documented, exported, or reported as the
+unfinished target.
 Generic coding-agent placeholder rules, TDD templates, completion criteria,
 validation gates, source-audit habits, external skills, and similar workflow
 defaults must never be imported into Lean development as a no-`sorry` rule, an
@@ -137,6 +145,9 @@ or map status must make clear that it is not a completed proof. Do not introduce
 `admit`, `axiom`, unsafe proof substitutes, opaque proof placeholders, or hidden
 fallbacks.
 A `sorry` audit is a classification gate, not a blanket rejection gate.
+Absence of `sorry` is never completion evidence by itself; audits must also
+check for hidden unfinished work expressed as artificial hypotheses, weakened
+statements, conditional wrappers, or substitute targets.
 
 Before committing Lean or formalization-boundary text, audit tracked source for
 misleading status labels. Do not use hyphenated paper/index status wording in
