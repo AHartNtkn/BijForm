@@ -432,16 +432,39 @@ theorem decodeInShell_eq_decode_of_bounds {s n : Nat}
   simp [decode, hloc, shellStartClosed_eq_shellStart]
 
 /--
-Unfinished optimization proof: the closed `clw` formula must select exactly
-the shell containing `n`.
+Unfinished core arithmetic proof for the optimized shell locator: the first
+closed estimate is always within one shell of the true interval.
 -/
-theorem clw_shell_bounds (n : Nat) :
-    shellStartClosed (clw n) ≤ n ∧ n < shellStartClosed (clw n + 1) := by
+theorem clwCore_shell_window (n : Nat) :
+    let w := clwCore n
+    shellStartClosed w ≤ n ∧ n < shellStartClosed (w + 2) := by
   sorry
 
 /--
+The closed `clw` formula selects exactly the shell containing `n`, assuming
+the core closed estimate is within one shell.
+-/
+theorem clw_shell_bounds (n : Nat) :
+    shellStartClosed (clw n) ≤ n ∧ n < shellStartClosed (clw n + 1) := by
+  have hw :
+      shellStartClosed (clwCore n) ≤ n ∧
+        n < shellStartClosed (clwCore n + 2) := by
+    simpa using clwCore_shell_window n
+  unfold clw
+  by_cases h : clwCore n * pow2 (clwCore n + 1) < n
+  · simp [h]
+    constructor
+    · simpa [shellStartClosed] using Nat.succ_le_of_lt h
+    · simpa [Nat.add_assoc] using hw.2
+  · simp [h]
+    constructor
+    · exact hw.1
+    · have hle : n ≤ clwCore n * pow2 (clwCore n + 1) := Nat.le_of_not_gt h
+      simpa [shellStartClosed] using Nat.lt_succ_of_le hle
+
+/--
 The non-recursive decoder agrees with the proved shell-scan decoder, once the
-open arithmetic shell-bound proof for `clw` is supplied.
+open core arithmetic proof for `clwCore` is supplied.
 -/
 theorem decodeFast_eq_decode (n : Nat) : decodeFast n = decode n := by
   unfold decodeFast
@@ -663,7 +686,8 @@ theorem encode_decode (n : Nat) : encode (decode n).1 (decode n).2 = n := by
 
 /--
 The executable closed-form encoder and decoder form the same bijection as
-`iso`, modulo the remaining open arithmetic proof `clw_shell_bounds`.
+`iso`, modulo the remaining open core arithmetic proof
+`clwCore_shell_window`.
 -/
 def isoFast : (Nat × Nat) ≃ᵢ Nat where
   toFun p := encodeFast p.1 p.2
