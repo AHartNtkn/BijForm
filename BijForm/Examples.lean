@@ -184,80 +184,88 @@ def rank : ∀ {i : SortedIx}, SortedSyntax i → Nat
 
 end SortedSyntax
 
-def SortedObjToSyntax (i : SortedIx) : Obj SortedPoly SortedSyntax i → SortedSyntax i
-  | ⟨.leaf, _p, _h, _child⟩ =>
+def SortedLayerToSyntax (i : SortedIx) :
+    CodeLayer SortedPoly SortedInversion SortedSyntax i → SortedSyntax i
+  | ⟨.leaf, _child⟩ =>
       .leaf
-  | ⟨.branch, p, h, child⟩ =>
-      h ▸ (.branch p.2 (child false) (child true))
+  | ⟨.branch pivot, child⟩ =>
+      .branch pivot (child false) (child true)
 
-def SortedSyntaxToObj (i : SortedIx) : SortedSyntax i → Obj SortedPoly SortedSyntax i
-  | .leaf => ⟨.leaf, i, rfl, fun q => nomatch q⟩
+def SortedSyntaxToLayer (i : SortedIx) :
+    SortedSyntax i → CodeLayer SortedPoly SortedInversion SortedSyntax i
+  | .leaf =>
+      ⟨.leaf, fun q => nomatch q⟩
   | .branch pivot lhs rhs =>
-      ⟨.branch, ⟨i, pivot⟩, rfl, fun
+      ⟨.branch pivot, fun
         | false => lhs
         | true => rhs⟩
 
-theorem SortedObj_left_inv (i : SortedIx) :
-    Function.LeftInverse (SortedSyntaxToObj i) (SortedObjToSyntax i) := by
+theorem SortedLayer_left_inv (i : SortedIx) :
+    Function.LeftInverse (SortedSyntaxToLayer i) (SortedLayerToSyntax i) := by
   intro layer
   cases layer with
-  | mk ctor param out_eq child =>
-    cases ctor with
+  | mk code child =>
+    cases code with
     | leaf =>
-        cases out_eq
         have hchild : (fun q => nomatch q) = child := by
           funext q
           cases q
         cases hchild
         rfl
-    | branch =>
-        cases param with
-        | mk i' pivot =>
-          cases out_eq
-          have hchild : child = (fun
-              | false => child false
-              | true => child true) := by
-            funext q
-            cases q <;> rfl
-          rw [hchild]
-          rfl
+    | branch pivot =>
+        have hchild : child = (fun
+            | false => child false
+            | true => child true) := by
+          funext q
+          cases q <;> rfl
+        rw [hchild]
+        rfl
 
-theorem SortedObj_right_inv (i : SortedIx) :
-    Function.RightInverse (SortedSyntaxToObj i) (SortedObjToSyntax i) := by
+theorem SortedLayer_right_inv (i : SortedIx) :
+    Function.RightInverse (SortedSyntaxToLayer i) (SortedLayerToSyntax i) := by
   intro t
   cases t with
   | leaf => rfl
   | branch pivot lhs rhs => rfl
 
-def SortedObjIso (i : SortedIx) : Obj SortedPoly SortedSyntax i ≃ᵢ SortedSyntax i where
-  toFun := SortedObjToSyntax i
-  invFun := SortedSyntaxToObj i
-  left_inv := SortedObj_left_inv i
-  right_inv := SortedObj_right_inv i
+def SortedLayerIso (i : SortedIx) :
+    CodeLayer SortedPoly SortedInversion SortedSyntax i ≃ᵢ SortedSyntax i where
+  toFun := SortedLayerToSyntax i
+  invFun := SortedSyntaxToLayer i
+  left_inv := SortedLayer_left_inv i
+  right_inv := SortedLayer_right_inv i
 
-theorem Sorted_child_rank_lt :
+theorem Sorted_layer_child_rank_lt :
     ∀ {i : SortedIx} (z : SortedSyntax i)
-      (q : SortedPoly.Pos ((SortedObjIso i).invFun z).ctor ((SortedObjIso i).invFun z).param),
-      SortedSyntax.rank (((SortedObjIso i).invFun z).child q) < SortedSyntax.rank z := by
+      (q : SortedPoly.Pos
+          (SortedInversion.decode i ((SortedLayerIso i).invFun z).1).ctor
+          (SortedInversion.decode i ((SortedLayerIso i).invFun z).1).param),
+      SortedSyntax.rank (((SortedLayerIso i).invFun z).2 q) < SortedSyntax.rank z := by
   intro i z q
   cases z with
   | leaf => cases q
   | branch pivot lhs rhs =>
       cases q
-      · simpa [SortedObjIso, SortedSyntaxToObj, SortedSyntax.rank] using
+      · simpa [SortedLayerIso, SortedSyntaxToLayer, SortedInversion, SortedDecode,
+          SortedSyntax.rank] using
           Nat.lt_succ_of_le (Nat.le_max_left (SortedSyntax.rank lhs) (SortedSyntax.rank rhs))
-      · simpa [SortedObjIso, SortedSyntaxToObj, SortedSyntax.rank] using
+      · simpa [SortedLayerIso, SortedSyntaxToLayer, SortedInversion, SortedDecode,
+          SortedSyntax.rank] using
           Nat.lt_succ_of_le (Nat.le_max_right (SortedSyntax.rank lhs) (SortedSyntax.rank rhs))
 
-def SortedWellFoundedCode : WellFoundedCode SortedPoly SortedSyntax where
-  step := SortedObjIso
+def SortedGeneratedLayerCode : GeneratedLayerCode SortedPoly SortedSyntax where
+  inversion := SortedInversion
+  layer := SortedLayerIso
   rank := fun _ t => SortedSyntax.rank t
-  child_rank_lt := Sorted_child_rank_lt
+  child_rank_lt := Sorted_layer_child_rank_lt
+
+def SortedWellFoundedCode : WellFoundedCode SortedPoly SortedSyntax :=
+  SortedGeneratedLayerCode.toWellFoundedCode
 
 /-- Sorted trees as the generic initial algebra are bijective with readable
-syntax.  The branch children are indexed by the pivot-adjusted bounds. -/
+syntax through generated layer coding. -/
 def SortedSyntaxIso (i : SortedIx) : Mu SortedPoly i ≃ᵢ SortedSyntax i :=
-  initialAlgebraCoding SortedPoly SortedSyntax SortedWellFoundedCode i
+  SortedGeneratedLayerCode.iso i
 
 /-- The fiber of branch constructors at height zero is empty. -/
 theorem no_zero_height_branch (f : Fiber HBTPoly 0) (hctor : f.ctor = .branch) :
@@ -492,49 +500,46 @@ def rank : ∀ {k : Nat}, NumSyntax k → Nat
 
 end NumSyntax
 
-def NumObjToSyntax (k : Nat) : Obj NumPoly NumSyntax k → NumSyntax k
-  | ⟨.var, p, h, _child⟩ =>
-      .var (h ▸ p.2)
-  | ⟨.zero, _, _h, _child⟩ =>
+def NumLayerToSyntax (k : Nat) :
+    CodeLayer NumPoly NumInversion NumSyntax k → NumSyntax k
+  | ⟨.var v, _child⟩ =>
+      .var v
+  | ⟨.zero, _child⟩ =>
       .zero
-  | ⟨.succ, _p, h, child⟩ =>
-      .succ (h ▸ child ())
-  | ⟨.plus, _p, h, child⟩ =>
-      .plus (h ▸ child false) (h ▸ child true)
-  | ⟨.times, _p, h, child⟩ =>
-      .times (h ▸ child false) (h ▸ child true)
+  | ⟨.succ, child⟩ =>
+      .succ (child ())
+  | ⟨.plus, child⟩ =>
+      .plus (child false) (child true)
+  | ⟨.times, child⟩ =>
+      .times (child false) (child true)
 
-def NumSyntaxToObj (k : Nat) : NumSyntax k → Obj NumPoly NumSyntax k
-  | .var v => ⟨.var, ⟨k, v⟩, rfl, fun q => nomatch q⟩
-  | .zero => ⟨.zero, k, rfl, fun q => nomatch q⟩
-  | .succ e => ⟨.succ, k, rfl, fun _ => e⟩
-  | .plus lhs rhs => ⟨.plus, k, rfl, fun (b : Bool) => if b then rhs else lhs⟩
-  | .times lhs rhs => ⟨.times, k, rfl, fun (b : Bool) => if b then rhs else lhs⟩
+def NumSyntaxToLayer (k : Nat) :
+    NumSyntax k → CodeLayer NumPoly NumInversion NumSyntax k
+  | .var v => ⟨.var v, fun q => nomatch q⟩
+  | .zero => ⟨.zero, fun q => nomatch q⟩
+  | .succ e => ⟨.succ, fun _ => e⟩
+  | .plus lhs rhs => ⟨.plus, fun (b : Bool) => if b then rhs else lhs⟩
+  | .times lhs rhs => ⟨.times, fun (b : Bool) => if b then rhs else lhs⟩
 
-theorem NumObj_left_inv (k : Nat) :
-    Function.LeftInverse (NumSyntaxToObj k) (NumObjToSyntax k) := by
+theorem NumLayer_left_inv (k : Nat) :
+    Function.LeftInverse (NumSyntaxToLayer k) (NumLayerToSyntax k) := by
   intro layer
   cases layer with
-  | mk ctor param out_eq child =>
-    cases ctor with
-      | var =>
-          cases param with
-          | mk k' v =>
-            cases out_eq
-            have hchild : (fun q => nomatch q) = child := by
-              funext q
-              cases q
-            cases hchild
-            rfl
+  | mk code child =>
+    cases code with
+      | var v =>
+          have hchild : (fun q => nomatch q) = child := by
+            funext q
+            cases q
+          cases hchild
+          rfl
       | zero =>
-          cases out_eq
           have hchild : (fun q => nomatch q) = child := by
             funext q
             cases q
           cases hchild
           rfl
       | succ =>
-          cases out_eq
           have hchild : (fun _ => child ()) = child := by
             funext q
             cases q
@@ -542,64 +547,73 @@ theorem NumObj_left_inv (k : Nat) :
           cases hchild
           rfl
       | plus =>
-          cases out_eq
           have hchild : child = (fun (b : Bool) => if b then child true else child false) := by
             funext q
             cases q <;> rfl
           rw [hchild]
           rfl
       | times =>
-          cases out_eq
           have hchild : child = (fun (b : Bool) => if b then child true else child false) := by
             funext q
             cases q <;> rfl
           rw [hchild]
           rfl
 
-theorem NumObj_right_inv (k : Nat) :
-    Function.RightInverse (NumSyntaxToObj k) (NumObjToSyntax k) := by
+theorem NumLayer_right_inv (k : Nat) :
+    Function.RightInverse (NumSyntaxToLayer k) (NumLayerToSyntax k) := by
   intro e
-  cases e <;> simp [NumObjToSyntax, NumSyntaxToObj]
+  cases e <;> simp [NumLayerToSyntax, NumSyntaxToLayer]
 
-def NumObjIso (k : Nat) : Obj NumPoly NumSyntax k ≃ᵢ NumSyntax k where
-  toFun := NumObjToSyntax k
-  invFun := NumSyntaxToObj k
-  left_inv := NumObj_left_inv k
-  right_inv := NumObj_right_inv k
+def NumLayerIso (k : Nat) :
+    CodeLayer NumPoly NumInversion NumSyntax k ≃ᵢ NumSyntax k where
+  toFun := NumLayerToSyntax k
+  invFun := NumSyntaxToLayer k
+  left_inv := NumLayer_left_inv k
+  right_inv := NumLayer_right_inv k
 
-theorem Num_child_rank_lt :
+theorem Num_layer_child_rank_lt :
     ∀ {k : Nat} (z : NumSyntax k)
-      (q : NumPoly.Pos ((NumObjIso k).invFun z).ctor ((NumObjIso k).invFun z).param),
-      NumSyntax.rank (((NumObjIso k).invFun z).child q) < NumSyntax.rank z := by
+      (q : NumPoly.Pos
+          (NumInversion.decode k ((NumLayerIso k).invFun z).1).ctor
+          (NumInversion.decode k ((NumLayerIso k).invFun z).1).param),
+      NumSyntax.rank (((NumLayerIso k).invFun z).2 q) < NumSyntax.rank z := by
   intro k z q
   cases z with
   | var v => cases q
   | zero => cases q
   | succ e =>
       cases q
-      simp [NumObjIso, NumSyntaxToObj, NumSyntax.rank]
+      simp [NumLayerIso, NumSyntaxToLayer, NumInversion, NumDecode, NumSyntax.rank]
   | plus lhs rhs =>
       cases q
-      · simpa [NumObjIso, NumSyntaxToObj, NumSyntax.rank] using
+      · simpa [NumLayerIso, NumSyntaxToLayer, NumInversion, NumDecode,
+          NumSyntax.rank] using
           Nat.lt_succ_of_le (Nat.le_max_left (NumSyntax.rank lhs) (NumSyntax.rank rhs))
-      · simpa [NumObjIso, NumSyntaxToObj, NumSyntax.rank] using
+      · simpa [NumLayerIso, NumSyntaxToLayer, NumInversion, NumDecode,
+          NumSyntax.rank] using
           Nat.lt_succ_of_le (Nat.le_max_right (NumSyntax.rank lhs) (NumSyntax.rank rhs))
   | times lhs rhs =>
       cases q
-      · simpa [NumObjIso, NumSyntaxToObj, NumSyntax.rank] using
+      · simpa [NumLayerIso, NumSyntaxToLayer, NumInversion, NumDecode,
+          NumSyntax.rank] using
           Nat.lt_succ_of_le (Nat.le_max_left (NumSyntax.rank lhs) (NumSyntax.rank rhs))
-      · simpa [NumObjIso, NumSyntaxToObj, NumSyntax.rank] using
+      · simpa [NumLayerIso, NumSyntaxToLayer, NumInversion, NumDecode,
+          NumSyntax.rank] using
           Nat.lt_succ_of_le (Nat.le_max_right (NumSyntax.rank lhs) (NumSyntax.rank rhs))
 
-def NumWellFoundedCode : WellFoundedCode NumPoly NumSyntax where
-  step := NumObjIso
+def NumGeneratedLayerCode : GeneratedLayerCode NumPoly NumSyntax where
+  inversion := NumInversion
+  layer := NumLayerIso
   rank := fun _ e => NumSyntax.rank e
-  child_rank_lt := Num_child_rank_lt
+  child_rank_lt := Num_layer_child_rank_lt
+
+def NumWellFoundedCode : WellFoundedCode NumPoly NumSyntax :=
+  NumGeneratedLayerCode.toWellFoundedCode
 
 /-- Numeric expressions as the generic initial algebra are bijective with the
-readable recursive syntax family. -/
+readable recursive syntax family through generated layer coding. -/
 def NumSyntaxIso (k : Nat) : Mu NumPoly k ≃ᵢ NumSyntax k :=
-  initialAlgebraCoding NumPoly NumSyntax NumWellFoundedCode k
+  NumGeneratedLayerCode.iso k
 
 /-- Constructors for Peano formulas indexed by context size. -/
 inductive PeanoCtor where
@@ -713,41 +727,37 @@ def rank : ∀ {k : Nat}, PeanoSyntax k → Nat
 
 end PeanoSyntax
 
-def PeanoObjToSyntax (k : Nat) : Obj PeanoPoly PeanoSyntax k → PeanoSyntax k
-  | ⟨.eq, p, h, _child⟩ =>
-      .eq (h ▸ p.2.1) (h ▸ p.2.2)
-  | ⟨.not, _p, h, child⟩ =>
-      .not (h ▸ child ())
-  | ⟨.implies, _p, h, child⟩ =>
-      .implies (h ▸ child false) (h ▸ child true)
-  | ⟨.forallE, _p, h, child⟩ =>
-      h ▸ (.forallE (child ()))
+def PeanoLayerToSyntax (k : Nat) :
+    CodeLayer PeanoPoly PeanoInversion PeanoSyntax k → PeanoSyntax k
+  | ⟨.eq lhs rhs, _child⟩ =>
+      .eq lhs rhs
+  | ⟨.not, child⟩ =>
+      .not (child ())
+  | ⟨.implies, child⟩ =>
+      .implies (child false) (child true)
+  | ⟨.forallE, child⟩ =>
+      .forallE (child ())
 
-def PeanoSyntaxToObj (k : Nat) : PeanoSyntax k → Obj PeanoPoly PeanoSyntax k
-  | .eq lhs rhs => ⟨.eq, ⟨k, (lhs, rhs)⟩, rfl, fun q => nomatch q⟩
-  | .not e => ⟨.not, k, rfl, fun _ => e⟩
-  | .implies lhs rhs => ⟨.implies, k, rfl, fun (b : Bool) => if b then rhs else lhs⟩
-  | .forallE e => ⟨.forallE, k, rfl, fun _ => e⟩
+def PeanoSyntaxToLayer (k : Nat) :
+    PeanoSyntax k → CodeLayer PeanoPoly PeanoInversion PeanoSyntax k
+  | .eq lhs rhs => ⟨.eq lhs rhs, fun q => nomatch q⟩
+  | .not e => ⟨.not, fun _ => e⟩
+  | .implies lhs rhs => ⟨.implies, fun (b : Bool) => if b then rhs else lhs⟩
+  | .forallE e => ⟨.forallE, fun _ => e⟩
 
-theorem PeanoObj_left_inv (k : Nat) :
-    Function.LeftInverse (PeanoSyntaxToObj k) (PeanoObjToSyntax k) := by
+theorem PeanoLayer_left_inv (k : Nat) :
+    Function.LeftInverse (PeanoSyntaxToLayer k) (PeanoLayerToSyntax k) := by
   intro layer
   cases layer with
-  | mk ctor param out_eq child =>
-    cases ctor with
-    | eq =>
-        cases param with
-        | mk k' pair =>
-          cases pair with
-          | mk lhs rhs =>
-            cases out_eq
-            have hchild : (fun q => nomatch q) = child := by
-              funext q
-              cases q
-            cases hchild
-            rfl
+  | mk code child =>
+    cases code with
+    | eq lhs rhs =>
+        have hchild : (fun q => nomatch q) = child := by
+          funext q
+          cases q
+        cases hchild
+        rfl
     | not =>
-        cases out_eq
         have hchild : (fun _ => child ()) = child := by
           funext q
           cases q
@@ -755,14 +765,12 @@ theorem PeanoObj_left_inv (k : Nat) :
         cases hchild
         rfl
     | implies =>
-        cases out_eq
         have hchild : child = (fun (b : Bool) => if b then child true else child false) := by
           funext q
           cases q <;> rfl
         rw [hchild]
         rfl
     | forallE =>
-        cases out_eq
         have hchild : (fun _ => child ()) = child := by
           funext q
           cases q
@@ -770,46 +778,58 @@ theorem PeanoObj_left_inv (k : Nat) :
         cases hchild
         rfl
 
-theorem PeanoObj_right_inv (k : Nat) :
-    Function.RightInverse (PeanoSyntaxToObj k) (PeanoObjToSyntax k) := by
+theorem PeanoLayer_right_inv (k : Nat) :
+    Function.RightInverse (PeanoSyntaxToLayer k) (PeanoLayerToSyntax k) := by
   intro e
-  cases e <;> simp [PeanoObjToSyntax, PeanoSyntaxToObj]
+  cases e <;> simp [PeanoLayerToSyntax, PeanoSyntaxToLayer]
 
-def PeanoObjIso (k : Nat) : Obj PeanoPoly PeanoSyntax k ≃ᵢ PeanoSyntax k where
-  toFun := PeanoObjToSyntax k
-  invFun := PeanoSyntaxToObj k
-  left_inv := PeanoObj_left_inv k
-  right_inv := PeanoObj_right_inv k
+def PeanoLayerIso (k : Nat) :
+    CodeLayer PeanoPoly PeanoInversion PeanoSyntax k ≃ᵢ PeanoSyntax k where
+  toFun := PeanoLayerToSyntax k
+  invFun := PeanoSyntaxToLayer k
+  left_inv := PeanoLayer_left_inv k
+  right_inv := PeanoLayer_right_inv k
 
-theorem Peano_child_rank_lt :
+theorem Peano_layer_child_rank_lt :
     ∀ {k : Nat} (z : PeanoSyntax k)
-      (q : PeanoPoly.Pos ((PeanoObjIso k).invFun z).ctor ((PeanoObjIso k).invFun z).param),
-      PeanoSyntax.rank (((PeanoObjIso k).invFun z).child q) < PeanoSyntax.rank z := by
+      (q : PeanoPoly.Pos
+          (PeanoInversion.decode k ((PeanoLayerIso k).invFun z).1).ctor
+          (PeanoInversion.decode k ((PeanoLayerIso k).invFun z).1).param),
+      PeanoSyntax.rank (((PeanoLayerIso k).invFun z).2 q) < PeanoSyntax.rank z := by
   intro k z q
   cases z with
   | eq lhs rhs => cases q
   | not e =>
       cases q
-      simp [PeanoObjIso, PeanoSyntaxToObj, PeanoSyntax.rank]
+      simp [PeanoLayerIso, PeanoSyntaxToLayer, PeanoInversion, PeanoDecode,
+        PeanoSyntax.rank]
   | implies lhs rhs =>
       cases q
-      · simpa [PeanoObjIso, PeanoSyntaxToObj, PeanoSyntax.rank] using
+      · simpa [PeanoLayerIso, PeanoSyntaxToLayer, PeanoInversion, PeanoDecode,
+          PeanoSyntax.rank] using
           Nat.lt_succ_of_le (Nat.le_max_left (PeanoSyntax.rank lhs) (PeanoSyntax.rank rhs))
-      · simpa [PeanoObjIso, PeanoSyntaxToObj, PeanoSyntax.rank] using
+      · simpa [PeanoLayerIso, PeanoSyntaxToLayer, PeanoInversion, PeanoDecode,
+          PeanoSyntax.rank] using
           Nat.lt_succ_of_le (Nat.le_max_right (PeanoSyntax.rank lhs) (PeanoSyntax.rank rhs))
   | forallE e =>
       cases q
-      simp [PeanoObjIso, PeanoSyntaxToObj, PeanoSyntax.rank]
+      simp [PeanoLayerIso, PeanoSyntaxToLayer, PeanoInversion, PeanoDecode,
+        PeanoSyntax.rank]
 
-def PeanoWellFoundedCode : WellFoundedCode PeanoPoly PeanoSyntax where
-  step := PeanoObjIso
+def PeanoGeneratedLayerCode : GeneratedLayerCode PeanoPoly PeanoSyntax where
+  inversion := PeanoInversion
+  layer := PeanoLayerIso
   rank := fun _ e => PeanoSyntax.rank e
-  child_rank_lt := Peano_child_rank_lt
+  child_rank_lt := Peano_layer_child_rank_lt
+
+def PeanoWellFoundedCode : WellFoundedCode PeanoPoly PeanoSyntax :=
+  PeanoGeneratedLayerCode.toWellFoundedCode
 
 /-- Peano formulas as the generic initial algebra are bijective with readable
-syntax, including the `forall` branch whose child is in context `k + 1`. -/
+syntax through generated layer coding, including the `forall` branch whose
+child is in context `k + 1`. -/
 def PeanoSyntaxIso (k : Nat) : Mu PeanoPoly k ≃ᵢ PeanoSyntax k :=
-  initialAlgebraCoding PeanoPoly PeanoSyntax PeanoWellFoundedCode k
+  PeanoGeneratedLayerCode.iso k
 
 end Examples
 end BijForm
