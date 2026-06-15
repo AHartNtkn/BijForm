@@ -132,13 +132,13 @@ by one-step decoding has smaller rank than the code being decoded.
 structure WellFoundedCode
     (P : DepPoly ι)
     (Code : ι → Type u) where
-  step : ∀ i, Layer P Code i ≃ᵢ Code i
+  step : ∀ i, Obj P Code i ≃ᵢ Code i
   rank : ∀ i, Code i → Nat
   child_rank_lt :
     ∀ {i : ι} (z : Code i)
-      (q : P.Pos ((step i).invFun z).1.ctor ((step i).invFun z).1.param),
-      rank (P.input ((step i).invFun z).1.param q)
-          (((step i).invFun z).2 q) < rank i z
+      (q : P.Pos ((step i).invFun z).ctor ((step i).invFun z).param),
+      rank (P.input ((step i).invFun z).param q)
+          (((step i).invFun z).child q) < rank i z
 
 namespace WellFoundedCode
 
@@ -147,14 +147,13 @@ variable {P : DepPoly ι} {Code : ι → Type u}
 def encode (C : WellFoundedCode P Code) : ∀ i, Mu P i → Code i
   | i, Mu.sup c p h child =>
       (C.step i).toFun
-        ⟨⟨c, p, h⟩, fun q => encode C (P.input p q) (child q)⟩
+        ⟨c, p, h, fun q => encode C (P.input p q) (child q)⟩
 
 def decode (C : WellFoundedCode P Code) : ∀ i, Code i → Mu P i
   | i, z =>
       let layer := (C.step i).invFun z
-      let f := layer.1
-      Mu.sup f.ctor f.param f.out_eq
-        (fun q => decode C (P.input f.param q) (layer.2 q))
+      Mu.sup layer.ctor layer.param layer.out_eq
+        (fun q => decode C (P.input layer.param q) (layer.child q))
 termination_by i z => C.rank i z
 decreasing_by
   exact C.child_rank_lt z q
@@ -162,8 +161,8 @@ decreasing_by
 theorem decode_encode (C : WellFoundedCode P Code) :
     ∀ i (x : Mu P i), decode C i (encode C i x) = x
   | i, Mu.sup c p h child => by
-      let layer : Layer P Code i :=
-        ⟨⟨c, p, h⟩, fun q => encode C (P.input p q) (child q)⟩
+      let layer : Obj P Code i :=
+        ⟨c, p, h, fun q => encode C (P.input p q) (child q)⟩
       have hleft : (C.step i).invFun ((C.step i).toFun layer) = layer :=
         (C.step i).left_inv layer
       have ih :
@@ -180,18 +179,19 @@ theorem encode_decode (C : WellFoundedCode P Code) :
     ∀ i (z : Code i), encode C i (decode C i z) = z
   | i, z => by
       let layer := (C.step i).invFun z
-      let f := layer.1
       have ih :
-          (fun q => encode C (P.input f.param q) (decode C (P.input f.param q) (layer.2 q)))
-            = layer.2 := by
+          (fun q => encode C (P.input layer.param q)
+            (decode C (P.input layer.param q) (layer.child q)))
+            = layer.child := by
         funext q
-        exact encode_decode C (P.input f.param q) (layer.2 q)
+        exact encode_decode C (P.input layer.param q) (layer.child q)
       have hstep : (C.step i).toFun layer = z := (C.step i).right_inv z
       rw [decode]
       rw [encode]
       change (C.step i).toFun
-          ⟨f, fun q =>
-            encode C (P.input f.param q) (decode C (P.input f.param q) (layer.2 q))⟩ = z
+          ⟨layer.ctor, layer.param, layer.out_eq, fun q =>
+            encode C (P.input layer.param q)
+              (decode C (P.input layer.param q) (layer.child q))⟩ = z
       rw [ih]
       exact hstep
 termination_by i z => C.rank i z

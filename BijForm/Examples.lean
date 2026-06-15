@@ -287,6 +287,134 @@ def NumInversion : OutputIndexInversion NumPoly where
   decode_encode := Num_decode_encode
   encode_decode := Num_encode_decode
 
+/-- Readable syntax family for numeric expressions. -/
+inductive NumSyntax : Nat → Type
+  | var {k : Nat} (v : Fin (k + 1)) : NumSyntax k
+  | zero {k : Nat} : NumSyntax k
+  | succ {k : Nat} : NumSyntax k → NumSyntax k
+  | plus {k : Nat} : NumSyntax k → NumSyntax k → NumSyntax k
+  | times {k : Nat} : NumSyntax k → NumSyntax k → NumSyntax k
+
+namespace NumSyntax
+
+def rank : ∀ {k : Nat}, NumSyntax k → Nat
+  | _, var _ => 0
+  | _, zero => 0
+  | _, succ e => rank e + 1
+  | _, plus lhs rhs => Nat.max (rank lhs) (rank rhs) + 1
+  | _, times lhs rhs => Nat.max (rank lhs) (rank rhs) + 1
+
+end NumSyntax
+
+def NumObjToSyntax (k : Nat) : Obj NumPoly NumSyntax k → NumSyntax k
+  | ⟨.var, p, h, _child⟩ =>
+      .var (h ▸ p.2)
+  | ⟨.zero, _, _h, _child⟩ =>
+      .zero
+  | ⟨.succ, _p, h, child⟩ =>
+      .succ (h ▸ child ())
+  | ⟨.plus, _p, h, child⟩ =>
+      .plus (h ▸ child false) (h ▸ child true)
+  | ⟨.times, _p, h, child⟩ =>
+      .times (h ▸ child false) (h ▸ child true)
+
+def NumSyntaxToObj (k : Nat) : NumSyntax k → Obj NumPoly NumSyntax k
+  | .var v => ⟨.var, ⟨k, v⟩, rfl, fun q => nomatch q⟩
+  | .zero => ⟨.zero, k, rfl, fun q => nomatch q⟩
+  | .succ e => ⟨.succ, k, rfl, fun _ => e⟩
+  | .plus lhs rhs => ⟨.plus, k, rfl, fun (b : Bool) => if b then rhs else lhs⟩
+  | .times lhs rhs => ⟨.times, k, rfl, fun (b : Bool) => if b then rhs else lhs⟩
+
+theorem NumObj_left_inv (k : Nat) :
+    Function.LeftInverse (NumSyntaxToObj k) (NumObjToSyntax k) := by
+  intro layer
+  cases layer with
+  | mk ctor param out_eq child =>
+    cases ctor with
+      | var =>
+          cases param with
+          | mk k' v =>
+            cases out_eq
+            have hchild : (fun q => nomatch q) = child := by
+              funext q
+              cases q
+            cases hchild
+            rfl
+      | zero =>
+          cases out_eq
+          have hchild : (fun q => nomatch q) = child := by
+            funext q
+            cases q
+          cases hchild
+          rfl
+      | succ =>
+          cases out_eq
+          have hchild : (fun _ => child ()) = child := by
+            funext q
+            cases q
+            rfl
+          cases hchild
+          rfl
+      | plus =>
+          cases out_eq
+          have hchild : child = (fun (b : Bool) => if b then child true else child false) := by
+            funext q
+            cases q <;> rfl
+          rw [hchild]
+          rfl
+      | times =>
+          cases out_eq
+          have hchild : child = (fun (b : Bool) => if b then child true else child false) := by
+            funext q
+            cases q <;> rfl
+          rw [hchild]
+          rfl
+
+theorem NumObj_right_inv (k : Nat) :
+    Function.RightInverse (NumSyntaxToObj k) (NumObjToSyntax k) := by
+  intro e
+  cases e <;> simp [NumObjToSyntax, NumSyntaxToObj]
+
+def NumObjIso (k : Nat) : Obj NumPoly NumSyntax k ≃ᵢ NumSyntax k where
+  toFun := NumObjToSyntax k
+  invFun := NumSyntaxToObj k
+  left_inv := NumObj_left_inv k
+  right_inv := NumObj_right_inv k
+
+theorem Num_child_rank_lt :
+    ∀ {k : Nat} (z : NumSyntax k)
+      (q : NumPoly.Pos ((NumObjIso k).invFun z).ctor ((NumObjIso k).invFun z).param),
+      NumSyntax.rank (((NumObjIso k).invFun z).child q) < NumSyntax.rank z := by
+  intro k z q
+  cases z with
+  | var v => cases q
+  | zero => cases q
+  | succ e =>
+      cases q
+      simp [NumObjIso, NumSyntaxToObj, NumSyntax.rank]
+  | plus lhs rhs =>
+      cases q
+      · simpa [NumObjIso, NumSyntaxToObj, NumSyntax.rank] using
+          Nat.lt_succ_of_le (Nat.le_max_left (NumSyntax.rank lhs) (NumSyntax.rank rhs))
+      · simpa [NumObjIso, NumSyntaxToObj, NumSyntax.rank] using
+          Nat.lt_succ_of_le (Nat.le_max_right (NumSyntax.rank lhs) (NumSyntax.rank rhs))
+  | times lhs rhs =>
+      cases q
+      · simpa [NumObjIso, NumSyntaxToObj, NumSyntax.rank] using
+          Nat.lt_succ_of_le (Nat.le_max_left (NumSyntax.rank lhs) (NumSyntax.rank rhs))
+      · simpa [NumObjIso, NumSyntaxToObj, NumSyntax.rank] using
+          Nat.lt_succ_of_le (Nat.le_max_right (NumSyntax.rank lhs) (NumSyntax.rank rhs))
+
+def NumWellFoundedCode : WellFoundedCode NumPoly NumSyntax where
+  step := NumObjIso
+  rank := fun _ e => NumSyntax.rank e
+  child_rank_lt := Num_child_rank_lt
+
+/-- Numeric expressions as the generic initial algebra are bijective with the
+readable recursive syntax family. -/
+def NumSyntaxIso (k : Nat) : Mu NumPoly k ≃ᵢ NumSyntax k :=
+  initialAlgebraCoding NumPoly NumSyntax NumWellFoundedCode k
+
 /-- Constructors for Peano formulas indexed by context size. -/
 inductive PeanoCtor where
   | eq
