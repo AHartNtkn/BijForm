@@ -2,5 +2,6 @@
 -- Import modules here that should be built as part of the library.
 import BijForm.Coding
 import BijForm.Pairing
+import BijForm.NatCoding
 import BijForm.DependentPolynomial
 import BijForm.Examples

@@ -81,6 +81,95 @@ def HBTInversion : OutputIndexInversion HBTPoly where
   decode_encode := HBT_decode_encode
   encode_decode := HBT_encode_decode
 
+/-- Upper bounds for sorted trees.  `none` represents infinity. -/
+abbrev Bound :=
+  Option Nat
+
+def Bound.le (x : Nat) : Bound → Prop
+  | none => True
+  | some m => x ≤ m
+
+abbrev SortedIx :=
+  Nat × Bound
+
+def BoundedPivot (i : SortedIx) : Type :=
+  { x : Nat // i.1 ≤ x ∧ Bound.le x i.2 }
+
+/-- Constructors for the sorted-tree example. -/
+inductive SortedCtor where
+  | leaf
+  | branch
+deriving DecidableEq, Repr
+
+def SortedParam : SortedCtor → Type
+  | .leaf => SortedIx
+  | .branch => Σ i : SortedIx, BoundedPivot i
+
+def SortedOut : (c : SortedCtor) → SortedParam c → SortedIx
+  | .leaf, i => i
+  | .branch, p => p.1
+
+def SortedPos : (c : SortedCtor) → SortedParam c → Type
+  | .leaf, _ => Empty
+  | .branch, _ => Bool
+
+def SortedInput : {c : SortedCtor} → (p : SortedParam c) → SortedPos c p → SortedIx
+  | SortedCtor.leaf, _, q => nomatch q
+  | SortedCtor.branch, p, (side : Bool) =>
+      if side then
+        (p.2.1, p.1.2)
+      else
+        (p.1.1, some p.2.1)
+
+/-- Dependent polynomial for sorted trees indexed by lower and upper bounds. -/
+def SortedPoly : DepPoly SortedIx where
+  Ctor := SortedCtor
+  Param := SortedParam
+  out := SortedOut
+  Pos := SortedPos
+  input := SortedInput
+
+inductive SortedCode (i : SortedIx) where
+  | leaf
+  | branch (pivot : BoundedPivot i)
+
+def SortedDecode (i : SortedIx) : SortedCode i → Fiber SortedPoly i
+  | .leaf => ⟨.leaf, i, rfl⟩
+  | .branch pivot => ⟨.branch, ⟨i, pivot⟩, rfl⟩
+
+def SortedEncode (i : SortedIx) : Fiber SortedPoly i → SortedCode i
+  | ⟨.leaf, _, _⟩ => .leaf
+  | ⟨.branch, p, h⟩ =>
+      have _ : SortedPoly.out SortedCtor.branch p = i := h
+      .branch (i := i) (h ▸ p.2)
+
+theorem Sorted_decode_encode (i : SortedIx) (f : Fiber SortedPoly i) :
+    SortedDecode i (SortedEncode i f) = f := by
+  cases f with
+  | mk ctor param out_eq =>
+    cases ctor with
+    | leaf =>
+        cases out_eq
+        rfl
+    | branch =>
+        cases param with
+        | mk i' pivot =>
+          cases out_eq
+          rfl
+
+theorem Sorted_encode_decode (i : SortedIx) (c : SortedCode i) :
+    SortedEncode i (SortedDecode i c) = c := by
+  cases c <;> rfl
+
+/-- Output-index inversion for sorted trees.  The branch code exposes the
+bounded pivot whose children move to `(lower, pivot)` and `(pivot, upper)`. -/
+def SortedInversion : OutputIndexInversion SortedPoly where
+  Code := SortedCode
+  decode := SortedDecode
+  encode := SortedEncode
+  decode_encode := Sorted_decode_encode
+  encode_decode := Sorted_encode_decode
+
 /-- The fiber of branch constructors at height zero is empty. -/
 theorem no_zero_height_branch (f : Fiber HBTPoly 0) (hctor : f.ctor = .branch) :
     False := by
