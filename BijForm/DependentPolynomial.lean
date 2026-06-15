@@ -118,6 +118,12 @@ theorem Mu_inn_out {P : DepPoly ι} {i : ι} (x : Mu P i) :
 def Layer (P : DepPoly ι) (Code : ι → Type u) (i : ι) : Type u :=
   Σ f : Fiber P i, (q : P.Pos f.ctor f.param) → Code (P.input f.param q)
 
+def CodeLayer (P : DepPoly ι) (H : OutputIndexInversion P)
+    (Code : ι → Type u) (i : ι) : Type u :=
+  Σ c : H.Code i,
+    (q : P.Pos (H.decode i c).ctor (H.decode i c).param) →
+      Code (P.input (H.decode i c).param q)
+
 /--
 The corrected condition for automatic codings.  Besides the one-step
 isomorphism, decoding must be well-founded: every recursive child code produced
