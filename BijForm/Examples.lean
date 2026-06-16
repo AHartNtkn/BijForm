@@ -976,6 +976,26 @@ def SortedShapeIso (i : SortedIx) : Mu SortedPoly i ≃ᵢ SortedCarrier i :=
 def SortedSyntaxShapeIso (i : SortedIx) : SortedSyntax i ≃ᵢ SortedCarrier i :=
   Iso.trans (Iso.symm (SortedSyntaxIso i)) (SortedShapeIso i)
 
+def SortedSyntaxNatIsoOfBound (i : SortedIx) (h : Bound.le i.1 i.2) :
+    SortedSyntax i ≃ᵢ Nat :=
+  Iso.trans (SortedSyntaxShapeIso i) (SortedCarrier.natIso h)
+
+def SortedSyntaxFinOneIsoOfNotBound (i : SortedIx) (h : ¬Bound.le i.1 i.2) :
+    SortedSyntax i ≃ᵢ Fin 1 :=
+  Iso.trans (SortedSyntaxShapeIso i) (SortedCarrier.finOneIso h)
+
+def SortedSyntaxInfiniteNatIso (lower : Nat) :
+    SortedSyntax (lower, none) ≃ᵢ Nat :=
+  SortedSyntaxNatIsoOfBound (lower, none) trivial
+
+def SortedSyntaxFiniteNatIso (lower upper : Nat) (h : lower ≤ upper) :
+    SortedSyntax (lower, some upper) ≃ᵢ Nat :=
+  SortedSyntaxNatIsoOfBound (lower, some upper) h
+
+def SortedSyntaxInvalidFiniteIso (lower upper : Nat) (h : ¬lower ≤ upper) :
+    SortedSyntax (lower, some upper) ≃ᵢ Fin 1 :=
+  SortedSyntaxFinOneIsoOfNotBound (lower, some upper) h
+
 /-- At the empty finite interval `(1, some 0)`, sorted trees have no branch
 constructor because no pivot can satisfy both bounds. -/
 theorem Sorted_empty_interval_subsingleton :
@@ -1001,7 +1021,7 @@ def SortedEmptyCarrierFinOneIso : SortedCarrier (1, some 0) ≃ᵢ Fin 1 :=
     omega)
 
 def SortedEmptySyntaxFinOneIso : SortedSyntax (1, some 0) ≃ᵢ Fin 1 :=
-  Iso.trans (SortedSyntaxShapeIso (1, some 0)) SortedEmptyCarrierFinOneIso
+  SortedSyntaxInvalidFiniteIso 1 0 (by omega)
 
 /-- Reference syntax family for numeric expressions indexed by the number of
 available variables. -/

@@ -39,6 +39,11 @@ syntax. A completed encoding example must show the path from the standard syntax
 family through the dependent-polynomial presentation to a generated code family
 and, when the example claims a Gödel encoding, to `Nat`. Do not replace that
 path with a hand-written recursive encoder for the example.
+When the generated code family has index-dependent or condition-dependent
+carriers, the example must state public characterization theorems for every
+case, composing the readable syntax family to each concrete carrier such as
+`Nat`, `Fin k`, or another indexed fiber. Internal carrier helper isomorphisms
+alone do not complete the example.
 
 Committed `sorry` declarations are allowed for standard Lean blueprinting,
 pending proof work, and proof-gap marking. They must be labeled as unfinished

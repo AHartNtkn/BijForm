@@ -140,6 +140,11 @@ Main results:
 - `SortedSyntaxIso (i) : Iso (Mu SortedPoly i) (SortedSyntax i)`
 - `SortedGeneratedShapeCode : GeneratedShapeCode SortedPoly`
 - `SortedSyntaxShapeIso (i) : Iso (SortedSyntax i) (SortedCarrier i)`
+- `SortedSyntaxNatIsoOfBound (i) : Bound.le i.1 i.2 -> Iso (SortedSyntax i) Nat`
+- `SortedSyntaxFinOneIsoOfNotBound (i) : not Bound.le i.1 i.2 -> Iso (SortedSyntax i) (Fin 1)`
+- `SortedSyntaxInfiniteNatIso (lower) : Iso (SortedSyntax (lower, none)) Nat`
+- `SortedSyntaxFiniteNatIso (lower upper) : lower <= upper -> Iso (SortedSyntax (lower, some upper)) Nat`
+- `SortedSyntaxInvalidFiniteIso (lower upper) : not lower <= upper -> Iso (SortedSyntax (lower, some upper)) (Fin 1)`
 - `SortedEmptySyntaxFinOneIso : Iso (SortedSyntax (1, some 0)) (Fin 1)`
 
 The sorted carrier family uses `Nat` for valid intervals and `Fin 1` for the
