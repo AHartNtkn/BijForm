@@ -2,7 +2,7 @@ import BijForm.Coding
 import BijForm.Pairing
 
 namespace BijForm
-namespace NatCoding
+namespace CodeAlgebra
 
 /-- Split `Nat` into a finite prefix of size `k` and the remaining tail. -/
 def finPlusNat (k : Nat) : (Fin k ⊕ Nat) ≃ᵢ Nat where
@@ -76,6 +76,72 @@ theorem finProdNat_toFun_snd_le (k : Nat) (hk : 0 < k) (p : Fin k × Nat) :
       p.2 = 1 * p.2 := by rw [Nat.one_mul]
       _ ≤ k * p.2 := Nat.mul_le_mul_right p.2 hk
   omega
+
+/-- Finite sums are finite. -/
+def finSum (a b : Nat) : (Fin a ⊕ Fin b) ≃ᵢ Fin (a + b) where
+  toFun
+    | Sum.inl i => ⟨i.val, by omega⟩
+    | Sum.inr j => ⟨a + j.val, by omega⟩
+  invFun k :=
+    if h : k.val < a then
+      Sum.inl ⟨k.val, h⟩
+    else
+      Sum.inr ⟨k.val - a, by omega⟩
+  left_inv := by
+    intro x
+    cases x with
+    | inl i => simp [i.isLt]
+    | inr j =>
+        have hnot : ¬a + j.val < a := by omega
+        simp [hnot, Nat.add_sub_cancel_left]
+  right_inv := by
+    intro k
+    by_cases h : k.val < a
+    · simp [h]
+    · have hle : a ≤ k.val := Nat.le_of_not_gt h
+      simp [h]
+      apply Fin.ext
+      exact Nat.add_sub_of_le hle
+
+/-- Finite products are finite when the right factor is nonempty. -/
+def finProdPos (a b : Nat) (hb : 0 < b) : (Fin a × Fin b) ≃ᵢ Fin (a * b) where
+  toFun p := ⟨p.1.val * b + p.2.val, by
+    have hlt_add : p.1.val * b + p.2.val < p.1.val * b + b :=
+      Nat.add_lt_add_left p.2.isLt (p.1.val * b)
+    have hsucc : p.1.val * b + b = (p.1.val + 1) * b := by
+      rw [Nat.succ_mul]
+    have hlt_succ : p.1.val * b + p.2.val < (p.1.val + 1) * b := by
+      simpa [hsucc] using hlt_add
+    have hle : (p.1.val + 1) * b ≤ a * b :=
+      Nat.mul_le_mul_right b (Nat.succ_le_of_lt p.1.isLt)
+    exact Nat.lt_of_lt_of_le hlt_succ hle⟩
+  invFun k :=
+    (⟨k.val / b, by
+      have hk : k.val < b * a := Nat.lt_of_lt_of_eq k.isLt (Nat.mul_comm a b)
+      exact Nat.div_lt_of_lt_mul hk⟩,
+     ⟨k.val % b, Nat.mod_lt k.val hb⟩)
+  left_inv := by
+    intro p
+    cases p with
+    | mk i j =>
+      apply Prod.ext
+      · apply Fin.ext
+        calc
+          (i.val * b + j.val) / b = (b * i.val + j.val) / b := by
+            rw [Nat.mul_comm i.val b]
+          _ = i.val + j.val / b := Nat.mul_add_div hb i.val j.val
+          _ = i.val := by rw [Nat.div_eq_of_lt j.isLt, Nat.add_zero]
+      · apply Fin.ext
+        calc
+          (i.val * b + j.val) % b = j.val % b := Nat.mul_add_mod_self_right i.val b j.val
+          _ = j.val := Nat.mod_eq_of_lt j.isLt
+  right_inv := by
+    intro k
+    apply Fin.ext
+    calc
+      (k.val / b) * b + k.val % b = b * (k.val / b) + k.val % b := by
+        rw [Nat.mul_comm]
+      _ = k.val := Nat.div_add_mod k.val b
 
 /-- Binary sum coding via parity. -/
 def sumNat : (Nat ⊕ Nat) ≃ᵢ Nat where
@@ -154,5 +220,5 @@ theorem prodNat_fst_le (n : Nat) : (prodNat.invFun n).1 ≤ n :=
 theorem prodNat_snd_le (n : Nat) : (prodNat.invFun n).2 ≤ n :=
   Pairing.decode_snd_le n
 
-end NatCoding
+end CodeAlgebra
 end BijForm

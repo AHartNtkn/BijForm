@@ -49,10 +49,10 @@ lake exe bijform
   - `Pairing.encodeFast_eq_encode`
   - `Pairing.decodeFast_eq_decode`
 
-- `BijForm.NatCoding`
-  Provides small reusable bijections into `Nat`, including finite-prefix sums,
-  finite products with `Nat`, binary and nested sums, and products via the
-  proved pairing function.
+- `BijForm.CodeAlgebra`
+  Provides small reusable bijections for code carriers, including finite sums,
+  finite products, finite-prefix sums into `Nat`, binary and nested `Nat`
+  sums, and products via the proved pairing function.
 
 - `BijForm.DependentPolynomial`
   Defines dependent polynomial signatures, their initial algebras, and the
@@ -61,14 +61,20 @@ lake exe bijform
   - `Mu`
   - `OutputIndexInversion`
   - `WellFoundedCode`
-  - `GeneratedLayerCode`
+  - `GeneratedCode`
   - `GeneratedShapeCode`
+  - `GeneratedRankedNatCode`
   - `GeneratedNatCode`
   - `initialAlgebraCoding`
 
 - `BijForm.Examples`
-  Contains the worked examples. Each example begins with the reference syntax
-  family before the polynomial encoding.
+  Imports the worked example modules:
+  - `BijForm.Examples.HBT`
+  - `BijForm.Examples.Sorted`
+  - `BijForm.Examples.FinChain`
+  - `BijForm.Examples.Lambda`
+  - `BijForm.Examples.Num`
+  - `BijForm.Examples.Peano`
 
 ## Generic Coding Framework
 
@@ -82,7 +88,7 @@ The central construction is `WellFoundedCode`. It packages:
 This rank is a termination measure for generic decoding. It is not a Goedel
 code and does not need to be injective.
 
-`GeneratedLayerCode` factors the one-step isomorphism through explicit
+`GeneratedCode` factors the one-step isomorphism through explicit
 same-fiber constructor data:
 
 ```lean
@@ -96,6 +102,9 @@ hidden behind an opaque constructor isomorphism.
 `GeneratedNatCode` specializes the framework to the constant code family
 `fun _ => Nat`; its termination measure is the identity rank on `Nat`, so it
 requires recursive child codes to be numerically smaller than the parent code.
+
+`GeneratedRankedNatCode` specializes the framework to the same `Nat` carrier
+while allowing an index-sensitive rank `i -> Nat -> Nat`.
 
 `GeneratedShapeCode` specializes the same generic layer construction to
 carrier families whose fibers are explicitly shaped as either `Nat` or `Fin k`.
@@ -149,6 +158,41 @@ Main results:
 
 The sorted carrier family uses `Nat` for valid intervals and `Fin 1` for the
 empty invalid interval shown above.
+
+### Bounded Tagged Chains
+
+Reference syntax:
+
+```lean
+FinChainSyntax : Nat -> Type
+```
+
+Main results:
+
+- `FinChainSyntaxIso (i) : Iso (Mu FinChainPoly i) (FinChainSyntax i)`
+- `FinChainGeneratedShapeCode : GeneratedShapeCode FinChainPoly`
+- `FinChainSyntaxFinIso (i) : Iso (FinChainSyntax i) (Fin (FinChainSize i))`
+
+The first concrete cases are `Fin 1`, `Fin 3`, and `Fin 10`.
+
+### Lambda Terms
+
+Reference syntax:
+
+```lean
+LamSyntax : Nat -> Type
+```
+
+Lambda terms use de Bruijn contexts. At context `0`, variables are unavailable,
+so the Nat layer decodes code `0` as `lam`, not `app`.
+
+Main results:
+
+- `LamSyntaxIso (k) : Iso (Mu LamPoly k) (LamSyntax k)`
+- `LamNatGeneratedCode : GeneratedRankedNatCode LamPoly`
+- `LamNatLayer_zero_invFun_zero`
+- `LamSyntaxNatIso (k) : Iso (LamSyntax k) Nat`
+- `ClosedLamSyntaxNatIso : Iso (LamSyntax 0) Nat`
 
 ### Numeric Expressions
 
