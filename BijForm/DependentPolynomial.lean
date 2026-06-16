@@ -296,6 +296,63 @@ def iso (C : GeneratedLayerCode P Code) (i : ι) : Mu P i ≃ᵢ Code i :=
 
 end GeneratedLayerCode
 
+inductive CodeShape where
+  | finite (k : Nat)
+  | infinite
+
+namespace CodeShape
+
+def Carrier : CodeShape → Type
+  | finite k => Fin k
+  | infinite => Nat
+
+def rank : (s : CodeShape) → Carrier s → Nat
+  | finite _, _ => 0
+  | infinite, n => n
+
+end CodeShape
+
+/--
+Generated coding data for index-dependent finite/infinite carrier families.
+This is a thin specialization of `GeneratedLayerCode` that makes the intended
+carrier shape explicit: each index may be coded either by `Fin k` or by `Nat`.
+-/
+structure GeneratedShapeCode (P : DepPoly ι) where
+  shape : ι → CodeShape
+  inversion : OutputIndexInversion P
+  layer : ∀ i,
+    CodeLayer P inversion (fun j => (shape j).Carrier) i ≃ᵢ (shape i).Carrier
+  rank : ∀ i, (shape i).Carrier → Nat
+  child_rank_lt :
+    ∀ {i : ι} (z : (shape i).Carrier)
+      (q : P.Pos (inversion.decode i ((layer i).invFun z).1).ctor
+          (inversion.decode i ((layer i).invFun z).1).param),
+      rank (P.input (inversion.decode i ((layer i).invFun z).1).param q)
+          (((layer i).invFun z).2 q) < rank i z
+
+namespace GeneratedShapeCode
+
+variable {P : DepPoly ι}
+
+def toGeneratedLayerCode (C : GeneratedShapeCode P) :
+    GeneratedLayerCode P (fun i => (C.shape i).Carrier) where
+  inversion := C.inversion
+  layer := C.layer
+  rank := C.rank
+  child_rank_lt := by
+    intro i z q
+    exact C.child_rank_lt z q
+
+def toWellFoundedCode (C : GeneratedShapeCode P) :
+    WellFoundedCode P (fun i => (C.shape i).Carrier) :=
+  C.toGeneratedLayerCode.toWellFoundedCode
+
+def iso (C : GeneratedShapeCode P) (i : ι) :
+    Mu P i ≃ᵢ (C.shape i).Carrier :=
+  C.toGeneratedLayerCode.iso i
+
+end GeneratedShapeCode
+
 /--
 Generated Nat coding data.  A local Nat layer decoder must produce recursive
 child codes that are strictly smaller than the parent code, so the generic

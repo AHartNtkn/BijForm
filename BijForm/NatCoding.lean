@@ -36,6 +36,47 @@ theorem finPlusNat_inr_lt {k n tail : Nat} (hk : 0 < k)
   simp [finPlusNat] at hright
   omega
 
+/-- Coding for a nonempty finite choice paired with a natural-number payload. -/
+def finProdNat (k : Nat) (hk : 0 < k) : (Fin k × Nat) ≃ᵢ Nat where
+  toFun := fun p => p.1.val + k * p.2
+  invFun := fun n => (⟨n % k, Nat.mod_lt n hk⟩, n / k)
+  left_inv := by
+    intro p
+    cases p with
+    | mk i n =>
+      apply Prod.ext
+      · apply Fin.ext
+        calc
+          (i.val + k * n) % k = i.val % k := Nat.add_mul_mod_self_left i.val k n
+          _ = i.val := Nat.mod_eq_of_lt i.isLt
+      · calc
+          (i.val + k * n) / k = (i.val + n * k) / k := by rw [Nat.mul_comm k n]
+          _ = i.val / k + n := Nat.add_mul_div_right i.val n hk
+          _ = n := by
+            rw [Nat.div_eq_of_lt i.isLt]
+            exact Nat.zero_add n
+  right_inv := by
+    intro n
+    dsimp
+    calc
+      n % k + k * (n / k) = k * (n / k) + n % k := by
+        rw [Nat.add_comm]
+      _ = n := Nat.div_add_mod n k
+
+theorem finProdNat_snd_le (k : Nat) (hk : 0 < k) (n : Nat) :
+    ((finProdNat k hk).invFun n).2 ≤ n := by
+  simp [finProdNat]
+  exact Nat.div_le_self n k
+
+theorem finProdNat_toFun_snd_le (k : Nat) (hk : 0 < k) (p : Fin k × Nat) :
+    p.2 ≤ (finProdNat k hk).toFun p := by
+  dsimp [finProdNat]
+  have hmul : p.2 ≤ k * p.2 := by
+    calc
+      p.2 = 1 * p.2 := by rw [Nat.one_mul]
+      _ ≤ k * p.2 := Nat.mul_le_mul_right p.2 hk
+  omega
+
 /-- Binary sum coding via parity. -/
 def sumNat : (Nat ⊕ Nat) ≃ᵢ Nat where
   toFun

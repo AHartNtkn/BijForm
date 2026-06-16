@@ -12,7 +12,8 @@ inductive data. The repository has two main parts:
 The examples are organized to start from readable reference syntax families,
 then define the dependent-polynomial presentation, prove the syntax isomorphic
 to the polynomial initial algebra, and finally instantiate generated coding
-machinery where a `Nat` coding is valid.
+machinery with either `Nat` codings or index-dependent finite/infinite code
+families.
 
 ## Build
 
@@ -50,7 +51,8 @@ lake exe bijform
 
 - `BijForm.NatCoding`
   Provides small reusable bijections into `Nat`, including finite-prefix sums,
-  binary and nested sums, and products via the proved pairing function.
+  finite products with `Nat`, binary and nested sums, and products via the
+  proved pairing function.
 
 - `BijForm.DependentPolynomial`
   Defines dependent polynomial signatures, their initial algebras, and the
@@ -60,6 +62,7 @@ lake exe bijform
   - `OutputIndexInversion`
   - `WellFoundedCode`
   - `GeneratedLayerCode`
+  - `GeneratedShapeCode`
   - `GeneratedNatCode`
   - `initialAlgebraCoding`
 
@@ -93,6 +96,9 @@ hidden behind an opaque constructor isomorphism.
 `GeneratedNatCode` specializes the framework to the constant code family
 `fun _ => Nat`; its termination measure is the identity rank on `Nat`, so it
 requires recursive child codes to be numerically smaller than the parent code.
+
+`GeneratedShapeCode` specializes the same generic layer construction to
+carrier families whose fibers are explicitly shaped as either `Nat` or `Fin k`.
 
 ## Examples
 
@@ -132,12 +138,12 @@ pivot and narrow the child bounds.
 Main results:
 
 - `SortedSyntaxIso (i) : Iso (Mu SortedPoly i) (SortedSyntax i)`
-- `noSortedNatGeneratedCode : GeneratedNatCode SortedPoly -> False`
+- `SortedGeneratedShapeCode : GeneratedShapeCode SortedPoly`
+- `SortedSyntaxShapeIso (i) : Iso (SortedSyntax i) (SortedCarrier i)`
+- `SortedEmptySyntaxFinOneIso : Iso (SortedSyntax (1, some 0)) (Fin 1)`
 
-The negative result is intentional. A global constant-`Nat` generated code for
-all sorted-tree indices is impossible because some bounded intervals have only
-one tree. The framework records this obstruction rather than pretending the
-example has the same shape as the infinite-fiber examples.
+The sorted carrier family uses `Nat` for valid intervals and `Fin 1` for the
+empty invalid interval shown above.
 
 ### Numeric Expressions
 
