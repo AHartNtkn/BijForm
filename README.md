@@ -184,8 +184,10 @@ and `TupleAction.FixedTuple.ResidualImageData` requires that this residual type
 enumerates the distinct group images of the sorted tuple. From that data,
 `TupleAction.FixedTuple.orbitCodingData_toConcreteActionCode` constructs the
 generic `ConcreteActionCode`. The current generic theorem consumes these
-normalization and residual-indexing functions as explicit data; it does not yet
-synthesize them for an arbitrary finite permutation group.
+normalization and residual-indexing functions as explicit data. The repository
+does not currently provide a practical non-enumerative synthesizer for arbitrary
+finite permutation groups; broader automation should come from structured
+classes of actions with their own canonicalization data.
 
 ## Examples
 
