@@ -7,7 +7,9 @@ inductive data. The repository has two main parts:
   decoder proved equivalent to the shell-scanning decoder;
 - a small framework for deriving bijections for dependent-polynomial initial
   algebras from explicit one-layer coding data and a well-founded decoding
-  measure.
+  measure;
+- a quotient-polynomial layer that characterizes encodings of quotient
+  datatypes as quotients of generated code families.
 
 The examples are organized to start from readable reference syntax families,
 then define the dependent-polynomial presentation, prove the syntax isomorphic
@@ -67,9 +69,20 @@ lake exe bijform
   - `GeneratedNatCode`
   - `initialAlgebraCoding`
 
+- `BijForm.QuotientPolynomial`
+  Defines quotient presentations for dependent-polynomial initial algebras and
+  the canonical coding theorem:
+  - `QuotientPresentation`
+  - `QuotientPresentation.Rel`
+  - `QuotientPresentation.Carrier`
+  - `QuotientPresentation.CodeRel`
+  - `QuotientPresentation.CodeCarrier`
+  - `QuotientPresentation.codeIso`
+
 - `BijForm.Examples`
   Imports the worked example modules:
   - `BijForm.Examples.HBT`
+  - `BijForm.Examples.HBTQuotient`
   - `BijForm.Examples.Sorted`
   - `BijForm.Examples.FinChain`
   - `BijForm.Examples.Lambda`
@@ -109,6 +122,20 @@ while allowing an index-sensitive rank `i -> Nat -> Nat`.
 `GeneratedShapeCode` specializes the same generic layer construction to
 carrier families whose fibers are explicitly shaped as either `Nat` or `Fin k`.
 
+## Quotient-Polynomial Coding
+
+`QuotientPresentation` records a constructor-layer quotient relation for a
+dependent polynomial `P`. The generated relation `QuotientPresentation.Rel`
+closes that layer relation under recursive congruence, symmetry, and
+transitivity on `Mu P i`, and `QuotientPresentation.Carrier` is the resulting
+quotient datatype.
+
+For any existing `WellFoundedCode P Code`, `QuotientPresentation.codeIso`
+characterizes the quotient datatype's encoding as the quotient of `Code i` by
+the transported relation `QuotientPresentation.CodeRel`. This gives quotient
+examples a generic path from the polynomial presentation to a code carrier
+without hand-writing a final encoder for the quotient.
+
 ## Examples
 
 ### Height-Bounded Trees
@@ -130,6 +157,9 @@ Main results:
 - `HBTSyntaxIso (i) : Iso (Mu HBTPoly i) (HBTSyntax i)`
 - `HBTNatGeneratedCode : GeneratedNatCode HBTPoly`
 - `HBTSyntaxNatIso (i) : Iso (HBTSyntax i) Nat`
+- `HBTChildSwapQuotient : QuotientPresentation HBTPoly`
+- `HBTChildSwapNatCodeIso (i) : Iso (HBTChildSwap i) (HBTChildSwapNatCode i)`
+- `HBTSyntaxChildSwapNatCodeIso (i) : Iso (HBTSyntaxChildSwap i) (HBTChildSwapNatCode i)`
 
 In source, the precise theorem type uses the local `Iso` notation.
 

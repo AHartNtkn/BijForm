@@ -1,4 +1,5 @@
 import BijForm.Examples.HBT
+import BijForm.Examples.HBTQuotient
 import BijForm.Examples.Sorted
 import BijForm.Examples.FinChain
 import BijForm.Examples.Lambda
