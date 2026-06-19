@@ -126,14 +126,25 @@ def actTuple {n : Nat} (p : Perm n) (t : Tuple n) : Tuple n :=
 
 end Perm
 
-/-- A finite family of tuple permutations. Closure/group laws are explicit
-data because quotient-code construction only needs the concrete finite action
-and the residual-index proof obligations below. -/
+/-- A finite permutation group action on fixed-length tuples. The group laws
+are stated in terms of the induced tuple action, which is the exact structure
+needed to make the orbit relation a setoid. -/
 structure PermFamily (n : Nat) where
   Elem : Type u
   size : Nat
   elemCode : Elem ≃ᵢ Fin size
   perm : Elem → Perm n
+  id : Elem
+  inv : Elem → Elem
+  mul : Elem → Elem → Elem
+  act_id : ∀ t : Tuple n, (perm id).actTuple t = t
+  act_inv :
+    ∀ (g : Elem) (t : Tuple n),
+      (perm (inv g)).actTuple ((perm g).actTuple t) = t
+  act_mul :
+    ∀ (g h : Elem) (t : Tuple n),
+      (perm (mul h g)).actTuple t =
+        (perm h).actTuple ((perm g).actTuple t)
 
 namespace PermFamily
 
@@ -186,28 +197,31 @@ structure OrbitCodingData (n : Nat) (G : PermFamily n) where
   normalize_denormalize :
     ∀ c, normalize (denormalize c) = c
 
-/--
-Unfinished blueprint: orbit coding data for a finite permutation family should
-produce a concrete action code for its tuple action. The proof is intentionally
-left as a labeled gap because the generic sorted-tuple coder and residual
-image-index construction have not been formalized yet.
--/
+/-- Orbit coding data for a finite permutation group action produces a concrete
+code for the quotient by that action. -/
 def orbitCodingData_toConcreteActionCode
     {n : Nat} {G : PermFamily n} (D : OrbitCodingData n G) :
     ConcreteActionCode G.action where
   Rel := PermFamily.OrbitRel G
   rel_refl := by
     intro t
-    -- unfinished blueprint: requires an identity element/law in `PermFamily`.
-    sorry
+    exact ⟨G.id, G.act_id t⟩
   rel_symm := by
     intro t u htu
-    -- unfinished blueprint: requires inverse closure/law in `PermFamily`.
-    sorry
+    rcases htu with ⟨g, hg⟩
+    refine ⟨G.inv g, ?_⟩
+    rw [← hg]
+    exact G.act_inv g t
   rel_trans := by
     intro t u v htu huv
-    -- unfinished blueprint: requires composition closure/law in `PermFamily`.
-    sorry
+    rcases htu with ⟨g, hg⟩
+    rcases huv with ⟨h, hh⟩
+    refine ⟨G.mul h g, ?_⟩
+    calc
+      (G.perm (G.mul h g)).actTuple t
+          = (G.perm h).actTuple ((G.perm g).actTuple t) := G.act_mul g h t
+      _ = (G.perm h).actTuple u := by rw [hg]
+      _ = v := hh
   Canon := Σ s : SortedTuple n, (D.residual s).Image
   code := D.residualSigmaCode
   normalize := D.normalize
@@ -217,8 +231,7 @@ def orbitCodingData_toConcreteActionCode
   normalize_denormalize := D.normalize_denormalize
   action_sound := by
     intro g t
-    -- unfinished blueprint: requires inverse closure/law in `PermFamily`.
-    sorry
+    exact ⟨G.inv g, G.act_inv g t⟩
 
 end FixedTuple
 

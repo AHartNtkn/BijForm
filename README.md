@@ -174,12 +174,11 @@ those descent criteria. The completed binary-swap instance codes unordered
 pairs by a sorted representative and handles duplicate entries without storing
 a raw group element.
 
-The fixed-length tuple-action API is currently a blueprint surface. It names
-the intended data for sorted tuples, finite permutation families, and
-duplicate-aware residual image indices, but
-`TupleAction.FixedTuple.orbitCodingData_toConcreteActionCode` still contains
-labeled unfinished proof obligations for the group laws needed by the generic
-construction.
+The fixed-length tuple-action API names the data for sorted tuples, finite
+permutation group actions, and duplicate-aware residual image indices.
+`TupleAction.FixedTuple.orbitCodingData_toConcreteActionCode` proves the
+generic quotient-code construction once explicit orbit-coding data is supplied;
+the construction does not store a raw group element as the residual index.
 
 ## Examples
 
