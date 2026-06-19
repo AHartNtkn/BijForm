@@ -109,6 +109,7 @@ lake exe bijform
   - `BijForm.Examples.Sorted`
   - `BijForm.Examples.FinChain`
   - `BijForm.Examples.Lambda`
+  - `BijForm.Examples.TypedBinding`
   - `BijForm.Examples.Num`
   - `BijForm.Examples.Peano`
 
@@ -284,6 +285,33 @@ Main results:
 - `LamNatLayer_zero_invFun_zero`
 - `LamSyntaxNatIso (k) : Iso (LamSyntax k) Nat`
 - `ClosedLamSyntaxNatIso : Iso (LamSyntax 0) Nat`
+
+### Typed Binding Signatures
+
+Generic syntax:
+
+```lean
+TypedBinding.Signature
+TypedBinding.Term
+```
+
+Typed binding signatures describe constructor arguments by a list of newly
+bound types and a recursive result type. Empty binder lists represent ordinary
+nonbinding recursive arguments.
+
+Main results:
+
+- `TypedBinding.PolyOf (S) : DepPoly (List Ty x Ty)`
+- `TypedBinding.inversion (S) : OutputIndexInversion (TypedBinding.PolyOf S)`
+- `TypedBinding.syntaxIso (S) (Γ) (t) : Iso (Mu (TypedBinding.PolyOf S) (Γ, t)) (TypedBinding.Term S Γ t)`
+- `TypedBinding.ShapeCodingData` packages the concrete one-step carrier coding
+  and rank proof needed to obtain generated carrier encodings.
+
+The normal-form lambda signature is instantiated with normal-expression and
+application-term indices. The generic syntax and polynomial route are complete.
+The concrete closed normal-form lambda `Nat` coding surface is present as an
+unfinished blueprint: the one-step shape coding and rank proof are still marked
+with labeled `sorry`s in source.
 
 ### Numeric Expressions
 
