@@ -54,7 +54,8 @@ lake exe bijform
 - `BijForm.CodeAlgebra`
   Provides small reusable bijections for code carriers, including finite sums,
   finite products, finite-prefix sums into `Nat`, binary and nested `Nat`
-  sums, and products via the proved pairing function.
+  sums, unordered pairs of natural numbers, and products via the proved
+  pairing function.
 
 - `BijForm.DependentPolynomial`
   Defines dependent polynomial signatures, their initial algebras, and the
@@ -174,16 +175,15 @@ Main results:
 - `HBTNatGeneratedCode : GeneratedNatCode HBTPoly`
 - `HBTSyntaxNatIso (i) : Iso (HBTSyntax i) Nat`
 
-Diagnostic branch-swap quotient example:
+Branch-swap quotient example:
 
 - `HBTChildSwapQuotient : QuotientPresentation HBTPoly`
 - `HBTChildSwap_inn_branch_sound`
 - `HBTChildSwapNatCodeIso (i) : Iso (HBTChildSwap i) (HBTChildSwapNatCode i)`
+- `HBTChildSwapDescendedNatCode : QuotientPresentation.DescendedCode HBTChildSwapQuotient HBTNatGeneratedCode.toWellFoundedCode (fun _ => Nat)`
+- `HBTChildSwapNatIso (i) : Iso (HBTChildSwap i) Nat`
 - `HBTSyntaxChildSwapNatCodeIso (i) : Iso (HBTSyntaxChildSwap i) (HBTChildSwapNatCode i)`
-
-The branch-swap quotient code carrier is still an indexed quotient of the
-generated Nat code. It is not yet a completed concrete Nat normal form for
-unordered height-bounded trees.
+- `HBTSyntaxChildSwapNatIso (i) : Iso (HBTSyntaxChildSwap i) Nat`
 
 In source, the precise theorem type uses the local `Iso` notation.
 

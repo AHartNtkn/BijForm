@@ -220,5 +220,87 @@ theorem prodNat_fst_le (n : Nat) : (prodNat.invFun n).1 ≤ n :=
 theorem prodNat_snd_le (n : Nat) : (prodNat.invFun n).2 ≤ n :=
   Pairing.decode_snd_le n
 
+/-- Put two natural numbers into nondecreasing order. -/
+def sortNatPair (a b : Nat) : {p : Nat × Nat // p.1 ≤ p.2} :=
+  if h : a ≤ b then
+    ⟨(a, b), h⟩
+  else
+    ⟨(b, a), Nat.le_of_not_ge h⟩
+
+theorem sortNatPair_of_le {a b : Nat} (h : a ≤ b) :
+    sortNatPair a b = ⟨(a, b), h⟩ := by
+  simp [sortNatPair, h]
+
+theorem sortNatPair_comm (a b : Nat) :
+    sortNatPair a b = sortNatPair b a := by
+  by_cases hab : a ≤ b
+  · by_cases hba : b ≤ a
+    · have h : a = b := Nat.le_antisymm hab hba
+      cases h
+      apply Subtype.ext
+      rfl
+    · rw [sortNatPair_of_le hab]
+      simp [sortNatPair, hba]
+  · have hba : b ≤ a := Nat.le_of_not_ge hab
+    rw [sortNatPair_of_le hba]
+    simp [sortNatPair, hab]
+
+/-- Unordered pairs of natural numbers are coded by the smaller element and
+the distance to the larger element. -/
+def unorderedPairNat : {p : Nat × Nat // p.1 ≤ p.2} ≃ᵢ Nat where
+  toFun p := prodNat.toFun (p.val.1, p.val.2 - p.val.1)
+  invFun n :=
+    let p := prodNat.invFun n
+    ⟨(p.1, p.1 + p.2), by omega⟩
+  left_inv := by
+    intro p
+    apply Subtype.ext
+    cases p with
+    | mk p hp =>
+      cases p with
+      | mk a b =>
+        dsimp
+        rw [prodNat.left_inv]
+        simp
+        omega
+  right_inv := by
+    intro n
+    dsimp
+    rw [Nat.add_sub_cancel_left]
+    exact prodNat.right_inv n
+
+def unorderedPairCode (a b : Nat) : Nat :=
+  unorderedPairNat.toFun (sortNatPair a b)
+
+theorem unorderedPairCode_comm (a b : Nat) :
+    unorderedPairCode a b = unorderedPairCode b a := by
+  simp [unorderedPairCode, sortNatPair_comm a b]
+
+theorem unorderedPairCode_invFun (n : Nat) :
+    unorderedPairCode (unorderedPairNat.invFun n).val.1
+      (unorderedPairNat.invFun n).val.2 = n := by
+  unfold unorderedPairCode
+  have hsort :
+      sortNatPair (unorderedPairNat.invFun n).val.1
+          (unorderedPairNat.invFun n).val.2 =
+        unorderedPairNat.invFun n := by
+    exact sortNatPair_of_le (unorderedPairNat.invFun n).property
+  rw [hsort]
+  exact unorderedPairNat.right_inv n
+
+theorem unorderedPairNat_inv_unorderedPairCode_of_le {a b : Nat}
+    (h : a ≤ b) :
+    unorderedPairNat.invFun (unorderedPairCode a b) = ⟨(a, b), h⟩ := by
+  unfold unorderedPairCode
+  rw [sortNatPair_of_le h]
+  exact unorderedPairNat.left_inv ⟨(a, b), h⟩
+
+theorem unorderedPairNat_inv_unorderedPairCode_of_not_le {a b : Nat}
+    (h : ¬a ≤ b) :
+    unorderedPairNat.invFun (unorderedPairCode a b) =
+      ⟨(b, a), Nat.le_of_not_ge h⟩ := by
+  rw [unorderedPairCode_comm]
+  exact unorderedPairNat_inv_unorderedPairCode_of_le (Nat.le_of_not_ge h)
+
 end CodeAlgebra
 end BijForm

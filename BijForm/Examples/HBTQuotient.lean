@@ -7,10 +7,8 @@ namespace Examples
 open DepPoly
 
 /-
-Diagnostic quotient example: this file shows how a constructor-layer quotient
-feeds the generic quotient-polynomial coding theorem. It deliberately leaves
-the quotient code carrier as an indexed quotient of the generated Nat code;
-it is not yet a completed concrete normal-form encoding to `Nat` or `Fin k`.
+Concrete quotient example: a constructor-layer branch-swap quotient descends
+the generated height-bounded-tree Nat code to a canonical Nat normal form.
 -/
 
 /-- One-step quotient relation for height-bounded trees modulo swapping the
@@ -98,6 +96,229 @@ code. -/
 def HBTChildSwapNatCodeIso (i : Nat) :
     HBTChildSwap i ≃ᵢ HBTChildSwapNatCode i :=
   HBTChildSwapQuotient.codeIso HBTNatGeneratedCode.toWellFoundedCode i
+
+def HBTQuotLeaf (i label : Nat) : Mu HBTPoly i :=
+  Mu.sup (P := HBTPoly) .leaf (i, label) rfl (fun q => nomatch q)
+
+def HBTQuotBranch (m : Nat) (lhs rhs : Mu HBTPoly m) :
+    Mu HBTPoly (m + 1) :=
+  Mu.sup (P := HBTPoly) .branch m rfl (fun
+    | false => lhs
+    | true => rhs)
+
+/-- Canonical Nat normal form for height-bounded trees modulo branch-child
+swapping. -/
+def HBTChildSwapNorm : ∀ i, Mu HBTPoly i → Nat
+  | 0, Mu.sup .leaf p _h _child => p.2
+  | 0, Mu.sup .branch _m h _child => by cases h
+  | _m + 1, Mu.sup .leaf p _h _child =>
+      CodeAlgebra.sumNat.toFun (Sum.inl p.2)
+  | _m + 1, Mu.sup .branch k _h child =>
+      CodeAlgebra.sumNat.toFun
+        (Sum.inr
+          (CodeAlgebra.unorderedPairCode
+            (HBTChildSwapNorm k (child false))
+            (HBTChildSwapNorm k (child true))))
+
+/-- Decode a concrete Nat normal form into a representative tree. -/
+def HBTChildSwapDenorm : ∀ i, Nat → Mu HBTPoly i
+  | 0, n => HBTQuotLeaf 0 n
+  | m + 1, n =>
+      match CodeAlgebra.sumNat.invFun n with
+      | Sum.inl label => HBTQuotLeaf (m + 1) label
+      | Sum.inr pairCode =>
+          let pair := CodeAlgebra.unorderedPairNat.invFun pairCode
+          HBTQuotBranch m
+            (HBTChildSwapDenorm m pair.val.1)
+            (HBTChildSwapDenorm m pair.val.2)
+
+theorem HBTChildSwap_norm_denorm :
+    ∀ i (n : Nat), HBTChildSwapNorm i (HBTChildSwapDenorm i n) = n
+  | 0, _n => rfl
+  | m + 1, n => by
+      dsimp [HBTChildSwapDenorm]
+      generalize hsum : CodeAlgebra.sumNat.invFun n = s
+      have hright := CodeAlgebra.sumNat.right_inv n
+      rw [hsum] at hright
+      cases s with
+      | inl label =>
+          simpa [HBTChildSwapNorm, HBTQuotLeaf] using hright
+      | inr pairCode =>
+          let pair := CodeAlgebra.unorderedPairNat.invFun pairCode
+          have hleft :=
+            HBTChildSwap_norm_denorm m pair.val.1
+          have hright_child :=
+            HBTChildSwap_norm_denorm m pair.val.2
+          have hpair :
+              CodeAlgebra.unorderedPairCode
+                (HBTChildSwapNorm m (HBTChildSwapDenorm m pair.val.1))
+                (HBTChildSwapNorm m (HBTChildSwapDenorm m pair.val.2)) =
+                pairCode := by
+            rw [hleft, hright_child]
+            exact CodeAlgebra.unorderedPairCode_invFun pairCode
+          simpa [HBTChildSwapNorm, HBTQuotBranch, pair, hpair] using hright
+
+theorem HBTChildSwap_denorm_norm_rel :
+    ∀ i (x : Mu HBTPoly i),
+      QuotientPresentation.Rel HBTChildSwapQuotient i
+        (HBTChildSwapDenorm i (HBTChildSwapNorm i x)) x
+  | 0, Mu.sup .leaf p h child => by
+      cases p with
+      | mk height label =>
+        cases h
+        apply QuotientPresentation.Rel.congr
+        intro q
+        cases q
+  | 0, Mu.sup .branch _m h _child => by
+      cases h
+  | m + 1, Mu.sup .leaf p h child => by
+      cases p with
+      | mk height label =>
+        cases h
+        dsimp [HBTChildSwapNorm, HBTChildSwapDenorm]
+        rw [CodeAlgebra.sumNat.left_inv (Sum.inl label)]
+        apply QuotientPresentation.Rel.congr
+        intro q
+        cases q
+  | m + 1, Mu.sup .branch k h child => by
+      cases h
+      dsimp [HBTChildSwapNorm, HBTChildSwapDenorm]
+      rw [CodeAlgebra.sumNat.left_inv
+        (Sum.inr
+          (CodeAlgebra.unorderedPairCode
+            (HBTChildSwapNorm m (child false))
+            (HBTChildSwapNorm m (child true))))]
+      let a := HBTChildSwapNorm m (child false)
+      let b := HBTChildSwapNorm m (child true)
+      by_cases hab : a ≤ b
+      · change QuotientPresentation.Rel HBTChildSwapQuotient (m + 1)
+          (HBTQuotBranch m
+            (HBTChildSwapDenorm m
+              (CodeAlgebra.unorderedPairNat.invFun
+                (CodeAlgebra.unorderedPairCode
+                  (HBTChildSwapNorm m (child false))
+                  (HBTChildSwapNorm m (child true)))).val.1)
+            (HBTChildSwapDenorm m
+              (CodeAlgebra.unorderedPairNat.invFun
+                (CodeAlgebra.unorderedPairCode
+                  (HBTChildSwapNorm m (child false))
+                  (HBTChildSwapNorm m (child true)))).val.2))
+          (Mu.sup (P := HBTPoly) .branch m rfl child)
+        rw [CodeAlgebra.unorderedPairNat_inv_unorderedPairCode_of_le hab]
+        dsimp [HBTQuotBranch, a, b]
+        apply QuotientPresentation.Rel.congr
+        intro q
+        cases q
+        · exact HBTChildSwap_denorm_norm_rel m (child false)
+        · exact HBTChildSwap_denorm_norm_rel m (child true)
+      · change QuotientPresentation.Rel HBTChildSwapQuotient (m + 1)
+          (HBTQuotBranch m
+            (HBTChildSwapDenorm m
+              (CodeAlgebra.unorderedPairNat.invFun
+                (CodeAlgebra.unorderedPairCode
+                  (HBTChildSwapNorm m (child false))
+                  (HBTChildSwapNorm m (child true)))).val.1)
+            (HBTChildSwapDenorm m
+              (CodeAlgebra.unorderedPairNat.invFun
+                (CodeAlgebra.unorderedPairCode
+                  (HBTChildSwapNorm m (child false))
+                  (HBTChildSwapNorm m (child true)))).val.2))
+          (Mu.sup (P := HBTPoly) .branch m rfl child)
+        rw [CodeAlgebra.unorderedPairNat_inv_unorderedPairCode_of_not_le hab]
+        dsimp [HBTQuotBranch, a, b]
+        have hchildren :
+            QuotientPresentation.Rel HBTChildSwapQuotient (m + 1)
+              (HBTQuotBranch m
+                (HBTChildSwapDenorm m (HBTChildSwapNorm m (child true)))
+                (HBTChildSwapDenorm m (HBTChildSwapNorm m (child false))))
+              (HBTQuotBranch m (child true) (child false)) := by
+          apply QuotientPresentation.Rel.congr
+          intro q
+          cases q
+          · exact HBTChildSwap_denorm_norm_rel m (child true)
+          · exact HBTChildSwap_denorm_norm_rel m (child false)
+        have hswap :
+            QuotientPresentation.Rel HBTChildSwapQuotient (m + 1)
+              (HBTQuotBranch m (child true) (child false))
+              (HBTQuotBranch m (child false) (child true)) :=
+          QuotientPresentation.Rel.symm
+            (QuotientPresentation.Rel.layer
+              (HBTSwapLayerRel.branch (child false) (child true)))
+        have htarget :
+            QuotientPresentation.Rel HBTChildSwapQuotient (m + 1)
+              (HBTQuotBranch m (child false) (child true))
+              (Mu.sup (P := HBTPoly) .branch m rfl child) := by
+          apply QuotientPresentation.Rel.congr
+          intro q
+          cases q <;> exact QuotientPresentation.Rel.refl _
+        exact QuotientPresentation.Rel.trans hchildren
+          (QuotientPresentation.Rel.trans hswap htarget)
+
+theorem HBTChildSwap_norm_respects :
+    ∀ {i : Nat} {x y : Mu HBTPoly i},
+      QuotientPresentation.Rel HBTChildSwapQuotient i x y →
+        HBTChildSwapNorm i x = HBTChildSwapNorm i y := by
+  intro i x y hxy
+  induction hxy with
+  | refl x => rfl
+  | layer h =>
+      cases h with
+      | branch lhs rhs =>
+          simp [Mu.inn, HBTChildSwapNorm,
+            CodeAlgebra.unorderedPairCode_comm]
+  | @congr i c p h child child' _ ih =>
+      cases c with
+      | leaf =>
+          cases i <;> rfl
+      | branch =>
+          cases i with
+          | zero => cases h
+          | succ m =>
+              dsimp [HBTChildSwapNorm]
+              have hfalse :
+                  HBTChildSwapNorm p (child false) =
+                    HBTChildSwapNorm p (child' false) := by
+                simpa [HBTPoly, HBTInput] using ih false
+              have htrue :
+                  HBTChildSwapNorm p (child true) =
+                    HBTChildSwapNorm p (child' true) := by
+                simpa [HBTPoly, HBTInput] using ih true
+              rw [hfalse, htrue]
+  | symm _ ih =>
+      exact ih.symm
+  | trans _ _ ihxy ihyz =>
+      exact ihxy.trans ihyz
+
+/-- Concrete descent of the generated HBT Nat code through the branch-swap
+quotient relation. -/
+def HBTChildSwapDescendedNatCode :
+    QuotientPresentation.DescendedCode HBTChildSwapQuotient
+      HBTNatGeneratedCode.toWellFoundedCode (fun _ => Nat) where
+  encode i n :=
+    HBTChildSwapNorm i
+      (HBTNatGeneratedCode.toWellFoundedCode.decode i n)
+  decode i n :=
+    HBTNatGeneratedCode.toWellFoundedCode.encode i
+      (HBTChildSwapDenorm i n)
+  encode_respects := by
+    intro i a b hab
+    exact HBTChildSwap_norm_respects hab
+  decode_encode_rel := by
+    intro i a
+    dsimp [QuotientPresentation.CodeRel]
+    rw [WellFoundedCode.decode_encode]
+    exact HBTChildSwap_denorm_norm_rel i
+      (HBTNatGeneratedCode.toWellFoundedCode.decode i a)
+  encode_decode := by
+    intro i n
+    rw [WellFoundedCode.decode_encode]
+    exact HBTChildSwap_norm_denorm i n
+
+/-- Height-bounded trees modulo branch-child swapping are concretely coded by
+`Nat`. The coding is obtained by descending the generated HBT Nat code through
+the quotient relation. -/
+def HBTChildSwapNatIso (i : Nat) : HBTChildSwap i ≃ᵢ Nat :=
+  HBTChildSwapDescendedNatCode.carrierIso i
 
 /-- Readable height-bounded syntax transported to the generated branch-swap
 quotient relation through `HBTSyntaxIso`. -/
@@ -199,13 +420,17 @@ def HBTSyntaxChildSwapIso (i : Nat) :
         rw [(HBTSyntaxIso i).left_inv x])
       q
 
-/-- Diagnostic public encoding theorem for readable branch-swap quotient
-syntax. The code carrier is still the quotient of the generated Nat code by the
-transported branch-swap relation; this is not a completed concrete Nat normal
-form for unordered height-bounded trees. -/
+/-- Intermediate encoding theorem for readable branch-swap quotient syntax into
+the quotient of generated Nat codes. -/
 def HBTSyntaxChildSwapNatCodeIso (i : Nat) :
     HBTSyntaxChildSwap i ≃ᵢ HBTChildSwapNatCode i :=
   Iso.trans (HBTSyntaxChildSwapIso i) (HBTChildSwapNatCodeIso i)
+
+/-- Readable height-bounded syntax modulo branch-child swapping is concretely
+coded by `Nat`. -/
+def HBTSyntaxChildSwapNatIso (i : Nat) :
+    HBTSyntaxChildSwap i ≃ᵢ Nat :=
+  Iso.trans (HBTSyntaxChildSwapIso i) (HBTChildSwapNatIso i)
 
 end Examples
 end BijForm
