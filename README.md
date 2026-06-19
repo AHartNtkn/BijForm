@@ -57,6 +57,15 @@ lake exe bijform
   sums, unordered pairs of natural numbers, and products via the proved
   pairing function.
 
+- `BijForm.TupleAction`
+  Provides the explicit coding surface for quotienting finite action orbits:
+  - `TupleAction.ConcreteQuotientCode`
+  - `TupleAction.FiniteAction`
+  - `TupleAction.ConcreteActionCode`
+  - `TupleAction.BinarySwap.concreteCode`
+  - `TupleAction.BinarySwap.encode`
+  - `TupleAction.BinarySwap.decode`
+
 - `BijForm.DependentPolynomial`
   Defines dependent polynomial signatures, their initial algebras, and the
   generic coding framework:
@@ -153,6 +162,11 @@ replace that quotient code carrier by a concrete carrier: the concrete encoder
 must respect the transported relation, and its decoder must be inverse up to
 that relation.
 
+`BijForm.TupleAction` supplies reusable finite-action coding data used to prove
+those descent criteria. The completed binary-swap instance codes unordered
+pairs by a sorted representative and handles duplicate entries without storing
+a raw group element.
+
 ## Examples
 
 ### Height-Bounded Trees
@@ -179,6 +193,7 @@ Branch-swap quotient example:
 
 - `HBTChildSwapQuotient : QuotientPresentation HBTPoly`
 - `HBTChildSwap_inn_branch_sound`
+- `TupleAction.BinarySwap.concreteCode`
 - `HBTChildSwapNatCodeIso (i) : Iso (HBTChildSwap i) (HBTChildSwapNatCode i)`
 - `HBTChildSwapDescendedNatCode : QuotientPresentation.DescendedCode HBTChildSwapQuotient HBTNatGeneratedCode.toWellFoundedCode (fun _ => Nat)`
 - `HBTChildSwapNatIso (i) : Iso (HBTChildSwap i) Nat`

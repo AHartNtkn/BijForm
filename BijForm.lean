@@ -3,6 +3,7 @@
 import BijForm.Coding
 import BijForm.Pairing
 import BijForm.CodeAlgebra
+import BijForm.TupleAction
 import BijForm.DependentPolynomial
 import BijForm.QuotientPolynomial
 import BijForm.Examples

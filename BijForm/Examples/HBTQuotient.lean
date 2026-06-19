@@ -1,4 +1,5 @@
 import BijForm.QuotientPolynomial
+import BijForm.TupleAction
 import BijForm.Examples.HBT
 
 namespace BijForm
@@ -116,7 +117,7 @@ def HBTChildSwapNorm : ∀ i, Mu HBTPoly i → Nat
   | _m + 1, Mu.sup .branch k _h child =>
       CodeAlgebra.sumNat.toFun
         (Sum.inr
-          (CodeAlgebra.unorderedPairCode
+          (TupleAction.BinarySwap.encode
             (HBTChildSwapNorm k (child false))
             (HBTChildSwapNorm k (child true))))
 
@@ -127,10 +128,10 @@ def HBTChildSwapDenorm : ∀ i, Nat → Mu HBTPoly i
       match CodeAlgebra.sumNat.invFun n with
       | Sum.inl label => HBTQuotLeaf (m + 1) label
       | Sum.inr pairCode =>
-          let pair := CodeAlgebra.unorderedPairNat.invFun pairCode
+          let pair := TupleAction.BinarySwap.decode pairCode
           HBTQuotBranch m
-            (HBTChildSwapDenorm m pair.val.1)
-            (HBTChildSwapDenorm m pair.val.2)
+            (HBTChildSwapDenorm m pair.1)
+            (HBTChildSwapDenorm m pair.2)
 
 theorem HBTChildSwap_norm_denorm :
     ∀ i (n : Nat), HBTChildSwapNorm i (HBTChildSwapDenorm i n) = n
@@ -144,18 +145,18 @@ theorem HBTChildSwap_norm_denorm :
       | inl label =>
           simpa [HBTChildSwapNorm, HBTQuotLeaf] using hright
       | inr pairCode =>
-          let pair := CodeAlgebra.unorderedPairNat.invFun pairCode
+          let pair := TupleAction.BinarySwap.decode pairCode
           have hleft :=
-            HBTChildSwap_norm_denorm m pair.val.1
+            HBTChildSwap_norm_denorm m pair.1
           have hright_child :=
-            HBTChildSwap_norm_denorm m pair.val.2
+            HBTChildSwap_norm_denorm m pair.2
           have hpair :
-              CodeAlgebra.unorderedPairCode
-                (HBTChildSwapNorm m (HBTChildSwapDenorm m pair.val.1))
-                (HBTChildSwapNorm m (HBTChildSwapDenorm m pair.val.2)) =
+              TupleAction.BinarySwap.encode
+                (HBTChildSwapNorm m (HBTChildSwapDenorm m pair.1))
+                (HBTChildSwapNorm m (HBTChildSwapDenorm m pair.2)) =
                 pairCode := by
             rw [hleft, hright_child]
-            exact CodeAlgebra.unorderedPairCode_invFun pairCode
+            exact TupleAction.BinarySwap.encode_decode pairCode
           simpa [HBTChildSwapNorm, HBTQuotBranch, pair, hpair] using hright
 
 theorem HBTChildSwap_denorm_norm_rel :
@@ -185,7 +186,7 @@ theorem HBTChildSwap_denorm_norm_rel :
       dsimp [HBTChildSwapNorm, HBTChildSwapDenorm]
       rw [CodeAlgebra.sumNat.left_inv
         (Sum.inr
-          (CodeAlgebra.unorderedPairCode
+          (TupleAction.BinarySwap.encode
             (HBTChildSwapNorm m (child false))
             (HBTChildSwapNorm m (child true))))]
       let a := HBTChildSwapNorm m (child false)
@@ -194,17 +195,17 @@ theorem HBTChildSwap_denorm_norm_rel :
       · change QuotientPresentation.Rel HBTChildSwapQuotient (m + 1)
           (HBTQuotBranch m
             (HBTChildSwapDenorm m
-              (CodeAlgebra.unorderedPairNat.invFun
-                (CodeAlgebra.unorderedPairCode
+              (TupleAction.BinarySwap.decode
+                (TupleAction.BinarySwap.encode
                   (HBTChildSwapNorm m (child false))
-                  (HBTChildSwapNorm m (child true)))).val.1)
+                  (HBTChildSwapNorm m (child true)))).1)
             (HBTChildSwapDenorm m
-              (CodeAlgebra.unorderedPairNat.invFun
-                (CodeAlgebra.unorderedPairCode
+              (TupleAction.BinarySwap.decode
+                (TupleAction.BinarySwap.encode
                   (HBTChildSwapNorm m (child false))
-                  (HBTChildSwapNorm m (child true)))).val.2))
+                  (HBTChildSwapNorm m (child true)))).2))
           (Mu.sup (P := HBTPoly) .branch m rfl child)
-        rw [CodeAlgebra.unorderedPairNat_inv_unorderedPairCode_of_le hab]
+        rw [TupleAction.BinarySwap.decode_encode_of_le hab]
         dsimp [HBTQuotBranch, a, b]
         apply QuotientPresentation.Rel.congr
         intro q
@@ -214,17 +215,17 @@ theorem HBTChildSwap_denorm_norm_rel :
       · change QuotientPresentation.Rel HBTChildSwapQuotient (m + 1)
           (HBTQuotBranch m
             (HBTChildSwapDenorm m
-              (CodeAlgebra.unorderedPairNat.invFun
-                (CodeAlgebra.unorderedPairCode
+              (TupleAction.BinarySwap.decode
+                (TupleAction.BinarySwap.encode
                   (HBTChildSwapNorm m (child false))
-                  (HBTChildSwapNorm m (child true)))).val.1)
+                  (HBTChildSwapNorm m (child true)))).1)
             (HBTChildSwapDenorm m
-              (CodeAlgebra.unorderedPairNat.invFun
-                (CodeAlgebra.unorderedPairCode
+              (TupleAction.BinarySwap.decode
+                (TupleAction.BinarySwap.encode
                   (HBTChildSwapNorm m (child false))
-                  (HBTChildSwapNorm m (child true)))).val.2))
+                  (HBTChildSwapNorm m (child true)))).2))
           (Mu.sup (P := HBTPoly) .branch m rfl child)
-        rw [CodeAlgebra.unorderedPairNat_inv_unorderedPairCode_of_not_le hab]
+        rw [TupleAction.BinarySwap.decode_encode_of_not_le hab]
         dsimp [HBTQuotBranch, a, b]
         have hchildren :
             QuotientPresentation.Rel HBTChildSwapQuotient (m + 1)
@@ -265,7 +266,7 @@ theorem HBTChildSwap_norm_respects :
       cases h with
       | branch lhs rhs =>
           simp [Mu.inn, HBTChildSwapNorm,
-            CodeAlgebra.unorderedPairCode_comm]
+            TupleAction.BinarySwap.encode_comm]
   | @congr i c p h child child' _ ih =>
       cases c with
       | leaf =>
