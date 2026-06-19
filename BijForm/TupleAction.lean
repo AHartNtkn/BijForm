@@ -96,6 +96,132 @@ structure ConcreteActionCode {Raw : Type u} (A : FiniteAction Raw) extends
     ConcreteQuotientCode Raw where
   action_sound : ∀ g x, Rel (A.act g x) x
 
+namespace FixedTuple
+
+/-- Fixed-length tuples of natural-number codes. -/
+abbrev Tuple (n : Nat) : Type :=
+  Fin n → Nat
+
+/-- A tuple is sorted when entries are nondecreasing in the `Fin` index. -/
+def Sorted {n : Nat} (t : Tuple n) : Prop :=
+  ∀ i j, i.val ≤ j.val → t i ≤ t j
+
+/-- Sorted fixed-length tuples, intended as the structural carrier for
+duplicate-aware orbit representatives. -/
+abbrev SortedTuple (n : Nat) : Type :=
+  {t : Tuple n // Sorted t}
+
+/-- A concrete permutation of `Fin n`, kept project-local rather than importing
+mathlib's permutation hierarchy. -/
+structure Perm (n : Nat) where
+  toFun : Fin n → Fin n
+  invFun : Fin n → Fin n
+  left_inv : Function.LeftInverse invFun toFun
+  right_inv : Function.RightInverse invFun toFun
+
+namespace Perm
+
+def actTuple {n : Nat} (p : Perm n) (t : Tuple n) : Tuple n :=
+  fun i => t (p.invFun i)
+
+end Perm
+
+/-- A finite family of tuple permutations. Closure/group laws are explicit
+data because quotient-code construction only needs the concrete finite action
+and the residual-index proof obligations below. -/
+structure PermFamily (n : Nat) where
+  Elem : Type u
+  size : Nat
+  elemCode : Elem ≃ᵢ Fin size
+  perm : Elem → Perm n
+
+namespace PermFamily
+
+def action {n : Nat} (G : PermFamily n) : FiniteAction (Tuple n) where
+  Elem := G.Elem
+  size := G.size
+  elemCode := G.elemCode
+  act := fun g t => (G.perm g).actTuple t
+
+def OrbitRel {n : Nat} (G : PermFamily n) (t u : Tuple n) : Prop :=
+  ∃ g : G.Elem, (G.perm g).actTuple t = u
+
+end PermFamily
+
+/--
+Duplicate-aware residual image data for a sorted tuple. `Image` is the
+concrete finite residual index type: it must index distinct images after
+identifying group elements that act the same because tuple entries are equal.
+-/
+structure ResidualImageData {n : Nat} (G : PermFamily n)
+    (s : SortedTuple n) where
+  Image : Type u
+  imageSize : Nat
+  imageCode : Image ≃ᵢ Fin imageSize
+  tupleOf : Image → Tuple n
+  tupleOf_mem :
+    ∀ r, ∃ g : G.Elem, tupleOf r = (G.perm g).actTuple s.val
+  tupleOf_complete :
+    ∀ g : G.Elem, ∃ r, tupleOf r = (G.perm g).actTuple s.val
+  tupleOf_injective :
+    ∀ {r r'}, tupleOf r = tupleOf r' → r = r'
+
+/--
+Data required to turn finite permutation orbits on fixed-length tuples into a
+concrete code.  The residual image data is where duplicate-sensitive stabilizer
+handling lives: for each sorted tuple, it indexes distinct images, not raw
+group elements.
+-/
+structure OrbitCodingData (n : Nat) (G : PermFamily n) where
+  sortedCode : SortedTuple n ≃ᵢ Nat
+  residual : (s : SortedTuple n) → ResidualImageData G s
+  residualSigmaCode :
+    (Σ s : SortedTuple n, (residual s).Image) ≃ᵢ Nat
+  normalize : Tuple n → Σ s : SortedTuple n, (residual s).Image
+  denormalize : (Σ s : SortedTuple n, (residual s).Image) → Tuple n
+  normalize_respects :
+    ∀ {t u : Tuple n}, PermFamily.OrbitRel G t u → normalize t = normalize u
+  denormalize_normalize_rel :
+    ∀ t, PermFamily.OrbitRel G (denormalize (normalize t)) t
+  normalize_denormalize :
+    ∀ c, normalize (denormalize c) = c
+
+/--
+Unfinished blueprint: orbit coding data for a finite permutation family should
+produce a concrete action code for its tuple action. The proof is intentionally
+left as a labeled gap because the generic sorted-tuple coder and residual
+image-index construction have not been formalized yet.
+-/
+def orbitCodingData_toConcreteActionCode
+    {n : Nat} {G : PermFamily n} (D : OrbitCodingData n G) :
+    ConcreteActionCode G.action where
+  Rel := PermFamily.OrbitRel G
+  rel_refl := by
+    intro t
+    -- unfinished blueprint: requires an identity element/law in `PermFamily`.
+    sorry
+  rel_symm := by
+    intro t u htu
+    -- unfinished blueprint: requires inverse closure/law in `PermFamily`.
+    sorry
+  rel_trans := by
+    intro t u v htu huv
+    -- unfinished blueprint: requires composition closure/law in `PermFamily`.
+    sorry
+  Canon := Σ s : SortedTuple n, (D.residual s).Image
+  code := D.residualSigmaCode
+  normalize := D.normalize
+  denormalize := D.denormalize
+  normalize_respects := D.normalize_respects
+  denormalize_normalize_rel := D.denormalize_normalize_rel
+  normalize_denormalize := D.normalize_denormalize
+  action_sound := by
+    intro g t
+    -- unfinished blueprint: requires inverse closure/law in `PermFamily`.
+    sorry
+
+end FixedTuple
+
 namespace BinarySwap
 
 inductive Elem where
