@@ -174,11 +174,18 @@ those descent criteria. The completed binary-swap instance codes unordered
 pairs by a sorted representative and handles duplicate entries without storing
 a raw group element.
 
-The fixed-length tuple-action API names the data for sorted tuples, finite
-permutation group actions, and duplicate-aware residual image indices.
-`TupleAction.FixedTuple.orbitCodingData_toConcreteActionCode` proves the
-generic quotient-code construction once explicit orbit-coding data is supplied;
-the construction does not store a raw group element as the residual index.
+The fixed-length tuple-action API applies this to quotients of `Fin n -> Nat`
+tuples by a finite permutation group action. `TupleAction.FixedTuple.PermFamily`
+packages the finite action and the identity, inverse, and composition laws that
+make the orbit relation a setoid. A concrete quotient code is then described by
+`TupleAction.FixedTuple.OrbitCodingData`: each tuple is normalized to a sorted
+representative together with a residual image index for that representative,
+and `TupleAction.FixedTuple.ResidualImageData` requires that this residual type
+enumerates the distinct group images of the sorted tuple. From that data,
+`TupleAction.FixedTuple.orbitCodingData_toConcreteActionCode` constructs the
+generic `ConcreteActionCode`. The current generic theorem consumes these
+normalization and residual-indexing functions as explicit data; it does not yet
+synthesize them for an arbitrary finite permutation group.
 
 ## Examples
 
