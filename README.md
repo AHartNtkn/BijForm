@@ -71,13 +71,19 @@ lake exe bijform
 
 - `BijForm.QuotientPolynomial`
   Defines quotient presentations for dependent-polynomial initial algebras and
-  the canonical coding theorem:
+  their algebra/coding surface:
   - `QuotientPresentation`
   - `QuotientPresentation.Rel`
+  - `QuotientPresentation.setoid`
   - `QuotientPresentation.Carrier`
+  - `QuotientPresentation.inn`
+  - `QuotientPresentation.inn_layer_sound`
+  - `QuotientPresentation.recCarrier`
+  - `QuotientPresentation.ind`
   - `QuotientPresentation.CodeRel`
   - `QuotientPresentation.CodeCarrier`
   - `QuotientPresentation.codeIso`
+  - `QuotientPresentation.DescendedCode`
 
 - `BijForm.Examples`
   Imports the worked example modules:
@@ -130,11 +136,21 @@ closes that layer relation under recursive congruence, symmetry, and
 transitivity on `Mu P i`, and `QuotientPresentation.Carrier` is the resulting
 quotient datatype.
 
+`QuotientPresentation.inn` is the quotient-algebra constructor from a layer of
+already quotiented children. `QuotientPresentation.recCarrier` descends a fold
+out of `Mu P` when the fold respects the generated quotient relation, and
+`QuotientPresentation.ind` provides quotient induction.
+
 For any existing `WellFoundedCode P Code`, `QuotientPresentation.codeIso`
 characterizes the quotient datatype's encoding as the quotient of `Code i` by
 the transported relation `QuotientPresentation.CodeRel`. This gives quotient
 examples a generic path from the polynomial presentation to a code carrier
 without hand-writing a final encoder for the quotient.
+
+`QuotientPresentation.DescendedCode` records the extra criterion needed to
+replace that quotient code carrier by a concrete carrier: the concrete encoder
+must respect the transported relation, and its decoder must be inverse up to
+that relation.
 
 ## Examples
 
@@ -157,9 +173,17 @@ Main results:
 - `HBTSyntaxIso (i) : Iso (Mu HBTPoly i) (HBTSyntax i)`
 - `HBTNatGeneratedCode : GeneratedNatCode HBTPoly`
 - `HBTSyntaxNatIso (i) : Iso (HBTSyntax i) Nat`
+
+Diagnostic branch-swap quotient example:
+
 - `HBTChildSwapQuotient : QuotientPresentation HBTPoly`
+- `HBTChildSwap_inn_branch_sound`
 - `HBTChildSwapNatCodeIso (i) : Iso (HBTChildSwap i) (HBTChildSwapNatCode i)`
 - `HBTSyntaxChildSwapNatCodeIso (i) : Iso (HBTSyntaxChildSwap i) (HBTChildSwapNatCode i)`
+
+The branch-swap quotient code carrier is still an indexed quotient of the
+generated Nat code. It is not yet a completed concrete Nat normal form for
+unordered height-bounded trees.
 
 In source, the precise theorem type uses the local `Iso` notation.
 

@@ -3,7 +3,7 @@ import BijForm.DependentPolynomial
 namespace BijForm
 namespace DepPoly
 
-universe u v
+universe u v w
 
 variable {ι : Type u}
 
@@ -71,18 +71,139 @@ inductive Rel (Q : QuotientPresentation P) :
   | trans {i : ι} {x y z : Mu P i} :
       Rel Q i x y → Rel Q i y z → Rel Q i x z
 
+/-- The generated quotient relation bundled as an explicit setoid, so quotient
+equality can be reflected back to the generated relation when proving
+constructor well-definedness. -/
+def setoid (Q : QuotientPresentation P) (i : ι) : Setoid (Mu P i) where
+  r := Rel Q i
+  iseqv := by
+    refine ⟨?_, ?_, ?_⟩
+    · intro x
+      exact Rel.refl x
+    · intro x y h
+      exact Rel.symm h
+    · intro x y z hxy hyz
+      exact Rel.trans hxy hyz
+
 /-- The quotient initial-algebra carrier generated from a quotient
 presentation. -/
 abbrev Carrier (Q : QuotientPresentation P) (i : ι) : Type u :=
-  Quot (Rel Q i)
+  Quotient (setoid Q i)
 
 /-- The quotient map from the polynomial initial algebra. -/
 def ofMu (Q : QuotientPresentation P) {i : ι} (x : Mu P i) : Carrier Q i :=
-  Quot.mk (Rel Q i) x
+  Quotient.mk (setoid Q i) x
 
 theorem sound (Q : QuotientPresentation P) {i : ι} {x y : Mu P i}
     (h : Rel Q i x y) : ofMu Q x = ofMu Q y :=
-  Quot.sound h
+  Quotient.sound h
+
+theorem exact (Q : QuotientPresentation P) {i : ι} {x y : Mu P i}
+    (h : ofMu Q x = ofMu Q y) : Rel Q i x y :=
+  Quotient.exact h
+
+namespace Mu
+
+/-- Fold out of the polynomial initial algebra into any indexed algebra. -/
+def fold {P : DepPoly ι} {A : ι → Type v}
+    (alg : ∀ i, Obj P A i → A i) : ∀ i, Mu P i → A i
+  | i, Mu.sup c p h child =>
+      alg i
+        { ctor := c
+          param := p
+          out_eq := h
+          child := fun q => fold alg (P.input p q) (child q) }
+
+@[simp]
+theorem fold_sup {P : DepPoly ι} {A : ι → Type v}
+    (alg : ∀ i, Obj P A i → A i)
+    {i : ι} (c : P.Ctor) (p : P.Param c) (h : P.out c p = i)
+    (child : (q : P.Pos c p) → Mu P (P.input p q)) :
+    fold alg i (Mu.sup c p h child) =
+      alg i
+        { ctor := c
+          param := p
+          out_eq := h
+          child := fun q => fold alg (P.input p q) (child q) } :=
+  rfl
+
+end Mu
+
+noncomputable section
+
+/-- A representative for a quotient class. This is used only to define the
+quotient-layer constructor; well-definedness is proved with `Quotient.exact`
+against the explicit generated setoid. -/
+def repr (Q : QuotientPresentation P) {i : ι} (x : Carrier Q i) : Mu P i :=
+  Classical.choose (Quotient.exists_rep x)
+
+theorem ofMu_repr (Q : QuotientPresentation P) {i : ι} (x : Carrier Q i) :
+    ofMu Q (repr Q x) = x :=
+  Classical.choose_spec (Quotient.exists_rep x)
+
+/-- Constructor for the quotient initial algebra from a layer of already
+quotiented recursive children. -/
+def inn (Q : QuotientPresentation P) {i : ι}
+    (x : Obj P (Carrier Q) i) : Carrier Q i :=
+  ofMu Q
+    (Mu.inn
+      { ctor := x.ctor
+        param := x.param
+        out_eq := x.out_eq
+        child := fun q => repr Q (x.child q) })
+
+/-- The quotient constructor agrees with the raw polynomial constructor when
+all quotient children are introduced by the quotient map. -/
+theorem inn_ofMu_obj (Q : QuotientPresentation P) {i : ι}
+    (x : Obj P (Mu P) i) :
+    inn Q (Obj.map (fun j => ofMu Q (i := j)) x) = ofMu Q (Mu.inn x) := by
+  apply sound Q
+  apply Rel.congr
+  intro q
+  apply exact Q
+  exact ofMu_repr Q (ofMu Q (x.child q))
+
+/-- Constructor-layer quotient equations are respected by the quotient
+constructor. -/
+theorem inn_layer_sound (Q : QuotientPresentation P) {i : ι}
+    {x y : Obj P (Mu P) i} (h : Q.LayerRel i x y) :
+    inn Q (Obj.map (fun j => ofMu Q (i := j)) x) =
+      inn Q (Obj.map (fun j => ofMu Q (i := j)) y) := by
+  rw [inn_ofMu_obj Q x, inn_ofMu_obj Q y]
+  exact sound Q (Rel.layer h)
+
+end
+
+/-- Recursor for quotient presentations. A fold over `Mu P` descends exactly
+when it respects the generated quotient relation. -/
+def recCarrier (Q : QuotientPresentation P) {A : ι → Type v}
+    (alg : ∀ i, Obj P A i → A i)
+    (respect :
+      ∀ {i : ι} {x y : Mu P i},
+        Rel Q i x y → Mu.fold alg i x = Mu.fold alg i y) :
+    ∀ i, Carrier Q i → A i :=
+  fun i =>
+    Quotient.lift (Mu.fold alg i)
+      (by
+        intro x y hxy
+        exact respect hxy)
+
+@[simp]
+theorem rec_ofMu (Q : QuotientPresentation P) {A : ι → Type v}
+    (alg : ∀ i, Obj P A i → A i)
+    (respect :
+      ∀ {i : ι} {x y : Mu P i},
+        Rel Q i x y → Mu.fold alg i x = Mu.fold alg i y)
+    {i : ι} (x : Mu P i) :
+    recCarrier Q alg respect i (ofMu Q x) = Mu.fold alg i x :=
+  rfl
+
+/-- Quotient induction for a property of the quotient carrier. -/
+theorem ind (Q : QuotientPresentation P)
+    {motive : ∀ i, Carrier Q i → Prop}
+    (mk : ∀ i (x : Mu P i), motive i (ofMu Q x)) :
+    ∀ i (x : Carrier Q i), motive i x :=
+  fun i x => Quotient.inductionOn x (mk i)
 
 /-- The code-side relation obtained by transporting a quotient relation across
 an existing well-founded coding of the prequotient initial algebra. -/
@@ -90,22 +211,35 @@ def CodeRel (Q : QuotientPresentation P) {Code : ι → Type v}
     (C : WellFoundedCode P Code) (i : ι) (a b : Code i) : Prop :=
   Rel Q i (C.decode i a) (C.decode i b)
 
+/-- The transported code relation bundled as an explicit setoid. -/
+def codeSetoid (Q : QuotientPresentation P) {Code : ι → Type v}
+    (C : WellFoundedCode P Code) (i : ι) : Setoid (Code i) where
+  r := CodeRel Q C i
+  iseqv := by
+    refine ⟨?_, ?_, ?_⟩
+    · intro x
+      exact Rel.refl (C.decode i x)
+    · intro x y h
+      exact Rel.symm h
+    · intro x y z hxy hyz
+      exact Rel.trans hxy hyz
+
 /-- The canonical code carrier for a quotient datatype: quotient the generated
 prequotient code by the transported quotient relation. -/
 abbrev CodeCarrier (Q : QuotientPresentation P) {Code : ι → Type v}
     (C : WellFoundedCode P Code) (i : ι) : Type v :=
-  Quot (CodeRel Q C i)
+  Quotient (codeSetoid Q C i)
 
 /-- Encode a quotient datatype into the quotient of an existing generated code
 family. -/
 def encodeCodeCarrier (Q : QuotientPresentation P) {Code : ι → Type v}
     (C : WellFoundedCode P Code) (i : ι) :
     Carrier Q i → CodeCarrier Q C i :=
-  Quot.lift
-    (fun x => Quot.mk (CodeRel Q C i) (C.encode i x))
+  Quotient.lift
+    (fun x => Quotient.mk (codeSetoid Q C i) (C.encode i x))
     (by
       intro x y hxy
-      apply Quot.sound
+      apply Quotient.sound
       change Rel Q i (C.decode i (C.encode i x))
         (C.decode i (C.encode i y))
       rw [WellFoundedCode.decode_encode C i x,
@@ -117,7 +251,7 @@ datatype. -/
 def decodeCodeCarrier (Q : QuotientPresentation P) {Code : ι → Type v}
     (C : WellFoundedCode P Code) (i : ι) :
     CodeCarrier Q C i → Carrier Q i :=
-  Quot.lift
+  Quotient.lift
     (fun z => ofMu Q (C.decode i z))
     (by
       intro a b hab
@@ -135,25 +269,79 @@ def codeIso (Q : QuotientPresentation P) {Code : ι → Type v}
   invFun := decodeCodeCarrier Q C i
   left_inv := by
     intro q
-    exact Quot.ind (r := Rel Q i)
-      (β := fun q => decodeCodeCarrier Q C i (encodeCodeCarrier Q C i q) = q)
+    exact Quotient.ind (s := setoid Q i)
+      (motive := fun q => decodeCodeCarrier Q C i (encodeCodeCarrier Q C i q) = q)
       (fun x => by
-        change decodeCodeCarrier Q C i
-            (encodeCodeCarrier Q C i (ofMu Q x)) = ofMu Q x
-        simp [encodeCodeCarrier, decodeCodeCarrier, ofMu]
+        change Quotient.mk (setoid Q i) (C.decode i (C.encode i x)) =
+          Quotient.mk (setoid Q i) x
         rw [WellFoundedCode.decode_encode C i x])
       q
   right_inv := by
     intro q
-    exact Quot.ind (r := CodeRel Q C i)
-      (β := fun q => encodeCodeCarrier Q C i (decodeCodeCarrier Q C i q) = q)
+    exact Quotient.ind (s := codeSetoid Q C i)
+      (motive := fun q => encodeCodeCarrier Q C i (decodeCodeCarrier Q C i q) = q)
       (fun z => by
-        change encodeCodeCarrier Q C i
-            (decodeCodeCarrier Q C i (Quot.mk (CodeRel Q C i) z))
-          = Quot.mk (CodeRel Q C i) z
-        simp [encodeCodeCarrier, decodeCodeCarrier, ofMu]
+        change Quotient.mk (codeSetoid Q C i) (C.encode i (C.decode i z)) =
+          Quotient.mk (codeSetoid Q C i) z
         rw [WellFoundedCode.encode_decode C i z])
       q
+
+/--
+Criterion for replacing the quotient of a generated code family by a concrete
+carrier.  The candidate encoder must respect the transported quotient
+relation, and its decoder must be inverse up to that relation.
+-/
+structure DescendedCode (Q : QuotientPresentation P) {Code : ι → Type v}
+    (C : WellFoundedCode P Code) (Out : ι → Type w) where
+  encode : ∀ i, Code i → Out i
+  decode : ∀ i, Out i → Code i
+  encode_respects :
+    ∀ {i : ι} {a b : Code i}, CodeRel Q C i a b → encode i a = encode i b
+  decode_encode_rel :
+    ∀ i (a : Code i), CodeRel Q C i (decode i (encode i a)) a
+  encode_decode :
+    ∀ i (z : Out i), encode i (decode i z) = z
+
+namespace DescendedCode
+
+variable {Q : QuotientPresentation P} {Code : ι → Type v}
+variable {C : WellFoundedCode P Code} {Out : ι → Type w}
+
+/-- A descended code criterion gives a bijection from the quotient code carrier
+to the concrete carrier. -/
+def codeCarrierIso (D : DescendedCode Q C Out) (i : ι) :
+    CodeCarrier Q C i ≃ᵢ Out i where
+  toFun :=
+    Quotient.lift (D.encode i)
+      (by
+        intro a b hab
+        exact D.encode_respects hab)
+  invFun := fun z => Quotient.mk (codeSetoid Q C i) (D.decode i z)
+  left_inv := by
+    intro q
+    exact Quotient.ind (s := codeSetoid Q C i)
+      (motive := fun q =>
+        Quotient.mk (codeSetoid Q C i)
+            (D.decode i (Quotient.lift (D.encode i)
+              (by
+                intro a b hab
+                exact D.encode_respects hab) q)) = q)
+      (fun a => by
+        apply Quotient.sound
+        change CodeRel Q C i (D.decode i (D.encode i a)) a
+        exact D.decode_encode_rel i a)
+      q
+  right_inv := by
+    intro z
+    exact D.encode_decode i z
+
+/-- A descended code criterion gives a concrete coding of the quotient
+datatype. -/
+def carrierIso (D : DescendedCode Q C Out) (i : ι) :
+    Carrier Q i ≃ᵢ Out i :=
+  Iso.trans (codeIso Q C i) (codeCarrierIso D i)
+
+end DescendedCode
 
 end QuotientPresentation
 
