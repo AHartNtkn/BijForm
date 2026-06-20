@@ -1,10 +1,11 @@
-import BijForm.Examples.TypedBinding
+import BijForm.TypedBinding
 
 namespace BijForm
 namespace Examples
 namespace TypedBinding
 
 open DepPoly
+open BijForm.TypedBinding
 
 /-!
 ## Normal-form lambda expressions

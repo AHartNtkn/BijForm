@@ -2,7 +2,6 @@ import BijForm.DependentPolynomial
 import BijForm.CodeAlgebra
 
 namespace BijForm
-namespace Examples
 namespace TypedBinding
 
 open DepPoly
@@ -610,5 +609,4 @@ def syntaxCarrierIso (D : ShapeCodingData S) (Γ : List Ty) (t : Ty) :
 end ShapeCodingData
 
 end TypedBinding
-end Examples
 end BijForm
