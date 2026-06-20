@@ -1515,6 +1515,7 @@ structure SearchState (G : OpenPortHypergraph Sig boundary)
   pending_nodup : pending.Nodup
   seenNodes : List (Fin G.raw.nodeCount)
   processedEdges : List (Fin G.raw.edgeCount)
+  processedEdges_nodup : processedEdges.Nodup
   pending_unprocessed :
     ∀ endpoint : Fin G.raw.endpointCount,
       endpoint ∈ pending → G.raw.endpointEdge endpoint ∉ processedEdges
@@ -1575,6 +1576,8 @@ def initial (G : OpenPortHypergraph Sig boundary) : SearchState G boundary where
     list_nodup_ofFn_injective G.raw.boundaryPort G.raw.boundary_injective
   seenNodes := []
   processedEdges := []
+  processedEdges_nodup := by
+    simp
   pending_unprocessed := by
     intro _endpoint _hpending
     simp
@@ -1850,6 +1853,16 @@ def connectChild {G : OpenPortHypergraph Sig boundary}
     nodup_eraseFin rest mate (st.rest_nodup hpending)
   seenNodes := st.seenNodes
   processedEdges := G.raw.endpointEdge active :: st.processedEdges
+  processedEdges_nodup := by
+    have hactivePending : active ∈ st.pending := by
+      rw [hpending]
+      simp
+    have hfresh : G.raw.endpointEdge active ∉ st.processedEdges :=
+      st.pending_unprocessed active hactivePending
+    constructor
+    · intro edge hmem heq
+      exact hfresh (by simpa [heq] using hmem)
+    · exact st.processedEdges_nodup
   pending_unprocessed := by
     intro endpoint hmem hprocessed
     have hrestMem : endpoint ∈ rest :=
@@ -1976,6 +1989,16 @@ def budChild {G : OpenPortHypergraph Sig boundary}
       exact hunseen hseen
   seenNodes := node :: st.seenNodes
   processedEdges := G.raw.endpointEdge active :: st.processedEdges
+  processedEdges_nodup := by
+    have hactivePending : active ∈ st.pending := by
+      rw [hpending]
+      simp
+    have hfresh : G.raw.endpointEdge active ∉ st.processedEdges :=
+      st.pending_unprocessed active hactivePending
+    constructor
+    · intro edge hmem heq
+      exact hfresh (by simpa [heq] using hmem)
+    · exact st.processedEdges_nodup
   pending_unprocessed := by
     intro endpoint hmem hprocessed
     simp at hmem
