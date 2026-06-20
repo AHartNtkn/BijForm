@@ -6450,6 +6450,47 @@ theorem IsoRelated.firstPendingStepSearch?_connect
     ⟨rightMateEdge', hstep⟩
   exact ⟨rightMateEdge', hstep⟩
 
+theorem IsoRelated.firstPendingConnectSearch?_none
+    {G H : OpenPortHypergraph Sig boundary}
+    {e : PortHypergraphIso G.raw H.raw}
+    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
+    {left : SearchState G (activeLabel :: restLabels)}
+    {right : SearchState H (activeLabel :: restLabels)}
+    (_hr : IsoRelated e left right)
+    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
+    (_hpending : left.pending = active :: rest)
+    (hconnect :
+      firstPendingConnectSearch? G left.seenNode active rest = none) :
+    firstPendingConnectSearch? H right.seenNode (e.endpointEquiv.toFun active)
+        (rest.map e.endpointEquiv.toFun) = none := by
+  cases hright :
+      firstPendingConnectSearch? H right.seenNode
+        (e.endpointEquiv.toFun active) (rest.map e.endpointEquiv.toFun) with
+  | none => rfl
+  | some step =>
+      rcases firstPendingConnectSearch?_some_connect
+          H right.seenNode hright with
+        ⟨rightMate, hmateRight, _hstepEq⟩
+      let leftMate : Fin rest.length :=
+        Fin.cast (by simp) rightMate
+      have hget :
+          (rest.map e.endpointEquiv.toFun).get rightMate =
+            e.endpointEquiv.toFun (rest.get leftMate) := by
+        simp [leftMate]
+      have hmateRight' :
+          PortHypergraph.EdgeMate H.raw (e.endpointEquiv.toFun active)
+            (e.endpointEquiv.toFun (rest.get leftMate)) := by
+        simpa [hget] using hmateRight
+      have hmateLeft :
+          PortHypergraph.EdgeMate G.raw active (rest.get leftMate) := by
+        have hreflected := PortHypergraphIso.edgeMate_reflected e hmateRight'
+        simpa using hreflected
+      rcases firstPendingConnectSearch?_exists_of_witness
+          G left.seenNode leftMate hmateLeft with
+        ⟨leftStep, hleftStep⟩
+      rw [hconnect] at hleftStep
+      cases hleftStep
+
 theorem firstPendingStepSearch?_some_bud_of_witness
     {G : OpenPortHypergraph Sig boundary}
     {frontier : List Sig.Port} (st : SearchState G frontier)
@@ -6528,6 +6569,55 @@ theorem firstPendingStepSearch?_some_bud_exact_of_witness
     exact hleft.trans hright.symm
   cases hownerEq
   exact ⟨hmate', hunseen', hstep⟩
+
+theorem IsoRelated.firstPendingStepSearch?_bud
+    {G H : OpenPortHypergraph Sig boundary}
+    {e : PortHypergraphIso G.raw H.raw}
+    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
+    {left : SearchState G (activeLabel :: restLabels)}
+    {right : SearchState H (activeLabel :: restLabels)}
+    (hr : IsoRelated e left right)
+    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
+    (hpending : left.pending = active :: rest)
+    (hconnect :
+      firstPendingConnectSearch? G left.seenNode active rest = none)
+    (node : Fin G.raw.nodeCount)
+    (slot : Fin (G.raw.incident node).length)
+    (hmate :
+      PortHypergraph.EdgeMate G.raw active ((G.raw.incident node).get slot))
+    (hunseen : ¬ left.seenNode node) :
+    let rightNode := e.nodeEquiv.toFun node
+    let rightSlot := PortHypergraphIso.incidenceSlotPreserved e node slot
+    ∃ (rightMateEdge :
+          PortHypergraph.EdgeMate H.raw (e.endpointEquiv.toFun active)
+            ((H.raw.incident rightNode).get rightSlot))
+      (rightUnseen : ¬ right.seenNode rightNode),
+      right.firstPendingStepSearch? (e.endpointEquiv.toFun active)
+          (rest.map e.endpointEquiv.toFun) =
+        some (FirstPendingStep.bud rightNode rightSlot rightMateEdge
+          rightUnseen) := by
+  dsimp
+  let rightNode := e.nodeEquiv.toFun node
+  let rightSlot := PortHypergraphIso.incidenceSlotPreserved e node slot
+  have rightMateEdge :
+      PortHypergraph.EdgeMate H.raw (e.endpointEquiv.toFun active)
+        ((H.raw.incident rightNode).get rightSlot) := by
+    have hslot :
+        (H.raw.incident rightNode).get rightSlot =
+          e.endpointEquiv.toFun ((G.raw.incident node).get slot) :=
+      PortHypergraphIso.incidence_get_preserved e node slot
+    rw [hslot]
+    exact PortHypergraphIso.edgeMate_preserved e hmate
+  have rightUnseen : ¬ right.seenNode rightNode := by
+    intro hseen
+    have hpre := hr.seen_mem_reflected hseen
+    exact hunseen (by simpa [rightNode, seenNode] using hpre)
+  have hconnectRight :=
+    hr.firstPendingConnectSearch?_none hpending hconnect
+  rcases right.firstPendingStepSearch?_some_bud_exact_of_witness
+      hconnectRight rightNode rightSlot rightMateEdge rightUnseen with
+    ⟨rightMateEdge', rightUnseen', hstep⟩
+  exact ⟨rightMateEdge', rightUnseen', hstep⟩
 
 end SearchState
 
