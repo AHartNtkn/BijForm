@@ -309,47 +309,35 @@ theorem LamNat_layer_child_rank_lt :
         dsimp [LamPoly, LamParam] at param
         cases out_eq
         intro q
-        let pairCode := CodeAlgebra.prodNat.toFun (child false, child true)
-        have hparent :
-            (LamNatLayerIso param).toFun ⟨⟨LamCtor.app, (param : Nat), rfl⟩, child⟩ =
-              param + (2 * pairCode + 1) := by
-          simp [pairCode, LamNatLayerIso, LamNatLayerShapeIso, LamNatLayerShapeTo,
-            CodeAlgebra.finPrefixNat, CodeAlgebra.sumProdNat, Iso.trans, Iso.sum,
-            CodeAlgebra.finPlusNat,
-            CodeAlgebra.sumNat, Iso.refl]
         cases q
         · change LamNatRank param (child false) <
             LamNatRank param
               ((LamNatLayerIso param).toFun
                 ⟨⟨LamCtor.app, (param : Nat), rfl⟩, child⟩)
-          rw [hparent]
-          have hchild_le : child false ≤ pairCode := by
-            simpa [pairCode] using
-              CodeAlgebra.prodNat_toFun_fst_le (child false, child true)
-          have hpair_lt : pairCode < param + (2 * pairCode + 1) := by
-            omega
-          have hchild_lt_parent : child false < param + (2 * pairCode + 1) :=
-            Nat.lt_of_le_of_lt hchild_le hpair_lt
+          have hchild_lt_parent :=
+            CodeAlgebra.finPrefixNat_toFun_inr_lt_of_lt param CodeAlgebra.sumProdNat
+              (a := Sum.inr (child false, child true))
+              (CodeAlgebra.sumProdNat_toFun_inr_fst_lt (child false, child true))
           dsimp [LamNatRank]
           by_cases hk : param = 0
-          · simpa [hk] using hchild_lt_parent
-          · simpa [hk] using hchild_lt_parent
+          · simpa [hk, LamNatLayerIso, LamNatLayerShapeIso, LamNatLayerShapeTo,
+              Iso.trans] using hchild_lt_parent
+          · simpa [hk, LamNatLayerIso, LamNatLayerShapeIso, LamNatLayerShapeTo,
+              Iso.trans] using hchild_lt_parent
         · change LamNatRank param (child true) <
             LamNatRank param
               ((LamNatLayerIso param).toFun
                 ⟨⟨LamCtor.app, (param : Nat), rfl⟩, child⟩)
-          rw [hparent]
-          have hchild_le : child true ≤ pairCode := by
-            simpa [pairCode] using
-              CodeAlgebra.prodNat_toFun_snd_le (child false, child true)
-          have hpair_lt : pairCode < param + (2 * pairCode + 1) := by
-            omega
-          have hchild_lt_parent : child true < param + (2 * pairCode + 1) :=
-            Nat.lt_of_le_of_lt hchild_le hpair_lt
+          have hchild_lt_parent :=
+            CodeAlgebra.finPrefixNat_toFun_inr_lt_of_lt param CodeAlgebra.sumProdNat
+              (a := Sum.inr (child false, child true))
+              (CodeAlgebra.sumProdNat_toFun_inr_snd_lt (child false, child true))
           dsimp [LamNatRank]
           by_cases hk : param = 0
-          · simpa [hk] using hchild_lt_parent
-          · simpa [hk] using hchild_lt_parent
+          · simpa [hk, LamNatLayerIso, LamNatLayerShapeIso, LamNatLayerShapeTo,
+              Iso.trans] using hchild_lt_parent
+          · simpa [hk, LamNatLayerIso, LamNatLayerShapeIso, LamNatLayerShapeTo,
+              Iso.trans] using hchild_lt_parent
 
 def LamNatGeneratedCode : GeneratedRankedNatCode LamPoly :=
   GeneratedRankedNatCode.ofLayerChildRank LamInversion LamNatLayerIso LamNatRank

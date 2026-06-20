@@ -352,60 +352,23 @@ theorem PeanoNat_layer_child_lt :
           intro q
           cases q
           let c := child ()
-          have hparent :
-              (PeanoNatLayerIso param).toFun
-                  ⟨⟨PeanoCtor.not, (param : Nat), rfl⟩, child⟩ =
-                2 * (2 * c) + 1 := by
-            simp [c, PeanoNatLayerIso, PeanoNatLayerShapeIso, PeanoNatLayerShapeTo,
-              CodeAlgebra.prodOrNatOrProdOrNat, CodeAlgebra.sum4Nat, Iso.trans,
-              Iso.sum, CodeAlgebra.sum3Nat,
-              CodeAlgebra.sumNat, Iso.refl]
-          change c <
-            (PeanoNatLayerIso param).toFun
-              ⟨⟨PeanoCtor.not, (param : Nat), rfl⟩, child⟩
-          rw [hparent]
-          exact Nat.lt_succ_of_le (by
-            rw [Nat.two_mul, Nat.two_mul]
-            simp [Nat.add_assoc])
+          simpa [c, PeanoNatLayerIso, PeanoNatLayerShapeIso, PeanoNatLayerShapeTo,
+            Iso.trans] using
+            CodeAlgebra.prodOrNatOrProdOrNat_toFun_inr_inl_lt c
       | implies =>
           change PeanoParam PeanoCtor.implies at param
           change Nat at param
           cases out_eq
           intro q
-          let pcode := CodeAlgebra.prodNat.toFun (child false, child true)
-          have hparent :
-              (PeanoNatLayerIso param).toFun
-                  ⟨⟨PeanoCtor.implies, (param : Nat), rfl⟩, child⟩ =
-                2 * (2 * (2 * pcode) + 1) + 1 := by
-            simp [pcode, PeanoNatLayerIso, PeanoNatLayerShapeIso, PeanoNatLayerShapeTo,
-              CodeAlgebra.prodOrNatOrProdOrNat, CodeAlgebra.sum4Nat, Iso.trans,
-              Iso.sum, CodeAlgebra.sum3Nat,
-              CodeAlgebra.sumNat, Iso.refl]
           cases q
-          · change child false <
-              (PeanoNatLayerIso param).toFun
-                ⟨⟨PeanoCtor.implies, (param : Nat), rfl⟩, child⟩
-            rw [hparent]
-            have hchild_le : child false ≤ pcode := by
-              simpa [pcode, CodeAlgebra.prodNat] using
-                CodeAlgebra.prodNat_toFun_fst_le (child false, child true)
-            have hpair_lt : pcode < 2 * (2 * (2 * pcode) + 1) + 1 :=
-              Nat.lt_succ_of_le (by
-                rw [Nat.two_mul, Nat.two_mul, Nat.two_mul]
-                simp [Nat.add_assoc])
-            exact Nat.lt_of_le_of_lt hchild_le hpair_lt
-          · change child true <
-              (PeanoNatLayerIso param).toFun
-                ⟨⟨PeanoCtor.implies, (param : Nat), rfl⟩, child⟩
-            rw [hparent]
-            have hchild_le : child true ≤ pcode := by
-              simpa [pcode, CodeAlgebra.prodNat] using
-                CodeAlgebra.prodNat_toFun_snd_le (child false, child true)
-            have hpair_lt : pcode < 2 * (2 * (2 * pcode) + 1) + 1 :=
-              Nat.lt_succ_of_le (by
-                rw [Nat.two_mul, Nat.two_mul, Nat.two_mul]
-                simp [Nat.add_assoc])
-            exact Nat.lt_of_le_of_lt hchild_le hpair_lt
+          · simpa [PeanoNatLayerIso, PeanoNatLayerShapeIso, PeanoNatLayerShapeTo,
+              Iso.trans] using
+              CodeAlgebra.prodOrNatOrProdOrNat_toFun_inr_inr_inl_fst_lt
+                (child false, child true)
+          · simpa [PeanoNatLayerIso, PeanoNatLayerShapeIso, PeanoNatLayerShapeTo,
+              Iso.trans] using
+              CodeAlgebra.prodOrNatOrProdOrNat_toFun_inr_inr_inl_snd_lt
+                (child false, child true)
       | forallE =>
           change PeanoParam PeanoCtor.forallE at param
           change Nat at param
@@ -413,21 +376,9 @@ theorem PeanoNat_layer_child_lt :
           intro q
           cases q
           let c := child ()
-          have hparent :
-              (PeanoNatLayerIso param).toFun
-                  ⟨⟨PeanoCtor.forallE, (param : Nat), rfl⟩, child⟩ =
-                2 * (2 * (2 * c + 1) + 1) + 1 := by
-            simp [c, PeanoNatLayerIso, PeanoNatLayerShapeIso, PeanoNatLayerShapeTo,
-              CodeAlgebra.prodOrNatOrProdOrNat, CodeAlgebra.sum4Nat, Iso.trans,
-              Iso.sum, CodeAlgebra.sum3Nat,
-              CodeAlgebra.sumNat, Iso.refl]
-          change c <
-            (PeanoNatLayerIso param).toFun
-              ⟨⟨PeanoCtor.forallE, (param : Nat), rfl⟩, child⟩
-          rw [hparent]
-          exact Nat.lt_succ_of_le (by
-            rw [Nat.two_mul, Nat.two_mul, Nat.two_mul]
-            simp [Nat.add_assoc])
+          simpa [c, PeanoNatLayerIso, PeanoNatLayerShapeIso, PeanoNatLayerShapeTo,
+            Iso.trans] using
+            CodeAlgebra.prodOrNatOrProdOrNat_toFun_inr_inr_inr_lt c
 
 def PeanoNatGeneratedCode : GeneratedNatCode PeanoPoly :=
   GeneratedNatCode.ofLayerChildLt PeanoInversion PeanoNatLayerIso

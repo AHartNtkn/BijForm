@@ -544,20 +544,6 @@ theorem SortedFiniteLayerNat_layer_child_rank_lt (lower upper : Nat) (h : lower 
             let payloadCode :=
               (CodeAlgebra.finProdProdNat (upper - lower + 1) (by omega)).toFun
               ((BoundedPivotFiniteIso lower upper h).toFun pivot, (lhsCode, rhsCode))
-            have hparent :
-                (SortedFiniteLayerNatIso lower upper h).toFun
-                    ⟨sortedBranchFiber (lower, some upper) pivot, child⟩ =
-                  1 + payloadCode := by
-              simp [payloadCode, lhsCode, rhsCode, SortedFiniteLayerNatIso,
-                SortedFiniteLayerShapeIso, CodeAlgebra.finPrefixNat,
-                CodeAlgebra.finProdProdNat, Iso.trans, Iso.sum, Iso.prod,
-                CodeAlgebra.finPlusNat, Iso.refl, sortedBranchFiber]
-            have hpayload_lt :
-                payloadCode <
-                  (SortedFiniteLayerNatIso lower upper h).toFun
-                    ⟨sortedBranchFiber (lower, some upper) pivot, child⟩ := by
-              rw [hparent]
-              omega
             have hpivotUpper : pivot.1 ≤ upper := pivot.property.2
             cases q
             · have hchild_le_payload : lhsCode ≤ payloadCode := by
@@ -568,8 +554,14 @@ theorem SortedFiniteLayerNat_layer_child_rank_lt (lower upper : Nat) (h : lower 
               have hlt :
                   lhsCode <
                     (SortedFiniteLayerNatIso lower upper h).toFun
-                      ⟨sortedBranchFiber (lower, some upper) pivot, child⟩ :=
-                Nat.lt_of_le_of_lt hchild_le_payload hpayload_lt
+                      ⟨sortedBranchFiber (lower, some upper) pivot, child⟩ := by
+                have hprefix := CodeAlgebra.finPrefixNat_toFun_inr_lt_of_le
+                  1 (by decide)
+                  (CodeAlgebra.finProdProdNat (upper - lower + 1) (by omega))
+                  (a := ((BoundedPivotFiniteIso lower upper h).toFun pivot,
+                    (lhsCode, rhsCode))) hchild_le_payload
+                simpa [payloadCode, lhsCode, rhsCode, SortedFiniteLayerNatIso,
+                  SortedFiniteLayerShapeIso, Iso.trans, sortedBranchFiber] using hprefix
               simpa [SortedCarrierRank, SortedPoly, SortedInput, SortedInversion,
                 OutputIndexInversion.canonical, sortedBranchFiber, Bound.le, lhsCode,
                 pivot.property.1] using hlt
@@ -581,8 +573,14 @@ theorem SortedFiniteLayerNat_layer_child_rank_lt (lower upper : Nat) (h : lower 
               have hlt :
                   rhsCode <
                     (SortedFiniteLayerNatIso lower upper h).toFun
-                      ⟨sortedBranchFiber (lower, some upper) pivot, child⟩ :=
-                Nat.lt_of_le_of_lt hchild_le_payload hpayload_lt
+                      ⟨sortedBranchFiber (lower, some upper) pivot, child⟩ := by
+                have hprefix := CodeAlgebra.finPrefixNat_toFun_inr_lt_of_le
+                  1 (by decide)
+                  (CodeAlgebra.finProdProdNat (upper - lower + 1) (by omega))
+                  (a := ((BoundedPivotFiniteIso lower upper h).toFun pivot,
+                    (lhsCode, rhsCode))) hchild_le_payload
+                simpa [payloadCode, lhsCode, rhsCode, SortedFiniteLayerNatIso,
+                  SortedFiniteLayerShapeIso, Iso.trans, sortedBranchFiber] using hprefix
               simpa [SortedCarrierRank, SortedPoly, SortedInput, SortedInversion,
                 OutputIndexInversion.canonical, sortedBranchFiber, Bound.le, rhsCode,
                 hpivotUpper] using hlt
@@ -619,19 +617,6 @@ theorem SortedInfiniteLayerNat_layer_child_rank_lt (lower : Nat) :
               SortedCarrier.toNat (i := (pivot.1, none)) pivot.property.2 (child true)
             let pivotCode := (BoundedPivotInfiniteIso lower).toFun pivot
             let payloadCode := CodeAlgebra.natProdProdNat.toFun (pivotCode, (lhsCode, rhsCode))
-            have hparent :
-                (SortedInfiniteLayerNatIso lower).toFun
-                    ⟨sortedBranchFiber (lower, none) pivot, child⟩ =
-                  1 + payloadCode := by
-              simp [payloadCode, pivotCode, lhsCode, rhsCode,
-                SortedInfiniteLayerNatIso, SortedInfiniteLayerShapeIso,
-                CodeAlgebra.finPrefixNat, CodeAlgebra.natProdProdNat, Iso.trans,
-                Iso.sum, Iso.prod, CodeAlgebra.finPlusNat, Iso.refl, sortedBranchFiber]
-            have hpayload_lt :
-                payloadCode < (SortedInfiniteLayerNatIso lower).toFun
-                  ⟨sortedBranchFiber (lower, none) pivot, child⟩ := by
-              rw [hparent]
-              omega
             cases q
             · have hchild_le_payload : lhsCode ≤ payloadCode := by
                 simpa [payloadCode, pivotCode, lhsCode, rhsCode] using
@@ -639,8 +624,13 @@ theorem SortedInfiniteLayerNat_layer_child_rank_lt (lower : Nat) :
                     (pivotCode, (lhsCode, rhsCode))
               have hlt :
                   lhsCode < (SortedInfiniteLayerNatIso lower).toFun
-                    ⟨sortedBranchFiber (lower, none) pivot, child⟩ :=
-                Nat.lt_of_le_of_lt hchild_le_payload hpayload_lt
+                    ⟨sortedBranchFiber (lower, none) pivot, child⟩ := by
+                have hprefix := CodeAlgebra.finPrefixNat_toFun_inr_lt_of_le
+                  1 (by decide) CodeAlgebra.natProdProdNat
+                  (a := (pivotCode, (lhsCode, rhsCode))) hchild_le_payload
+                simpa [payloadCode, pivotCode, lhsCode, rhsCode,
+                  SortedInfiniteLayerNatIso, SortedInfiniteLayerShapeIso,
+                  Iso.trans, sortedBranchFiber] using hprefix
               simpa [SortedCarrierRank, SortedPoly, SortedInput, SortedInversion,
                 OutputIndexInversion.canonical, sortedBranchFiber, Bound.le, lhsCode,
                 pivot.property.1] using hlt
@@ -650,8 +640,13 @@ theorem SortedInfiniteLayerNat_layer_child_rank_lt (lower : Nat) :
                     (pivotCode, (lhsCode, rhsCode))
               have hlt :
                   rhsCode < (SortedInfiniteLayerNatIso lower).toFun
-                    ⟨sortedBranchFiber (lower, none) pivot, child⟩ :=
-                Nat.lt_of_le_of_lt hchild_le_payload hpayload_lt
+                    ⟨sortedBranchFiber (lower, none) pivot, child⟩ := by
+                have hprefix := CodeAlgebra.finPrefixNat_toFun_inr_lt_of_le
+                  1 (by decide) CodeAlgebra.natProdProdNat
+                  (a := (pivotCode, (lhsCode, rhsCode))) hchild_le_payload
+                simpa [payloadCode, pivotCode, lhsCode, rhsCode,
+                  SortedInfiniteLayerNatIso, SortedInfiniteLayerShapeIso,
+                  Iso.trans, sortedBranchFiber] using hprefix
               simpa [SortedCarrierRank, SortedPoly, SortedInput, SortedInversion,
                 OutputIndexInversion.canonical, sortedBranchFiber, Bound.le, rhsCode] using hlt
 
