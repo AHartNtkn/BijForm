@@ -150,6 +150,7 @@ lake exe bijform
   - `StringDiagram.OpenPortHypergraph.FirstPendingTraversalReady`
   - `StringDiagram.OpenPortHypergraph.firstPendingConnectSearch?`
   - `StringDiagram.OpenPortHypergraph.SearchState.firstPendingStepSearch?`
+  - `StringDiagram.OpenPortHypergraph.SearchState.firstPendingStepSearch?_exists_of_frontierComplete`
   - `StringDiagram.OpenPortHypergraph.firstPendingTraversalReady_of_frontierComplete`
   - `StringDiagram.diagOpenPortHypergraphIso` (unfinished proof gap)
 
