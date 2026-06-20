@@ -120,7 +120,9 @@ def HBTSyntaxToLayer (i : Nat) :
   | .leaf label =>
       ⟨.leaf label, fun q => nomatch q⟩
   | @HBTSyntax.branch m lhs rhs =>
-      ⟨.branch m rfl, fun (b : Bool) => if b then rhs else lhs⟩
+      ⟨.branch m rfl, fun
+        | false => lhs
+        | true => rhs⟩
 
 theorem HBTLayer_left_inv (i : Nat) :
     Function.LeftInverse (HBTSyntaxToLayer i) (HBTLayerToSyntax i) := by
@@ -136,7 +138,9 @@ theorem HBTLayer_left_inv (i : Nat) :
         rfl
     | branch m h =>
         cases h
-        have hchild : child = (fun (b : Bool) => if b then child true else child false) := by
+        have hchild : child = (fun
+            | false => child false
+            | true => child true) := by
           funext q
           cases q <;> rfl
         rw [hchild]
@@ -254,8 +258,7 @@ def HBTNatSuccLayerSumIso (m : Nat) :
 
 def HBTNatSuccLayerIso (m : Nat) :
     CodeLayer HBTPoly HBTInversion (fun _ => Nat) (m + 1) ≃ᵢ Nat :=
-  Iso.trans (HBTNatSuccLayerSumIso m)
-    (Iso.trans (Iso.sum (Iso.refl Nat) CodeAlgebra.prodNat) CodeAlgebra.sumNat)
+  Iso.trans (HBTNatSuccLayerSumIso m) CodeAlgebra.sumProdNat
 
 def HBTNatLayerIso :
     ∀ i, CodeLayer HBTPoly HBTInversion (fun _ => Nat) i ≃ᵢ Nat
@@ -274,24 +277,19 @@ theorem HBTNat_child_lt :
       intro q
       cases q
   | succ m =>
-      dsimp [HBTNatLayerIso, HBTNatSuccLayerIso, Iso.trans, Iso.sum]
-      generalize hsum : CodeAlgebra.sumNat.invFun n = s
+      dsimp [HBTNatLayerIso, HBTNatSuccLayerIso, Iso.trans]
+      generalize hsum : CodeAlgebra.sumProdNat.invFun n = s
       cases s with
       | inl label =>
           intro q
           cases q
-      | inr pairCode =>
+      | inr pair =>
           intro q
-          have hright := CodeAlgebra.sumNat.right_inv n
-          rw [hsum] at hright
-          simp [CodeAlgebra.sumNat] at hright
           cases q
-          · change (CodeAlgebra.prodNat.invFun pairCode).1 < n
-            have hle := CodeAlgebra.prodNat_fst_le pairCode
-            omega
-          · change (CodeAlgebra.prodNat.invFun pairCode).2 < n
-            have hle := CodeAlgebra.prodNat_snd_le pairCode
-            omega
+          · change pair.1 < n
+            exact CodeAlgebra.sumProdNat_invFun_inr_fst_lt hsum
+          · change pair.2 < n
+            exact CodeAlgebra.sumProdNat_invFun_inr_snd_lt hsum
 
 /-- Generated Nat coding data for height-bounded trees. The recursive encoder
 and decoder are produced by `GeneratedNatCode`, not by an example-specific

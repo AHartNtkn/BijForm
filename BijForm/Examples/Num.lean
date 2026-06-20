@@ -149,8 +149,12 @@ def NumSyntaxToLayer (k : Nat) :
   | .var v => ⟨.var v, fun q => nomatch q⟩
   | .zero => ⟨.zero, fun q => nomatch q⟩
   | .succ e => ⟨.succ, fun _ => e⟩
-  | .plus lhs rhs => ⟨.plus, fun (b : Bool) => if b then rhs else lhs⟩
-  | .times lhs rhs => ⟨.times, fun (b : Bool) => if b then rhs else lhs⟩
+  | .plus lhs rhs => ⟨.plus, fun
+      | false => lhs
+      | true => rhs⟩
+  | .times lhs rhs => ⟨.times, fun
+      | false => lhs
+      | true => rhs⟩
 
 theorem NumLayer_left_inv (k : Nat) :
     Function.LeftInverse (NumSyntaxToLayer k) (NumLayerToSyntax k) := by
@@ -178,13 +182,17 @@ theorem NumLayer_left_inv (k : Nat) :
           cases hchild
           rfl
       | plus =>
-          have hchild : child = (fun (b : Bool) => if b then child true else child false) := by
+          have hchild : child = (fun
+              | false => child false
+              | true => child true) := by
             funext q
             cases q <;> rfl
           rw [hchild]
           rfl
       | times =>
-          have hchild : child = (fun (b : Bool) => if b then child true else child false) := by
+          have hchild : child = (fun
+              | false => child false
+              | true => child true) := by
             funext q
             cases q <;> rfl
           rw [hchild]
@@ -364,15 +372,10 @@ def NumNatLayerShapeIso (k : Nat) :
   left_inv := NumNatLayerShape_left_inv k
   right_inv := NumNatLayerShape_right_inv k
 
-def NumNatTailIso : (Nat ⊕ ((Nat × Nat) ⊕ (Nat × Nat))) ≃ᵢ Nat :=
-  Iso.trans (Iso.sum (Iso.refl Nat) (Iso.sum CodeAlgebra.prodNat CodeAlgebra.prodNat))
-    CodeAlgebra.sum3Nat
-
 def NumNatLayerIso (k : Nat) :
     CodeLayer NumPoly NumInversion (fun _ => Nat) k ≃ᵢ Nat :=
   Iso.trans (NumNatLayerShapeIso k)
-    (Iso.trans (Iso.sum (Iso.refl (Fin (k + 2))) NumNatTailIso)
-      (CodeAlgebra.finPlusNat (k + 2)))
+    (CodeAlgebra.finPrefixNat (k + 2) CodeAlgebra.natOrProdOrProdNat)
 
 theorem NumNat_layer_child_lt :
     ∀ {k : Nat} (layer : CodeLayer NumPoly NumInversion (fun _ => Nat) k)
@@ -398,7 +401,8 @@ theorem NumNat_layer_child_lt :
               (NumNatLayerIso k).toFun ⟨NumCode.succ, child⟩ =
                 k + 2 + 2 * c := by
             simp [c, NumNatLayerIso, NumNatLayerShapeIso, NumNatLayerShapeTo,
-              NumNatTailIso, CodeAlgebra.sum3Nat, Iso.trans, Iso.sum,
+              CodeAlgebra.finPrefixNat, CodeAlgebra.natOrProdOrProdNat,
+              CodeAlgebra.sum3Nat, Iso.trans, Iso.sum,
               CodeAlgebra.finPlusNat, CodeAlgebra.sumNat, Iso.refl]
           change c < (NumNatLayerIso k).toFun ⟨NumCode.succ, child⟩
           rw [hparent]
@@ -416,14 +420,15 @@ theorem NumNat_layer_child_lt :
               (NumNatLayerIso k).toFun ⟨NumCode.plus, child⟩ =
                 k + 2 + (2 * (2 * pcode) + 1) := by
             simp [pcode, NumNatLayerIso, NumNatLayerShapeIso, NumNatLayerShapeTo,
-              NumNatTailIso, CodeAlgebra.sum3Nat, Iso.trans, Iso.sum,
+              CodeAlgebra.finPrefixNat, CodeAlgebra.natOrProdOrProdNat,
+              CodeAlgebra.sum3Nat, Iso.trans, Iso.sum,
               CodeAlgebra.finPlusNat, CodeAlgebra.sumNat, Iso.refl]
           cases q
           · change child false < (NumNatLayerIso k).toFun ⟨NumCode.plus, child⟩
             rw [hparent]
             have hchild_le : child false ≤ pcode := by
               simpa [pcode, CodeAlgebra.prodNat] using
-                CodeAlgebra.prodNat_fst_le (CodeAlgebra.prodNat.toFun (child false, child true))
+                CodeAlgebra.prodNat_toFun_fst_le (child false, child true)
             have heq : pcode + (k + 3 + 3 * pcode) =
                 k + 2 + (2 * (2 * pcode) + 1) := by
               omega
@@ -435,7 +440,7 @@ theorem NumNat_layer_child_lt :
             rw [hparent]
             have hchild_le : child true ≤ pcode := by
               simpa [pcode, CodeAlgebra.prodNat] using
-                CodeAlgebra.prodNat_snd_le (CodeAlgebra.prodNat.toFun (child false, child true))
+                CodeAlgebra.prodNat_toFun_snd_le (child false, child true)
             have heq : pcode + (k + 3 + 3 * pcode) =
                 k + 2 + (2 * (2 * pcode) + 1) := by
               omega
@@ -450,14 +455,15 @@ theorem NumNat_layer_child_lt :
               (NumNatLayerIso k).toFun ⟨NumCode.times, child⟩ =
                 k + 2 + (2 * (2 * pcode + 1) + 1) := by
             simp [pcode, NumNatLayerIso, NumNatLayerShapeIso, NumNatLayerShapeTo,
-              NumNatTailIso, CodeAlgebra.sum3Nat, Iso.trans, Iso.sum,
+              CodeAlgebra.finPrefixNat, CodeAlgebra.natOrProdOrProdNat,
+              CodeAlgebra.sum3Nat, Iso.trans, Iso.sum,
               CodeAlgebra.finPlusNat, CodeAlgebra.sumNat, Iso.refl]
           cases q
           · change child false < (NumNatLayerIso k).toFun ⟨NumCode.times, child⟩
             rw [hparent]
             have hchild_le : child false ≤ pcode := by
               simpa [pcode, CodeAlgebra.prodNat] using
-                CodeAlgebra.prodNat_fst_le (CodeAlgebra.prodNat.toFun (child false, child true))
+                CodeAlgebra.prodNat_toFun_fst_le (child false, child true)
             have heq : pcode + (k + 5 + 3 * pcode) =
                 k + 2 + (2 * (2 * pcode + 1) + 1) := by
               omega
@@ -469,7 +475,7 @@ theorem NumNat_layer_child_lt :
             rw [hparent]
             have hchild_le : child true ≤ pcode := by
               simpa [pcode, CodeAlgebra.prodNat] using
-                CodeAlgebra.prodNat_snd_le (CodeAlgebra.prodNat.toFun (child false, child true))
+                CodeAlgebra.prodNat_toFun_snd_le (child false, child true)
             have heq : pcode + (k + 5 + 3 * pcode) =
                 k + 2 + (2 * (2 * pcode + 1) + 1) := by
               omega

@@ -4,6 +4,8 @@ import BijForm.Pairing
 namespace BijForm
 namespace CodeAlgebra
 
+universe u
+
 /-- Split `Nat` into a finite prefix of size `k` and the remaining tail. -/
 def finPlusNat (k : Nat) : (Fin k ⊕ Nat) ≃ᵢ Nat where
   toFun
@@ -225,6 +227,91 @@ theorem prodNat_toFun_fst_le (p : Nat × Nat) : p.1 ≤ prodNat.toFun p := by
 
 theorem prodNat_toFun_snd_le (p : Nat × Nat) : p.2 ≤ prodNat.toFun p := by
   simpa using prodNat_snd_le (prodNat.toFun p)
+
+def sumProdNat : (Nat ⊕ (Nat × Nat)) ≃ᵢ Nat :=
+  Iso.trans (Iso.sum (Iso.refl Nat) prodNat) sumNat
+
+theorem sumProdNat_toFun_inr_fst_lt (p : Nat × Nat) :
+    p.1 < sumProdNat.toFun (Sum.inr p) := by
+  dsimp [sumProdNat, Iso.trans, Iso.sum, sumNat]
+  have hle := prodNat_toFun_fst_le p
+  omega
+
+theorem sumProdNat_toFun_inr_snd_lt (p : Nat × Nat) :
+    p.2 < sumProdNat.toFun (Sum.inr p) := by
+  dsimp [sumProdNat, Iso.trans, Iso.sum, sumNat]
+  have hle := prodNat_toFun_snd_le p
+  omega
+
+theorem sumProdNat_invFun_inr_fst_lt {n a b : Nat}
+    (h : sumProdNat.invFun n = Sum.inr (a, b)) : a < n := by
+  have hright := sumProdNat.right_inv n
+  rw [h] at hright
+  have hlt := sumProdNat_toFun_inr_fst_lt (a, b)
+  rw [hright] at hlt
+  exact hlt
+
+theorem sumProdNat_invFun_inr_snd_lt {n a b : Nat}
+    (h : sumProdNat.invFun n = Sum.inr (a, b)) : b < n := by
+  have hright := sumProdNat.right_inv n
+  rw [h] at hright
+  have hlt := sumProdNat_toFun_inr_snd_lt (a, b)
+  rw [hright] at hlt
+  exact hlt
+
+def natOrProdOrProdNat :
+    (Nat ⊕ ((Nat × Nat) ⊕ (Nat × Nat))) ≃ᵢ Nat :=
+  Iso.trans (Iso.sum (Iso.refl Nat) (Iso.sum prodNat prodNat)) sum3Nat
+
+def prodOrNatOrProdOrNat :
+    ((Nat × Nat) ⊕ (Nat ⊕ ((Nat × Nat) ⊕ Nat))) ≃ᵢ Nat :=
+  Iso.trans
+    (Iso.sum prodNat (Iso.sum (Iso.refl Nat) (Iso.sum prodNat (Iso.refl Nat))))
+    sum4Nat
+
+def finPrefixNat {α : Type u} (k : Nat) (tail : α ≃ᵢ Nat) :
+    (Fin k ⊕ α) ≃ᵢ Nat :=
+  Iso.trans (Iso.sum (Iso.refl (Fin k)) tail) (finPlusNat k)
+
+theorem finPrefixNat_toFun_inr_lt_of_lt {α : Type u}
+    (k : Nat) (tail : α ≃ᵢ Nat) {a : α} {m : Nat}
+    (h : m < tail.toFun a) :
+    m < (finPrefixNat k tail).toFun (Sum.inr a) := by
+  dsimp [finPrefixNat, Iso.trans, Iso.sum, finPlusNat]
+  omega
+
+def finProdProdNat (k : Nat) (hk : 0 < k) :
+    (Fin k × (Nat × Nat)) ≃ᵢ Nat :=
+  Iso.trans (Iso.prod (Iso.refl (Fin k)) prodNat) (finProdNat k hk)
+
+theorem finProdProdNat_toFun_snd_fst_le (k : Nat) (hk : 0 < k)
+    (p : Fin k × (Nat × Nat)) :
+    p.2.1 ≤ (finProdProdNat k hk).toFun p := by
+  dsimp [finProdProdNat, Iso.trans, Iso.prod]
+  exact Nat.le_trans (prodNat_toFun_fst_le p.2)
+    (finProdNat_toFun_snd_le k hk (p.1, prodNat.toFun p.2))
+
+theorem finProdProdNat_toFun_snd_snd_le (k : Nat) (hk : 0 < k)
+    (p : Fin k × (Nat × Nat)) :
+    p.2.2 ≤ (finProdProdNat k hk).toFun p := by
+  dsimp [finProdProdNat, Iso.trans, Iso.prod]
+  exact Nat.le_trans (prodNat_toFun_snd_le p.2)
+    (finProdNat_toFun_snd_le k hk (p.1, prodNat.toFun p.2))
+
+def natProdProdNat : (Nat × (Nat × Nat)) ≃ᵢ Nat :=
+  Iso.trans (Iso.prod (Iso.refl Nat) prodNat) prodNat
+
+theorem natProdProdNat_toFun_snd_fst_le (p : Nat × (Nat × Nat)) :
+    p.2.1 ≤ natProdProdNat.toFun p := by
+  dsimp [natProdProdNat, Iso.trans, Iso.prod]
+  exact Nat.le_trans (prodNat_toFun_fst_le p.2)
+    (prodNat_toFun_snd_le (p.1, prodNat.toFun p.2))
+
+theorem natProdProdNat_toFun_snd_snd_le (p : Nat × (Nat × Nat)) :
+    p.2.2 ≤ natProdProdNat.toFun p := by
+  dsimp [natProdProdNat, Iso.trans, Iso.prod]
+  exact Nat.le_trans (prodNat_toFun_snd_le p.2)
+    (prodNat_toFun_snd_le (p.1, prodNat.toFun p.2))
 
 /--
 Code a possibly empty finite-tagged product together with a plain `Nat` tail.

@@ -253,14 +253,10 @@ def LamNatLayerShapeIso (k : Nat) :
   left_inv := LamNatLayerShape_left_inv k
   right_inv := LamNatLayerShape_right_inv k
 
-def LamNatTailIso : (Nat ⊕ (Nat × Nat)) ≃ᵢ Nat :=
-  Iso.trans (Iso.sum (Iso.refl Nat) CodeAlgebra.prodNat) CodeAlgebra.sumNat
-
 def LamNatLayerIso (k : Nat) :
     CodeLayer LamPoly LamInversion (fun _ => Nat) k ≃ᵢ Nat :=
   Iso.trans (LamNatLayerShapeIso k)
-    (Iso.trans (Iso.sum (Iso.refl (Fin k)) LamNatTailIso)
-      (CodeAlgebra.finPlusNat k))
+    (CodeAlgebra.finPrefixNat k CodeAlgebra.sumProdNat)
 
 def LamNatRank (k n : Nat) : Nat :=
   n + if k = 0 then 1 else 0
@@ -299,7 +295,8 @@ theorem LamNat_layer_child_rank_lt :
         have hparent :
             (LamNatLayerIso k).toFun ⟨LamCode.lam, child⟩ = k + 2 * bodyCode := by
           simp [bodyCode, LamNatLayerIso, LamNatLayerShapeIso, LamNatLayerShapeTo,
-            LamNatTailIso, Iso.trans, Iso.sum, CodeAlgebra.finPlusNat,
+            CodeAlgebra.finPrefixNat, CodeAlgebra.sumProdNat, Iso.trans, Iso.sum,
+            CodeAlgebra.finPlusNat,
             CodeAlgebra.sumNat, Iso.refl]
         change LamNatRank (k + 1) bodyCode <
           LamNatRank k ((LamNatLayerIso k).toFun ⟨LamCode.lam, child⟩)
@@ -319,15 +316,16 @@ theorem LamNat_layer_child_rank_lt :
             (LamNatLayerIso k).toFun ⟨LamCode.app, child⟩ =
               k + (2 * pairCode + 1) := by
           simp [pairCode, LamNatLayerIso, LamNatLayerShapeIso, LamNatLayerShapeTo,
-            LamNatTailIso, Iso.trans, Iso.sum, CodeAlgebra.finPlusNat,
+            CodeAlgebra.finPrefixNat, CodeAlgebra.sumProdNat, Iso.trans, Iso.sum,
+            CodeAlgebra.finPlusNat,
             CodeAlgebra.sumNat, Iso.refl]
         cases q
         · change LamNatRank k (child false) <
             LamNatRank k ((LamNatLayerIso k).toFun ⟨LamCode.app, child⟩)
           rw [hparent]
           have hchild_le : child false ≤ pairCode := by
-            simpa [pairCode, CodeAlgebra.prodNat] using
-              CodeAlgebra.prodNat_fst_le (CodeAlgebra.prodNat.toFun (child false, child true))
+            simpa [pairCode] using
+              CodeAlgebra.prodNat_toFun_fst_le (child false, child true)
           have hpair_lt : pairCode < k + (2 * pairCode + 1) := by
             omega
           have hchild_lt_parent : child false < k + (2 * pairCode + 1) :=
@@ -340,8 +338,8 @@ theorem LamNat_layer_child_rank_lt :
             LamNatRank k ((LamNatLayerIso k).toFun ⟨LamCode.app, child⟩)
           rw [hparent]
           have hchild_le : child true ≤ pairCode := by
-            simpa [pairCode, CodeAlgebra.prodNat] using
-              CodeAlgebra.prodNat_snd_le (CodeAlgebra.prodNat.toFun (child false, child true))
+            simpa [pairCode] using
+              CodeAlgebra.prodNat_toFun_snd_le (child false, child true)
           have hpair_lt : pairCode < k + (2 * pairCode + 1) := by
             omega
           have hchild_lt_parent : child true < k + (2 * pairCode + 1) :=
