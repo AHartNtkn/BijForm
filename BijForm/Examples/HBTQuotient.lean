@@ -324,102 +324,20 @@ def HBTChildSwapNatIso (i : Nat) : HBTChildSwap i ≃ᵢ Nat :=
 /-- Readable height-bounded syntax transported to the generated branch-swap
 quotient relation through `HBTSyntaxIso`. -/
 def HBTSyntaxSwapRel (i : Nat) (x y : HBTSyntax i) : Prop :=
-  QuotientPresentation.Rel HBTChildSwapQuotient i
-    ((HBTSyntaxIso i).invFun x) ((HBTSyntaxIso i).invFun y)
+  QuotientPresentation.SyntaxRel HBTChildSwapQuotient HBTSyntaxIso i x y
 
 /-- The readable syntax branch-swap relation as an explicit setoid. -/
-def HBTSyntaxSwapSetoid (i : Nat) : Setoid (HBTSyntax i) where
-  r := HBTSyntaxSwapRel i
-  iseqv := by
-    refine ⟨?_, ?_, ?_⟩
-    · intro x
-      exact QuotientPresentation.Rel.refl ((HBTSyntaxIso i).invFun x)
-    · intro x y hxy
-      exact QuotientPresentation.Rel.symm hxy
-    · intro x y z hxy hyz
-      exact QuotientPresentation.Rel.trans hxy hyz
+def HBTSyntaxSwapSetoid (i : Nat) : Setoid (HBTSyntax i) :=
+  QuotientPresentation.syntaxSetoid HBTChildSwapQuotient HBTSyntaxIso i
 
 /-- Readable height-bounded syntax modulo branch-child swapping. -/
 abbrev HBTSyntaxChildSwap (i : Nat) : Type :=
-  Quotient (HBTSyntaxSwapSetoid i)
+  QuotientPresentation.SyntaxCarrier HBTChildSwapQuotient HBTSyntaxIso i
 
 /-- The readable syntax quotient is the generated quotient-polynomial carrier. -/
 def HBTSyntaxChildSwapIso (i : Nat) :
-    HBTSyntaxChildSwap i ≃ᵢ HBTChildSwap i where
-  toFun :=
-    Quotient.lift
-      (fun (x : HBTSyntax i) =>
-        HBTChildSwapQuotient.ofMu ((HBTSyntaxIso i).invFun x))
-      (by
-        intro x y hxy
-        exact QuotientPresentation.sound HBTChildSwapQuotient hxy)
-  invFun :=
-    Quotient.lift
-      (fun (x : Mu HBTPoly i) =>
-        Quotient.mk (HBTSyntaxSwapSetoid i) ((HBTSyntaxIso i).toFun x))
-      (by
-        intro x y hxy
-        apply Quotient.sound
-        change QuotientPresentation.Rel HBTChildSwapQuotient i
-          ((HBTSyntaxIso i).invFun ((HBTSyntaxIso i).toFun x))
-          ((HBTSyntaxIso i).invFun ((HBTSyntaxIso i).toFun y))
-        rw [(HBTSyntaxIso i).left_inv x, (HBTSyntaxIso i).left_inv y]
-        exact hxy)
-  left_inv := by
-    intro q
-    exact Quotient.ind (s := HBTSyntaxSwapSetoid i)
-      (motive := fun q => Quotient.lift
-        (fun (x : Mu HBTPoly i) =>
-          Quotient.mk (HBTSyntaxSwapSetoid i) ((HBTSyntaxIso i).toFun x))
-        (by
-          intro x y hxy
-          apply Quotient.sound
-          change QuotientPresentation.Rel HBTChildSwapQuotient i
-            ((HBTSyntaxIso i).invFun ((HBTSyntaxIso i).toFun x))
-            ((HBTSyntaxIso i).invFun ((HBTSyntaxIso i).toFun y))
-          rw [(HBTSyntaxIso i).left_inv x, (HBTSyntaxIso i).left_inv y]
-          exact hxy)
-        (Quotient.lift
-          (fun (x : HBTSyntax i) =>
-            HBTChildSwapQuotient.ofMu ((HBTSyntaxIso i).invFun x))
-          (by
-            intro x y hxy
-            exact QuotientPresentation.sound HBTChildSwapQuotient hxy)
-          q) = q)
-      (fun x => by
-        simp
-        change Quotient.mk (HBTSyntaxSwapSetoid i)
-            ((HBTSyntaxIso i).toFun ((HBTSyntaxIso i).invFun x))
-          = Quotient.mk (HBTSyntaxSwapSetoid i) x
-        rw [(HBTSyntaxIso i).right_inv x])
-      q
-  right_inv := by
-    intro q
-    exact Quotient.ind (s := QuotientPresentation.setoid HBTChildSwapQuotient i)
-      (motive := fun q => Quotient.lift
-        (fun (x : HBTSyntax i) =>
-          HBTChildSwapQuotient.ofMu ((HBTSyntaxIso i).invFun x))
-        (by
-          intro x y hxy
-          exact QuotientPresentation.sound HBTChildSwapQuotient hxy)
-        (Quotient.lift
-          (fun (x : Mu HBTPoly i) =>
-            Quotient.mk (HBTSyntaxSwapSetoid i) ((HBTSyntaxIso i).toFun x))
-          (by
-            intro x y hxy
-            apply Quotient.sound
-            change QuotientPresentation.Rel HBTChildSwapQuotient i
-              ((HBTSyntaxIso i).invFun ((HBTSyntaxIso i).toFun x))
-              ((HBTSyntaxIso i).invFun ((HBTSyntaxIso i).toFun y))
-            rw [(HBTSyntaxIso i).left_inv x, (HBTSyntaxIso i).left_inv y]
-            exact hxy)
-          q) = q)
-      (fun x => by
-        change HBTChildSwapQuotient.ofMu
-            ((HBTSyntaxIso i).invFun ((HBTSyntaxIso i).toFun x))
-          = HBTChildSwapQuotient.ofMu x
-        rw [(HBTSyntaxIso i).left_inv x])
-      q
+    HBTSyntaxChildSwap i ≃ᵢ HBTChildSwap i :=
+  QuotientPresentation.syntaxCarrierIso HBTChildSwapQuotient HBTSyntaxIso i
 
 /-- Intermediate encoding theorem for readable branch-swap quotient syntax into
 the quotient of generated Nat codes. -/

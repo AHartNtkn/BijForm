@@ -379,6 +379,18 @@ def rank : (s : CodeShape) → Carrier s → Nat
   | finite _, _ => 0
   | infinite, n => n
 
+/-- If a code shape is infinite, its carrier is canonically `Nat`. -/
+def infiniteIso {s : CodeShape} (h : s = infinite) : Carrier s ≃ᵢ Nat := by
+  cases h
+  exact Iso.refl Nat
+
+/-- If a code shape is finite of size `k`, its carrier is canonically
+`Fin k`. -/
+def finiteIso {s : CodeShape} {k : Nat} (h : s = finite k) :
+    Carrier s ≃ᵢ Fin k := by
+  cases h
+  exact Iso.refl (Fin k)
+
 end CodeShape
 
 /--
@@ -442,6 +454,14 @@ def toWellFoundedCode (C : GeneratedShapeCode P) :
 def iso (C : GeneratedShapeCode P) (i : ι) :
     Mu P i ≃ᵢ (C.shape i).Carrier :=
   C.toGeneratedCode.iso i
+
+def natIso (C : GeneratedShapeCode P) (i : ι)
+    (h : C.shape i = .infinite) : Mu P i ≃ᵢ Nat :=
+  Iso.trans (C.iso i) (CodeShape.infiniteIso h)
+
+def finIso (C : GeneratedShapeCode P) (i : ι) {k : Nat}
+    (h : C.shape i = .finite k) : Mu P i ≃ᵢ Fin k :=
+  Iso.trans (C.iso i) (CodeShape.finiteIso h)
 
 end GeneratedShapeCode
 
