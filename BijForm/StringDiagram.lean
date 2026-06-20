@@ -213,6 +213,51 @@ theorem list_nodup_of_get_injective {α : Type} (xs : List α)
   rw [list_ofFn_get xs] at hnodup
   exact hnodup
 
+theorem list_length_le_of_nodup_subset {α : Type} :
+    ∀ (xs ys : List α),
+      xs.Nodup →
+      (∀ x : α, x ∈ xs → x ∈ ys) →
+        xs.length ≤ ys.length
+  | [], ys, _hnodup, _hsubset => by
+      simp
+  | x :: xs, ys, hnodup, hsubset => by
+      have hxmem : x ∈ ys := hsubset x (by simp)
+      rcases list_exists_get_of_mem ys hxmem with ⟨i, hi⟩
+      have hsplit : x ∉ xs ∧ xs.Nodup := by
+        simpa using hnodup
+      have htailSubset :
+          ∀ y : α, y ∈ xs → y ∈ eraseFin ys i := by
+        intro y hy
+        apply mem_eraseFin_of_mem_ne_get ys i
+        · exact hsubset y (by simp [hy])
+        · intro hyi
+          exact hsplit.1 (by
+            rw [hyi, hi] at hy
+            exact hy)
+      have ih :=
+        list_length_le_of_nodup_subset xs (eraseFin ys i)
+          hsplit.2 htailSubset
+      have hlen := eraseFin_length ys i
+      rw [hlen] at ih
+      have hysPos : 0 < ys.length :=
+        Nat.lt_of_le_of_lt (Nat.zero_le i.val) i.isLt
+      have hsucc : xs.length + 1 ≤ (ys.length - 1) + 1 :=
+        Nat.succ_le_succ ih
+      have hsub : ys.length - 1 + 1 = ys.length :=
+        Nat.sub_add_cancel (Nat.succ_le_of_lt hysPos)
+      simpa [hsub] using hsucc
+
+theorem list_length_le_fin_of_nodup {n : Nat}
+    (xs : List (Fin n)) (hnodup : xs.Nodup) :
+    xs.length ≤ n := by
+  have hsubset :
+      ∀ x : Fin n, x ∈ xs → x ∈ List.finRange n := by
+    intro x _hx
+    exact List.mem_finRange x
+  have hle :=
+    list_length_le_of_nodup_subset xs (List.finRange n) hnodup hsubset
+  simpa [List.length_ofFn, List.finRange] using hle
+
 /--
 A typed ordered-port string-diagram signature.
 
@@ -1566,6 +1611,11 @@ def processedEdge {G : OpenPortHypergraph Sig boundary}
     {frontier : List Sig.Port} (st : SearchState G frontier)
     (edge : Fin G.raw.edgeCount) : Prop :=
   edge ∈ st.processedEdges
+
+theorem processedEdges_length_le {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port} (st : SearchState G frontier) :
+    st.processedEdges.length ≤ G.raw.edgeCount :=
+  list_length_le_fin_of_nodup st.processedEdges st.processedEdges_nodup
 
 def toTraversalState {G : OpenPortHypergraph Sig boundary}
     {frontier : List Sig.Port} (st : SearchState G frontier) :
