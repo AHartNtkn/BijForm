@@ -126,21 +126,26 @@ lake exe bijform
   - `StringDiagram.Diag.freshNodeEndpoints_label_append`
   - `StringDiagram.Diag.connectStep_validIds`
   - `StringDiagram.Diag.connectStep_endpointPartition`
+  - `StringDiagram.Diag.connectStep_nodeIncidentNodup`
   - `StringDiagram.Diag.budStep_validIds`
   - `StringDiagram.Diag.budStep_endpointPartition`
+  - `StringDiagram.Diag.budStep_nodeIncidentNodup`
   - `StringDiagram.Diag.budStep_endpoints`
   - `StringDiagram.Diag.renderTraceFromBoundary`
   - `StringDiagram.Diag.renderTrace_endpointPrefix`
   - `StringDiagram.Diag.renderTraceFromBoundary_endpointPrefix`
   - `StringDiagram.Diag.renderTrace_validIds`
   - `StringDiagram.Diag.renderTrace_endpointPartition`
+  - `StringDiagram.Diag.renderTrace_nodeIncidentNodup`
   - `StringDiagram.Diag.renderTraceFromBoundary_validIds`
   - `StringDiagram.Diag.renderTraceFromBoundary_endpointPartition`
+  - `StringDiagram.Diag.renderTraceFromBoundary_nodeIncidentNodup`
   - `StringDiagram.Diag.renderTraceFromBoundary_endpointEdgeEvidence`
   - `StringDiagram.Diag.renderTraceFromBoundary_endpointEdge`
   - `StringDiagram.Diag.renderTraceFromBoundary_endpoint_edge_label`
   - `StringDiagram.Diag.renderTraceFromBoundary_edgeEvidence`
   - `StringDiagram.Diag.renderTraceFromBoundary_boundaryEvidence`
+  - `StringDiagram.Diag.renderTraceFromBoundary_incidenceEvidence`
   - `StringDiagram.RenderState.ValidIds`
   - `StringDiagram.RenderState.edgeEndpointIds`
   - `StringDiagram.RenderState.edgeEndpointIdsOfEdges`
@@ -153,11 +158,13 @@ lake exe bijform
   - `StringDiagram.RenderState.edgeEndpointRefOfEndpointId`
   - `StringDiagram.RenderState.edgeEndpointRefOfEndpointId_unique`
   - `StringDiagram.RenderState.EndpointPartition`
+  - `StringDiagram.RenderState.NodeIncidentNodup`
   - `StringDiagram.RenderState.EndpointPrefix`
   - `StringDiagram.RenderState.BoundaryEvidence`
   - `StringDiagram.RenderState.boundaryEvidenceOfPrefix`
   - `StringDiagram.RenderState.initial_validIds`
   - `StringDiagram.RenderState.initial_endpointPartition`
+  - `StringDiagram.RenderState.initial_nodeIncidentNodup`
   - `StringDiagram.RenderState.EndpointPartition.endpoint_consumed_of_frontier_empty`
   - `StringDiagram.RenderState.endpointEdgeOfPartition`
   - `StringDiagram.RenderState.endpointEdgeOfPartition_endpoint`
@@ -172,6 +179,12 @@ lake exe bijform
   - `StringDiagram.RenderState.endpointEdgeEvidenceOfPartition`
   - `StringDiagram.RenderState.EdgeEvidence`
   - `StringDiagram.RenderState.edgeEvidenceOfPartition`
+  - `StringDiagram.RenderState.incidentOfValidIds`
+  - `StringDiagram.RenderState.incidentOfValidIds_length`
+  - `StringDiagram.RenderState.incidentOfValidIds_injective`
+  - `StringDiagram.RenderState.incidentOfValidIds_label`
+  - `StringDiagram.RenderState.IncidenceEvidence`
+  - `StringDiagram.RenderState.incidenceEvidenceOfValidIds`
   - `StringDiagram.RenderState.ValidIds.frontier_head_label`
   - `StringDiagram.RenderState.ValidIds.frontier_tail_label`
   - `StringDiagram.RenderState.PortHypergraphEvidence`

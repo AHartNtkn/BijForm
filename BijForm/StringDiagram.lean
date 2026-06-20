@@ -345,6 +345,54 @@ theorem list_nodup_of_get_injective {α : Type} (xs : List α)
   rw [list_ofFn_get xs] at hnodup
   exact hnodup
 
+theorem list_get_injective_of_nodup {α : Type} :
+    ∀ (xs : List α), xs.Nodup →
+      Function.Injective fun i : Fin xs.length => xs.get i
+  | [], _hnodup, i, _j, _h => by
+      cases i with
+      | mk val isLt => exact False.elim (Nat.not_lt_zero val isLt)
+  | x :: xs, hnodup, i, j, h => by
+      have hsplit : x ∉ xs ∧ xs.Nodup := by
+        simpa using hnodup
+      cases i with
+      | mk iVal iLt =>
+          cases j with
+          | mk jVal jLt =>
+              cases iVal with
+              | zero =>
+                  cases jVal with
+                  | zero => rfl
+                  | succ jVal =>
+                      have hmem :
+                          xs.get ⟨jVal, Nat.lt_of_succ_lt_succ jLt⟩ ∈ xs :=
+                        List.get_mem xs ⟨jVal, Nat.lt_of_succ_lt_succ jLt⟩
+                      have hx :
+                          x = xs.get
+                            ⟨jVal, Nat.lt_of_succ_lt_succ jLt⟩ := by
+                        simpa using h
+                      exact False.elim (hsplit.1 (hx ▸ hmem))
+              | succ iVal =>
+                  cases jVal with
+                  | zero =>
+                      have hmem :
+                          xs.get ⟨iVal, Nat.lt_of_succ_lt_succ iLt⟩ ∈ xs :=
+                        List.get_mem xs ⟨iVal, Nat.lt_of_succ_lt_succ iLt⟩
+                      have hx :
+                          xs.get
+                            ⟨iVal, Nat.lt_of_succ_lt_succ iLt⟩ = x := by
+                        simpa using h
+                      exact False.elim (hsplit.1 (hx.symm ▸ hmem))
+                  | succ jVal =>
+                      have htail :
+                          (⟨iVal, Nat.lt_of_succ_lt_succ iLt⟩ :
+                              Fin xs.length) =
+                            ⟨jVal, Nat.lt_of_succ_lt_succ jLt⟩ := by
+                        apply list_get_injective_of_nodup xs hsplit.2
+                        simpa using h
+                      apply Fin.ext
+                      have hval : iVal = jVal := congrArg Fin.val htail
+                      exact congrArg Nat.succ hval
+
 theorem list_length_le_of_nodup_subset {α : Type} :
     ∀ (xs ys : List α),
       xs.Nodup →
@@ -680,6 +728,12 @@ structure EndpointPartition {Sig : Signature} {frontier : List Sig.Port}
     ∀ id : Nat, id < st.endpoints.length →
       id ∈ st.frontierIds ∨ id ∈ st.edgeEndpointIds
 
+/-- Every rendered constructor node stores each incident endpoint at most once. -/
+structure NodeIncidentNodup {Sig : Signature} {frontier : List Sig.Port}
+    (st : RenderState Sig frontier) : Prop where
+  node_incident_nodup :
+    ∀ node : RenderNode Sig, node ∈ st.nodes → node.incident.Nodup
+
 /-- `base` occurs as the ordered prefix of a renderer state's endpoint list. -/
 structure EndpointPrefix {Sig : Signature} {frontier : List Sig.Port}
     (st : RenderState Sig frontier) (base : List Sig.Port) where
@@ -777,6 +831,12 @@ theorem initial_endpointPartition {Sig : Signature} (boundary : List Sig.Port) :
     intro id hid
     left
     simpa [initial] using (List.mem_range.mpr hid)
+
+theorem initial_nodeIncidentNodup {Sig : Signature} (boundary : List Sig.Port) :
+    (initial Sig boundary).NodeIncidentNodup where
+  node_incident_nodup := by
+    intro node hmem
+    simp [initial] at hmem
 
 theorem EndpointPartition.endpoint_consumed_of_frontier_empty
     {Sig : Signature} {st : RenderState Sig []}
@@ -1219,6 +1279,87 @@ def edgeEvidenceOfPartition
   edge_two_endpoints := by
     intro edge
     exact edgeTwoEndpointsOfPartition hv hp edge
+
+def incidentOfValidIds {Sig : Signature} {st : RenderState Sig []}
+    (hv : st.ValidIds) (node : Fin st.nodes.length) :
+    List (Fin st.endpoints.length) :=
+  List.ofFn fun slot : Fin ((st.nodes.get node).incident.length) =>
+    ⟨(st.nodes.get node).incident.get slot,
+      hv.node_incident_bound (st.nodes.get node)
+        (List.get_mem st.nodes node) slot⟩
+
+theorem incidentOfValidIds_length {Sig : Signature}
+    {st : RenderState Sig []}
+    (hv : st.ValidIds) (node : Fin st.nodes.length) :
+    (incidentOfValidIds hv node).length =
+      Sig.arity ((st.nodes.get node).label) :=
+  by
+    simpa [incidentOfValidIds] using
+      hv.node_incident_length (st.nodes.get node) (List.get_mem st.nodes node)
+
+theorem incidentOfValidIds_injective {Sig : Signature}
+    {st : RenderState Sig []}
+    (hv : st.ValidIds) (hn : st.NodeIncidentNodup)
+    (node : Fin st.nodes.length) :
+    Function.Injective fun slot : Fin (incidentOfValidIds hv node).length =>
+      (incidentOfValidIds hv node).get slot := by
+  intro i j h
+  have hi :
+      (st.nodes.get node).incident.get
+          (Fin.cast (by simp [incidentOfValidIds]) i) =
+        (st.nodes.get node).incident.get
+          (Fin.cast (by simp [incidentOfValidIds]) j) := by
+    have hval := congrArg Fin.val h
+    simpa [incidentOfValidIds] using hval
+  have horig :=
+    list_get_injective_of_nodup (st.nodes.get node).incident
+      (hn.node_incident_nodup (st.nodes.get node)
+        (List.get_mem st.nodes node)) hi
+  apply Fin.ext
+  have hval := congrArg Fin.val horig
+  simpa using hval
+
+theorem incidentOfValidIds_label {Sig : Signature}
+    {st : RenderState Sig []}
+    (hv : st.ValidIds) (node : Fin st.nodes.length)
+    (slot : Fin (incidentOfValidIds hv node).length) :
+    st.endpoints.get ((incidentOfValidIds hv node).get slot) =
+      Sig.port ((st.nodes.get node).label)
+        (Fin.cast (incidentOfValidIds_length hv node) slot) := by
+  have hlabel :=
+    hv.node_incident_label (st.nodes.get node)
+      (List.get_mem st.nodes node)
+      (Fin.cast (by simp [incidentOfValidIds]) slot)
+  simpa [incidentOfValidIds, incidentOfValidIds_length] using hlabel
+
+/--
+Renderer-derived constructor incidence evidence.  It turns each rendered node's
+ordered incident endpoint IDs into finite endpoint references and proves the
+length, injectivity, and label laws required by `PortHypergraph`.
+-/
+structure IncidenceEvidence {Sig : Signature}
+    (st : RenderState Sig []) where
+  incident : Fin st.nodes.length → List (Fin st.endpoints.length)
+  incident_length :
+    ∀ node : Fin st.nodes.length,
+      (incident node).length = Sig.arity ((st.nodes.get node).label)
+  incident_injective :
+    ∀ node : Fin st.nodes.length,
+      Function.Injective fun slot : Fin (incident node).length =>
+        (incident node).get slot
+  incidence_label :
+    ∀ (node : Fin st.nodes.length) (slot : Fin (incident node).length),
+      st.endpoints.get ((incident node).get slot) =
+        Sig.port ((st.nodes.get node).label) (Fin.cast (incident_length node) slot)
+
+def incidenceEvidenceOfValidIds {Sig : Signature}
+    {st : RenderState Sig []}
+    (hv : st.ValidIds) (hn : st.NodeIncidentNodup) :
+    IncidenceEvidence st where
+  incident := incidentOfValidIds hv
+  incident_length := incidentOfValidIds_length hv
+  incident_injective := incidentOfValidIds_injective hv hn
+  incidence_label := incidentOfValidIds_label hv
 
 theorem ValidIds.frontier_head_label {Sig : Signature}
     {active : Sig.Port} {frontier : List Sig.Port}
@@ -1664,6 +1805,21 @@ theorem connectStep_endpointPartition {active : Sig.Port}
       · right
         rw [childConsumed_eq]
         simp [holdConsumed]
+
+theorem connectStep_nodeIncidentNodup {active : Sig.Port}
+    {frontier : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (st : RenderState Sig (active :: frontier))
+    (hn : st.NodeIncidentNodup) :
+    (connectStep mate ok st).NodeIncidentNodup := by
+  unfold connectStep
+  split
+  · rename_i hids
+    exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  · constructor
+    intro node hmem
+    exact hn.node_incident_nodup node hmem
 
 theorem budStep_validIds {active : Sig.Port} {frontier : List Sig.Port}
     (node : Sig.Node)
@@ -2120,6 +2276,28 @@ theorem budStep_endpointPartition {active : Sig.Port}
           right
           exact mem_eraseFin_of_mem_ne_get nodeEndpoints entryIdx hfresh hentry
 
+theorem budStep_nodeIncidentNodup {active : Sig.Port}
+    {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (st : RenderState Sig (active :: frontier))
+    (hn : st.NodeIncidentNodup) :
+    (budStep node entry ok st).NodeIncidentNodup := by
+  unfold budStep
+  split
+  · rename_i hids
+    exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  · rename_i _activeId _restIds _hids
+    let nodeEndpoints := freshNodeEndpoints st.nextEndpoint (Sig.arity node)
+    constructor
+    intro renderNode hmem
+    simp at hmem
+    rcases hmem with hold | hnew
+    · exact hn.node_incident_nodup renderNode hold
+    · cases hnew
+      exact freshNodeEndpoints_nodup st.nextEndpoint (Sig.arity node)
+
 /--
 Execute traversal syntax into a construction trace.
 
@@ -2203,6 +2381,22 @@ theorem renderTrace_endpointPartition :
       renderTrace_endpointPartition child (budStep node entry ok st)
         (budStep_validIds node entry ok st hv)
         (budStep_endpointPartition node entry ok st hv hp)
+
+theorem renderTrace_nodeIncidentNodup :
+    ∀ {frontier : List Sig.Port} (d : Diag Sig frontier)
+      (st : RenderState Sig frontier),
+      st.NodeIncidentNodup → (renderTrace d st).NodeIncidentNodup
+  | [], finish, st, hn => by
+      dsimp [renderTrace]
+      constructor
+      intro node hmem
+      exact hn.node_incident_nodup node hmem
+  | _active :: _frontier, connect mate ok child, st, hn =>
+      renderTrace_nodeIncidentNodup child (connectStep mate ok st)
+        (connectStep_nodeIncidentNodup mate ok st hn)
+  | _active :: _frontier, bud node entry ok child, st, hn =>
+      renderTrace_nodeIncidentNodup child (budStep node entry ok st)
+        (budStep_nodeIncidentNodup node entry ok st hn)
 
 theorem renderTrace_connect
     {active : Sig.Port} {frontier : List Sig.Port}
@@ -2388,6 +2582,12 @@ theorem renderTraceFromBoundary_endpointPartition
     (RenderState.initial_validIds boundary)
     (RenderState.initial_endpointPartition boundary)
 
+theorem renderTraceFromBoundary_nodeIncidentNodup
+    {boundary : List Sig.Port} (d : Diag Sig boundary) :
+    (renderTraceFromBoundary d).NodeIncidentNodup :=
+  renderTrace_nodeIncidentNodup d (RenderState.initial Sig boundary)
+    (RenderState.initial_nodeIncidentNodup boundary)
+
 def renderTraceFromBoundary_endpointEdgeEvidence
     {boundary : List Sig.Port} (d : Diag Sig boundary) :
     RenderState.EndpointEdgeEvidence (renderTraceFromBoundary d) :=
@@ -2421,6 +2621,13 @@ def renderTraceFromBoundary_boundaryEvidence
     RenderState.BoundaryEvidence (renderTraceFromBoundary d) boundary :=
   RenderState.boundaryEvidenceOfPrefix
     (renderTraceFromBoundary_endpointPrefix d)
+
+def renderTraceFromBoundary_incidenceEvidence
+    {boundary : List Sig.Port} (d : Diag Sig boundary) :
+    RenderState.IncidenceEvidence (renderTraceFromBoundary d) :=
+  RenderState.incidenceEvidenceOfValidIds
+    (renderTraceFromBoundary_validIds d)
+    (renderTraceFromBoundary_nodeIncidentNodup d)
 
 theorem renderTraceFromBoundary_frontier_empty
     {boundary : List Sig.Port} (d : Diag Sig boundary) :
@@ -2874,32 +3081,23 @@ structure PortHypergraphEvidence
     (st : RenderState Sig []) (boundary : List Sig.Port) where
   edgeEvidence : EdgeEvidence st
   boundaryEvidence : BoundaryEvidence st boundary
-  incident : Fin st.nodes.length → List (Fin st.endpoints.length)
-  incident_length :
-    ∀ node : Fin st.nodes.length,
-      (incident node).length = Sig.arity ((st.nodes.get node).label)
-  incident_injective :
-    ∀ node : Fin st.nodes.length,
-      Function.Injective fun slot : Fin (incident node).length =>
-        (incident node).get slot
-  incidence_label :
-    ∀ (node : Fin st.nodes.length) (slot : Fin (incident node).length),
-      st.endpoints.get ((incident node).get slot) =
-        Sig.port ((st.nodes.get node).label) (Fin.cast (incident_length node) slot)
+  incidenceEvidence : IncidenceEvidence st
   endpoint_owner :
     ∀ endpoint : Fin st.endpoints.length,
       ∃ owner : EndpointOwner boundary.length st.nodes.length
-          (fun node => (incident node).length),
+          (fun node => (incidenceEvidence.incident node).length),
         (match owner with
           | .boundary boundaryIndex =>
               boundaryEvidence.boundaryPort boundaryIndex
-          | .constructor node slot => (incident node).get slot) = endpoint ∧
+          | .constructor node slot =>
+              (incidenceEvidence.incident node).get slot) = endpoint ∧
         ∀ owner' : EndpointOwner boundary.length st.nodes.length
-            (fun node => (incident node).length),
+            (fun node => (incidenceEvidence.incident node).length),
           (match owner' with
             | .boundary boundaryIndex =>
                 boundaryEvidence.boundaryPort boundaryIndex
-            | .constructor node slot => (incident node).get slot) = endpoint →
+            | .constructor node slot =>
+                (incidenceEvidence.incident node).get slot) = endpoint →
           owner' = owner
 
 namespace PortHypergraphEvidence
@@ -2920,10 +3118,10 @@ def toPortHypergraph {st : RenderState Sig []} {boundary : List Sig.Port}
   boundary_injective := ev.boundaryEvidence.boundary_injective
   boundary_label := ev.boundaryEvidence.boundary_label
   nodeLabel := fun node => (st.nodes.get node).label
-  incident := ev.incident
-  incident_length := ev.incident_length
-  incident_injective := ev.incident_injective
-  incidence_label := ev.incidence_label
+  incident := ev.incidenceEvidence.incident
+  incident_length := ev.incidenceEvidence.incident_length
+  incident_injective := ev.incidenceEvidence.incident_injective
+  incidence_label := ev.incidenceEvidence.incidence_label
   endpoint_owner := by
     intro endpoint
     rcases ev.endpoint_owner endpoint with ⟨owner, howner, huniq⟩
@@ -2982,8 +3180,10 @@ The endpoint-to-edge assignment slice is already constructed by
 two-endpoint edge laws are constructed by
 `renderTraceFromBoundary_edgeEvidence`.  The ordered boundary map is
 constructed by `renderTraceFromBoundary_boundaryEvidence` from endpoint-prefix
-preservation.  The remaining unfinished fields are the constructor incidence
-map, endpoint-owner uniqueness, and boundary reachability.
+preservation.  Constructor incidence evidence is constructed by
+`renderTraceFromBoundary_incidenceEvidence` from `ValidIds` and node-incident
+nodup preservation.  The remaining unfinished fields are endpoint-owner
+uniqueness and boundary reachability.
 -/
 def renderTraceFromBoundary_openEvidence
     {boundary : List Sig.Port} (d : Diag Sig boundary) :
@@ -3005,6 +3205,13 @@ def renderTraceFromBoundary_openEvidence
   have boundaryPort := boundaryEvidence.boundaryPort
   have boundary_injective := boundaryEvidence.boundary_injective
   have boundary_label := boundaryEvidence.boundary_label
+  let incidenceEvidence :
+      RenderState.IncidenceEvidence (renderTraceFromBoundary d) :=
+    renderTraceFromBoundary_incidenceEvidence d
+  have incident := incidenceEvidence.incident
+  have incident_length := incidenceEvidence.incident_length
+  have incident_injective := incidenceEvidence.incident_injective
+  have incidence_label := incidenceEvidence.incidence_label
   sorry
 
 /--
