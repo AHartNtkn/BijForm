@@ -180,6 +180,105 @@ def rank : ∀ {boundary : List Sig.Port}, Diag Sig boundary → Nat
 
 end Diag
 
+/-- An edge recorded by the concrete traversal renderer. -/
+structure RenderEdge (Sig : Signature) where
+  label : Sig.Edge
+  left : Nat
+  right : Nat
+
+/-- A constructor node recorded by the concrete traversal renderer. -/
+structure RenderNode (Sig : Signature) where
+  label : Sig.Node
+  incident : List Nat
+
+/--
+Mutable-by-return construction state for rendering traversal syntax.
+
+The `frontier` field stores endpoint identifiers in the same order as the
+current `Diag` index.  `connect` consumes the head identifier and one later
+identifier.  `bud` consumes the head identifier, allocates the ordered
+constructor endpoints, connects the chosen entry endpoint, and appends the
+remaining constructor endpoints to the frontier.
+-/
+structure RenderState (Sig : Signature) where
+  nextEndpoint : Nat
+  endpoints : List Sig.Port
+  edges : List (RenderEdge Sig)
+  nodes : List (RenderNode Sig)
+  frontier : List Nat
+
+namespace RenderState
+
+variable (Sig : Signature)
+
+def initial (boundary : List Sig.Port) : RenderState Sig where
+  nextEndpoint := boundary.length
+  endpoints := boundary
+  edges := []
+  nodes := []
+  frontier := List.range boundary.length
+
+end RenderState
+
+namespace Diag
+
+variable {Sig : Signature}
+
+def freshNodeEndpoints (start arity : Nat) : List Nat :=
+  (List.range arity).map fun offset => start + offset
+
+def getD (fallback : Nat) : List Nat → Nat → Nat
+  | [], _ => fallback
+  | x :: _, 0 => x
+  | _ :: xs, n + 1 => getD fallback xs n
+
+def eraseNat : List Nat → Nat → List Nat
+  | [], _ => []
+  | _ :: xs, 0 => xs
+  | x :: xs, n + 1 => x :: eraseNat xs n
+
+/--
+Execute traversal syntax into a construction trace.
+
+This is not yet the final semantic quotient bridge: it is the concrete
+frontier-processing pass that the bridge uses to build a finished
+`PortHypergraph`.
+-/
+def renderTrace :
+    ∀ {frontier : List Sig.Port}, Diag Sig frontier → RenderState Sig → RenderState Sig
+  | [], finish, st => { st with frontier := [] }
+  | active :: _frontier, connect mate _ok child, st =>
+      match st.frontier with
+      | [] => renderTrace child st
+      | activeId :: rest =>
+          let mateId := getD activeId rest mate.val
+          let st' : RenderState Sig :=
+            { st with
+              edges := st.edges ++
+                [{ label := Sig.portEdge active, left := activeId, right := mateId }]
+              frontier := eraseNat rest mate.val }
+          renderTrace child st'
+  | active :: _frontier, bud node entry _ok child, st =>
+      match st.frontier with
+      | [] => renderTrace child st
+      | activeId :: rest =>
+          let nodeEndpoints := freshNodeEndpoints st.nextEndpoint (Sig.arity node)
+          let entryId := getD st.nextEndpoint nodeEndpoints entry.val
+          let st' : RenderState Sig :=
+            { nextEndpoint := st.nextEndpoint + Sig.arity node
+              endpoints := st.endpoints ++ Sig.nodePorts node
+              edges := st.edges ++
+                [{ label := Sig.portEdge active, left := activeId, right := entryId }]
+              nodes := st.nodes ++ [{ label := node, incident := nodeEndpoints }]
+              frontier := rest ++ eraseNat nodeEndpoints entry.val }
+          renderTrace child st'
+
+def renderTraceFromBoundary {boundary : List Sig.Port} (d : Diag Sig boundary) :
+    RenderState Sig :=
+  renderTrace d (RenderState.initial Sig boundary)
+
+end Diag
+
 structure ConnectParam (Sig : Signature) where
   active : Sig.Port
   frontier : List Sig.Port
