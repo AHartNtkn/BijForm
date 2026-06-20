@@ -267,6 +267,8 @@ lake exe bijform
   - `StringDiagram.OpenPortHypergraph.SearchState.IsoRelated.processed_mem_preserved`
   - `StringDiagram.OpenPortHypergraph.SearchState.IsoRelated.processed_mem_reflected`
   - `StringDiagram.OpenPortHypergraph.SearchState.IsoRelated.transport_contracts`
+  - `StringDiagram.OpenPortHypergraph.SearchState.IsoRelated.connectChild`
+  - `StringDiagram.OpenPortHypergraph.SearchState.IsoRelated.budChild`
   - `StringDiagram.OpenPortHypergraph.SearchState.processedEdges_length_le`
   - `StringDiagram.OpenPortHypergraph.SearchState.remainingEdges`
   - `StringDiagram.OpenPortHypergraph.SearchState.processedEdges_length_lt_of_pending`
@@ -295,6 +297,8 @@ lake exe bijform
   - `StringDiagram.PortHypergraphIso.endpointOwnersOfReflected`
   - `StringDiagram.PortHypergraphIso.endpointOwnersOfPreserved_unique`
   - `StringDiagram.PortHypergraphIso.endpointOwnersOfReflected_unique`
+  - `StringDiagram.PortHypergraphIso.endpointOwnersOf_unique_transport_preserved`
+  - `StringDiagram.PortHypergraphIso.endpointOwnersOf_unique_transport_reflected`
   - `StringDiagram.PortHypergraphIso.transport_contracts_preserved`
   - `StringDiagram.PortHypergraphIso.transport_contracts_reflected`
   - `StringDiagram.OpenPortHypergraphUpToIso`

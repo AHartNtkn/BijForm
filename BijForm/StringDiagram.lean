@@ -4884,6 +4884,24 @@ theorem endpointOwnersOfReflected_unique
   exact (hunique owner').trans
     (hunique (endpointOwnersOfReflected e owner)).symm
 
+theorem endpointOwnersOf_unique_transport_preserved
+    {G H : PortHypergraph Sig boundary}
+    (e : PortHypergraphIso G H) {endpoint : Fin G.endpointCount}
+    (owner : PortHypergraph.endpointOwnersOf G endpoint)
+    (owner' : PortHypergraph.endpointOwnersOf H
+        (e.endpointEquiv.toFun endpoint)) :
+    owner' = endpointOwnersOfPreserved e owner :=
+  endpointOwnersOfPreserved_unique e owner owner'
+
+theorem endpointOwnersOf_unique_transport_reflected
+    {G H : PortHypergraph Sig boundary}
+    (e : PortHypergraphIso G H) {endpoint : Fin H.endpointCount}
+    (owner : PortHypergraph.endpointOwnersOf H endpoint)
+    (owner' : PortHypergraph.endpointOwnersOf G
+        (e.endpointEquiv.invFun endpoint)) :
+    owner' = endpointOwnersOfReflected e owner :=
+  endpointOwnersOfReflected_unique e owner owner'
+
 theorem transport_contracts_preserved {G H : PortHypergraph Sig boundary}
     (e : PortHypergraphIso G H)
     {endpoint mate : Fin G.endpointCount}
@@ -4994,6 +5012,39 @@ structure SearchState (G : OpenPortHypergraph Sig boundary)
           G.raw.endpointEdge ((G.raw.incident node).get slot) ∉ processedEdges
 
 namespace SearchState
+
+private theorem cast_pending {G : OpenPortHypergraph Sig boundary}
+    {frontier frontier' : List Sig.Port}
+    (h : frontier = frontier') (st : SearchState G frontier) :
+    (h ▸ st).pending = st.pending := by
+  cases h
+  rfl
+
+private theorem cast_seenNodes {G : OpenPortHypergraph Sig boundary}
+    {frontier frontier' : List Sig.Port}
+    (h : frontier = frontier') (st : SearchState G frontier) :
+    (h ▸ st).seenNodes = st.seenNodes := by
+  cases h
+  rfl
+
+private theorem cast_processedEdges {G : OpenPortHypergraph Sig boundary}
+    {frontier frontier' : List Sig.Port}
+    (h : frontier = frontier') (st : SearchState G frontier) :
+    (h ▸ st).processedEdges = st.processedEdges := by
+  cases h
+  rfl
+
+private theorem nodePortsExcept_eq_of_val
+    {nodeA nodeB : Sig.Node}
+    (hnode : nodeA = nodeB)
+    {entryA : Fin (Sig.arity nodeA)} {entryB : Fin (Sig.arity nodeB)}
+    (hval : entryA.val = entryB.val) :
+    Sig.nodePortsExcept nodeA entryA =
+      Sig.nodePortsExcept nodeB entryB := by
+  cases hnode
+  have hentry : entryA = entryB := Fin.ext hval
+  cases hentry
+  rfl
 
 def seenNode {G : OpenPortHypergraph Sig boundary}
     {frontier : List Sig.Port} (st : SearchState G frontier)
@@ -5984,6 +6035,133 @@ theorem budChild_remainingEdges_lt {G : OpenPortHypergraph Sig boundary}
   have hlt := st.processedEdges_length_lt_of_pending hactive
   simp [remainingEdges, budChild]
   omega
+
+theorem IsoRelated.connectChild
+    {G H : OpenPortHypergraph Sig boundary}
+    {e : PortHypergraphIso G.raw H.raw}
+    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
+    {left : SearchState G (activeLabel :: restLabels)}
+    {right : SearchState H (activeLabel :: restLabels)}
+    (hr : IsoRelated e left right)
+    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
+    (hpending : left.pending = active :: rest)
+    (mate : Fin rest.length)
+    (hmate : PortHypergraph.EdgeMate G.raw active (rest.get mate)) :
+    let rightPending := hr.pending_cons hpending
+    let rightMate : Fin (rest.map e.endpointEquiv.toFun).length :=
+      Fin.cast (by simp) mate
+    let rightMateEdge :
+        PortHypergraph.EdgeMate H.raw (e.endpointEquiv.toFun active)
+          ((rest.map e.endpointEquiv.toFun).get rightMate) := by
+      have hget :
+          (rest.map e.endpointEquiv.toFun).get rightMate =
+            e.endpointEquiv.toFun (rest.get mate) := by
+        simp [rightMate]
+      rw [hget]
+      exact PortHypergraphIso.edgeMate_preserved e hmate
+    IsoRelated e
+      (left.connectChild hpending mate hmate)
+      (right.connectChild rightPending rightMate rightMateEdge) := by
+  dsimp
+  constructor
+  · exact (map_eraseFin e.endpointEquiv.toFun rest mate).symm
+  · exact hr.seenNodes_eq
+  · change H.raw.endpointEdge (e.endpointEquiv.toFun active) ::
+        right.processedEdges =
+      (G.raw.endpointEdge active :: left.processedEdges).map
+        e.edgeEquiv.toFun
+    rw [e.endpoint_edge_preserved active, hr.processedEdges_eq]
+    rfl
+
+theorem IsoRelated.budChild
+    {G H : OpenPortHypergraph Sig boundary}
+    {e : PortHypergraphIso G.raw H.raw}
+    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
+    {left : SearchState G (activeLabel :: restLabels)}
+    {right : SearchState H (activeLabel :: restLabels)}
+    (hr : IsoRelated e left right)
+    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
+    (hpending : left.pending = active :: rest)
+    (node : Fin G.raw.nodeCount)
+    (slot : Fin (G.raw.incident node).length)
+    (hmate :
+      PortHypergraph.EdgeMate G.raw active ((G.raw.incident node).get slot))
+    (hunseen : node ∉ left.seenNodes) :
+    let rightPending := hr.pending_cons hpending
+    let rightNode := e.nodeEquiv.toFun node
+    let rightSlot := PortHypergraphIso.incidenceSlotPreserved e node slot
+    let rightMateEdge :
+        PortHypergraph.EdgeMate H.raw (e.endpointEquiv.toFun active)
+          ((H.raw.incident rightNode).get rightSlot) := by
+      have hslot :
+          (H.raw.incident rightNode).get rightSlot =
+            e.endpointEquiv.toFun ((G.raw.incident node).get slot) :=
+        PortHypergraphIso.incidence_get_preserved e node slot
+      rw [hslot]
+      exact PortHypergraphIso.edgeMate_preserved e hmate
+    let rightUnseen : rightNode ∉ right.seenNodes := by
+      intro hseen
+      have hpre := hr.seen_mem_reflected hseen
+      exact hunseen (by simpa [rightNode] using hpre)
+    let hfrontier :
+        restLabels ++
+            Sig.nodePortsExcept (H.raw.nodeLabel rightNode)
+              (budEntry (G := H) rightNode rightSlot) =
+          restLabels ++
+            Sig.nodePortsExcept (G.raw.nodeLabel node)
+              (budEntry (G := G) node slot) := by
+      have hentryVal :
+          (budEntry (G := H) (e.nodeEquiv.toFun node)
+              (PortHypergraphIso.incidenceSlotPreserved e node slot)).val =
+            (budEntry (G := G) node slot).val := by
+        simp [budEntry, PortHypergraphIso.incidenceSlotPreserved]
+      exact congrArg (fun tail => restLabels ++ tail)
+        (nodePortsExcept_eq_of_val
+          (e.node_label_preserved node).symm hentryVal)
+    IsoRelated e
+      (left.budChild hpending node slot hmate hunseen)
+      (hfrontier ▸
+        right.budChild rightPending rightNode rightSlot rightMateEdge
+          rightUnseen) := by
+  dsimp
+  constructor
+  · rw [cast_pending]
+    calc
+      rest.map e.endpointEquiv.toFun ++
+          eraseFin (H.raw.incident (e.nodeEquiv.toFun node))
+            (PortHypergraphIso.incidenceSlotPreserved e node slot) =
+        rest.map e.endpointEquiv.toFun ++
+          eraseFin ((G.raw.incident node).map e.endpointEquiv.toFun)
+            (Fin.cast (by simp) slot) := by
+          congr 1
+          have hincident :
+              H.raw.incident (e.nodeEquiv.toFun node) =
+                (G.raw.incident node).map e.endpointEquiv.toFun :=
+            (e.incidence_preserved node).symm
+          rw [eraseFin_eq_of_eq hincident
+            (PortHypergraphIso.incidenceSlotPreserved e node slot)]
+          apply congrArg
+          apply Fin.ext
+          rfl
+      _ = rest.map e.endpointEquiv.toFun ++
+          (eraseFin (G.raw.incident node) slot).map e.endpointEquiv.toFun := by
+          rw [map_eraseFin]
+      _ =
+          (rest ++ eraseFin (G.raw.incident node) slot).map
+            e.endpointEquiv.toFun := by
+          rw [List.map_append]
+  · rw [cast_seenNodes]
+    change e.nodeEquiv.toFun node :: right.seenNodes =
+      (node :: left.seenNodes).map e.nodeEquiv.toFun
+    rw [hr.seenNodes_eq]
+    rfl
+  · rw [cast_processedEdges]
+    change H.raw.endpointEdge (e.endpointEquiv.toFun active) ::
+        right.processedEdges =
+      (G.raw.endpointEdge active :: left.processedEdges).map
+        e.edgeEquiv.toFun
+    rw [e.endpoint_edge_preserved active, hr.processedEdges_eq]
+    rfl
 
 end SearchState
 
