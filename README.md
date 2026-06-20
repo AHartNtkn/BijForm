@@ -128,7 +128,10 @@ lake exe bijform
   - `StringDiagram.Diag.connectStep_endpointPartition`
   - `StringDiagram.Diag.budStep_validIds`
   - `StringDiagram.Diag.budStep_endpointPartition`
+  - `StringDiagram.Diag.budStep_endpoints`
   - `StringDiagram.Diag.renderTraceFromBoundary`
+  - `StringDiagram.Diag.renderTrace_endpointPrefix`
+  - `StringDiagram.Diag.renderTraceFromBoundary_endpointPrefix`
   - `StringDiagram.Diag.renderTrace_validIds`
   - `StringDiagram.Diag.renderTrace_endpointPartition`
   - `StringDiagram.Diag.renderTraceFromBoundary_validIds`
@@ -137,6 +140,7 @@ lake exe bijform
   - `StringDiagram.Diag.renderTraceFromBoundary_endpointEdge`
   - `StringDiagram.Diag.renderTraceFromBoundary_endpoint_edge_label`
   - `StringDiagram.Diag.renderTraceFromBoundary_edgeEvidence`
+  - `StringDiagram.Diag.renderTraceFromBoundary_boundaryEvidence`
   - `StringDiagram.RenderState.ValidIds`
   - `StringDiagram.RenderState.edgeEndpointIds`
   - `StringDiagram.RenderState.edgeEndpointIdsOfEdges`
@@ -149,6 +153,9 @@ lake exe bijform
   - `StringDiagram.RenderState.edgeEndpointRefOfEndpointId`
   - `StringDiagram.RenderState.edgeEndpointRefOfEndpointId_unique`
   - `StringDiagram.RenderState.EndpointPartition`
+  - `StringDiagram.RenderState.EndpointPrefix`
+  - `StringDiagram.RenderState.BoundaryEvidence`
+  - `StringDiagram.RenderState.boundaryEvidenceOfPrefix`
   - `StringDiagram.RenderState.initial_validIds`
   - `StringDiagram.RenderState.initial_endpointPartition`
   - `StringDiagram.RenderState.EndpointPartition.endpoint_consumed_of_frontier_empty`

@@ -680,6 +680,55 @@ structure EndpointPartition {Sig : Signature} {frontier : List Sig.Port}
     ∀ id : Nat, id < st.endpoints.length →
       id ∈ st.frontierIds ∨ id ∈ st.edgeEndpointIds
 
+/-- `base` occurs as the ordered prefix of a renderer state's endpoint list. -/
+structure EndpointPrefix {Sig : Signature} {frontier : List Sig.Port}
+    (st : RenderState Sig frontier) (base : List Sig.Port) where
+  suffix : List Sig.Port
+  endpoints_eq : st.endpoints = base ++ suffix
+
+/-- Ordered boundary evidence derived from a renderer endpoint-prefix proof. -/
+structure BoundaryEvidence {Sig : Signature}
+    (st : RenderState Sig []) (boundary : List Sig.Port) where
+  boundaryPort : Fin boundary.length → Fin st.endpoints.length
+  boundary_injective : Function.Injective boundaryPort
+  boundary_label :
+    ∀ b : Fin boundary.length,
+      st.endpoints.get (boundaryPort b) = boundary.get b
+
+def boundaryEvidenceOfPrefix {Sig : Signature} {st : RenderState Sig []}
+    {boundary : List Sig.Port}
+    (pref : EndpointPrefix st boundary) :
+    BoundaryEvidence st boundary where
+  boundaryPort := fun b =>
+    ⟨b.val, by
+      rw [pref.endpoints_eq]
+      simp
+      omega⟩
+  boundary_injective := by
+    intro left right h
+    apply Fin.ext
+    change left.val = right.val
+    exact congrArg (fun x : Fin st.endpoints.length => x.val) h
+  boundary_label := by
+    intro b
+    have hbound : b.val < st.endpoints.length := by
+      rw [pref.endpoints_eq]
+      simp
+      omega
+    change st.endpoints[b.val]'hbound = boundary[b.val]
+    have hopt : st.endpoints[b.val]? = boundary[b.val]? := by
+      rw [pref.endpoints_eq]
+      exact List.getElem?_append_left (l₁ := boundary)
+        (l₂ := pref.suffix) b.isLt
+    have hstSome :
+        st.endpoints[b.val]? = some (st.endpoints[b.val]'hbound) :=
+      List.getElem?_eq_getElem hbound
+    have hboundarySome :
+        boundary[b.val]? = some boundary[b.val] :=
+      List.getElem?_eq_getElem b.isLt
+    rw [hstSome, hboundarySome] at hopt
+    simpa using hopt
+
 theorem initial_validIds {Sig : Signature} (boundary : List Sig.Port) :
     (initial Sig boundary).ValidIds where
   nextEndpoint_eq := by
@@ -2212,6 +2261,20 @@ theorem connectStep_endpoints
     exact False.elim (RenderState.frontierIds_ne_nil st hids)
   · rfl
 
+theorem budStep_endpoints
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (st : RenderState Sig (active :: frontier)) :
+    (budStep node entry ok st).endpoints =
+      st.endpoints ++ Sig.nodePorts node := by
+  unfold budStep
+  split
+  · rename_i hids
+    exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  · rfl
+
 theorem budStep_edges_length
     {active : Sig.Port} {frontier : List Sig.Port}
     (node : Sig.Node)
@@ -2252,9 +2315,65 @@ theorem budStep_endpoints_length
     exact False.elim (RenderState.frontierIds_ne_nil st hids)
   · simp [Signature.nodePorts]
 
+def renderTrace_endpointPrefix :
+    ∀ {frontier : List Sig.Port} (d : Diag Sig frontier)
+      (st : RenderState Sig frontier),
+      RenderState.EndpointPrefix (renderTrace d st) st.endpoints
+  | [], finish, st =>
+      { suffix := []
+        endpoints_eq := by
+          simp [renderTrace] }
+  | _active :: _frontier, connect mate ok child, st =>
+      let childPrefix :=
+        renderTrace_endpointPrefix child (connectStep mate ok st)
+      let suffix := childPrefix.suffix
+      { suffix := suffix
+        endpoints_eq := by
+          rw [renderTrace_connect]
+          have hchild :
+              (renderTrace child (connectStep mate ok st)).endpoints =
+                (connectStep mate ok st).endpoints ++ suffix := by
+            simpa [suffix] using childPrefix.endpoints_eq
+          calc
+            (renderTrace child (connectStep mate ok st)).endpoints =
+                (connectStep mate ok st).endpoints ++ suffix :=
+              hchild
+            _ = st.endpoints ++ suffix := by
+              rw [connectStep_endpoints] }
+  | _active :: _frontier, bud node entry ok child, st =>
+      let childPrefix :=
+        renderTrace_endpointPrefix child (budStep node entry ok st)
+      let suffix := childPrefix.suffix
+      { suffix := Sig.nodePorts node ++ suffix
+        endpoints_eq := by
+          rw [renderTrace_bud]
+          have hchild :
+              (renderTrace child (budStep node entry ok st)).endpoints =
+                (budStep node entry ok st).endpoints ++ suffix := by
+            simpa [suffix] using childPrefix.endpoints_eq
+          calc
+            (renderTrace child (budStep node entry ok st)).endpoints =
+                (budStep node entry ok st).endpoints ++ suffix :=
+              hchild
+            _ =
+                (st.endpoints ++ Sig.nodePorts node) ++ suffix := by
+              rw [budStep_endpoints]
+            _ =
+                st.endpoints ++ (Sig.nodePorts node ++ suffix) := by
+              rw [List.append_assoc] }
+
 def renderTraceFromBoundary {boundary : List Sig.Port} (d : Diag Sig boundary) :
     RenderState Sig [] :=
   renderTrace d (RenderState.initial Sig boundary)
+
+def renderTraceFromBoundary_endpointPrefix
+    {boundary : List Sig.Port} (d : Diag Sig boundary) :
+    RenderState.EndpointPrefix (renderTraceFromBoundary d) boundary :=
+  let pref := renderTrace_endpointPrefix d (RenderState.initial Sig boundary)
+  { suffix := pref.suffix
+    endpoints_eq := by
+      simpa [renderTraceFromBoundary, RenderState.initial] using
+        pref.endpoints_eq }
 
 theorem renderTraceFromBoundary_validIds
     {boundary : List Sig.Port} (d : Diag Sig boundary) :
@@ -2296,6 +2415,12 @@ def renderTraceFromBoundary_edgeEvidence
   RenderState.edgeEvidenceOfPartition
     (renderTraceFromBoundary_validIds d)
     (renderTraceFromBoundary_endpointPartition d)
+
+def renderTraceFromBoundary_boundaryEvidence
+    {boundary : List Sig.Port} (d : Diag Sig boundary) :
+    RenderState.BoundaryEvidence (renderTraceFromBoundary d) boundary :=
+  RenderState.boundaryEvidenceOfPrefix
+    (renderTraceFromBoundary_endpointPrefix d)
 
 theorem renderTraceFromBoundary_frontier_empty
     {boundary : List Sig.Port} (d : Diag Sig boundary) :
@@ -2748,11 +2873,7 @@ the finite maps and proofs required by the semantic representative.
 structure PortHypergraphEvidence
     (st : RenderState Sig []) (boundary : List Sig.Port) where
   edgeEvidence : EdgeEvidence st
-  boundaryPort : Fin boundary.length → Fin st.endpoints.length
-  boundary_injective : Function.Injective boundaryPort
-  boundary_label :
-    ∀ b : Fin boundary.length,
-      st.endpoints.get (boundaryPort b) = boundary.get b
+  boundaryEvidence : BoundaryEvidence st boundary
   incident : Fin st.nodes.length → List (Fin st.endpoints.length)
   incident_length :
     ∀ node : Fin st.nodes.length,
@@ -2770,12 +2891,14 @@ structure PortHypergraphEvidence
       ∃ owner : EndpointOwner boundary.length st.nodes.length
           (fun node => (incident node).length),
         (match owner with
-          | .boundary boundaryIndex => boundaryPort boundaryIndex
+          | .boundary boundaryIndex =>
+              boundaryEvidence.boundaryPort boundaryIndex
           | .constructor node slot => (incident node).get slot) = endpoint ∧
         ∀ owner' : EndpointOwner boundary.length st.nodes.length
             (fun node => (incident node).length),
           (match owner' with
-            | .boundary boundaryIndex => boundaryPort boundaryIndex
+            | .boundary boundaryIndex =>
+                boundaryEvidence.boundaryPort boundaryIndex
             | .constructor node slot => (incident node).get slot) = endpoint →
           owner' = owner
 
@@ -2793,9 +2916,9 @@ def toPortHypergraph {st : RenderState Sig []} {boundary : List Sig.Port}
   endpoint_edge_label := ev.edgeEvidence.endpointEdgeEvidence.endpoint_edge_label
   edge_compatible := ev.edgeEvidence.edge_compatible
   edge_two_endpoints := ev.edgeEvidence.edge_two_endpoints
-  boundaryPort := ev.boundaryPort
-  boundary_injective := ev.boundary_injective
-  boundary_label := ev.boundary_label
+  boundaryPort := ev.boundaryEvidence.boundaryPort
+  boundary_injective := ev.boundaryEvidence.boundary_injective
+  boundary_label := ev.boundaryEvidence.boundary_label
   nodeLabel := fun node => (st.nodes.get node).label
   incident := ev.incident
   incident_length := ev.incident_length
@@ -2857,9 +2980,10 @@ The endpoint-to-edge assignment slice is already constructed by
 `renderTraceFromBoundary_validIds` and
 `renderTraceFromBoundary_endpointPartition`, and edge compatibility plus
 two-endpoint edge laws are constructed by
-`renderTraceFromBoundary_edgeEvidence`.  The remaining unfinished fields are
-the ordered boundary map, constructor incidence map, endpoint-owner
-uniqueness, and boundary reachability.
+`renderTraceFromBoundary_edgeEvidence`.  The ordered boundary map is
+constructed by `renderTraceFromBoundary_boundaryEvidence` from endpoint-prefix
+preservation.  The remaining unfinished fields are the constructor incidence
+map, endpoint-owner uniqueness, and boundary reachability.
 -/
 def renderTraceFromBoundary_openEvidence
     {boundary : List Sig.Port} (d : Diag Sig boundary) :
@@ -2875,6 +2999,12 @@ def renderTraceFromBoundary_openEvidence
     renderTraceFromBoundary_edgeEvidence d
   have edge_compatible := edgeEvidence.edge_compatible
   have edge_two_endpoints := edgeEvidence.edge_two_endpoints
+  let boundaryEvidence :
+      RenderState.BoundaryEvidence (renderTraceFromBoundary d) boundary :=
+    renderTraceFromBoundary_boundaryEvidence d
+  have boundaryPort := boundaryEvidence.boundaryPort
+  have boundary_injective := boundaryEvidence.boundary_injective
+  have boundary_label := boundaryEvidence.boundary_label
   sorry
 
 /--
