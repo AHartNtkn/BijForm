@@ -5005,6 +5005,36 @@ theorem initial_frontierComplete (G : OpenPortHypergraph Sig boundary) :
       intro hseen
       simp [toTraversalState, initial, seenNode] at hseen
 
+/--
+State correspondence for two first-pending traversals over isomorphic graph
+representatives.  The frontier labels are already the shared type index; this
+relation records the stronger endpoint/node/edge correspondence needed for
+traversal-invariance proofs.
+-/
+structure IsoRelated {G H : OpenPortHypergraph Sig boundary}
+    (e : PortHypergraphIso G.raw H.raw)
+    {frontier : List Sig.Port}
+    (left : SearchState G frontier) (right : SearchState H frontier) : Prop where
+  pending_eq :
+    right.pending = left.pending.map e.endpointEquiv.toFun
+  seenNodes_eq :
+    right.seenNodes = left.seenNodes.map e.nodeEquiv.toFun
+  processedEdges_eq :
+    right.processedEdges = left.processedEdges.map e.edgeEquiv.toFun
+
+theorem initial_isoRelated {G H : OpenPortHypergraph Sig boundary}
+    (e : PortHypergraphIso G.raw H.raw) :
+    IsoRelated e (initial G) (initial H) where
+  pending_eq := by
+    apply List.ext_getElem
+    · simp [initial]
+    · intro i hleft hright
+      simp [initial, e.boundary_preserved]
+  seenNodes_eq := by
+    simp [initial]
+  processedEdges_eq := by
+    simp [initial]
+
 theorem pending_cons_nodup {G : OpenPortHypergraph Sig boundary}
     {activeLabel : Sig.Port} {restLabels : List Sig.Port}
     (st : SearchState G (activeLabel :: restLabels))

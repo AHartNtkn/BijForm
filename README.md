@@ -257,6 +257,8 @@ lake exe bijform
   - `StringDiagram.OpenPortHypergraph.SearchState`
   - `StringDiagram.OpenPortHypergraph.SearchState.initial`
   - `StringDiagram.OpenPortHypergraph.SearchState.initial_frontierComplete`
+  - `StringDiagram.OpenPortHypergraph.SearchState.IsoRelated`
+  - `StringDiagram.OpenPortHypergraph.SearchState.initial_isoRelated`
   - `StringDiagram.OpenPortHypergraph.SearchState.processedEdges_length_le`
   - `StringDiagram.OpenPortHypergraph.SearchState.remainingEdges`
   - `StringDiagram.OpenPortHypergraph.SearchState.processedEdges_length_lt_of_pending`
