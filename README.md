@@ -150,6 +150,7 @@ lake exe bijform
   - `StringDiagram.Diag.renderTraceFromBoundary_edgeEvidence`
   - `StringDiagram.Diag.renderTraceFromBoundary_boundaryEvidence`
   - `StringDiagram.Diag.renderTraceFromBoundary_incidenceEvidence`
+  - `StringDiagram.Diag.renderTraceFromBoundary_graphEvidence`
   - `StringDiagram.nodup_append_left`
   - `StringDiagram.nodup_append_right`
   - `StringDiagram.nodup_append_disjoint`
@@ -176,6 +177,7 @@ lake exe bijform
   - `StringDiagram.RenderState.BoundaryEvidence`
   - `StringDiagram.RenderState.boundaryEvidenceOfPrefix`
   - `StringDiagram.RenderState.boundaryEvidenceOfPrefix_boundaryPort_val`
+  - `StringDiagram.RenderState.boundaryEvidenceOfPrefix_exists_of_boundary_id`
   - `StringDiagram.RenderState.initial_validIds`
   - `StringDiagram.RenderState.initial_endpointPartition`
   - `StringDiagram.RenderState.initial_nodeIncidentNodup`
@@ -196,15 +198,19 @@ lake exe bijform
   - `StringDiagram.RenderState.edgeEvidenceOfPartition`
   - `StringDiagram.RenderState.incidentOfValidIds`
   - `StringDiagram.RenderState.incidentOfValidIds_val_mem_nodeIncidentIds`
+  - `StringDiagram.RenderState.incidentOfValidIds_exists_of_mem_nodeIncidentIds`
   - `StringDiagram.RenderState.incidentOfValidIds_length`
   - `StringDiagram.RenderState.incidentOfValidIds_injective`
   - `StringDiagram.RenderState.incidentOfValidIds_label`
   - `StringDiagram.RenderState.boundaryEvidenceOfPrefix_ne_incidentOfValidIds`
+  - `StringDiagram.RenderState.nodeIncidentIds_get_node_eq_of_nodup`
+  - `StringDiagram.RenderState.incidentOfValidIds_eq_node_eq`
   - `StringDiagram.RenderState.IncidenceEvidence`
   - `StringDiagram.RenderState.incidenceEvidenceOfValidIds`
   - `StringDiagram.RenderState.ValidIds.frontier_head_label`
   - `StringDiagram.RenderState.ValidIds.frontier_tail_label`
   - `StringDiagram.RenderState.PortHypergraphEvidence`
+  - `StringDiagram.RenderState.portHypergraphEvidenceOfInvariants`
   - `StringDiagram.RenderState.OpenPortHypergraphEvidence`
   - `StringDiagram.Diag.renderTraceFromBoundary_openEvidence` (unfinished proof gap)
   - `StringDiagram.Diag.toOpenPortHypergraph_unfinished` (depends on unfinished renderer validity)

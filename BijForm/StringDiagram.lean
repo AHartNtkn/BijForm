@@ -868,6 +868,18 @@ theorem boundaryEvidenceOfPrefix_boundaryPort_val {Sig : Signature}
     ((boundaryEvidenceOfPrefix pref).boundaryPort b).val = b.val :=
   rfl
 
+theorem boundaryEvidenceOfPrefix_exists_of_boundary_id {Sig : Signature}
+    {st : RenderState Sig []} {boundary : List Sig.Port}
+    (pref : EndpointPrefix st boundary)
+    (endpoint : Fin st.endpoints.length)
+    (hboundary : endpoint.val ∈ List.range boundary.length) :
+    ∃ b : Fin boundary.length,
+      (boundaryEvidenceOfPrefix pref).boundaryPort b = endpoint := by
+  let b : Fin boundary.length := ⟨endpoint.val, List.mem_range.mp hboundary⟩
+  refine ⟨b, ?_⟩
+  apply Fin.ext
+  simp [b, boundaryEvidenceOfPrefix_boundaryPort_val pref b]
+
 theorem initial_validIds {Sig : Signature} (boundary : List Sig.Port) :
     (initial Sig boundary).ValidIds where
   nextEndpoint_eq := by
@@ -1395,6 +1407,31 @@ theorem incidentOfValidIds_val_mem_nodeIncidentIds {Sig : Signature}
   exact List.get_mem (st.nodes.get node).incident
     (Fin.cast (by simp [incidentOfValidIds]) slot)
 
+theorem incidentOfValidIds_exists_of_mem_nodeIncidentIds {Sig : Signature}
+    {st : RenderState Sig []}
+    (hv : st.ValidIds) (endpoint : Fin st.endpoints.length)
+    (hnode : endpoint.val ∈ st.nodeIncidentIds) :
+    ∃ (node : Fin st.nodes.length)
+      (slot : Fin (incidentOfValidIds hv node).length),
+      (incidentOfValidIds hv node).get slot = endpoint := by
+  have hnodeMem := hnode
+  simp [nodeIncidentIds] at hnodeMem
+  rcases hnodeMem with ⟨renderNode, hrenderNode, hincidentMem⟩
+  rcases list_exists_get_of_mem st.nodes hrenderNode with
+    ⟨node, hnodeEq⟩
+  have hincidentMem' :
+      endpoint.val ∈ (st.nodes.get node).incident := by
+    rw [hnodeEq]
+    exact hincidentMem
+  rcases list_exists_get_of_mem (st.nodes.get node).incident
+      hincidentMem' with
+    ⟨rawSlot, hrawSlot⟩
+  let slot : Fin (incidentOfValidIds hv node).length :=
+    Fin.cast (by simp [incidentOfValidIds]) rawSlot
+  refine ⟨node, slot, ?_⟩
+  apply Fin.ext
+  simpa [incidentOfValidIds, slot] using hrawSlot
+
 theorem incidentOfValidIds_length {Sig : Signature}
     {st : RenderState Sig []}
     (hv : st.ValidIds) (node : Fin st.nodes.length) :
@@ -1466,6 +1503,137 @@ theorem boundaryEvidenceOfPrefix_ne_incidentOfValidIds {Sig : Signature}
         (boundaryEvidenceOfPrefix_boundaryPort_val pref b)
     exact hincident ▸ hnodeRaw
   exact ho.boundary_nodeIncidentIds_disjoint hboundary hnode
+
+theorem nodeIncidentIds_get_node_eq_of_nodup {Sig : Signature} :
+    ∀ (nodes : List (RenderNode Sig)),
+      (nodes.flatMap fun node => node.incident).Nodup →
+      ∀ {leftNode rightNode : Fin nodes.length}
+        {leftSlot : Fin ((nodes.get leftNode).incident.length)}
+        {rightSlot : Fin ((nodes.get rightNode).incident.length)},
+        (nodes.get leftNode).incident.get leftSlot =
+          (nodes.get rightNode).incident.get rightSlot →
+        leftNode = rightNode
+  | [], _hnodup, leftNode, _rightNode, _leftSlot, _rightSlot, _h => by
+      cases leftNode with
+      | mk val isLt => exact False.elim (Nat.not_lt_zero val isLt)
+  | head :: tail, hnodup, leftNode, rightNode, leftSlot, rightSlot, h => by
+      have hflat :
+          (head.incident ++ tail.flatMap fun node => node.incident).Nodup := by
+        simpa using hnodup
+      cases leftNode with
+      | mk leftVal leftLt =>
+          cases rightNode with
+          | mk rightVal rightLt =>
+              cases leftVal with
+              | zero =>
+                  cases rightVal with
+                  | zero => rfl
+                  | succ rightTailVal =>
+                      let rightTail : Fin tail.length :=
+                        ⟨rightTailVal, Nat.lt_of_succ_lt_succ rightLt⟩
+                      let rightSlotTail :
+                          Fin ((tail.get rightTail).incident.length) :=
+                        Fin.cast (by simp [rightTail]) rightSlot
+                      have hleftMem :
+                          head.incident.get leftSlot ∈ head.incident :=
+                        List.get_mem head.incident leftSlot
+                      have hrightMemRaw :
+                          (tail.get rightTail).incident.get rightSlotTail ∈
+                            tail.flatMap fun node => node.incident := by
+                        simp
+                        exact ⟨tail.get rightTail, List.get_mem tail rightTail,
+                          List.get_mem (tail.get rightTail).incident rightSlotTail⟩
+                      have heq :
+                          head.incident.get leftSlot =
+                            (tail.get rightTail).incident.get rightSlotTail := by
+                        simpa [rightTail, rightSlotTail] using h
+                      have hrightMem :
+                          head.incident.get leftSlot ∈
+                            tail.flatMap fun node => node.incident := by
+                        rw [← heq] at hrightMemRaw
+                        exact hrightMemRaw
+                      exact False.elim
+                        (nodup_append_disjoint head.incident
+                          (tail.flatMap fun node => node.incident)
+                          hflat hleftMem hrightMem)
+              | succ leftTailVal =>
+                  cases rightVal with
+                  | zero =>
+                      let leftTail : Fin tail.length :=
+                        ⟨leftTailVal, Nat.lt_of_succ_lt_succ leftLt⟩
+                      let leftSlotTail :
+                          Fin ((tail.get leftTail).incident.length) :=
+                        Fin.cast (by simp [leftTail]) leftSlot
+                      have hleftMemRaw :
+                          (tail.get leftTail).incident.get leftSlotTail ∈
+                            tail.flatMap fun node => node.incident := by
+                        simp
+                        exact ⟨tail.get leftTail, List.get_mem tail leftTail,
+                          List.get_mem (tail.get leftTail).incident leftSlotTail⟩
+                      have heq :
+                          (tail.get leftTail).incident.get leftSlotTail =
+                            head.incident.get rightSlot := by
+                        simpa [leftTail, leftSlotTail] using h
+                      have hleftMem :
+                          head.incident.get rightSlot ∈
+                            tail.flatMap fun node => node.incident := by
+                        rw [heq] at hleftMemRaw
+                        exact hleftMemRaw
+                      have hrightMem :
+                          head.incident.get rightSlot ∈ head.incident :=
+                        List.get_mem head.incident rightSlot
+                      exact False.elim
+                        (nodup_append_disjoint head.incident
+                          (tail.flatMap fun node => node.incident)
+                          hflat hrightMem hleftMem)
+                  | succ rightTailVal =>
+                      let leftTail : Fin tail.length :=
+                        ⟨leftTailVal, Nat.lt_of_succ_lt_succ leftLt⟩
+                      let rightTail : Fin tail.length :=
+                        ⟨rightTailVal, Nat.lt_of_succ_lt_succ rightLt⟩
+                      let leftSlotTail :
+                          Fin ((tail.get leftTail).incident.length) :=
+                        Fin.cast (by simp [leftTail]) leftSlot
+                      let rightSlotTail :
+                          Fin ((tail.get rightTail).incident.length) :=
+                        Fin.cast (by simp [rightTail]) rightSlot
+                      have htail :
+                          (tail.get leftTail).incident.get leftSlotTail =
+                            (tail.get rightTail).incident.get rightSlotTail := by
+                        simpa [leftTail, rightTail, leftSlotTail, rightSlotTail]
+                          using h
+                      have htailNodup :
+                          (tail.flatMap fun node => node.incident).Nodup :=
+                        nodup_append_right head.incident
+                          (tail.flatMap fun node => node.incident) hflat
+                      have hnodeTail :
+                          leftTail = rightTail :=
+                        nodeIncidentIds_get_node_eq_of_nodup tail htailNodup
+                          htail
+                      apply Fin.ext
+                      have hval := congrArg (fun idx : Fin tail.length => idx.val)
+                        hnodeTail
+                      exact congrArg Nat.succ hval
+
+theorem incidentOfValidIds_eq_node_eq {Sig : Signature}
+    {st : RenderState Sig []} {boundary : List Sig.Port}
+    (hv : st.ValidIds) (ho : st.OwnerIdPartition boundary)
+    {leftNode rightNode : Fin st.nodes.length}
+    {leftSlot : Fin (incidentOfValidIds hv leftNode).length}
+    {rightSlot : Fin (incidentOfValidIds hv rightNode).length}
+    (h :
+      (incidentOfValidIds hv leftNode).get leftSlot =
+        (incidentOfValidIds hv rightNode).get rightSlot) :
+    leftNode = rightNode := by
+  have hraw :
+      (st.nodes.get leftNode).incident.get
+          (Fin.cast (by simp [incidentOfValidIds]) leftSlot) =
+        (st.nodes.get rightNode).incident.get
+          (Fin.cast (by simp [incidentOfValidIds]) rightSlot) := by
+    have hval := congrArg (fun endpoint : Fin st.endpoints.length => endpoint.val) h
+    simpa [incidentOfValidIds] using hval
+  exact nodeIncidentIds_get_node_eq_of_nodup st.nodes
+    (by simpa [nodeIncidentIds] using ho.nodeIncidentIds_nodup) hraw
 
 /--
 Renderer-derived constructor incidence evidence.  It turns each rendered node's
@@ -3397,6 +3565,91 @@ structure PortHypergraphEvidence
                 (incidenceEvidence.incident node).get slot) = endpoint →
           owner' = owner
 
+def portHypergraphEvidenceOfInvariants
+    {st : RenderState Sig []} {boundary : List Sig.Port}
+    (hv : st.ValidIds) (hp : st.EndpointPartition)
+    (hn : st.NodeIncidentNodup)
+    (pref : st.EndpointPrefix boundary)
+    (ho : st.OwnerIdPartition boundary) :
+    PortHypergraphEvidence st boundary where
+  edgeEvidence := edgeEvidenceOfPartition hv hp
+  boundaryEvidence := boundaryEvidenceOfPrefix pref
+  incidenceEvidence := incidenceEvidenceOfValidIds hv hn
+  endpoint_owner := by
+    intro endpoint
+    have hcovered :
+        endpoint.val ∈ List.range boundary.length ∨
+          endpoint.val ∈ st.nodeIncidentIds := by
+      simpa [ownerEndpointIds] using ho.owner_covered endpoint.val endpoint.isLt
+    rcases hcovered with hboundary | hnode
+    · rcases boundaryEvidenceOfPrefix_exists_of_boundary_id pref endpoint
+          hboundary with
+        ⟨boundaryIndex, hboundaryOwner⟩
+      refine ⟨.boundary boundaryIndex, by simpa using hboundaryOwner, ?_⟩
+      intro owner' howner'
+      cases owner' with
+      | boundary boundaryIndex' =>
+          have hownerBoundary' :
+              (boundaryEvidenceOfPrefix pref).boundaryPort boundaryIndex' =
+                endpoint := by
+            simpa using howner'
+          have hsameEndpoint :
+              (boundaryEvidenceOfPrefix pref).boundaryPort boundaryIndex' =
+                (boundaryEvidenceOfPrefix pref).boundaryPort boundaryIndex :=
+            hownerBoundary'.trans hboundaryOwner.symm
+          have hindex :
+              boundaryIndex' = boundaryIndex :=
+            (boundaryEvidenceOfPrefix pref).boundary_injective hsameEndpoint
+          cases hindex
+          rfl
+      | constructor node slot =>
+          have hownerConstructor' :
+              (incidentOfValidIds hv node).get slot = endpoint := by
+            simpa [incidenceEvidenceOfValidIds] using howner'
+          have hsameEndpoint :
+              (boundaryEvidenceOfPrefix pref).boundaryPort boundaryIndex =
+                (incidentOfValidIds hv node).get slot :=
+            hboundaryOwner.trans hownerConstructor'.symm
+          exact False.elim
+            (boundaryEvidenceOfPrefix_ne_incidentOfValidIds pref hv ho
+              boundaryIndex node slot hsameEndpoint)
+    · rcases incidentOfValidIds_exists_of_mem_nodeIncidentIds hv endpoint
+          hnode with
+        ⟨node, slot, hconstructorOwner⟩
+      refine ⟨.constructor node slot, by
+        simpa [incidenceEvidenceOfValidIds] using hconstructorOwner, ?_⟩
+      intro owner' howner'
+      cases owner' with
+      | boundary boundaryIndex =>
+          have hownerBoundary' :
+              (boundaryEvidenceOfPrefix pref).boundaryPort boundaryIndex =
+                endpoint := by
+            simpa using howner'
+          have hsameEndpoint :
+              (boundaryEvidenceOfPrefix pref).boundaryPort boundaryIndex =
+                (incidentOfValidIds hv node).get slot :=
+            hownerBoundary'.trans hconstructorOwner.symm
+          exact False.elim
+            (boundaryEvidenceOfPrefix_ne_incidentOfValidIds pref hv ho
+              boundaryIndex node slot hsameEndpoint)
+      | constructor node' slot' =>
+          have hownerConstructor' :
+              (incidentOfValidIds hv node').get slot' = endpoint := by
+            simpa [incidenceEvidenceOfValidIds] using howner'
+          have hsameEndpoint :
+              (incidentOfValidIds hv node').get slot' =
+                (incidentOfValidIds hv node).get slot :=
+            hownerConstructor'.trans hconstructorOwner.symm
+          have hnodeEq :
+              node' = node :=
+            incidentOfValidIds_eq_node_eq hv ho hsameEndpoint
+          cases hnodeEq
+          have hslotEq :
+              slot' = slot :=
+            incidentOfValidIds_injective hv hn node hsameEndpoint
+          cases hslotEq
+          rfl
+
 namespace PortHypergraphEvidence
 
 def toPortHypergraph {st : RenderState Sig []} {boundary : List Sig.Port}
@@ -3465,53 +3718,33 @@ namespace Diag
 
 variable {Sig : Signature}
 
+def renderTraceFromBoundary_graphEvidence
+    {boundary : List Sig.Port} (d : Diag Sig boundary) :
+    RenderState.PortHypergraphEvidence (renderTraceFromBoundary d) boundary :=
+  RenderState.portHypergraphEvidenceOfInvariants
+    (renderTraceFromBoundary_validIds d)
+    (renderTraceFromBoundary_endpointPartition d)
+    (renderTraceFromBoundary_nodeIncidentNodup d)
+    (renderTraceFromBoundary_endpointPrefix d)
+    (renderTraceFromBoundary_ownerIdPartition d)
+
 /--
 UNFINISHED renderer validity: the trace produced from traversal syntax carries
 exactly the endpoint, edge, boundary, and ordered-constructor incidence
 evidence required to be an open `PortHypergraph`.
 
-The endpoint-to-edge assignment slice is already constructed by
-`renderTraceFromBoundary_endpointEdgeEvidence` from
-`renderTraceFromBoundary_validIds` and
-`renderTraceFromBoundary_endpointPartition`, and edge compatibility plus
-two-endpoint edge laws are constructed by
-`renderTraceFromBoundary_edgeEvidence`.  The ordered boundary map is
-constructed by `renderTraceFromBoundary_boundaryEvidence` from endpoint-prefix
-preservation.  Constructor incidence evidence is constructed by
-`renderTraceFromBoundary_incidenceEvidence` from `ValidIds` and node-incident
-nodup preservation.  The boundary-or-constructor owner endpoint-ID inventory is
-constructed by `renderTraceFromBoundary_ownerIdPartition`.  The remaining
-unfinished fields are endpoint-owner uniqueness and boundary reachability.
+The graph evidence, including endpoint ownership, is constructed by
+`renderTraceFromBoundary_graphEvidence` from renderer-derived invariants.  The
+remaining unfinished field is boundary reachability for every rendered
+constructor.
 -/
 def renderTraceFromBoundary_openEvidence
     {boundary : List Sig.Port} (d : Diag Sig boundary) :
     RenderState.OpenPortHypergraphEvidence
-      (renderTraceFromBoundary d) boundary := by
-  let endpointEdgeEvidence :
-      RenderState.EndpointEdgeEvidence (renderTraceFromBoundary d) :=
-    renderTraceFromBoundary_endpointEdgeEvidence d
-  have endpointEdge := endpointEdgeEvidence.endpointEdge
-  have endpoint_edge_label := endpointEdgeEvidence.endpoint_edge_label
-  let edgeEvidence :
-      RenderState.EdgeEvidence (renderTraceFromBoundary d) :=
-    renderTraceFromBoundary_edgeEvidence d
-  have edge_compatible := edgeEvidence.edge_compatible
-  have edge_two_endpoints := edgeEvidence.edge_two_endpoints
-  let boundaryEvidence :
-      RenderState.BoundaryEvidence (renderTraceFromBoundary d) boundary :=
-    renderTraceFromBoundary_boundaryEvidence d
-  have boundaryPort := boundaryEvidence.boundaryPort
-  have boundary_injective := boundaryEvidence.boundary_injective
-  have boundary_label := boundaryEvidence.boundary_label
-  let incidenceEvidence :
-      RenderState.IncidenceEvidence (renderTraceFromBoundary d) :=
-    renderTraceFromBoundary_incidenceEvidence d
-  have incident := incidenceEvidence.incident
-  have incident_length := incidenceEvidence.incident_length
-  have incident_injective := incidenceEvidence.incident_injective
-  have incidence_label := incidenceEvidence.incidence_label
-  have ownerIdPartition := renderTraceFromBoundary_ownerIdPartition d
-  sorry
+      (renderTraceFromBoundary d) boundary where
+  graph := renderTraceFromBoundary_graphEvidence d
+  allConstructorsReachBoundary := by
+    sorry
 
 /--
 UNFINISHED semantic renderer obtained from
