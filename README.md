@@ -153,12 +153,16 @@ lake exe bijform
   - `StringDiagram.Diag.bud_transport`
   - `StringDiagram.Diag.renderTraceFromBoundary`
   - `StringDiagram.Diag.renderTrace_endpointPrefix`
+  - `StringDiagram.Diag.renderTrace_endpointPrefixOfPrefix`
   - `StringDiagram.Diag.renderTraceFromBoundary_endpointPrefix`
   - `StringDiagram.Diag.renderTrace_validIds`
   - `StringDiagram.Diag.renderTrace_endpointPartition`
   - `StringDiagram.Diag.renderTrace_nodeIncidentNodup`
   - `StringDiagram.Diag.renderTrace_ownerIdPartition`
   - `StringDiagram.Diag.renderTrace_reachability`
+  - `StringDiagram.Diag.renderTrace_graphEvidence`
+  - `StringDiagram.Diag.renderTrace_allConstructorsReachBoundary`
+  - `StringDiagram.Diag.renderTrace_openEvidence`
   - `StringDiagram.Diag.renderTraceFromBoundary_validIds`
   - `StringDiagram.Diag.renderTrace_edge_mem_old`
   - `StringDiagram.Diag.renderTrace_node_mem_old`
@@ -212,6 +216,7 @@ lake exe bijform
   - `StringDiagram.RenderState.OwnerIdPartition.nodeIncidentIds_nodup`
   - `StringDiagram.RenderState.OwnerIdPartition.boundary_nodeIncidentIds_disjoint`
   - `StringDiagram.RenderState.EndpointPrefix`
+  - `StringDiagram.RenderState.EndpointPrefix.trans`
   - `StringDiagram.RenderState.BoundaryEvidence`
   - `StringDiagram.RenderState.boundaryEvidenceOfPrefix`
   - `StringDiagram.RenderState.boundaryEvidenceOfPrefix_boundaryPort_val`
