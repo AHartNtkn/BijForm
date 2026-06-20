@@ -269,8 +269,10 @@ lake exe bijform
   - `StringDiagram.Diag.toOpenPortHypergraph_bud_initial_search`
   - `StringDiagram.Diag.renderTrace_connect_edgeMate_of_invariants`
   - `StringDiagram.Diag.renderTrace_connect_active_endpointEdge_val`
+  - `StringDiagram.Diag.connectStep_frontierIds`
   - `StringDiagram.Diag.renderTrace_bud_entry_edgeMate_of_invariants`
   - `StringDiagram.Diag.renderTrace_bud_active_endpointEdge_val`
+  - `StringDiagram.Diag.budStep_frontierIds`
   - `StringDiagram.EndpointOwner`
   - `StringDiagram.PortHypergraph`
   - `StringDiagram.PortHypergraph.endpointOwnersOf`
@@ -294,6 +296,7 @@ lake exe bijform
   - `StringDiagram.OpenPortHypergraph.SearchState.RenderPrefixRelated.pending_cons_values`
   - `StringDiagram.OpenPortHypergraph.SearchState.initial_renderPrefixRelated`
   - `StringDiagram.OpenPortHypergraph.SearchState.RenderPrefixRelated.connectChild_of_new_edge`
+  - `StringDiagram.OpenPortHypergraph.SearchState.RenderPrefixRelated.connectChild_pending_vals`
   - `StringDiagram.OpenPortHypergraph.SearchState.RenderPrefixRelated.budChild_of_new_edge_node`
   - `StringDiagram.OpenPortHypergraph.SearchState.IsoRelated`
   - `StringDiagram.OpenPortHypergraph.SearchState.initial_isoRelated`

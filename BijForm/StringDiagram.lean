@@ -2117,6 +2117,29 @@ theorem connectStep_new_edge_mem
     subst restIds'
     simp
 
+theorem connectStep_frontierIds
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (st : RenderState Sig (active :: frontier))
+    {activeId : Nat} {restIds : List Nat}
+    (hids : st.frontierIds = activeId :: restIds) :
+    (connectStep mate ok st).frontierIds =
+      eraseFin restIds (Fin.cast (by
+        have hlen := st.frontierIds_length
+        rw [hids] at hlen
+        exact (Nat.succ.inj hlen).symm) mate) := by
+  unfold connectStep
+  split
+  · rename_i hidsNil
+    exact False.elim (RenderState.frontierIds_ne_nil st hidsNil)
+  · rename_i activeId' restIds' hids'
+    rw [hids] at hids'
+    injection hids' with hactive hrest
+    subst activeId'
+    subst restIds'
+    simp
+
 theorem connectStep_frontier_mem_old
     {active : Sig.Port} {frontier : List Sig.Port}
     (mate : Fin frontier.length)
@@ -2290,6 +2313,29 @@ theorem budStep_new_edge_mem
        right_label := (Sig.compatible_edge ok).symm
        compatible := ok } : RenderEdge Sig) ∈
       (budStep node entry ok st).edges := by
+  unfold budStep
+  split
+  · rename_i hidsNil
+    exact False.elim (RenderState.frontierIds_ne_nil st hidsNil)
+  · rename_i activeId' restIds' hids'
+    rw [hids] at hids'
+    injection hids' with hactive hrest
+    subst activeId'
+    subst restIds'
+    simp [freshNodeEndpoints]
+
+theorem budStep_frontierIds
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (st : RenderState Sig (active :: frontier))
+    {activeId : Nat} {restIds : List Nat}
+    (hids : st.frontierIds = activeId :: restIds) :
+    (budStep node entry ok st).frontierIds =
+      restIds ++
+        eraseFin (freshNodeEndpoints st.nextEndpoint (Sig.arity node))
+          (Fin.cast (by simp [freshNodeEndpoints]) entry) := by
   unfold budStep
   split
   · rename_i hidsNil
@@ -7136,6 +7182,56 @@ theorem RenderPrefixRelated.connectChild_of_new_edge
       have hltOld : node.val < rst.nodes.length := by
         omega
       exact (hrel.seen_prefix node).2 hltOld
+
+theorem RenderPrefixRelated.connectChild_pending_vals
+    {activeLabel : Sig.Port} {frontier : List Sig.Port}
+    {final : RenderState Sig []}
+    {ev : RenderState.OpenPortHypergraphEvidence final boundary}
+    {rst : RenderState Sig (activeLabel :: frontier)}
+    {sst : SearchState ev.toOpenPortHypergraph (activeLabel :: frontier)}
+    (hrel : RenderPrefixRelated ev rst sst)
+    {active : Fin ev.toOpenPortHypergraph.raw.endpointCount}
+    {rest : List (Fin ev.toOpenPortHypergraph.raw.endpointCount)}
+    (hpending : sst.pending = active :: rest)
+    (searchMate : Fin rest.length)
+    (hmate :
+      PortHypergraph.EdgeMate ev.toOpenPortHypergraph.raw active
+        (rest.get searchMate))
+    (rendererMate : Fin frontier.length)
+    (ok : Sig.compatible activeLabel (frontier.get rendererMate))
+    (hindex : searchMate.val = rendererMate.val) :
+    (sst.connectChild hpending searchMate hmate).pending.map
+        (fun endpoint => endpoint.val) =
+      (Diag.connectStep rendererMate ok rst).frontierIds := by
+  cases hidsCase : rst.frontierIds with
+  | nil =>
+      exact False.elim (RenderState.frontierIds_ne_nil rst hidsCase)
+  | cons activeId restIds =>
+      have hids : rst.frontierIds = activeId :: restIds := hidsCase
+      have hvals := hrel.pending_cons_values hpending hids
+      have hrestLen : restIds.length = frontier.length := by
+        have hlen := rst.frontierIds_length
+        rw [hids] at hlen
+        exact Nat.succ.inj hlen
+      rw [Diag.connectStep_frontierIds rendererMate ok rst hids]
+      simp [connectChild]
+      have hmap :
+          (eraseFin rest searchMate).map (fun endpoint => endpoint.val) =
+            eraseFin (rest.map (fun endpoint => endpoint.val))
+              (Fin.cast (by simp) searchMate) := by
+        exact map_eraseFin (fun endpoint => endpoint.val) rest searchMate
+      rw [hmap]
+      calc
+        eraseFin (rest.map (fun endpoint => endpoint.val))
+            (Fin.cast (by simp) searchMate) =
+          eraseFin restIds
+            (Fin.cast (by rw [← hvals.2])
+              (Fin.cast (by simp) searchMate)) := by
+            exact eraseFin_eq_of_eq hvals.2 (Fin.cast (by simp) searchMate)
+        _ = eraseFin restIds (Fin.cast hrestLen.symm rendererMate) := by
+            apply congrArg
+            apply Fin.ext
+            exact hindex
 
 theorem RenderPrefixRelated.budChild_of_new_edge_node
     {activeLabel : Sig.Port} {restLabels : List Sig.Port}
