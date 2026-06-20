@@ -7047,6 +7047,155 @@ theorem budChild_proof_irrel {G : OpenPortHypergraph Sig boundary}
   cases hunseenProof
   rfl
 
+theorem RenderPrefixRelated.connectChild_of_new_edge
+    {activeLabel : Sig.Port} {frontier : List Sig.Port}
+    {final : RenderState Sig []}
+    {ev : RenderState.OpenPortHypergraphEvidence final boundary}
+    {rst : RenderState Sig (activeLabel :: frontier)}
+    {sst : SearchState ev.toOpenPortHypergraph (activeLabel :: frontier)}
+    (hrel : RenderPrefixRelated ev rst sst)
+    {active : Fin ev.toOpenPortHypergraph.raw.endpointCount}
+    {rest : List (Fin ev.toOpenPortHypergraph.raw.endpointCount)}
+    (hpending : sst.pending = active :: rest)
+    (mate : Fin rest.length)
+    (hmate :
+      PortHypergraph.EdgeMate ev.toOpenPortHypergraph.raw active
+        (rest.get mate))
+    (childRst :
+      RenderState Sig (eraseFin frontier (sst.restLabelIndex hpending mate)))
+    (hpendingVals :
+      (sst.connectChild hpending mate hmate).pending.map
+          (fun endpoint => endpoint.val) = childRst.frontierIds)
+    (hactiveEdge :
+      (ev.toOpenPortHypergraph.raw.endpointEdge active).val =
+        rst.edges.length)
+    (hedgesLength : childRst.edges.length = rst.edges.length + 1)
+    (hnodesLength : childRst.nodes.length = rst.nodes.length) :
+    RenderPrefixRelated ev childRst
+      (sst.connectChild hpending mate hmate) where
+  pending_vals := hpendingVals
+  processed_prefix := by
+    intro edge
+    constructor
+    · intro hmem
+      simp [connectChild] at hmem
+      rcases hmem with hnew | hold
+      · have hval : edge.val = rst.edges.length := by
+          rw [hnew]
+          exact hactiveEdge
+        omega
+      · have holdLt := (hrel.processed_prefix edge).1 hold
+        omega
+    · intro hlt
+      have hlt' : edge.val < rst.edges.length + 1 := by
+        simpa [hedgesLength] using hlt
+      have hcases : edge.val < rst.edges.length ∨
+          edge.val = rst.edges.length := by
+        omega
+      simp [connectChild]
+      rcases hcases with hold | hnew
+      · right
+        exact (hrel.processed_prefix edge).2 hold
+      · left
+        apply Fin.ext
+        exact hnew.trans hactiveEdge.symm
+  seen_prefix := by
+    intro node
+    constructor
+    · intro hmem
+      simp [connectChild] at hmem
+      have hlt := (hrel.seen_prefix node).1 hmem
+      omega
+    · intro hlt
+      simp [connectChild]
+      have hltOld : node.val < rst.nodes.length := by
+        omega
+      exact (hrel.seen_prefix node).2 hltOld
+
+theorem RenderPrefixRelated.budChild_of_new_edge_node
+    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
+    {final : RenderState Sig []}
+    {ev : RenderState.OpenPortHypergraphEvidence final boundary}
+    {rst : RenderState Sig (activeLabel :: restLabels)}
+    {sst : SearchState ev.toOpenPortHypergraph (activeLabel :: restLabels)}
+    (hrel : RenderPrefixRelated ev rst sst)
+    {active : Fin ev.toOpenPortHypergraph.raw.endpointCount}
+    {rest : List (Fin ev.toOpenPortHypergraph.raw.endpointCount)}
+    (hpending : sst.pending = active :: rest)
+    (node : Fin ev.toOpenPortHypergraph.raw.nodeCount)
+    (slot : Fin (ev.toOpenPortHypergraph.raw.incident node).length)
+    (hmate :
+      PortHypergraph.EdgeMate ev.toOpenPortHypergraph.raw active
+        ((ev.toOpenPortHypergraph.raw.incident node).get slot))
+    (hunseen : node ∉ sst.seenNodes)
+    (childRst :
+      RenderState Sig
+        (restLabels ++
+          Sig.nodePortsExcept (ev.toOpenPortHypergraph.raw.nodeLabel node)
+            (budEntry node slot)))
+    (hpendingVals :
+      (sst.budChild hpending node slot hmate hunseen).pending.map
+          (fun endpoint => endpoint.val) = childRst.frontierIds)
+    (hactiveEdge :
+      (ev.toOpenPortHypergraph.raw.endpointEdge active).val =
+        rst.edges.length)
+    (hnewNode : node.val = rst.nodes.length)
+    (hedgesLength : childRst.edges.length = rst.edges.length + 1)
+    (hnodesLength : childRst.nodes.length = rst.nodes.length + 1) :
+    RenderPrefixRelated ev childRst
+      (sst.budChild hpending node slot hmate hunseen) where
+  pending_vals := hpendingVals
+  processed_prefix := by
+    intro edge
+    constructor
+    · intro hmem
+      simp [budChild] at hmem
+      rcases hmem with hnew | hold
+      · have hval : edge.val = rst.edges.length := by
+          rw [hnew]
+          exact hactiveEdge
+        omega
+      · have holdLt := (hrel.processed_prefix edge).1 hold
+        omega
+    · intro hlt
+      have hlt' : edge.val < rst.edges.length + 1 := by
+        simpa [hedgesLength] using hlt
+      have hcases : edge.val < rst.edges.length ∨
+          edge.val = rst.edges.length := by
+        omega
+      simp [budChild]
+      rcases hcases with hold | hnew
+      · right
+        exact (hrel.processed_prefix edge).2 hold
+      · left
+        apply Fin.ext
+        exact hnew.trans hactiveEdge.symm
+  seen_prefix := by
+    intro candidate
+    constructor
+    · intro hmem
+      simp [budChild] at hmem
+      rcases hmem with hnew | hold
+      · have hval : candidate.val = rst.nodes.length := by
+          rw [hnew]
+          exact hnewNode
+        omega
+      · have holdLt := (hrel.seen_prefix candidate).1 hold
+        omega
+    · intro hlt
+      have hlt' : candidate.val < rst.nodes.length + 1 := by
+        simpa [hnodesLength] using hlt
+      have hcases : candidate.val < rst.nodes.length ∨
+          candidate.val = rst.nodes.length := by
+        omega
+      simp [budChild]
+      rcases hcases with hold | hnew
+      · right
+        exact (hrel.seen_prefix candidate).2 hold
+      · left
+        apply Fin.ext
+        exact hnew.trans hnewNode.symm
+
 theorem IsoRelated.connectChild
     {G H : OpenPortHypergraph Sig boundary}
     {e : PortHypergraphIso G.raw H.raw}
