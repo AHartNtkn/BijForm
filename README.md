@@ -149,6 +149,7 @@ lake exe bijform
   - `StringDiagram.Diag.budStep_fresh_rawReachesBoundary`
   - `StringDiagram.Diag.budStep_reachability`
   - `StringDiagram.Diag.budStep_endpoints`
+  - `StringDiagram.Diag.bud_transport`
   - `StringDiagram.Diag.renderTraceFromBoundary`
   - `StringDiagram.Diag.renderTrace_endpointPrefix`
   - `StringDiagram.Diag.renderTraceFromBoundary_endpointPrefix`
@@ -320,9 +321,17 @@ lake exe bijform
   - `StringDiagram.OpenPortHypergraph.SearchState.IsoRelated.firstPendingConnectSearch?_none`
   - `StringDiagram.OpenPortHypergraph.SearchState.firstPendingStepSearch?_some_bud_of_witness`
   - `StringDiagram.OpenPortHypergraph.SearchState.firstPendingStepSearch?_some_bud_exact_of_witness`
+  - `StringDiagram.OpenPortHypergraph.SearchState.firstPendingConnectSearch?_none_of_firstPendingStepSearch?_bud`
   - `StringDiagram.OpenPortHypergraph.SearchState.IsoRelated.firstPendingStepSearch?_bud`
   - `StringDiagram.OpenPortHypergraph.SearchState.firstPendingStepSearch?_exists_of_frontierComplete`
   - `StringDiagram.OpenPortHypergraph.SearchState.toDiag`
+  - `StringDiagram.OpenPortHypergraph.SearchState.frontierComplete_cast`
+  - `StringDiagram.OpenPortHypergraph.SearchState.toDiag_frontierComplete_irrel`
+  - `StringDiagram.OpenPortHypergraph.SearchState.toDiag_cast`
+  - `StringDiagram.OpenPortHypergraph.SearchState.toDiag_empty`
+  - `StringDiagram.OpenPortHypergraph.SearchState.toDiag_connect`
+  - `StringDiagram.OpenPortHypergraph.SearchState.toDiag_bud`
+  - `StringDiagram.OpenPortHypergraph.SearchState.toDiag_isoRelated`
   - `StringDiagram.OpenPortHypergraph.fromGraph`
   - `StringDiagram.OpenPortHypergraph.SearchState.GraphExhausted`
   - `StringDiagram.OpenPortHypergraph.SearchState.pending_ne_nil_of_reachable_unprocessed`
@@ -332,7 +341,7 @@ lake exe bijform
   - `StringDiagram.OpenPortHypergraph.SearchState.pending_eq_nil_of_empty_frontier`
   - `StringDiagram.OpenPortHypergraph.SearchState.graphExhausted_of_empty_frontier`
   - `StringDiagram.OpenPortHypergraph.firstPendingTraversalReady_of_frontierComplete`
-  - `StringDiagram.OpenPortHypergraph.fromGraph_respects_iso` (unfinished inverse-law proof gap)
+  - `StringDiagram.OpenPortHypergraph.fromGraph_respects_iso`
   - `StringDiagram.Diag.fromGraph_toOpenPortHypergraph` (unfinished inverse-law proof gap)
   - `StringDiagram.OpenPortHypergraph.toOpenPortHypergraph_fromGraph_iso` (unfinished inverse-law proof gap)
   - `StringDiagram.diagOpenPortHypergraphIso` (depends on unfinished inverse-law declarations)

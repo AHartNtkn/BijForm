@@ -637,6 +637,33 @@ def rank : ∀ {boundary : List Sig.Port}, Diag Sig boundary → Nat
   | _, connect _ _ child => rank child + 1
   | _, bud _ _ _ child => rank child + 1
 
+/-- Transport a `bud` constructor across equal constructor labels and equal
+entry positions, with the child transported along the induced frontier
+equality. -/
+theorem bud_transport
+    {activeLabel : Sig.Port} {frontier : List Sig.Port}
+    {nodeA nodeB : Sig.Node}
+    {entryA : Fin (Sig.arity nodeA)} {entryB : Fin (Sig.arity nodeB)}
+    (hnode : nodeB = nodeA)
+    (hentryVal : entryB.val = entryA.val)
+    (okA : Sig.compatible activeLabel (Sig.port nodeA entryA))
+    (okB : Sig.compatible activeLabel (Sig.port nodeB entryB))
+    (childA : Diag Sig (frontier ++ Sig.nodePortsExcept nodeA entryA))
+    (childB : Diag Sig (frontier ++ Sig.nodePortsExcept nodeB entryB))
+    (hfrontier :
+      frontier ++ Sig.nodePortsExcept nodeB entryB =
+        frontier ++ Sig.nodePortsExcept nodeA entryA)
+    (hchild : childA = hfrontier ▸ childB) :
+    Diag.bud nodeA entryA okA childA =
+      Diag.bud nodeB entryB okB childB := by
+  cases hnode
+  have hentry : entryB = entryA := Fin.ext hentryVal
+  cases hentry
+  cases hfrontier
+  have hok : okB = okA := Subsingleton.elim _ _
+  cases hok
+  exact congrArg (fun child => Diag.bud nodeA entryA okA child) hchild
+
 end Diag
 
 /-- An edge recorded by the concrete traversal renderer. -/
@@ -5105,6 +5132,15 @@ def FrontierComplete {G : OpenPortHypergraph Sig boundary}
     {frontier : List Sig.Port} (st : SearchState G frontier) : Prop :=
   st.toTraversalState.FrontierComplete
 
+/-- Frontier completeness transports across a cast of the frontier index. -/
+theorem frontierComplete_cast {G : OpenPortHypergraph Sig boundary}
+    {frontier frontier' : List Sig.Port}
+    (h : frontier = frontier') (st : SearchState G frontier)
+    (hc : st.FrontierComplete) :
+    (h ▸ st).FrontierComplete := by
+  cases h
+  exact hc
+
 /-- Initial finite search state: the ordered boundary endpoints are pending. -/
 def initial (G : OpenPortHypergraph Sig boundary) : SearchState G boundary where
   pending := List.ofFn G.raw.boundaryPort
@@ -6482,6 +6518,33 @@ def firstPendingStepSearch? {G : OpenPortHypergraph Sig boundary}
   | some step => some step
   | none => st.firstPendingBudSearch? active rest
 
+/-- A successful bud result from the executable first-pending search certifies
+that the pending-tail connect search failed. -/
+theorem firstPendingConnectSearch?_none_of_firstPendingStepSearch?_bud
+    {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port} (st : SearchState G frontier)
+    {active : Fin G.raw.endpointCount}
+    {rest : List (Fin G.raw.endpointCount)}
+    {node : Fin G.raw.nodeCount}
+    {slot : Fin (G.raw.incident node).length}
+    {hmate :
+      PortHypergraph.EdgeMate G.raw active ((G.raw.incident node).get slot)}
+    {hunseen : ¬ st.seenNode node}
+    (hstep :
+      st.firstPendingStepSearch? active rest =
+        some (FirstPendingStep.bud node slot hmate hunseen)) :
+    firstPendingConnectSearch? G st.seenNode active rest = none := by
+  unfold firstPendingStepSearch? at hstep
+  cases hconnect :
+      firstPendingConnectSearch? G st.seenNode active rest with
+  | none => rfl
+  | some step =>
+      rcases firstPendingConnectSearch?_some_connect
+          G st.seenNode hconnect with
+        ⟨mate, hmate, hstepEq⟩
+      rw [hconnect, hstepEq] at hstep
+      cases hstep
+
 theorem firstPendingStepSearch?_ready
     {G : OpenPortHypergraph Sig boundary}
     {frontier : List Sig.Port} (st : SearchState G frontier)
@@ -6925,6 +6988,252 @@ decreasing_by
   · exact st.budChild_remainingEdges_lt hpending node slot hmate
       (by simpa [seenNode] using hunseen)
 
+/-- The owned traversal result is independent of the proof of frontier
+completeness supplied to it. -/
+theorem toDiag_frontierComplete_irrel {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port}
+    (st : SearchState G frontier)
+    (h₁ h₂ : st.FrontierComplete) :
+    st.toDiag h₁ = st.toDiag h₂ := by
+  have hproof : h₁ = h₂ := Subsingleton.elim _ _
+  cases hproof
+  rfl
+
+/-- Traversal commutes with casting the frontier index of a search state. -/
+theorem toDiag_cast {G : OpenPortHypergraph Sig boundary}
+    {frontier frontier' : List Sig.Port}
+    (h : frontier = frontier') (st : SearchState G frontier)
+    (hc : st.FrontierComplete) :
+    (h ▸ st).toDiag (frontierComplete_cast h st hc) =
+      h ▸ st.toDiag hc := by
+  cases h
+  rfl
+
+/-- Empty-frontier traversal computes to `finish`. -/
+theorem toDiag_empty {G : OpenPortHypergraph Sig boundary}
+    (st : SearchState G []) (hcomplete : st.FrontierComplete) :
+    st.toDiag hcomplete = Diag.finish := by
+  rw [SearchState.toDiag.eq_def]
+
+/-- Connect-branch computation rule for the owned first-pending traversal. -/
+theorem toDiag_connect {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
+    (st : SearchState G (activeLabel :: restLabels))
+    (hcomplete : st.FrontierComplete)
+    {active : Fin G.raw.endpointCount}
+    {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest)
+    (mate : Fin rest.length)
+    (hmate : PortHypergraph.EdgeMate G.raw active (rest.get mate))
+    (hstep :
+      st.firstPendingStepSearch? active rest =
+        some (FirstPendingStep.connect mate hmate)) :
+    st.toDiag hcomplete =
+      Diag.connect
+        (st.restLabelIndex hpending mate)
+        (st.connect_compatible hpending mate hmate)
+        ((st.connectChild hpending mate hmate).toDiag
+          (st.connectChild_frontierComplete hpending mate hmate hcomplete)) := by
+  rw [SearchState.toDiag.eq_2]
+  split
+  · rename_i hnil
+    rw [hnil] at hpending
+    cases hpending
+  · rename_i active' rest' hp
+    have hcons : active' :: rest' = active :: rest := by
+      rw [← hpending, hp]
+    injection hcons with hactive hrest
+    subst active'
+    subst rest'
+    split
+    · rename_i hnone
+      rw [hstep] at hnone
+      cases hnone
+    · rename_i step hstep'
+      cases step with
+      | connect mate' hmate' =>
+          rw [hstep] at hstep'
+          injection hstep' with hconnect
+          cases hconnect
+          simp
+      | bud _node _slot _hmate' _hunseen =>
+          rw [hstep] at hstep'
+          cases hstep'
+
+/-- Bud-branch computation rule for the owned first-pending traversal. -/
+theorem toDiag_bud {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
+    (st : SearchState G (activeLabel :: restLabels))
+    (hcomplete : st.FrontierComplete)
+    {active : Fin G.raw.endpointCount}
+    {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest)
+    (node : Fin G.raw.nodeCount)
+    (slot : Fin (G.raw.incident node).length)
+    (hmate :
+      PortHypergraph.EdgeMate G.raw active ((G.raw.incident node).get slot))
+    (hunseen : ¬ st.seenNode node)
+    (hstep :
+      st.firstPendingStepSearch? active rest =
+        some (FirstPendingStep.bud node slot hmate hunseen)) :
+    st.toDiag hcomplete =
+      Diag.bud
+        (G.raw.nodeLabel node)
+        (budEntry node slot)
+        (st.bud_compatible hpending node slot hmate)
+        ((st.budChild hpending node slot hmate
+            (by simpa [seenNode] using hunseen)).toDiag
+          (st.budChild_frontierComplete hpending node slot hmate
+            (by simpa [seenNode] using hunseen) hcomplete)) := by
+  rw [SearchState.toDiag.eq_2]
+  split
+  · rename_i hnil
+    rw [hnil] at hpending
+    cases hpending
+  · rename_i active' rest' hp
+    have hcons : active' :: rest' = active :: rest := by
+      rw [← hpending, hp]
+    injection hcons with hactive hrest
+    subst active'
+    subst rest'
+    split
+    · rename_i hnone
+      rw [hstep] at hnone
+      cases hnone
+    · rename_i step hstep'
+      cases step with
+      | connect _mate' _hmate' =>
+          rw [hstep] at hstep'
+          cases hstep'
+      | bud _node' _slot' _hmate' _hunseen' =>
+          rw [hstep] at hstep'
+          injection hstep' with hbud
+          cases hbud
+          simp
+
+/-- The owned graph-to-syntax traversal is invariant under related
+ordered-boundary-preserving isomorphic search states. -/
+theorem toDiag_isoRelated
+    {G H : OpenPortHypergraph Sig boundary}
+    (e : PortHypergraphIso G.raw H.raw)
+    {frontier : List Sig.Port}
+    (left : SearchState G frontier) (right : SearchState H frontier)
+    (hrel : IsoRelated e left right)
+    (hleft : left.FrontierComplete) (hright : right.FrontierComplete) :
+    left.toDiag hleft = right.toDiag hright := by
+  induction frontier, left, hleft using SearchState.toDiag.induct with
+  | case1 st hcomplete _hcomplete =>
+      rw [toDiag_empty]
+      rw [toDiag_empty]
+  | case2 activeLabel restLabels active rest mate hmate st _hcomplete
+      hcomplete hpending hstep _hstep ih =>
+      have hrightPending := hrel.pending_cons hpending
+      rcases hrel.firstPendingStepSearch?_connect hpending mate hmate with
+        ⟨rightMateEdge, hrightStep⟩
+      have hchildRel :=
+        hrel.connectChild_with hpending mate hmate rightMateEdge
+      have hchild :=
+        ih (right.connectChild hrightPending (Fin.cast (by simp) mate)
+              rightMateEdge) hchildRel
+          (right.connectChild_frontierComplete hrightPending
+            (Fin.cast (by simp) mate) rightMateEdge hright)
+      rw [toDiag_connect st hcomplete hpending mate hmate hstep]
+      rw [toDiag_connect right hright hrightPending
+        (Fin.cast (by simp) mate) rightMateEdge hrightStep]
+      have hidx := hrel.restLabelIndex hpending mate
+      cases hidx
+      have hok :
+          right.connect_compatible hrightPending (Fin.cast (by simp) mate)
+              rightMateEdge =
+            st.connect_compatible hpending mate hmate := Subsingleton.elim _ _
+      cases hok
+      exact congrArg (fun child => Diag.connect
+        (st.restLabelIndex hpending mate)
+        (st.connect_compatible hpending mate hmate) child) hchild
+  | case3 activeLabel restLabels active rest node slot hmate st _hcomplete
+      hcomplete hpending hunseen hstep _hstep ih =>
+      have hconnect :=
+        st.firstPendingConnectSearch?_none_of_firstPendingStepSearch?_bud hstep
+      have hrightPending := hrel.pending_cons hpending
+      rcases hrel.firstPendingStepSearch?_bud hpending hconnect node slot
+          hmate hunseen with
+        ⟨rightMateEdge, rightUnseen, hrightStep⟩
+      let rightNode := e.nodeEquiv.toFun node
+      let rightSlot := PortHypergraphIso.incidenceSlotPreserved e node slot
+      have rightUnseenMem : rightNode ∉ right.seenNodes := by
+        simpa [rightNode, seenNode] using rightUnseen
+      have leftUnseenMem : node ∉ st.seenNodes := by
+        simpa [seenNode] using hunseen
+      have hfrontier :
+          restLabels ++
+              Sig.nodePortsExcept (H.raw.nodeLabel rightNode)
+                (budEntry (G := H) rightNode rightSlot) =
+            restLabels ++
+              Sig.nodePortsExcept (G.raw.nodeLabel node)
+                (budEntry (G := G) node slot) := by
+        have hentryVal := budEntry_val_preserved e node slot
+        exact congrArg (fun tail => restLabels ++ tail)
+          (nodePortsExcept_eq_of_val
+            (e.node_label_preserved node).symm hentryVal)
+      let rightChild :=
+        hfrontier ▸
+          right.budChild hrightPending rightNode rightSlot rightMateEdge
+            rightUnseenMem
+      have hchildRel :
+          IsoRelated e
+            (st.budChild hpending node slot hmate leftUnseenMem)
+            rightChild := by
+        dsimp [rightChild, rightNode, rightSlot, hfrontier]
+        exact hrel.budChild_with hpending node slot hmate leftUnseenMem
+          rightMateEdge rightUnseenMem
+      have hrightChildCompleteUncast :
+          (right.budChild hrightPending rightNode rightSlot rightMateEdge
+            rightUnseenMem).FrontierComplete :=
+        right.budChild_frontierComplete hrightPending rightNode rightSlot
+          rightMateEdge rightUnseenMem hright
+      have hrightChildComplete : rightChild.FrontierComplete := by
+        dsimp [rightChild]
+        exact frontierComplete_cast hfrontier
+          (right.budChild hrightPending rightNode rightSlot rightMateEdge
+            rightUnseenMem)
+          hrightChildCompleteUncast
+      have hchild := ih rightChild hchildRel hrightChildComplete
+      rw [toDiag_bud st hcomplete hpending node slot hmate hunseen hstep]
+      rw [toDiag_bud right hright hrightPending rightNode rightSlot
+        rightMateEdge rightUnseen hrightStep]
+      have hrightChildDiagCast :
+          rightChild.toDiag hrightChildComplete =
+            hfrontier ▸
+              (right.budChild hrightPending rightNode rightSlot rightMateEdge
+                rightUnseenMem).toDiag hrightChildCompleteUncast := by
+        dsimp [rightChild, hrightChildComplete]
+        exact toDiag_cast hfrontier
+          (right.budChild hrightPending rightNode rightSlot rightMateEdge
+            rightUnseenMem)
+          hrightChildCompleteUncast
+      have hchildCast :
+          (st.budChild hpending node slot hmate leftUnseenMem).toDiag
+              (st.budChild_frontierComplete hpending node slot hmate
+                leftUnseenMem hcomplete) =
+            hfrontier ▸
+              (right.budChild hrightPending rightNode rightSlot rightMateEdge
+                rightUnseenMem).toDiag hrightChildCompleteUncast := by
+        exact hchild.trans hrightChildDiagCast
+      exact Diag.bud_transport
+        (hnode := (e.node_label_preserved node).symm)
+        (hentryVal := budEntry_val_preserved e node slot)
+        (okA := st.bud_compatible hpending node slot hmate)
+        (okB := right.bud_compatible hrightPending rightNode rightSlot
+          rightMateEdge)
+        (childA :=
+          (st.budChild hpending node slot hmate leftUnseenMem).toDiag
+            (st.budChild_frontierComplete hpending node slot hmate
+              leftUnseenMem hcomplete))
+        (childB :=
+          (right.budChild hrightPending rightNode rightSlot rightMateEdge
+            rightUnseenMem).toDiag hrightChildCompleteUncast)
+        hfrontier hchildCast
+
 end SearchState
 
 def fromGraph (G : OpenPortHypergraph Sig boundary) : Diag Sig boundary :=
@@ -7098,9 +7407,9 @@ def OpenPortHypergraphUpToIso (Sig : Signature) (boundary : List Sig.Port) :
   Quotient (OpenPortHypergraph.isoSetoid Sig boundary)
 
 /--
-UNFINISHED inverse law: the owned graph-to-`Diag` traversal is invariant under
+The owned graph-to-`Diag` traversal is invariant under
 ordered-boundary-preserving isomorphism.  This is the well-definedness
-obligation for descending `OpenPortHypergraph.fromGraph` to
+theorem for descending `OpenPortHypergraph.fromGraph` to
 `OpenPortHypergraphUpToIso`.
 -/
 theorem OpenPortHypergraph.fromGraph_respects_iso
@@ -7108,7 +7417,13 @@ theorem OpenPortHypergraph.fromGraph_respects_iso
     {G H : OpenPortHypergraph Sig boundary}
     (h : OpenPortHypergraph.isoRel G H) :
     OpenPortHypergraph.fromGraph G = OpenPortHypergraph.fromGraph H := by
-  sorry
+  rcases h with ⟨e⟩
+  simpa [OpenPortHypergraph.fromGraph] using
+    SearchState.toDiag_isoRelated e
+      (SearchState.initial G) (SearchState.initial H)
+      (SearchState.initial_isoRelated e)
+      (SearchState.initial_frontierComplete G)
+      (SearchState.initial_frontierComplete H)
 
 /--
 UNFINISHED inverse law: rendering a syntax diagram to a semantic graph and then
@@ -7134,7 +7449,7 @@ theorem OpenPortHypergraph.toOpenPortHypergraph_fromGraph_iso
 /--
 UNFINISHED semantic bridge assembly.  The quotient maps are now wired through
 the owned renderer and traversal, but this declaration still depends on the
-three unfinished inverse-law declarations above.
+two unfinished inverse-law declarations above.
 -/
 def diagOpenPortHypergraphIso (Sig : Signature) (boundary : List Sig.Port) :
     Diag Sig boundary ≃ᵢ OpenPortHypergraphUpToIso Sig boundary where
