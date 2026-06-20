@@ -4,5 +4,6 @@ import BijForm.Examples.Sorted
 import BijForm.Examples.FinChain
 import BijForm.Examples.Lambda
 import BijForm.Examples.TypedBinding
+import BijForm.Examples.TypedBinding.NF
 import BijForm.Examples.Num
 import BijForm.Examples.Peano

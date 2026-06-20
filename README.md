@@ -110,6 +110,7 @@ lake exe bijform
   - `BijForm.Examples.FinChain`
   - `BijForm.Examples.Lambda`
   - `BijForm.Examples.TypedBinding`
+  - `BijForm.Examples.TypedBinding.NF`
   - `BijForm.Examples.Num`
   - `BijForm.Examples.Peano`
 
@@ -288,6 +289,8 @@ Main results:
 
 ### Typed Binding Signatures
 
+Module: `BijForm.Examples.TypedBinding`
+
 Generic syntax:
 
 ```lean
@@ -308,6 +311,10 @@ Main results:
   carrier codings and layer-local rank proofs.
 - `TypedBinding.ShapeCodingData` packages the concrete one-step carrier coding
   and layer-local rank proof needed to obtain generated shape encodings.
+
+### Typed Binding Normal Forms
+
+Module: `BijForm.Examples.TypedBinding.NF`
 
 The normal-form lambda signature is instantiated with normal-expression and
 application-term indices. Its generated code family uses `Nat` for normal
