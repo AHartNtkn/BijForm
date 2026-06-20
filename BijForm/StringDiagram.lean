@@ -7857,6 +7857,103 @@ theorem toOpenPortHypergraph_connect_initial_search
   refine ⟨hmate', ?_⟩
   simpa [mateTail] using hstep
 
+/--
+Bridge support for the syntax round-trip: in the semantic graph rendered from
+a top-level `bud`, the executable first-pending search on the initial
+ordered-boundary state returns the corresponding `bud` branch.  The proof also
+shows that no pending-boundary `connect` mate can precede the constructor entry,
+using endpoint-owner uniqueness to separate boundary endpoints from constructor
+incidences.
+-/
+theorem toOpenPortHypergraph_bud_initial_search
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (child : Diag Sig (frontier ++ Sig.nodePortsExcept node entry)) :
+    let d : Diag Sig (active :: frontier) := Diag.bud node entry ok child
+    let G := Diag.toOpenPortHypergraph d
+    let st := OpenPortHypergraph.SearchState.initial G
+    let rest : List (Fin G.raw.endpointCount) :=
+      List.ofFn fun i : Fin frontier.length =>
+        G.raw.boundaryPort ⟨i.val + 1, by
+          simp [i.isLt]⟩
+    ∃ (nodeIndex : Fin G.raw.nodeCount)
+      (slot : Fin (G.raw.incident nodeIndex).length)
+      (hmate : PortHypergraph.EdgeMate G.raw
+        (G.raw.boundaryPort ⟨0, by simp⟩)
+        ((G.raw.incident nodeIndex).get slot))
+      (hunseen : ¬ st.seenNode nodeIndex),
+      st.firstPendingStepSearch?
+          (G.raw.boundaryPort ⟨0, by simp⟩) rest =
+        some (OpenPortHypergraph.FirstPendingStep.bud
+          nodeIndex slot hmate hunseen) := by
+  intro d G st rest
+  rcases Diag.toOpenPortHypergraph_bud_boundary_entry_edgeMate
+      node entry ok child with
+    ⟨nodeIndex, slot, _hnodeLabel, _hslotVal, hmate⟩
+  have hunseen : ¬ st.seenNode nodeIndex := by
+    simp [st, OpenPortHypergraph.SearchState.initial,
+      OpenPortHypergraph.SearchState.seenNode]
+  have hboundary_constructor_ne
+      (b : Fin (active :: frontier).length) :
+      G.raw.boundaryPort b ≠ (G.raw.incident nodeIndex).get slot := by
+    intro hsame
+    let endpoint := G.raw.boundaryPort b
+    rcases G.raw.endpoint_owner endpoint with ⟨owner₀, _howner₀, huniq⟩
+    have hboundaryEq :
+        (.boundary b :
+          EndpointOwner (active :: frontier).length G.raw.nodeCount
+            (fun node => (G.raw.incident node).length)) = owner₀ := by
+      apply huniq
+      rfl
+    have hconstructorEq :
+        (.constructor nodeIndex slot :
+          EndpointOwner (active :: frontier).length G.raw.nodeCount
+            (fun node => (G.raw.incident node).length)) = owner₀ := by
+      apply huniq
+      change (G.raw.incident nodeIndex).get slot = endpoint
+      exact hsame.symm
+    have himpossible :
+        (.boundary b :
+          EndpointOwner (active :: frontier).length G.raw.nodeCount
+            (fun node => (G.raw.incident node).length)) =
+        .constructor nodeIndex slot :=
+      hboundaryEq.trans hconstructorEq.symm
+    cases himpossible
+  have hconnect :
+      OpenPortHypergraph.firstPendingConnectSearch? G st.seenNode
+        (G.raw.boundaryPort ⟨0, by simp⟩) rest = none := by
+    cases hcase :
+        OpenPortHypergraph.firstPendingConnectSearch? G st.seenNode
+          (G.raw.boundaryPort ⟨0, by simp⟩) rest with
+    | none => rfl
+    | some step =>
+        rcases OpenPortHypergraph.firstPendingConnectSearch?_some_connect
+            G st.seenNode hcase with ⟨tailMate, htailMate, _hstep⟩
+        have hsameMate :
+            rest.get tailMate = (G.raw.incident nodeIndex).get slot := by
+          rcases PortHypergraph.edgeMate_existsUnique G.raw
+              (G.raw.boundaryPort ⟨0, by simp⟩) with
+            ⟨uniqueMate, _huniqueMate, huniq⟩
+          exact (huniq (rest.get tailMate) htailMate).trans
+            (huniq ((G.raw.incident nodeIndex).get slot) hmate).symm
+        let b : Fin (active :: frontier).length :=
+          ⟨tailMate.val + 1, by
+            have htail := tailMate.isLt
+            simp [rest] at htail
+            simp
+            omega⟩
+        have hrestBoundary :
+            rest.get tailMate = G.raw.boundaryPort b := by
+          simp [rest, b]
+        exact False.elim
+          (hboundary_constructor_ne b (hrestBoundary.symm.trans hsameMate))
+  rcases st.firstPendingStepSearch?_some_bud_exact_of_witness
+      hconnect nodeIndex slot hmate hunseen with
+    ⟨hmate', hunseen', hstep⟩
+  exact ⟨nodeIndex, slot, hmate', hunseen', hstep⟩
+
 end Diag
 
 /-- Typed open boundary-connected port-hypergraphs quotiented by ordered
