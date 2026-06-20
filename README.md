@@ -267,6 +267,16 @@ lake exe bijform
   - `StringDiagram.OpenPortHypergraph.SearchState.budChild_frontierComplete`
   - `StringDiagram.OpenPortHypergraph.SearchState.budChild_remainingEdges_lt`
   - `StringDiagram.PortHypergraphIso`
+  - `StringDiagram.PortHypergraphIso.edgeMate_preserved`
+  - `StringDiagram.PortHypergraphIso.edgeMate_reflected`
+  - `StringDiagram.PortHypergraphIso.incidenceSlotPreserved`
+  - `StringDiagram.PortHypergraphIso.incidenceSlotReflected`
+  - `StringDiagram.PortHypergraphIso.incidence_get_preserved`
+  - `StringDiagram.PortHypergraphIso.incidence_get_reflected`
+  - `StringDiagram.PortHypergraphIso.boundary_owner_preserved`
+  - `StringDiagram.PortHypergraphIso.constructor_owner_preserved`
+  - `StringDiagram.PortHypergraphIso.boundary_owner_reflected`
+  - `StringDiagram.PortHypergraphIso.constructor_owner_reflected`
   - `StringDiagram.OpenPortHypergraphUpToIso`
   - `StringDiagram.OpenPortHypergraph.FirstPendingStep`
   - `StringDiagram.OpenPortHypergraph.FirstPendingTraversalReady`

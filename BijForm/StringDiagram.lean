@@ -4652,6 +4652,148 @@ def trans {G H K : PortHypergraph Sig boundary}
       _ = G.incident (e₁.nodeEquiv.invFun (e₂.nodeEquiv.invFun node)) := by
         rw [e₁.incidence_reflected (e₂.nodeEquiv.invFun node)]
 
+theorem edgeMate_preserved {G H : PortHypergraph Sig boundary}
+    (e : PortHypergraphIso G H)
+    {endpoint mate : Fin G.endpointCount}
+    (hmate : PortHypergraph.EdgeMate G endpoint mate) :
+    PortHypergraph.EdgeMate H
+      (e.endpointEquiv.toFun endpoint) (e.endpointEquiv.toFun mate) := by
+  constructor
+  · intro hsame
+    have hpre :
+        endpoint = mate := by
+      have h := congrArg e.endpointEquiv.invFun hsame
+      simpa using h
+    exact hmate.1 hpre
+  · rw [e.endpoint_edge_preserved endpoint,
+      e.endpoint_edge_preserved mate, hmate.2]
+
+theorem edgeMate_reflected {G H : PortHypergraph Sig boundary}
+    (e : PortHypergraphIso G H)
+    {endpoint mate : Fin H.endpointCount}
+    (hmate : PortHypergraph.EdgeMate H endpoint mate) :
+    PortHypergraph.EdgeMate G
+      (e.endpointEquiv.invFun endpoint) (e.endpointEquiv.invFun mate) :=
+  edgeMate_preserved (symm e) hmate
+
+def incidenceSlotPreserved {G H : PortHypergraph Sig boundary}
+    (e : PortHypergraphIso G H) (node : Fin G.nodeCount)
+    (slot : Fin (G.incident node).length) :
+    Fin (H.incident (e.nodeEquiv.toFun node)).length :=
+  Fin.cast
+    (by
+      have hlen := congrArg List.length (e.incidence_preserved node)
+      simpa using hlen)
+    slot
+
+def incidenceSlotReflected {G H : PortHypergraph Sig boundary}
+    (e : PortHypergraphIso G H) (node : Fin H.nodeCount)
+    (slot : Fin (H.incident node).length) :
+    Fin (G.incident (e.nodeEquiv.invFun node)).length :=
+  Fin.cast
+    (by
+      have hlen := congrArg List.length (e.incidence_reflected node)
+      simpa using hlen)
+    slot
+
+theorem incidence_get_preserved {G H : PortHypergraph Sig boundary}
+    (e : PortHypergraphIso G H) (node : Fin G.nodeCount)
+    (slot : Fin (G.incident node).length) :
+    (H.incident (e.nodeEquiv.toFun node)).get
+        (incidenceSlotPreserved e node slot) =
+      e.endpointEquiv.toFun ((G.incident node).get slot) := by
+  have hlist := congrArg (fun xs : List (Fin H.endpointCount) =>
+      xs[slot.val]?) (e.incidence_preserved node)
+  have hleftBound :
+      slot.val < ((G.incident node).map e.endpointEquiv.toFun).length := by
+    simp [slot.isLt]
+  have hleftSome :
+      ((G.incident node).map e.endpointEquiv.toFun)[slot.val]? =
+        some (e.endpointEquiv.toFun ((G.incident node).get slot)) := by
+    rw [List.getElem?_eq_getElem hleftBound]
+    simp
+  have hslotVal : (incidenceSlotPreserved e node slot).val = slot.val := rfl
+  have hrightSome :
+      (H.incident (e.nodeEquiv.toFun node))[slot.val]? =
+        some ((H.incident (e.nodeEquiv.toFun node)).get
+          (incidenceSlotPreserved e node slot)) := by
+    rw [← hslotVal]
+    exact List.getElem?_eq_getElem
+      (incidenceSlotPreserved e node slot).isLt
+  have hlist' :
+      ((G.incident node).map e.endpointEquiv.toFun)[slot.val]? =
+        (H.incident (e.nodeEquiv.toFun node))[slot.val]? := by
+    simpa using hlist
+  rw [hleftSome, hrightSome] at hlist'
+  exact Option.some.inj hlist'.symm
+
+theorem incidence_get_reflected {G H : PortHypergraph Sig boundary}
+    (e : PortHypergraphIso G H) (node : Fin H.nodeCount)
+    (slot : Fin (H.incident node).length) :
+    (G.incident (e.nodeEquiv.invFun node)).get
+        (incidenceSlotReflected e node slot) =
+      e.endpointEquiv.invFun ((H.incident node).get slot) := by
+  have hlist := congrArg (fun xs : List (Fin G.endpointCount) =>
+      xs[slot.val]?) (e.incidence_reflected node)
+  have hleftBound :
+      slot.val < ((H.incident node).map e.endpointEquiv.invFun).length := by
+    simp [slot.isLt]
+  have hleftSome :
+      ((H.incident node).map e.endpointEquiv.invFun)[slot.val]? =
+        some (e.endpointEquiv.invFun ((H.incident node).get slot)) := by
+    rw [List.getElem?_eq_getElem hleftBound]
+    simp
+  have hslotVal : (incidenceSlotReflected e node slot).val = slot.val := rfl
+  have hrightSome :
+      (G.incident (e.nodeEquiv.invFun node))[slot.val]? =
+        some ((G.incident (e.nodeEquiv.invFun node)).get
+          (incidenceSlotReflected e node slot)) := by
+    rw [← hslotVal]
+    exact List.getElem?_eq_getElem
+      (incidenceSlotReflected e node slot).isLt
+  have hlist' :
+      ((H.incident node).map e.endpointEquiv.invFun)[slot.val]? =
+        (G.incident (e.nodeEquiv.invFun node))[slot.val]? := by
+    simpa using hlist
+  rw [hleftSome, hrightSome] at hlist'
+  exact Option.some.inj hlist'.symm
+
+theorem boundary_owner_preserved {G H : PortHypergraph Sig boundary}
+    (e : PortHypergraphIso G H) (boundaryIndex : Fin boundary.length) :
+    PortHypergraph.endpointOwnerEndpoint H (.boundary boundaryIndex) =
+      e.endpointEquiv.toFun
+        (PortHypergraph.endpointOwnerEndpoint G (.boundary boundaryIndex)) := by
+  simp [PortHypergraph.endpointOwnerEndpoint, e.boundary_preserved]
+
+theorem constructor_owner_preserved {G H : PortHypergraph Sig boundary}
+    (e : PortHypergraphIso G H) (node : Fin G.nodeCount)
+    (slot : Fin (G.incident node).length) :
+    PortHypergraph.endpointOwnerEndpoint H
+        (.constructor (e.nodeEquiv.toFun node)
+          (incidenceSlotPreserved e node slot)) =
+      e.endpointEquiv.toFun
+        (PortHypergraph.endpointOwnerEndpoint G (.constructor node slot)) := by
+  simpa [PortHypergraph.endpointOwnerEndpoint] using
+    incidence_get_preserved e node slot
+
+theorem boundary_owner_reflected {G H : PortHypergraph Sig boundary}
+    (e : PortHypergraphIso G H) (boundaryIndex : Fin boundary.length) :
+    PortHypergraph.endpointOwnerEndpoint G (.boundary boundaryIndex) =
+      e.endpointEquiv.invFun
+        (PortHypergraph.endpointOwnerEndpoint H (.boundary boundaryIndex)) := by
+  simp [PortHypergraph.endpointOwnerEndpoint, e.boundary_reflected]
+
+theorem constructor_owner_reflected {G H : PortHypergraph Sig boundary}
+    (e : PortHypergraphIso G H) (node : Fin H.nodeCount)
+    (slot : Fin (H.incident node).length) :
+    PortHypergraph.endpointOwnerEndpoint G
+        (.constructor (e.nodeEquiv.invFun node)
+          (incidenceSlotReflected e node slot)) =
+      e.endpointEquiv.invFun
+        (PortHypergraph.endpointOwnerEndpoint H (.constructor node slot)) := by
+  simpa [PortHypergraph.endpointOwnerEndpoint] using
+    incidence_get_reflected e node slot
+
 end PortHypergraphIso
 
 namespace OpenPortHypergraph
