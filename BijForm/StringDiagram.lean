@@ -5421,6 +5421,20 @@ theorem restLabelIndex_get {G : OpenPortHypergraph Sig boundary}
   cases hrest
   simp [restLabelIndex]
 
+theorem IsoRelated.restLabelIndex {G H : OpenPortHypergraph Sig boundary}
+    {e : PortHypergraphIso G.raw H.raw}
+    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
+    {left : SearchState G (activeLabel :: restLabels)}
+    {right : SearchState H (activeLabel :: restLabels)}
+    (hr : IsoRelated e left right)
+    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
+    (hpending : left.pending = active :: rest)
+    (mate : Fin rest.length) :
+    right.restLabelIndex (hr.pending_cons hpending) (Fin.cast (by simp) mate) =
+      left.restLabelIndex hpending mate := by
+  apply Fin.ext
+  rfl
+
 theorem constructor_seen_of_pending {G : OpenPortHypergraph Sig boundary}
     {frontier : List Sig.Port}
     (st : SearchState G frontier)
@@ -5514,6 +5528,15 @@ def budEntry {G : OpenPortHypergraph Sig boundary}
     (slot : Fin (G.raw.incident node).length) :
     Fin (Sig.arity (G.raw.nodeLabel node)) :=
   Fin.cast (G.raw.incident_length node) slot
+
+theorem budEntry_val_preserved {G H : OpenPortHypergraph Sig boundary}
+    (e : PortHypergraphIso G.raw H.raw)
+    (node : Fin G.raw.nodeCount)
+    (slot : Fin (G.raw.incident node).length) :
+    (budEntry (G := H) (e.nodeEquiv.toFun node)
+        (PortHypergraphIso.incidenceSlotPreserved e node slot)).val =
+      (budEntry (G := G) node slot).val := by
+  simp [budEntry, PortHypergraphIso.incidenceSlotPreserved]
 
 theorem bud_compatible {G : OpenPortHypergraph Sig boundary}
     {activeLabel : Sig.Port} {restLabels : List Sig.Port}
