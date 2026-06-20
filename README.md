@@ -128,14 +128,23 @@ lake exe bijform
   - `StringDiagram.PortHypergraph.endpointOwnersOf`
   - `StringDiagram.PortHypergraph.endpointOwnersOf_existsUnique`
   - `StringDiagram.PortHypergraph.EdgeMate`
+  - `StringDiagram.PortHypergraph.EdgeMateData`
+  - `StringDiagram.PortHypergraph.edgeMateCandidate?`
+  - `StringDiagram.PortHypergraph.edgeMateSearch?`
   - `StringDiagram.PortHypergraph.edgeMate_existsUnique`
   - `StringDiagram.PortHypergraph.PortReachesBoundary`
   - `StringDiagram.OpenPortHypergraph`
   - `StringDiagram.OpenPortHypergraph.TraversalState`
   - `StringDiagram.OpenPortHypergraph.TraversalState.FrontierComplete`
+  - `StringDiagram.OpenPortHypergraph.SearchState`
+  - `StringDiagram.OpenPortHypergraph.SearchState.initial`
+  - `StringDiagram.OpenPortHypergraph.SearchState.initial_frontierComplete`
   - `StringDiagram.PortHypergraphIso`
   - `StringDiagram.OpenPortHypergraphUpToIso`
+  - `StringDiagram.OpenPortHypergraph.FirstPendingStep`
   - `StringDiagram.OpenPortHypergraph.FirstPendingTraversalReady`
+  - `StringDiagram.OpenPortHypergraph.firstPendingConnectSearch?`
+  - `StringDiagram.OpenPortHypergraph.SearchState.firstPendingStepSearch?`
   - `StringDiagram.OpenPortHypergraph.firstPendingTraversalReady_of_frontierComplete`
   - `StringDiagram.diagOpenPortHypergraphIso` (unfinished proof gap)
 

@@ -780,6 +780,31 @@ def EdgeMate (G : PortHypergraph Sig boundary)
     (endpoint mate : Fin G.endpointCount) : Prop :=
   endpoint ≠ mate ∧ G.endpointEdge endpoint = G.endpointEdge mate
 
+/-- Type-level wrapper for executable edge-mate checks. -/
+structure EdgeMateData (G : PortHypergraph Sig boundary)
+    (endpoint mate : Fin G.endpointCount) : Type where
+  proof : EdgeMate G endpoint mate
+
+/-- Check whether a concrete endpoint is the edge mate of another endpoint. -/
+def edgeMateCandidate? (G : PortHypergraph Sig boundary)
+    (endpoint mate : Fin G.endpointCount) :
+    Option (EdgeMateData G endpoint mate) :=
+  if hsame : endpoint = mate then
+    none
+  else if hedge : G.endpointEdge endpoint = G.endpointEdge mate then
+    some ⟨⟨hsame, hedge⟩⟩
+  else
+    none
+
+/-- Search the finite endpoint set for the mate of a concrete endpoint. -/
+def edgeMateSearch? (G : PortHypergraph Sig boundary)
+    (endpoint : Fin G.endpointCount) :
+    Option { mate : Fin G.endpointCount // EdgeMate G endpoint mate } :=
+  (List.finRange G.endpointCount).findSome? fun mate =>
+    match edgeMateCandidate? G endpoint mate with
+    | some hmate => some ⟨mate, hmate.proof⟩
+    | none => none
+
 /-- Every endpoint has exactly one mate on its edge. -/
 theorem edgeMate_existsUnique (G : PortHypergraph Sig boundary)
     (endpoint : Fin G.endpointCount) :
@@ -1286,6 +1311,88 @@ def FrontierComplete {G : OpenPortHypergraph Sig boundary}
 end TraversalState
 
 /--
+Finite, data-carrying state for the owned graph-to-syntax search.
+
+`TraversalState` is the proof-level invariant surface.  `SearchState` keeps the
+same pending frontier together with finite lists of seen constructors and
+processed edges, so a later traversal implementation can make constructor
+choices as data and then project those choices back to the proof-level
+invariants.
+-/
+structure SearchState (G : OpenPortHypergraph Sig boundary)
+    (frontier : List Sig.Port) where
+  pending : List (Fin G.raw.endpointCount)
+  pending_labels : pending.map G.raw.endpointLabel = frontier
+  seenNodes : List (Fin G.raw.nodeCount)
+  processedEdges : List (Fin G.raw.edgeCount)
+  pending_unprocessed :
+    ∀ endpoint : Fin G.raw.endpointCount,
+      endpoint ∈ pending → G.raw.endpointEdge endpoint ∉ processedEdges
+
+namespace SearchState
+
+def seenNode {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port} (st : SearchState G frontier)
+    (node : Fin G.raw.nodeCount) : Prop :=
+  node ∈ st.seenNodes
+
+def processedEdge {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port} (st : SearchState G frontier)
+    (edge : Fin G.raw.edgeCount) : Prop :=
+  edge ∈ st.processedEdges
+
+def toTraversalState {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port} (st : SearchState G frontier) :
+    TraversalState G frontier where
+  pending := st.pending
+  pending_labels := st.pending_labels
+  seenNode := st.seenNode
+  processedEdge := st.processedEdge
+  pending_unprocessed := by
+    intro endpoint hpending hprocessed
+    exact st.pending_unprocessed endpoint hpending hprocessed
+
+/-- Proof-level frontier completeness for a finite search state. -/
+def FrontierComplete {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port} (st : SearchState G frontier) : Prop :=
+  st.toTraversalState.FrontierComplete
+
+/-- Initial finite search state: the ordered boundary endpoints are pending. -/
+def initial (G : OpenPortHypergraph Sig boundary) : SearchState G boundary where
+  pending := List.ofFn G.raw.boundaryPort
+  pending_labels := by
+    apply List.ext_getElem
+    · simp [List.length_ofFn]
+    · intro i hleft hright
+      rw [List.getElem_map]
+      rw [List.getElem_ofFn]
+      exact G.raw.boundary_label ⟨i, hright⟩
+  seenNodes := []
+  processedEdges := []
+  pending_unprocessed := by
+    intro _endpoint _hpending
+    simp
+
+theorem initial_frontierComplete (G : OpenPortHypergraph Sig boundary) :
+    (initial G).FrontierComplete := by
+  intro endpoint _hunprocessed owner howner
+  cases owner with
+  | boundary boundaryIndex =>
+      have hownerEndpoint :
+          G.raw.boundaryPort boundaryIndex = endpoint := by
+        simpa [PortHypergraph.endpointOwnerEndpoint] using howner
+      have hmem :
+          G.raw.boundaryPort boundaryIndex ∈ List.ofFn G.raw.boundaryPort :=
+        (List.mem_ofFn).mpr ⟨boundaryIndex, rfl⟩
+      rw [hownerEndpoint] at hmem
+      simpa [FrontierComplete, toTraversalState, initial] using hmem
+  | constructor node _slot =>
+      intro hseen
+      simp [toTraversalState, initial, seenNode] at hseen
+
+end SearchState
+
+/--
 The local step condition needed by the first-pending traversal.  For the
 active endpoint and the remaining ordered pending endpoints, the edge mate must
 either already be in the remaining pending list, giving a `connect`, or be an
@@ -1301,6 +1408,107 @@ def FirstPendingStepReady (G : OpenPortHypergraph Sig boundary)
       (slot : Fin (G.raw.incident node).length),
     PortHypergraph.EdgeMate G.raw active ((G.raw.incident node).get slot) ∧
       ¬ seenNode node)
+
+/--
+Data for one first-pending traversal step.  This is the constructor-level
+choice object that `Diag` construction needs: either the active endpoint
+connects to a later pending endpoint, or it enters an unseen constructor at an
+ordered slot.
+-/
+inductive FirstPendingStep (G : OpenPortHypergraph Sig boundary)
+    (seenNode : Fin G.raw.nodeCount → Prop)
+    (active : Fin G.raw.endpointCount)
+    (rest : List (Fin G.raw.endpointCount)) : Type where
+  | connect
+      (mate : Fin rest.length)
+      (hmate : PortHypergraph.EdgeMate G.raw active (rest.get mate)) :
+      FirstPendingStep G seenNode active rest
+  | bud
+      (node : Fin G.raw.nodeCount)
+      (slot : Fin (G.raw.incident node).length)
+      (hmate :
+        PortHypergraph.EdgeMate G.raw active ((G.raw.incident node).get slot))
+      (unseen : ¬ seenNode node) :
+      FirstPendingStep G seenNode active rest
+
+namespace FirstPendingStep
+
+theorem ready {G : OpenPortHypergraph Sig boundary}
+    {seenNode : Fin G.raw.nodeCount → Prop}
+    {active : Fin G.raw.endpointCount}
+    {rest : List (Fin G.raw.endpointCount)}
+    (step : FirstPendingStep G seenNode active rest) :
+    FirstPendingStepReady G seenNode active rest := by
+  cases step with
+  | connect mate hmate =>
+      exact Or.inl ⟨mate, hmate⟩
+  | bud node slot hmate unseen =>
+      exact Or.inr ⟨node, slot, hmate, unseen⟩
+
+end FirstPendingStep
+
+/--
+Search the ordered pending tail for a `connect` step.  A successful result
+carries the exact mate index and edge-mate proof consumed by `Diag.connect`.
+-/
+def firstPendingConnectSearch? (G : OpenPortHypergraph Sig boundary)
+    (seenNode : Fin G.raw.nodeCount → Prop)
+    (active : Fin G.raw.endpointCount)
+    (rest : List (Fin G.raw.endpointCount)) :
+    Option (FirstPendingStep G seenNode active rest) :=
+  (List.finRange rest.length).findSome? fun mate =>
+    match PortHypergraph.edgeMateCandidate? G.raw active (rest.get mate) with
+    | some hmate => some (FirstPendingStep.connect mate hmate.proof)
+    | none => none
+
+namespace SearchState
+
+/--
+Search unseen constructors in representative order for a `bud` step.  The
+successful slot is the constructor port joined to the active endpoint.
+-/
+def firstPendingBudSearch? {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port} (st : SearchState G frontier)
+    (active : Fin G.raw.endpointCount)
+    (rest : List (Fin G.raw.endpointCount)) :
+    Option (FirstPendingStep G st.seenNode active rest) :=
+  (List.finRange G.raw.nodeCount).findSome? fun node =>
+    if hseen : node ∈ st.seenNodes then
+      none
+    else
+      (List.finRange (G.raw.incident node).length).findSome? fun slot =>
+        match PortHypergraph.edgeMateCandidate? G.raw active
+            ((G.raw.incident node).get slot) with
+        | some hmate =>
+            some (FirstPendingStep.bud node slot hmate.proof
+              (by simpa [seenNode] using hseen))
+        | none => none
+
+/--
+Executable first-pending search.  It tries the remaining pending frontier
+first, then unseen constructor ports.  The returned value is constructor data,
+not an eliminated `Prop` witness.
+-/
+def firstPendingStepSearch? {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port} (st : SearchState G frontier)
+    (active : Fin G.raw.endpointCount)
+    (rest : List (Fin G.raw.endpointCount)) :
+    Option (FirstPendingStep G st.seenNode active rest) :=
+  match firstPendingConnectSearch? G st.seenNode active rest with
+  | some step => some step
+  | none => st.firstPendingBudSearch? active rest
+
+theorem firstPendingStepSearch?_ready
+    {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port} (st : SearchState G frontier)
+    {active : Fin G.raw.endpointCount}
+    {rest : List (Fin G.raw.endpointCount)}
+    {step : FirstPendingStep G st.seenNode active rest}
+    (_hstep : st.firstPendingStepSearch? active rest = some step) :
+    FirstPendingStepReady G st.seenNode active rest :=
+  step.ready
+
+end SearchState
 
 /--
 The global traversal-readiness invariant for an open representative.  It is
@@ -1373,6 +1581,22 @@ theorem firstPendingTraversalReady_of_frontierComplete
         rw [show (G.raw.incident node).get slot = mate by
           simpa [PortHypergraph.endpointOwnerEndpoint] using hownerEndpoint]
         exact hmate
+
+/--
+A finite search state inherits first-pending step readiness from its projected
+proof-level traversal state.  This still returns a `Prop`; the data-producing
+search must construct `FirstPendingStep` directly.
+-/
+theorem SearchState.firstPendingStepReady_of_frontierComplete
+    {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
+    (st : SearchState G (activeLabel :: restLabels))
+    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
+    (hcomplete : st.FrontierComplete)
+    (hpending : st.pending = active :: rest) :
+      FirstPendingStepReady G st.seenNode active rest :=
+  (firstPendingTraversalReady_of_frontierComplete G)
+    st.toTraversalState hcomplete hpending
 
 def isoRel (G H : OpenPortHypergraph Sig boundary) : Prop :=
   Nonempty (PortHypergraphIso G.raw H.raw)
