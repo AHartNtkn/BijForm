@@ -115,19 +115,30 @@ def NumSyntaxToLayer (k : Nat) :
       | true => rhs⟩
 
 def NumSyntaxLayerPresentation :
-    CodeLayerPresentation NumPoly NumInversion NumSyntax NumSyntax where
-  toCarrier := NumLayerToSyntax
-  fromCarrier := NumSyntaxToLayer
-  left_inv := by
-    intro k layer
-    cases layer with
-    | mk code child =>
-      cases code with
-      | mk ctor param out_eq =>
-        cases ctor with
-        | var =>
-            cases param with
-            | mk k' v =>
+    CodeLayerPresentation NumPoly NumInversion NumSyntax NumSyntax :=
+  CodeLayerPresentation.ofMaps
+    NumLayerToSyntax
+    NumSyntaxToLayer
+    (by
+      intro k layer
+      cases layer with
+      | mk code child =>
+        cases code with
+        | mk ctor param out_eq =>
+          cases ctor with
+          | var =>
+              cases param with
+              | mk k' v =>
+                dsimp [NumPoly, NumOut] at out_eq
+                cases out_eq.symm
+                cases out_eq
+                have hchild : (fun q => nomatch q) = child := by
+                  child_eta_empty
+                cases hchild
+                rfl
+          | zero =>
+              change NumParam NumCtor.zero at param
+              change Nat at param
               dsimp [NumPoly, NumOut] at out_eq
               cases out_eq.symm
               cases out_eq
@@ -135,53 +146,43 @@ def NumSyntaxLayerPresentation :
                 child_eta_empty
               cases hchild
               rfl
-        | zero =>
-            change NumParam NumCtor.zero at param
-            change Nat at param
-            dsimp [NumPoly, NumOut] at out_eq
-            cases out_eq.symm
-            cases out_eq
-            have hchild : (fun q => nomatch q) = child := by
-              child_eta_empty
-            cases hchild
-            rfl
-        | succ =>
-            change NumParam NumCtor.succ at param
-            change Nat at param
-            dsimp [NumPoly, NumOut] at out_eq
-            cases out_eq.symm
-            cases out_eq
-            have hchild : (fun _ => child ()) = child := by
-              child_eta_unit
-            cases hchild
-            rfl
-        | plus =>
-            change NumParam NumCtor.plus at param
-            change Nat at param
-            dsimp [NumPoly, NumOut] at out_eq
-            cases out_eq.symm
-            cases out_eq
-            have hchild : child = (fun
-                | false => child false
-                | true => child true) := by
-              child_eta_bool
-            rw [hchild]
-            rfl
-        | times =>
-            change NumParam NumCtor.times at param
-            change Nat at param
-            dsimp [NumPoly, NumOut] at out_eq
-            cases out_eq.symm
-            cases out_eq
-            have hchild : child = (fun
-                | false => child false
-                | true => child true) := by
-              child_eta_bool
-            rw [hchild]
-            rfl
-  right_inv := by
-    intro k e
-    cases e <;> simp [NumLayerToSyntax, NumSyntaxToLayer]
+          | succ =>
+              change NumParam NumCtor.succ at param
+              change Nat at param
+              dsimp [NumPoly, NumOut] at out_eq
+              cases out_eq.symm
+              cases out_eq
+              have hchild : (fun _ => child ()) = child := by
+                child_eta_unit
+              cases hchild
+              rfl
+          | plus =>
+              change NumParam NumCtor.plus at param
+              change Nat at param
+              dsimp [NumPoly, NumOut] at out_eq
+              cases out_eq.symm
+              cases out_eq
+              have hchild : child = (fun
+                  | false => child false
+                  | true => child true) := by
+                child_eta_bool
+              rw [hchild]
+              rfl
+          | times =>
+              change NumParam NumCtor.times at param
+              change Nat at param
+              dsimp [NumPoly, NumOut] at out_eq
+              cases out_eq.symm
+              cases out_eq
+              have hchild : child = (fun
+                  | false => child false
+                  | true => child true) := by
+                child_eta_bool
+              rw [hchild]
+              rfl)
+    (by
+      intro k e
+      cases e <;> simp [NumLayerToSyntax, NumSyntaxToLayer])
 
 theorem Num_layer_child_rank_lt :
     ∀ {k : Nat} (z : NumSyntax k)
@@ -196,38 +197,44 @@ theorem Num_layer_child_rank_lt :
   | zero => cases q
   | succ e =>
       cases q
-      simp [CodeLayerPresentation.iso, NumSyntaxLayerPresentation, NumSyntaxToLayer,
+      simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofMaps,
+        NumSyntaxLayerPresentation, NumSyntaxToLayer,
         NumInversion,
         OutputIndexInversion.canonical, NumSyntax.rank]
   | plus lhs rhs =>
       cases q
-      · simpa [CodeLayerPresentation.iso, NumSyntaxLayerPresentation, NumSyntaxToLayer,
+      · simpa [CodeLayerPresentation.iso, CodeLayerPresentation.ofMaps,
+          NumSyntaxLayerPresentation, NumSyntaxToLayer,
           NumInversion,
           OutputIndexInversion.canonical,
           NumSyntax.rank] using
           Nat.lt_succ_of_le (Nat.le_max_left (NumSyntax.rank lhs) (NumSyntax.rank rhs))
-      · simpa [CodeLayerPresentation.iso, NumSyntaxLayerPresentation, NumSyntaxToLayer,
+      · simpa [CodeLayerPresentation.iso, CodeLayerPresentation.ofMaps,
+          NumSyntaxLayerPresentation, NumSyntaxToLayer,
           NumInversion,
           OutputIndexInversion.canonical,
           NumSyntax.rank] using
           Nat.lt_succ_of_le (Nat.le_max_right (NumSyntax.rank lhs) (NumSyntax.rank rhs))
   | times lhs rhs =>
       cases q
-      · simpa [CodeLayerPresentation.iso, NumSyntaxLayerPresentation, NumSyntaxToLayer,
+      · simpa [CodeLayerPresentation.iso, CodeLayerPresentation.ofMaps,
+          NumSyntaxLayerPresentation, NumSyntaxToLayer,
           NumInversion,
           OutputIndexInversion.canonical,
           NumSyntax.rank] using
           Nat.lt_succ_of_le (Nat.le_max_left (NumSyntax.rank lhs) (NumSyntax.rank rhs))
-      · simpa [CodeLayerPresentation.iso, NumSyntaxLayerPresentation, NumSyntaxToLayer,
+      · simpa [CodeLayerPresentation.iso, CodeLayerPresentation.ofMaps,
+          NumSyntaxLayerPresentation, NumSyntaxToLayer,
           NumInversion,
           OutputIndexInversion.canonical,
           NumSyntax.rank] using
           Nat.lt_succ_of_le (Nat.le_max_right (NumSyntax.rank lhs) (NumSyntax.rank rhs))
 
-def NumSyntaxPresentation : SyntaxPresentation NumPoly NumInversion NumSyntax where
-  layer := NumSyntaxLayerPresentation
-  rank := fun _ e => NumSyntax.rank e
-  child_rank_lt := Num_layer_child_rank_lt
+def NumSyntaxPresentation : SyntaxPresentation NumPoly NumInversion NumSyntax :=
+  SyntaxPresentation.ofLayer
+    NumSyntaxLayerPresentation
+    (fun _ e => NumSyntax.rank e)
+    Num_layer_child_rank_lt
 
 def NumGeneratedCode : GeneratedCode NumPoly NumSyntax :=
   NumSyntaxPresentation.generatedCode
@@ -284,10 +291,11 @@ def NumNatLayerShapeInv (k : Nat) :
       | true => p.2⟩
 
 def NumNatLayerShapeLayerPresentation :
-    CodeLayerPresentation NumPoly NumInversion (fun _ => Nat) NumNatLayerShape where
-  toCarrier := NumNatLayerShapeTo
-  fromCarrier := NumNatLayerShapeInv
-  left_inv := by
+    CodeLayerPresentation NumPoly NumInversion (fun _ => Nat) NumNatLayerShape :=
+  CodeLayerPresentation.ofMaps
+    NumNatLayerShapeTo
+    NumNatLayerShapeInv
+    (by
     intro k x
     have hshape :
         Function.LeftInverse (NumNatLayerShapeInv k) (NumNatLayerShapeTo k) := by
@@ -367,8 +375,8 @@ def NumNatLayerShapeLayerPresentation :
                 child_eta_bool
               rw [hchild]
               rfl
-    exact hshape x
-  right_inv := by
+    exact hshape x)
+    (by
     intro k x
     have hshape :
         Function.RightInverse (NumNatLayerShapeInv k) (NumNatLayerShapeTo k) := by
@@ -394,7 +402,7 @@ def NumNatLayerShapeLayerPresentation :
               | inr p =>
                   cases p
                   rfl
-    exact hshape x
+    exact hshape x)
 
 theorem NumNat_layer_child_lt :
     ∀ {k : Nat} (layer : CodeLayer NumPoly NumInversion (fun _ => Nat) k)
@@ -478,12 +486,12 @@ theorem NumNat_layer_child_lt :
             simpa [NumNatLayerShapeTo] using hlt
 
 def NumNatLayerShapePresentation :
-    LayerShapePresentation NumPoly NumInversion (fun _ => Nat) NumNatLayerShape where
-  layerShape := NumNatLayerShapeLayerPresentation
-  carrier := fun k =>
-    CodeAlgebra.finPrefixNat (k + 2) CodeAlgebra.natOrProdOrProdNat
-  rank := fun _ n => n
-  child_rank_lt := by
+    LayerShapePresentation NumPoly NumInversion (fun _ => Nat) NumNatLayerShape :=
+  LayerShapePresentation.ofComponents
+    NumNatLayerShapeLayerPresentation
+    (fun k => CodeAlgebra.finPrefixNat (k + 2) CodeAlgebra.natOrProdOrProdNat)
+    (fun _ n => n)
+    (by
     intro k n q
     let layerIso :=
       (NumNatLayerShapeLayerPresentation.transCarrier
@@ -492,15 +500,12 @@ def NumNatLayerShapePresentation :
     have h := NumNat_layer_child_lt (layerIso.invFun n) q
     change (layerIso.invFun n).2 q < layerIso.toFun (layerIso.invFun n) at h
     rw [layerIso.right_inv n] at h
-    exact h
+    exact h)
 
-def NumNatLayerPresentation : NatLayerPresentation NumPoly NumInversion where
-  layer := NumNatLayerShapePresentation.layer
-  child_lt := by
+def NumNatLayerPresentation : NatLayerPresentation NumPoly NumInversion :=
+  NumNatLayerShapePresentation.toNatLayerPresentation (by
     intro k n q
-    have h :=
-      NumNatLayerShapePresentation.child_rank_lt n q
-    exact h
+    exact NumNatLayerShapePresentation.child_rank_lt n q)
 
 def NumNatGeneratedCode : GeneratedNatCode NumPoly :=
   NumNatLayerPresentation.generatedCode

@@ -84,45 +84,46 @@ def LamSyntaxToLayer (k : Nat) :
       | true => arg⟩
 
 def LamSyntaxLayerPresentation :
-    CodeLayerPresentation LamPoly LamInversion LamSyntax LamSyntax where
-  toCarrier := LamLayerToSyntax
-  fromCarrier := LamSyntaxToLayer
-  left_inv := by
-    intro k layer
-    cases layer with
-    | mk code child =>
-      cases code with
-      | mk ctor param out_eq =>
-        cases ctor with
-        | var =>
-          cases param with
-          | mk k' v =>
+    CodeLayerPresentation LamPoly LamInversion LamSyntax LamSyntax :=
+  CodeLayerPresentation.ofMaps
+    LamLayerToSyntax
+    LamSyntaxToLayer
+    (by
+      intro k layer
+      cases layer with
+      | mk code child =>
+        cases code with
+        | mk ctor param out_eq =>
+          cases ctor with
+          | var =>
+            cases param with
+            | mk k' v =>
+              cases out_eq
+              have hchild : (fun q => nomatch q) = child := by
+                child_eta_empty
+              cases hchild
+              rfl
+          | lam =>
+            change LamParam LamCtor.lam at param
+            change Nat at param
             cases out_eq
-            have hchild : (fun q => nomatch q) = child := by
-              child_eta_empty
+            have hchild : (fun _ => child ()) = child := by
+              child_eta_unit
             cases hchild
             rfl
-        | lam =>
-          change LamParam LamCtor.lam at param
-          change Nat at param
-          cases out_eq
-          have hchild : (fun _ => child ()) = child := by
-            child_eta_unit
-          cases hchild
-          rfl
-        | app =>
-          change LamParam LamCtor.app at param
-          change Nat at param
-          cases out_eq
-          have hchild : child = (fun
-              | false => child false
-              | true => child true) := by
-            child_eta_bool
-          rw [hchild]
-          rfl
-  right_inv := by
-    intro k t
-    cases t <;> simp [LamLayerToSyntax, LamSyntaxToLayer]
+          | app =>
+            change LamParam LamCtor.app at param
+            change Nat at param
+            cases out_eq
+            have hchild : child = (fun
+                | false => child false
+                | true => child true) := by
+              child_eta_bool
+            rw [hchild]
+            rfl)
+    (by
+      intro k t
+      cases t <;> simp [LamLayerToSyntax, LamSyntaxToLayer])
 
 theorem Lam_layer_child_rank_lt :
     ∀ {k : Nat} (z : LamSyntax k)
@@ -136,24 +137,28 @@ theorem Lam_layer_child_rank_lt :
   | var v => cases q
   | lam body =>
       cases q
-      simp [CodeLayerPresentation.iso, LamSyntaxLayerPresentation, LamSyntaxToLayer,
+      simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofMaps,
+        LamSyntaxLayerPresentation, LamSyntaxToLayer,
         LamInversion,
         OutputIndexInversion.canonical, LamSyntax.rank]
   | app fn arg =>
       cases q
-      · simpa [CodeLayerPresentation.iso, LamSyntaxLayerPresentation, LamSyntaxToLayer,
+      · simpa [CodeLayerPresentation.iso, CodeLayerPresentation.ofMaps,
+          LamSyntaxLayerPresentation, LamSyntaxToLayer,
           LamInversion,
           OutputIndexInversion.canonical, LamSyntax.rank] using
           Nat.lt_succ_of_le (Nat.le_max_left (LamSyntax.rank fn) (LamSyntax.rank arg))
-      · simpa [CodeLayerPresentation.iso, LamSyntaxLayerPresentation, LamSyntaxToLayer,
+      · simpa [CodeLayerPresentation.iso, CodeLayerPresentation.ofMaps,
+          LamSyntaxLayerPresentation, LamSyntaxToLayer,
           LamInversion,
           OutputIndexInversion.canonical, LamSyntax.rank] using
           Nat.lt_succ_of_le (Nat.le_max_right (LamSyntax.rank fn) (LamSyntax.rank arg))
 
-def LamSyntaxPresentation : SyntaxPresentation LamPoly LamInversion LamSyntax where
-  layer := LamSyntaxLayerPresentation
-  rank := fun _ t => LamSyntax.rank t
-  child_rank_lt := Lam_layer_child_rank_lt
+def LamSyntaxPresentation : SyntaxPresentation LamPoly LamInversion LamSyntax :=
+  SyntaxPresentation.ofLayer
+    LamSyntaxLayerPresentation
+    (fun _ t => LamSyntax.rank t)
+    Lam_layer_child_rank_lt
 
 def LamGeneratedCode : GeneratedCode LamPoly LamSyntax :=
   LamSyntaxPresentation.generatedCode
@@ -189,14 +194,12 @@ def LamNatLayerShapeInv (k : Nat) :
       | true => pair.2⟩
 
 def LamNatLayerShapeLayerPresentation :
-    CodeLayerPresentation LamPoly LamInversion (fun _ => Nat) LamNatLayerShape where
-  toCarrier := LamNatLayerShapeTo
-  fromCarrier := LamNatLayerShapeInv
-  left_inv := by
-    intro k layer
-    have hshape :
-        Function.LeftInverse (LamNatLayerShapeInv k) (LamNatLayerShapeTo k) := by
-      intro layer
+    CodeLayerPresentation LamPoly LamInversion (fun _ => Nat) LamNatLayerShape :=
+  CodeLayerPresentation.ofMaps
+    LamNatLayerShapeTo
+    LamNatLayerShapeInv
+    (by
+      intro k layer
       cases layer with
       | mk code child =>
         cases code with
@@ -227,13 +230,9 @@ def LamNatLayerShapeLayerPresentation :
                 | true => child true) := by
               child_eta_bool
             rw [hchild]
-            rfl
-    exact hshape layer
-  right_inv := by
-    intro k shape
-    have hshape :
-        Function.RightInverse (LamNatLayerShapeInv k) (LamNatLayerShapeTo k) := by
-      intro shape
+            rfl)
+    (by
+      intro k shape
       cases shape with
       | inl v => rfl
       | inr tail =>
@@ -241,8 +240,7 @@ def LamNatLayerShapeLayerPresentation :
           | inl body => rfl
           | inr pair =>
               cases pair
-              rfl
-    exact hshape shape
+              rfl)
 
 def LamNatRank (k n : Nat) : Nat :=
   n + if k = 0 then 1 else 0
@@ -343,11 +341,12 @@ theorem LamNat_layer_child_rank_lt :
           · simpa [hk, LamNatLayerShapeTo] using hchild_lt_parent
 
 def LamNatLayerShapePresentation :
-    LayerShapePresentation LamPoly LamInversion (fun _ => Nat) LamNatLayerShape where
-  layerShape := LamNatLayerShapeLayerPresentation
-  carrier := fun k => CodeAlgebra.finPrefixNat k CodeAlgebra.sumProdNat
-  rank := LamNatRank
-  child_rank_lt := by
+    LayerShapePresentation LamPoly LamInversion (fun _ => Nat) LamNatLayerShape :=
+  LayerShapePresentation.ofComponents
+    LamNatLayerShapeLayerPresentation
+    (fun k => CodeAlgebra.finPrefixNat k CodeAlgebra.sumProdNat)
+    LamNatRank
+    (by
     intro k n q
     let layerIso :=
       (LamNatLayerShapeLayerPresentation.transCarrier
@@ -359,14 +358,12 @@ def LamNatLayerShapePresentation :
           ((layerIso.invFun n).2 q) <
         LamNatRank k (layerIso.toFun (layerIso.invFun n)) at h
     rw [layerIso.right_inv n] at h
-    exact h
+    exact h)
 
-def LamNatLayerPresentation : RankedNatLayerPresentation LamPoly LamInversion where
-  layer := LamNatLayerShapePresentation.layer
-  rank := LamNatRank
-  child_rank_lt := by
+def LamNatLayerPresentation : RankedNatLayerPresentation LamPoly LamInversion :=
+  LamNatLayerShapePresentation.toRankedNatLayerPresentation LamNatRank (by
     intro k n q
-    exact LamNatLayerShapePresentation.child_rank_lt n q
+    exact LamNatLayerShapePresentation.child_rank_lt n q)
 
 def LamNatGeneratedCode : GeneratedRankedNatCode LamPoly :=
   LamNatLayerPresentation.generatedCode

@@ -90,35 +90,36 @@ def HBTSyntaxToLayer (i : Nat) :
         | true => rhs⟩
 
 def HBTSyntaxLayerPresentation :
-    CodeLayerPresentation HBTPoly HBTInversion HBTSyntax HBTSyntax where
-  toCarrier := HBTLayerToSyntax
-  fromCarrier := HBTSyntaxToLayer
-  left_inv := by
-    intro i layer
-    cases layer with
-    | mk code child =>
-      cases code with
-      | mk ctor param out_eq =>
-        cases ctor with
-        | leaf =>
-            cases param with
-            | mk height label =>
+    CodeLayerPresentation HBTPoly HBTInversion HBTSyntax HBTSyntax :=
+  CodeLayerPresentation.ofMaps
+    HBTLayerToSyntax
+    HBTSyntaxToLayer
+    (by
+      intro i layer
+      cases layer with
+      | mk code child =>
+        cases code with
+        | mk ctor param out_eq =>
+          cases ctor with
+          | leaf =>
+              cases param with
+              | mk height label =>
+                cases out_eq
+                have hchild : (fun q => nomatch q) = child := by
+                  child_eta_empty
+                cases hchild
+                rfl
+          | branch =>
               cases out_eq
-              have hchild : (fun q => nomatch q) = child := by
-                child_eta_empty
-              cases hchild
-              rfl
-        | branch =>
-            cases out_eq
-            have hchild : child = (fun
-                | false => child false
-                | true => child true) := by
-              child_eta_bool
-            rw [hchild]
-            rfl
-  right_inv := by
-    intro i t
-    cases t <;> simp [HBTLayerToSyntax, HBTSyntaxToLayer]
+              have hchild : child = (fun
+                  | false => child false
+                  | true => child true) := by
+                child_eta_bool
+              rw [hchild]
+              rfl)
+    (by
+      intro i t
+      cases t <;> simp [HBTLayerToSyntax, HBTSyntaxToLayer])
 
 theorem HBT_layer_child_rank_lt :
     ∀ {i : Nat} (z : HBTSyntax i)
@@ -146,10 +147,11 @@ Generated coding data for height-bounded trees. The example supplies only
 the local layer coding over `HBTInversion`; the full object-layer step is
 produced by `GeneratedCode.toWellFoundedCode`.
 -/
-def HBTSyntaxPresentation : SyntaxPresentation HBTPoly HBTInversion HBTSyntax where
-  layer := HBTSyntaxLayerPresentation
-  rank := fun _ t => HBTSyntax.rank t
-  child_rank_lt := HBT_layer_child_rank_lt
+def HBTSyntaxPresentation : SyntaxPresentation HBTPoly HBTInversion HBTSyntax :=
+  SyntaxPresentation.ofLayer
+    HBTSyntaxLayerPresentation
+    (fun _ t => HBTSyntax.rank t)
+    HBT_layer_child_rank_lt
 
 def HBTGeneratedCode : GeneratedCode HBTPoly HBTSyntax :=
   HBTSyntaxPresentation.generatedCode
@@ -171,90 +173,92 @@ def HBTNatLayerCarrierIso : ∀ i, HBTNatLayerShape i ≃ᵢ Nat
   | _ + 1 => CodeAlgebra.sumProdNat
 
 def HBTNatLayerShapeLayerPresentation :
-    CodeLayerPresentation HBTPoly HBTInversion (fun _ => Nat) HBTNatLayerShape where
-  toCarrier
-    | 0, ⟨⟨.leaf, p, h⟩, _child⟩ => by
-        cases p with
-        | mk height label =>
-          cases h
-          exact label
-    | 0, ⟨⟨.branch, m, h⟩, _child⟩ => by cases h
-    | m + 1, ⟨⟨.leaf, p, h⟩, _child⟩ => by
-        cases p with
-        | mk height label =>
-          cases h
-          exact Sum.inl label
-    | m + 1, ⟨⟨.branch, _k, _h⟩, child⟩ =>
-        Sum.inr (child false, child true)
-  fromCarrier
-    | 0, n =>
-        ⟨⟨HBTCtor.leaf, ((0, n) : Nat × Nat), rfl⟩, fun q => nomatch q⟩
-    | m + 1, shape =>
-        match shape with
-        | Sum.inl label =>
-            ⟨⟨HBTCtor.leaf, ((m + 1, label) : Nat × Nat), rfl⟩,
-              fun q => nomatch q⟩
-        | Sum.inr p => ⟨⟨HBTCtor.branch, (m : Nat), rfl⟩, fun
-            | false => p.1
-            | true => p.2⟩
-  left_inv := by
-    intro i x
-    cases i with
-    | zero =>
-        cases x with
-        | mk code child =>
-            cases code with
-            | mk ctor param out_eq =>
-              cases ctor with
-              | leaf =>
-                  cases param with
-                  | mk height label =>
+    CodeLayerPresentation HBTPoly HBTInversion (fun _ => Nat) HBTNatLayerShape :=
+  CodeLayerPresentation.ofMaps
+    (fun
+      | 0, ⟨⟨.leaf, p, h⟩, _child⟩ => by
+          cases p with
+          | mk height label =>
+            cases h
+            exact label
+      | 0, ⟨⟨.branch, m, h⟩, _child⟩ => by cases h
+      | m + 1, ⟨⟨.leaf, p, h⟩, _child⟩ => by
+          cases p with
+          | mk height label =>
+            cases h
+            exact Sum.inl label
+      | m + 1, ⟨⟨.branch, _k, _h⟩, child⟩ =>
+          Sum.inr (child false, child true))
+    (fun
+      | 0, n =>
+          ⟨⟨HBTCtor.leaf, ((0, n) : Nat × Nat), rfl⟩, fun q => nomatch q⟩
+      | m + 1, shape =>
+          match shape with
+          | Sum.inl label =>
+              ⟨⟨HBTCtor.leaf, ((m + 1, label) : Nat × Nat), rfl⟩,
+                fun q => nomatch q⟩
+          | Sum.inr p => ⟨⟨HBTCtor.branch, (m : Nat), rfl⟩, fun
+              | false => p.1
+              | true => p.2⟩)
+    (by
+      intro i x
+      cases i with
+      | zero =>
+          cases x with
+          | mk code child =>
+              cases code with
+              | mk ctor param out_eq =>
+                cases ctor with
+                | leaf =>
+                    cases param with
+                    | mk height label =>
+                      cases out_eq
+                      have hchild : (fun q => nomatch q) = child := by
+                        child_eta_empty
+                      cases hchild
+                      rfl
+                | branch => cases out_eq
+      | succ m =>
+          cases x with
+          | mk code child =>
+              cases code with
+              | mk ctor param out_eq =>
+                cases ctor with
+                | leaf =>
+                    cases param with
+                    | mk height label =>
+                      cases out_eq
+                      have hchild : (fun q => nomatch q) = child := by
+                        child_eta_empty
+                      cases hchild
+                      rfl
+                | branch =>
                     cases out_eq
-                    have hchild : (fun q => nomatch q) = child := by
-                      child_eta_empty
-                    cases hchild
-                    rfl
-              | branch => cases out_eq
-    | succ m =>
-        cases x with
-        | mk code child =>
-            cases code with
-            | mk ctor param out_eq =>
-              cases ctor with
-              | leaf =>
-                  cases param with
-                  | mk height label =>
-                    cases out_eq
-                    have hchild : (fun q => nomatch q) = child := by
-                      child_eta_empty
-                    cases hchild
-                    rfl
-              | branch =>
-                  cases out_eq
-                  have hchild : child = (fun
-                      | false => child false
-                      | true => child true) := by
-                    child_eta_bool
-                  rw [hchild]
-                  rfl
-  right_inv := by
-    intro i shape
-    cases i with
-    | zero =>
-        rfl
-    | succ m =>
-        cases shape with
-        | inl label => rfl
-        | inr p =>
-            cases p
-            rfl
+                    have hchild : child = (fun
+                        | false => child false
+                        | true => child true) := by
+                      child_eta_bool
+                    rw [hchild]
+                    rfl)
+    (by
+      intro i shape
+      cases i with
+      | zero =>
+          rfl
+      | succ m =>
+          cases shape with
+          | inl label => rfl
+          | inr p =>
+              cases p
+              rfl)
 
 def HBTNatLayerShapePresentation :
-    LayerShapePresentation HBTPoly HBTInversion (fun _ => Nat) HBTNatLayerShape where
-  layerShape := HBTNatLayerShapeLayerPresentation
-  carrier := HBTNatLayerCarrierIso
-  rank := fun _ n => n
-  child_rank_lt := by
+    LayerShapePresentation HBTPoly HBTInversion (fun _ => Nat) HBTNatLayerShape :=
+  LayerShapePresentation.ofComponents
+    HBTNatLayerShapeLayerPresentation
+    HBTNatLayerCarrierIso
+    (fun _ n => n)
+    (by
     intro i n
     cases i with
     | zero =>
@@ -281,13 +285,12 @@ def HBTNatLayerShapePresentation :
             · change pair.1 < n
               exact CodeAlgebra.sumProdNat_invFun_inr_fst_lt hsum
             · change pair.2 < n
-              exact CodeAlgebra.sumProdNat_invFun_inr_snd_lt hsum
+              exact CodeAlgebra.sumProdNat_invFun_inr_snd_lt hsum)
 
-def HBTNatLayerPresentation : NatLayerPresentation HBTPoly HBTInversion where
-  layer := HBTNatLayerShapePresentation.layer
-  child_lt := by
+def HBTNatLayerPresentation : NatLayerPresentation HBTPoly HBTInversion :=
+  HBTNatLayerShapePresentation.toNatLayerPresentation (by
     intro i n q
-    exact HBTNatLayerShapePresentation.child_rank_lt n q
+    exact HBTNatLayerShapePresentation.child_rank_lt n q)
 
 /-- Generated Nat coding data for height-bounded trees. The recursive encoder
 and decoder are produced by `GeneratedNatCode`, not by an example-specific

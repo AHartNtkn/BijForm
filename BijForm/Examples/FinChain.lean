@@ -71,35 +71,36 @@ def FinChainSyntaxToLayer (i : Nat) :
       ⟨⟨FinChainCtor.step, ⟨n, tag⟩, rfl⟩, fun _ => child⟩
 
 def FinChainSyntaxLayerPresentation :
-    CodeLayerPresentation FinChainPoly FinChainInversion FinChainSyntax FinChainSyntax where
-  toCarrier := FinChainLayerToSyntax
-  fromCarrier := FinChainSyntaxToLayer
-  left_inv := by
-    intro i layer
-    cases layer with
-    | mk code child =>
-      cases code with
-      | mk ctor param out_eq =>
-        cases ctor with
-        | done =>
-            cases out_eq
-            have hchild : (fun q => nomatch q) = child := by
-              child_eta_empty
-            cases hchild
-            rfl
-        | step =>
-            cases param with
-            | mk n tag =>
+    CodeLayerPresentation FinChainPoly FinChainInversion FinChainSyntax FinChainSyntax :=
+  CodeLayerPresentation.ofMaps
+    FinChainLayerToSyntax
+    FinChainSyntaxToLayer
+    (by
+      intro i layer
+      cases layer with
+      | mk code child =>
+        cases code with
+        | mk ctor param out_eq =>
+          cases ctor with
+          | done =>
               cases out_eq
-              have hchild : (fun _ => child ()) = child := by
-                child_eta_unit
+              have hchild : (fun q => nomatch q) = child := by
+                child_eta_empty
               cases hchild
               rfl
-  right_inv := by
-    intro i t
-    cases t with
-    | done => rfl
-    | step tag child => rfl
+          | step =>
+              cases param with
+              | mk n tag =>
+                cases out_eq
+                have hchild : (fun _ => child ()) = child := by
+                  child_eta_unit
+                cases hchild
+                rfl)
+    (by
+      intro i t
+      cases t with
+      | done => rfl
+      | step tag child => rfl)
 
 theorem FinChain_layer_child_rank_lt :
     ∀ {i : Nat} (z : FinChainSyntax i)
@@ -115,15 +116,17 @@ theorem FinChain_layer_child_rank_lt :
   | done => cases q
   | step tag child =>
       cases q
-      simp [CodeLayerPresentation.iso, FinChainSyntaxLayerPresentation,
+      simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofMaps,
+        FinChainSyntaxLayerPresentation,
         FinChainSyntaxToLayer, FinChainInversion,
         OutputIndexInversion.canonical, FinChainSyntax.rank]
 
 def FinChainSyntaxPresentation :
-    SyntaxPresentation FinChainPoly FinChainInversion FinChainSyntax where
-  layer := FinChainSyntaxLayerPresentation
-  rank := fun _ t => FinChainSyntax.rank t
-  child_rank_lt := FinChain_layer_child_rank_lt
+    SyntaxPresentation FinChainPoly FinChainInversion FinChainSyntax :=
+  SyntaxPresentation.ofLayer
+    FinChainSyntaxLayerPresentation
+    (fun _ t => FinChainSyntax.rank t)
+    FinChain_layer_child_rank_lt
 
 def FinChainGeneratedCode : GeneratedCode FinChainPoly FinChainSyntax :=
   FinChainSyntaxPresentation.generatedCode
@@ -162,8 +165,9 @@ def FinChainLayerCarrierIso : ∀ i, FinChainLayerShape i ≃ᵢ FinChainCarrier
         (CodeAlgebra.finSum 1 ((n + 2) * FinChainSize n))
 
 def FinChainLayerShapeLayerPresentation :
-    CodeLayerPresentation FinChainPoly FinChainInversion FinChainCarrier FinChainLayerShape where
-    toCarrier
+    CodeLayerPresentation FinChainPoly FinChainInversion FinChainCarrier FinChainLayerShape :=
+  CodeLayerPresentation.ofMaps
+    (fun
       | 0, ⟨⟨.done, _n, h⟩, _child⟩ => by
           cases h
           exact ⟨0, by decide⟩
@@ -178,15 +182,15 @@ def FinChainLayerShapeLayerPresentation :
           | mk m tag =>
               have hmn : m = n := Nat.succ.inj h
               cases hmn
-              exact Sum.inr (tag, child ())
-    fromCarrier
+              exact Sum.inr (tag, child ()))
+    (fun
       | 0, _ => ⟨⟨FinChainCtor.done, (0 : Nat), rfl⟩, fun q => nomatch q⟩
       | n + 1, shape =>
           match shape with
           | Sum.inl _ => ⟨⟨FinChainCtor.done, (n + 1 : Nat), rfl⟩, fun q => nomatch q⟩
           | Sum.inr pair =>
-              ⟨⟨FinChainCtor.step, ⟨n, pair.1⟩, rfl⟩, fun _ => pair.2⟩
-    left_inv := by
+              ⟨⟨FinChainCtor.step, ⟨n, pair.1⟩, rfl⟩, fun _ => pair.2⟩)
+    (by
       intro i layer
       cases i with
       | zero =>
@@ -225,8 +229,8 @@ def FinChainLayerShapeLayerPresentation :
                       have hchild : (fun _ => child ()) = child := by
                         child_eta_unit
                       cases hchild
-                      rfl
-    right_inv := by
+                      rfl)
+    (by
       intro i shape
       cases i with
       | zero =>
@@ -246,14 +250,15 @@ def FinChainLayerShapeLayerPresentation :
               rfl
           | inr pair =>
               cases pair
-              rfl
+              rfl)
 
 def FinChainLayerShapePresentation :
-    LayerShapePresentation FinChainPoly FinChainInversion FinChainCarrier FinChainLayerShape where
-  layerShape := FinChainLayerShapeLayerPresentation
-  carrier := FinChainLayerCarrierIso
-  rank := fun i _ => i
-  child_rank_lt := by
+    LayerShapePresentation FinChainPoly FinChainInversion FinChainCarrier FinChainLayerShape :=
+  LayerShapePresentation.ofComponents
+    FinChainLayerShapeLayerPresentation
+    FinChainLayerCarrierIso
+    (fun i _ => i)
+    (by
     intro i z q
     cases i with
     | zero =>
@@ -270,7 +275,7 @@ def FinChainLayerShapePresentation :
         | inl _ => cases q
         | inr _ =>
             cases q
-            exact Nat.lt_succ_self n
+            exact Nat.lt_succ_self n)
 
 def FinChainShapeLayerPresentation :
     ShapeLayerPresentation FinChainPoly FinChainInversion :=

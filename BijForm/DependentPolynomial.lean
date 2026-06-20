@@ -648,6 +648,17 @@ def iso (D : CodeLayerPresentation P H Code Carrier) (i : ι) :
   left_inv := D.left_inv i
   right_inv := D.right_inv i
 
+def ofMaps
+    (toCarrier : ∀ i, CodeLayer P H Code i → Carrier i)
+    (fromCarrier : ∀ i, Carrier i → CodeLayer P H Code i)
+    (left_inv : ∀ i, Function.LeftInverse (fromCarrier i) (toCarrier i))
+    (right_inv : ∀ i, Function.RightInverse (fromCarrier i) (toCarrier i)) :
+    CodeLayerPresentation P H Code Carrier where
+  toCarrier := toCarrier
+  fromCarrier := fromCarrier
+  left_inv := left_inv
+  right_inv := right_inv
+
 def ofIso (layer : ∀ i, CodeLayer P H Code i ≃ᵢ Carrier i) :
     CodeLayerPresentation P H Code Carrier where
   toCarrier := fun i => (layer i).toFun
@@ -707,6 +718,57 @@ def layer (D : LayerShapePresentation P H Code Shape) :
     CodeLayerPresentation P H Code Code :=
   D.layerShape.transCarrier D.carrier
 
+/--
+Build a layer-shape presentation from its reusable components.  This keeps the
+record assembly in the library while examples provide the domain-specific raw
+shape presentation, carrier isomorphism, rank, and descent proof.
+-/
+def ofComponents
+    (layerShape : CodeLayerPresentation P H Code Shape)
+    (carrier : ∀ i, Shape i ≃ᵢ Code i)
+    (rank : ∀ i, Code i → Nat)
+    (child_rank_lt :
+      ∀ {i : ι} (z : Code i)
+        (q : P.Pos
+            (H.decode i
+              ((((layerShape.transCarrier carrier).iso i).invFun z).1)).ctor
+            (H.decode i
+              ((((layerShape.transCarrier carrier).iso i).invFun z).1)).param),
+        rank (P.input
+            (H.decode i
+              ((((layerShape.transCarrier carrier).iso i).invFun z).1)).param q)
+            ((((layerShape.transCarrier carrier).iso i).invFun z).2 q) <
+          rank i z) :
+    LayerShapePresentation P H Code Shape where
+  layerShape := layerShape
+  carrier := carrier
+  rank := rank
+  child_rank_lt := by
+    intro i z q
+    exact child_rank_lt z q
+
+/--
+Build a layer-shape presentation when the generated shape is the carrier
+family itself.  Examples supply the domain-specific one-step isomorphism and
+rank proof; the library owns the presentation assembly.
+-/
+def ofCarrierLayerIso
+    (layer : ∀ i, CodeLayer P H Code i ≃ᵢ Code i)
+    (rank : ∀ i, Code i → Nat)
+    (child_rank_lt :
+      ∀ {i : ι} (z : Code i)
+        (q : P.Pos (H.decode i (((layer i).invFun z).1)).ctor
+            (H.decode i (((layer i).invFun z).1)).param),
+        rank (P.input (H.decode i (((layer i).invFun z).1)).param q)
+            (((layer i).invFun z).2 q) < rank i z) :
+    LayerShapePresentation P H Code Code where
+  layerShape := CodeLayerPresentation.ofIso layer
+  carrier := fun i => Iso.refl (Code i)
+  rank := rank
+  child_rank_lt := by
+    intro i z q
+    exact child_rank_lt z q
+
 end LayerShapePresentation
 
 /-- Presentation of readable syntax as a generated code family.  The library
@@ -728,6 +790,22 @@ namespace SyntaxPresentation
 
 variable {P : DepPoly ι} {H : OutputIndexInversion P} {Syntax : ι → Type v}
 
+def ofLayer
+    (layer : CodeLayerPresentation P H Syntax Syntax)
+    (rank : ∀ i, Syntax i → Nat)
+    (child_rank_lt :
+      ∀ {i : ι} (z : Syntax i)
+        (q : P.Pos (H.decode i (((layer.iso i).invFun z).1)).ctor
+            (H.decode i (((layer.iso i).invFun z).1)).param),
+        rank (P.input (H.decode i (((layer.iso i).invFun z).1)).param q)
+            (((layer.iso i).invFun z).2 q) < rank i z) :
+    SyntaxPresentation P H Syntax where
+  layer := layer
+  rank := rank
+  child_rank_lt := by
+    intro i z q
+    exact child_rank_lt z q
+
 def ofLayerMaps
     (toSyntax : ∀ i, CodeLayer P H Syntax i → Syntax i)
     (fromSyntax : ∀ i, Syntax i → CodeLayer P H Syntax i)
@@ -741,12 +819,7 @@ def ofLayerMaps
         rank (P.input (H.decode i ((fromSyntax i z).1)).param q)
             ((fromSyntax i z).2 q) < rank i z) :
     SyntaxPresentation P H Syntax where
-  layer := {
-    toCarrier := toSyntax
-    fromCarrier := fromSyntax
-    left_inv := left_inv
-    right_inv := right_inv
-  }
+  layer := CodeLayerPresentation.ofMaps toSyntax fromSyntax left_inv right_inv
   rank := rank
   child_rank_lt := by
     intro i z q
