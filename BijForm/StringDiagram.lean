@@ -1443,6 +1443,58 @@ theorem rest_nodup {G : OpenPortHypergraph Sig boundary}
     simpa using hnodup
   exact hsplit.2
 
+theorem pending_labels_cons {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
+    (st : SearchState G (activeLabel :: restLabels))
+    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest) :
+    G.raw.endpointLabel active = activeLabel ∧
+      rest.map G.raw.endpointLabel = restLabels := by
+  have hlabels :
+      (active :: rest).map G.raw.endpointLabel =
+        activeLabel :: restLabels := by
+    simpa [hpending] using st.pending_labels
+  simpa using hlabels
+
+theorem active_label_eq {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
+    (st : SearchState G (activeLabel :: restLabels))
+    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest) :
+    G.raw.endpointLabel active = activeLabel :=
+  (st.pending_labels_cons hpending).1
+
+theorem rest_labels_eq {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
+    (st : SearchState G (activeLabel :: restLabels))
+    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest) :
+    rest.map G.raw.endpointLabel = restLabels :=
+  (st.pending_labels_cons hpending).2
+
+def restLabelIndex {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
+    (st : SearchState G (activeLabel :: restLabels))
+    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest)
+    (mate : Fin rest.length) : Fin restLabels.length :=
+  let hrest := st.rest_labels_eq hpending
+  Fin.cast (by
+    rw [← hrest]
+    simp) mate
+
+theorem restLabelIndex_get {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
+    (st : SearchState G (activeLabel :: restLabels))
+    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest)
+    (mate : Fin rest.length) :
+    restLabels.get (st.restLabelIndex hpending mate) =
+      G.raw.endpointLabel (rest.get mate) := by
+  have hrest := st.rest_labels_eq hpending
+  cases hrest
+  simp [restLabelIndex]
+
 end SearchState
 
 /--
@@ -1499,6 +1551,50 @@ theorem ready {G : OpenPortHypergraph Sig boundary}
       exact Or.inr ⟨node, slot, hmate, unseen⟩
 
 end FirstPendingStep
+
+namespace SearchState
+
+theorem connect_compatible {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
+    (st : SearchState G (activeLabel :: restLabels))
+    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest)
+    (mate : Fin rest.length)
+    (hmate : PortHypergraph.EdgeMate G.raw active (rest.get mate)) :
+    Sig.compatible activeLabel
+      (restLabels.get (st.restLabelIndex hpending mate)) := by
+  have hcompat := PortHypergraph.edgeMate_compatible G.raw hmate
+  have hactive := st.active_label_eq hpending
+  have hmateLabel := st.restLabelIndex_get hpending mate
+  rw [hactive] at hcompat
+  rw [← hmateLabel] at hcompat
+  exact hcompat
+
+def budEntry {G : OpenPortHypergraph Sig boundary}
+    (node : Fin G.raw.nodeCount)
+    (slot : Fin (G.raw.incident node).length) :
+    Fin (Sig.arity (G.raw.nodeLabel node)) :=
+  Fin.cast (G.raw.incident_length node) slot
+
+theorem bud_compatible {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
+    (st : SearchState G (activeLabel :: restLabels))
+    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest)
+    (node : Fin G.raw.nodeCount)
+    (slot : Fin (G.raw.incident node).length)
+    (hmate :
+      PortHypergraph.EdgeMate G.raw active ((G.raw.incident node).get slot)) :
+    Sig.compatible activeLabel
+      (Sig.port (G.raw.nodeLabel node) (budEntry node slot)) := by
+  have hcompat := PortHypergraph.edgeMate_compatible G.raw hmate
+  have hactive := st.active_label_eq hpending
+  have hslot := G.raw.incidence_label node slot
+  rw [hactive] at hcompat
+  rw [hslot] at hcompat
+  exact hcompat
+
+end SearchState
 
 /--
 Search the ordered pending tail for a `connect` step.  A successful result
