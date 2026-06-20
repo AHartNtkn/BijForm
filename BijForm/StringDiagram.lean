@@ -756,6 +756,52 @@ theorem endpointOwnersOf_existsUnique (G : PortHypergraph Sig boundary)
   revert howner'
   cases owner' <;> intro howner' <;> simpa [endpointOwnerEndpoint] using howner'
 
+/-- A mate of an endpoint is the other endpoint on the same edge. -/
+def EdgeMate (G : PortHypergraph Sig boundary)
+    (endpoint mate : Fin G.endpointCount) : Prop :=
+  endpoint ≠ mate ∧ G.endpointEdge endpoint = G.endpointEdge mate
+
+/-- Every endpoint has exactly one mate on its edge. -/
+theorem edgeMate_existsUnique (G : PortHypergraph Sig boundary)
+    (endpoint : Fin G.endpointCount) :
+    ∃ mate : Fin G.endpointCount,
+      EdgeMate G endpoint mate ∧
+        ∀ mate' : Fin G.endpointCount, EdgeMate G endpoint mate' → mate' = mate := by
+  rcases G.edge_two_endpoints (G.endpointEdge endpoint) with
+    ⟨left, right, hdiff, hleft, hright, hall⟩
+  have hendpoint : endpoint = left ∨ endpoint = right := hall endpoint rfl
+  rcases hendpoint with hendpoint | hendpoint
+  · refine ⟨right, ?_, ?_⟩
+    · constructor
+      · intro hsame
+        exact hdiff (hendpoint.symm.trans hsame)
+      · calc
+          G.endpointEdge endpoint = G.endpointEdge left := by rw [hendpoint]
+          _ = G.endpointEdge right := hleft.trans hright.symm
+    · intro mate' hmate'
+      rcases hall mate' hmate'.2.symm with hmateLeft | hmateRight
+      · have hsame : endpoint = mate' := hendpoint.trans hmateLeft.symm
+        exact False.elim (hmate'.1 hsame)
+      · exact hmateRight
+  · refine ⟨left, ?_, ?_⟩
+    · constructor
+      · intro hsame
+        exact hdiff (hsame.symm.trans hendpoint)
+      · calc
+          G.endpointEdge endpoint = G.endpointEdge right := by rw [hendpoint]
+          _ = G.endpointEdge left := hright.trans hleft.symm
+    · intro mate' hmate'
+      rcases hall mate' hmate'.2.symm with hmateLeft | hmateRight
+      · exact hmateLeft
+      · have hsame : endpoint = mate' := hendpoint.trans hmateRight.symm
+        exact False.elim (hmate'.1 hsame)
+
+theorem edgeMate_compatible (G : PortHypergraph Sig boundary)
+    {endpoint mate : Fin G.endpointCount}
+    (hmate : EdgeMate G endpoint mate) :
+    Sig.compatible (G.endpointLabel endpoint) (G.endpointLabel mate) :=
+  G.edge_compatible endpoint mate hmate.2 hmate.1
+
 /--
 A port endpoint has a path to the ordered boundary when it is a boundary
 endpoint, can cross an edge to the other endpoint on that edge, or can move
@@ -941,10 +987,12 @@ def renderTraceFromBoundary_openEvidence
   sorry
 
 /--
-Semantic renderer obtained from `renderTraceFromBoundary_openEvidence`; this
-declaration depends on the unfinished renderer-validity proof above.
+UNFINISHED semantic renderer obtained from
+`renderTraceFromBoundary_openEvidence`.  This declaration records the intended
+renderer target and depends on the unfinished renderer-validity proof above.
 -/
-def toOpenPortHypergraph {boundary : List Sig.Port} (d : Diag Sig boundary) :
+def toOpenPortHypergraph_unfinished
+    {boundary : List Sig.Port} (d : Diag Sig boundary) :
     OpenPortHypergraph Sig boundary :=
   (renderTraceFromBoundary_openEvidence d).toOpenPortHypergraph
 
@@ -1225,12 +1273,11 @@ def OpenPortHypergraphUpToIso (Sig : Signature) (boundary : List Sig.Port) :
   Quotient (OpenPortHypergraph.isoSetoid Sig boundary)
 
 /--
-The formal boundary for the canonical search procedure.  A full procedure
-must choose the unique boundary-rooted traversal order for each open
-port-hypergraph and render syntax back to representatives, with inverse laws
-modulo ordered boundary-preserving isomorphism.
+Blueprint for the canonical search procedure.  This structure records the
+data that a completed owned traversal must provide; it is not the completed
+semantic bridge.
 -/
-structure CanonicalTraversal (Sig : Signature) where
+structure CanonicalTraversalBlueprint (Sig : Signature) where
   toGraph :
     ∀ {boundary : List Sig.Port}, Diag Sig boundary → OpenPortHypergraph Sig boundary
   fromGraph :
@@ -1245,8 +1292,8 @@ structure CanonicalTraversal (Sig : Signature) where
     ∀ {boundary : List Sig.Port} {G H : OpenPortHypergraph Sig boundary},
       OpenPortHypergraph.isoRel G H → fromGraph G = fromGraph H
 
-/-- A canonical traversal procedure induces the quotient semantic isomorphism. -/
-def CanonicalTraversal.iso (T : CanonicalTraversal Sig)
+/-- A completed traversal blueprint induces the quotient semantic isomorphism. -/
+def CanonicalTraversalBlueprint.iso (T : CanonicalTraversalBlueprint Sig)
     (boundary : List Sig.Port) :
     Diag Sig boundary ≃ᵢ OpenPortHypergraphUpToIso Sig boundary where
   toFun d := Quotient.mk (OpenPortHypergraph.isoSetoid Sig boundary) (T.toGraph d)
@@ -1268,20 +1315,19 @@ def CanonicalTraversal.iso (T : CanonicalTraversal Sig)
 
 /--
 Transport the semantic quotient to the generated traversal-code family.  This
-is conditional on supplied canonical traversal data; constructing such data is
-the remaining semantic bridge obligation below.
+is blueprint-level: constructing the required traversal data is the remaining
+semantic bridge obligation below.
 -/
-def CanonicalTraversal.semanticCodeIso (T : CanonicalTraversal Sig)
+def CanonicalTraversalBlueprint.semanticCodeIso (T : CanonicalTraversalBlueprint Sig)
     (boundary : List Sig.Port) :
     OpenPortHypergraphUpToIso Sig boundary ≃ᵢ Diag Sig boundary :=
   Iso.symm (T.iso boundary)
 
 /--
 Transport the semantic quotient to the dependent-polynomial initial algebra.
-This is the semantic quotient's initial-algebra presentation, conditional on a
-canonical traversal.
+This is blueprint-level and depends on completed canonical traversal data.
 -/
-def CanonicalTraversal.semanticMuIso (T : CanonicalTraversal Sig)
+def CanonicalTraversalBlueprint.semanticMuIso (T : CanonicalTraversalBlueprint Sig)
     (boundary : List Sig.Port) :
     OpenPortHypergraphUpToIso Sig boundary ≃ᵢ Mu (poly Sig) boundary :=
   Iso.trans (T.semanticCodeIso boundary) (Iso.symm (syntaxIso Sig boundary))

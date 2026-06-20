@@ -122,18 +122,20 @@ lake exe bijform
   - `StringDiagram.RenderState.PortHypergraphEvidence`
   - `StringDiagram.RenderState.OpenPortHypergraphEvidence`
   - `StringDiagram.Diag.renderTraceFromBoundary_openEvidence` (unfinished proof gap)
-  - `StringDiagram.Diag.toOpenPortHypergraph` (depends on unfinished renderer validity)
+  - `StringDiagram.Diag.toOpenPortHypergraph_unfinished` (depends on unfinished renderer validity)
   - `StringDiagram.EndpointOwner`
   - `StringDiagram.PortHypergraph`
   - `StringDiagram.PortHypergraph.endpointOwnersOf`
   - `StringDiagram.PortHypergraph.endpointOwnersOf_existsUnique`
+  - `StringDiagram.PortHypergraph.EdgeMate`
+  - `StringDiagram.PortHypergraph.edgeMate_existsUnique`
   - `StringDiagram.PortHypergraph.PortReachesBoundary`
   - `StringDiagram.OpenPortHypergraph`
   - `StringDiagram.OpenPortHypergraph.TraversalState`
   - `StringDiagram.PortHypergraphIso`
-  - `StringDiagram.CanonicalTraversal`
-  - `StringDiagram.CanonicalTraversal.semanticCodeIso`
-  - `StringDiagram.CanonicalTraversal.semanticMuIso`
+  - `StringDiagram.CanonicalTraversalBlueprint`
+  - `StringDiagram.CanonicalTraversalBlueprint.semanticCodeIso` (blueprint-level)
+  - `StringDiagram.CanonicalTraversalBlueprint.semanticMuIso` (blueprint-level)
   - `StringDiagram.OpenPortHypergraphUpToIso`
   - `StringDiagram.diagOpenPortHypergraphIso` (unfinished proof gap)
 
