@@ -308,10 +308,18 @@ Main results:
   and rank proof needed to obtain generated carrier encodings.
 
 The normal-form lambda signature is instantiated with normal-expression and
-application-term indices. The generic syntax and polynomial route are complete.
-The concrete closed normal-form lambda `Nat` coding surface is present as an
-unfinished blueprint: the one-step shape coding and rank proof are still marked
-with labeled `sorry`s in source.
+application-term indices. Its generated code family uses `Nat` for normal
+expressions and `Fin (appTermCount Γ) × Nat` for application terms in context
+`Γ`, so the closed application-term fiber is empty while closed normal
+expressions still code to `Nat`.
+
+Main results for this instance:
+
+- `TypedBinding.NFGeneratedCode : GeneratedCode TypedBinding.NFPoly TypedBinding.NFCode`
+- `TypedBinding.NFSyntaxCodeIso (Γ) (t) : Iso (TypedBinding.NFTerm Γ t) (TypedBinding.NFCode (Γ, t))`
+- `TypedBinding.NormalExpNatIso (Γ) : Iso (TypedBinding.NormalExp Γ) Nat`
+- `TypedBinding.AppTermCodeIso (Γ) : Iso (TypedBinding.AppTerm Γ) (Fin (TypedBinding.appTermCount Γ) x Nat)`
+- `TypedBinding.NFClosedNatIso : Iso TypedBinding.NFClosed Nat`
 
 ### Numeric Expressions
 
