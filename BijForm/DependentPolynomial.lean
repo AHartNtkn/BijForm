@@ -279,6 +279,28 @@ namespace GeneratedCode
 
 variable {P : DepPoly ι} {Code : ι → Type v}
 
+/-- Build generated coding data from the natural layer-local descent proof.
+Callers prove that every child in a decoded one-step layer has smaller rank
+than the layer after re-encoding; this constructor supplies the equivalent
+encoded-parent proof required by `GeneratedCode`. -/
+def ofLayerChildRank
+    (inversion : OutputIndexInversion P)
+    (layer : ∀ i, CodeLayer P inversion Code i ≃ᵢ Code i)
+    (rank : ∀ i, Code i → Nat)
+    (layer_child_rank_lt :
+      ∀ {i : ι} (x : CodeLayer P inversion Code i)
+        (q : P.Pos (inversion.decode i x.1).ctor
+            (inversion.decode i x.1).param),
+        rank (P.input (inversion.decode i x.1).param q) (x.2 q) <
+          rank i ((layer i).toFun x)) :
+    GeneratedCode P Code where
+  inversion := inversion
+  layer := layer
+  rank := rank
+  child_rank_lt := by
+    intro i z q
+    simpa using layer_child_rank_lt ((layer i).invFun z) q
+
 def step (C : GeneratedCode P Code) (i : ι) :
     Obj P Code i ≃ᵢ Code i :=
   Iso.trans (objCodeLayerIso C.inversion Code i) (C.layer i)
