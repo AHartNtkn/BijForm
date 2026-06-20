@@ -5599,6 +5599,29 @@ theorem firstPendingConnectSearch?_exists_of_witness
     | some data =>
         simp
 
+theorem firstPendingConnectSearch?_some_connect
+    (G : OpenPortHypergraph Sig boundary)
+    (seenNode : Fin G.raw.nodeCount → Prop)
+    {active : Fin G.raw.endpointCount}
+    {rest : List (Fin G.raw.endpointCount)}
+    {step : FirstPendingStep G seenNode active rest}
+    (hstep : firstPendingConnectSearch? G seenNode active rest = some step) :
+    ∃ (mate : Fin rest.length)
+      (hmate : PortHypergraph.EdgeMate G.raw active (rest.get mate)),
+      step = FirstPendingStep.connect mate hmate := by
+  unfold firstPendingConnectSearch? at hstep
+  rcases List.exists_of_findSome?_eq_some hstep with
+    ⟨mate, _hmem, hcandidate⟩
+  cases hcase : PortHypergraph.edgeMateCandidate? G.raw active
+      (rest.get mate) with
+  | none =>
+      rw [hcase] at hcandidate
+      cases hcandidate
+  | some data =>
+      rw [hcase] at hcandidate
+      injection hcandidate with hstepEq
+      exact ⟨mate, data.proof, hstepEq.symm⟩
+
 namespace SearchState
 
 /--
@@ -5654,6 +5677,44 @@ theorem firstPendingBudSearch?_exists_of_witness
     | some data =>
         simp
 
+theorem firstPendingBudSearch?_some_bud
+    {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port} (st : SearchState G frontier)
+    {active : Fin G.raw.endpointCount}
+    {rest : List (Fin G.raw.endpointCount)}
+    {step : FirstPendingStep G st.seenNode active rest}
+    (hstep : st.firstPendingBudSearch? active rest = some step) :
+    ∃ (node : Fin G.raw.nodeCount)
+      (slot : Fin (G.raw.incident node).length)
+      (hmate :
+        PortHypergraph.EdgeMate G.raw active ((G.raw.incident node).get slot))
+      (hunseen : ¬ st.seenNode node),
+      step = FirstPendingStep.bud node slot hmate hunseen := by
+  unfold firstPendingBudSearch? at hstep
+  rcases List.exists_of_findSome?_eq_some hstep with
+    ⟨node, _hnodeMem, hnodeCandidate⟩
+  by_cases hseen : node ∈ st.seenNodes
+  · simp [hseen] at hnodeCandidate
+  · simp [hseen] at hnodeCandidate
+    rcases List.exists_of_findSome?_eq_some hnodeCandidate with
+      ⟨slot, _hslotMem, hslotCandidate⟩
+    change
+      (match PortHypergraph.edgeMateCandidate? G.raw active
+          ((G.raw.incident node).get slot) with
+        | some hmate => some (FirstPendingStep.bud node slot
+            hmate.proof (by simpa [seenNode] using hseen))
+        | none => none) = some step at hslotCandidate
+    cases hcase : PortHypergraph.edgeMateCandidate? G.raw active
+        ((G.raw.incident node).get slot) with
+    | none =>
+        rw [hcase] at hslotCandidate
+        cases hslotCandidate
+    | some data =>
+        rw [hcase] at hslotCandidate
+        injection hslotCandidate with hstepEq
+        exact ⟨node, slot, data.proof, by simpa [seenNode] using hseen,
+          hstepEq.symm⟩
+
 /--
 Executable first-pending search.  It tries the remaining pending frontier
 first, then unseen constructor ports.  The returned value is constructor data,
@@ -5703,6 +5764,53 @@ theorem firstPendingStepSearch?_exists_of_ready
         rcases st.firstPendingBudSearch?_exists_of_witness
             node slot hmate hunseen with ⟨step, hstep⟩
         exact ⟨step, by simp [hstep]⟩
+
+theorem firstPendingStepSearch?_some_connect_of_witness
+    {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port} (st : SearchState G frontier)
+    {active : Fin G.raw.endpointCount}
+    {rest : List (Fin G.raw.endpointCount)}
+    (mate : Fin rest.length)
+    (hmate : PortHypergraph.EdgeMate G.raw active (rest.get mate)) :
+    ∃ (mate' : Fin rest.length)
+      (hmate' : PortHypergraph.EdgeMate G.raw active (rest.get mate')),
+      st.firstPendingStepSearch? active rest =
+        some (FirstPendingStep.connect mate' hmate') := by
+  rcases firstPendingConnectSearch?_exists_of_witness
+      G st.seenNode mate hmate with ⟨step, hstep⟩
+  rcases firstPendingConnectSearch?_some_connect
+      G st.seenNode hstep with ⟨mate', hmate', hstepEq⟩
+  unfold firstPendingStepSearch?
+  rw [hstep]
+  exact ⟨mate', hmate', by simp [hstepEq]⟩
+
+theorem firstPendingStepSearch?_some_bud_of_witness
+    {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port} (st : SearchState G frontier)
+    {active : Fin G.raw.endpointCount}
+    {rest : List (Fin G.raw.endpointCount)}
+    (hconnect :
+      firstPendingConnectSearch? G st.seenNode active rest = none)
+    (node : Fin G.raw.nodeCount)
+    (slot : Fin (G.raw.incident node).length)
+    (hmate :
+      PortHypergraph.EdgeMate G.raw active ((G.raw.incident node).get slot))
+    (hunseen : ¬ st.seenNode node) :
+    ∃ (node' : Fin G.raw.nodeCount)
+      (slot' : Fin (G.raw.incident node').length)
+      (hmate' :
+        PortHypergraph.EdgeMate G.raw active
+          ((G.raw.incident node').get slot'))
+      (hunseen' : ¬ st.seenNode node'),
+      st.firstPendingStepSearch? active rest =
+        some (FirstPendingStep.bud node' slot' hmate' hunseen') := by
+  rcases st.firstPendingBudSearch?_exists_of_witness
+      node slot hmate hunseen with ⟨step, hstep⟩
+  rcases st.firstPendingBudSearch?_some_bud hstep with
+    ⟨node', slot', hmate', hunseen', hstepEq⟩
+  unfold firstPendingStepSearch?
+  rw [hconnect, hstep]
+  exact ⟨node', slot', hmate', hunseen', by simp [hstepEq]⟩
 
 end SearchState
 
