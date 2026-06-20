@@ -292,7 +292,7 @@ def FinChainSyntaxShapeIso (i : Nat) : FinChainSyntax i ≃ᵢ FinChainCarrier i
 `FinChainSize`. This theorem exercises generated finite carriers with many
 different `Fin k` values rather than only a singleton finite case. -/
 def FinChainSyntaxFinIso (i : Nat) : FinChainSyntax i ≃ᵢ Fin (FinChainSize i) :=
-  FinChainSyntaxShapeIso i
+  Iso.trans (FinChainSyntaxShapeIso i) (CodeShape.finiteIso rfl)
 
 def FinChainSyntaxFinOneIso : FinChainSyntax 0 ≃ᵢ Fin 1 :=
   FinChainSyntaxFinIso 0
