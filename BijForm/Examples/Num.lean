@@ -541,7 +541,7 @@ def NumNatIso (k : Nat) : Mu NumPoly k ≃ᵢ Nat :=
   NumNatGeneratedCode.iso k
 
 def NumSyntaxNatIso (k : Nat) : NumSyntax k ≃ᵢ Nat :=
-  Iso.trans (Iso.symm (NumSyntaxIso k)) (NumNatIso k)
+  GeneratedCode.natCodeIso NumGeneratedCode NumNatGeneratedCode k
 
 end Examples
 end BijForm

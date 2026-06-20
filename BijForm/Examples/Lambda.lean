@@ -361,7 +361,7 @@ def LamNatIso (k : Nat) : Mu LamPoly k ≃ᵢ Nat :=
   LamNatGeneratedCode.iso k
 
 def LamSyntaxNatIso (k : Nat) : LamSyntax k ≃ᵢ Nat :=
-  Iso.trans (Iso.symm (LamSyntaxIso k)) (LamNatIso k)
+  GeneratedCode.rankedNatCodeIso LamGeneratedCode LamNatGeneratedCode k
 
 def ClosedLamSyntaxNatIso : LamSyntax 0 ≃ᵢ Nat :=
   LamSyntaxNatIso 0

@@ -18,7 +18,7 @@ Output-index inversion is represented as same-fiber constructor data; examples
 must still show how this data is generated from their concrete constructors.
 -/
 
-universe u v
+universe u v w
 
 /-- A dependent polynomial signature whose recursive positions may point at
 indices computed from the constructor parameter. -/
@@ -577,6 +577,50 @@ theorem noSubsingletonFiber (C : GeneratedNatCode P) (i : ι)
   exact Iso.noNatIsoOfSubsingleton (C.iso i)
 
 end GeneratedNatCode
+
+namespace GeneratedCode
+
+variable {P : DepPoly ι}
+
+/-- Compose two generated codings of the same dependent polynomial through the
+shared initial algebra.  This is the generic route from readable syntax to a
+generated carrier code. -/
+def codeIso {Source : ι → Type v} {Target : ι → Type w}
+    (source : GeneratedCode P Source) (target : GeneratedCode P Target) (i : ι) :
+    Source i ≃ᵢ Target i :=
+  Iso.trans (Iso.symm (source.iso i)) (target.iso i)
+
+/-- Compose a generated source coding with a generated Nat coding. -/
+def natCodeIso {Source : ι → Type v}
+    (source : GeneratedCode P Source) (target : GeneratedNatCode P) (i : ι) :
+    Source i ≃ᵢ Nat :=
+  codeIso source target.toGeneratedCode i
+
+/-- Compose a generated source coding with a generated ranked-Nat coding. -/
+def rankedNatCodeIso {Source : ι → Type v}
+    (source : GeneratedCode P Source) (target : GeneratedRankedNatCode P) (i : ι) :
+    Source i ≃ᵢ Nat :=
+  codeIso source target.toGeneratedCode i
+
+/-- Compose a generated source coding with a generated shape-coded carrier. -/
+def shapeCodeIso {Source : ι → Type v}
+    (source : GeneratedCode P Source) (target : GeneratedShapeCode P) (i : ι) :
+    Source i ≃ᵢ (target.shape i).Carrier :=
+  codeIso source target.toGeneratedCode i
+
+/-- Compose a generated source coding with an infinite generated shape case. -/
+def shapeNatIso {Source : ι → Type v}
+    (source : GeneratedCode P Source) (target : GeneratedShapeCode P) (i : ι)
+    (h : target.shape i = .infinite) : Source i ≃ᵢ Nat :=
+  Iso.trans (shapeCodeIso source target i) (CodeShape.infiniteIso h)
+
+/-- Compose a generated source coding with a finite generated shape case. -/
+def shapeFinIso {Source : ι → Type v}
+    (source : GeneratedCode P Source) (target : GeneratedShapeCode P) (i : ι)
+    {k : Nat} (h : target.shape i = .finite k) : Source i ≃ᵢ Fin k :=
+  Iso.trans (shapeCodeIso source target i) (CodeShape.finiteIso h)
+
+end GeneratedCode
 
 /-- A well-founded one-step coding of each same-fiber polynomial layer induces
 a bijective coding of the dependent initial algebra. -/

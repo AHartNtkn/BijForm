@@ -439,7 +439,7 @@ def PeanoNatIso (k : Nat) : Mu PeanoPoly k ≃ᵢ Nat :=
   PeanoNatGeneratedCode.iso k
 
 def PeanoSyntaxNatIso (k : Nat) : PeanoSyntax k ≃ᵢ Nat :=
-  Iso.trans (Iso.symm (PeanoSyntaxIso k)) (PeanoNatIso k)
+  GeneratedCode.natCodeIso PeanoGeneratedCode PeanoNatGeneratedCode k
 
 end Examples
 end BijForm

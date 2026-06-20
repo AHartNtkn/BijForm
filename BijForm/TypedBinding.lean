@@ -509,7 +509,7 @@ def iso (D : LayerShapeCodingData S) (Γ : List Ty) (t : Ty) :
 
 def syntaxCodeIso (D : LayerShapeCodingData S) (Γ : List Ty) (t : Ty) :
     Term S Γ t ≃ᵢ D.Code (Γ, t) :=
-  Iso.trans (Iso.symm (syntaxIso S Γ t)) (D.iso Γ t)
+  GeneratedCode.codeIso (syntaxGeneratedCode S) D.toGeneratedCode (Γ, t)
 
 end LayerShapeCodingData
 

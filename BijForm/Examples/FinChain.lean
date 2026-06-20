@@ -286,13 +286,13 @@ def FinChainShapeIso (i : Nat) : Mu FinChainPoly i ≃ᵢ FinChainCarrier i :=
   FinChainGeneratedShapeCode.iso i
 
 def FinChainSyntaxShapeIso (i : Nat) : FinChainSyntax i ≃ᵢ FinChainCarrier i :=
-  Iso.trans (Iso.symm (FinChainSyntaxIso i)) (FinChainShapeIso i)
+  GeneratedCode.shapeCodeIso FinChainGeneratedCode FinChainGeneratedShapeCode i
 
 /-- Every bounded tagged-chain index is finite, with cardinality given by
 `FinChainSize`. This theorem exercises generated finite carriers with many
 different `Fin k` values rather than only a singleton finite case. -/
 def FinChainSyntaxFinIso (i : Nat) : FinChainSyntax i ≃ᵢ Fin (FinChainSize i) :=
-  Iso.trans (FinChainSyntaxShapeIso i) (CodeShape.finiteIso rfl)
+  GeneratedCode.shapeFinIso FinChainGeneratedCode FinChainGeneratedShapeCode i rfl
 
 def FinChainSyntaxFinOneIso : FinChainSyntax 0 ≃ᵢ Fin 1 :=
   FinChainSyntaxFinIso 0

@@ -287,7 +287,7 @@ def HBTNatIso (i : Nat) : Mu HBTPoly i ≃ᵢ Nat :=
   HBTNatGeneratedCode.iso i
 
 def HBTSyntaxNatIso (i : Nat) : HBTSyntax i ≃ᵢ Nat :=
-  Iso.trans (Iso.symm (HBTSyntaxIso i)) (HBTNatIso i)
+  GeneratedCode.natCodeIso HBTGeneratedCode HBTNatGeneratedCode i
 
 end Examples
 end BijForm
