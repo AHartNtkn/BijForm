@@ -1617,6 +1617,34 @@ theorem processedEdges_length_le {G : OpenPortHypergraph Sig boundary}
     st.processedEdges.length ≤ G.raw.edgeCount :=
   list_length_le_fin_of_nodup st.processedEdges st.processedEdges_nodup
 
+def remainingEdges {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port} (st : SearchState G frontier) : Nat :=
+  G.raw.edgeCount - st.processedEdges.length
+
+theorem processedEdges_length_lt_of_pending
+    {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port} (st : SearchState G frontier)
+    {active : Fin G.raw.endpointCount}
+    (hactive : active ∈ st.pending) :
+    st.processedEdges.length < G.raw.edgeCount := by
+  have hfresh : G.raw.endpointEdge active ∉ st.processedEdges :=
+    st.pending_unprocessed active hactive
+  have hnodup :
+      (G.raw.endpointEdge active :: st.processedEdges).Nodup := by
+    constructor
+    · intro edge hmem heq
+      exact hfresh (by simpa [heq] using hmem)
+    · exact st.processedEdges_nodup
+  have hle :
+      (G.raw.endpointEdge active :: st.processedEdges).length ≤
+        G.raw.edgeCount :=
+    list_length_le_fin_of_nodup
+      (G.raw.endpointEdge active :: st.processedEdges) hnodup
+  have hsucc :
+      st.processedEdges.length + 1 ≤ G.raw.edgeCount := by
+    simpa using hle
+  exact Nat.lt_of_succ_le hsucc
+
 def toTraversalState {G : OpenPortHypergraph Sig boundary}
     {frontier : List Sig.Port} (st : SearchState G frontier) :
     TraversalState G frontier where
@@ -2371,6 +2399,40 @@ theorem budChild_frontierComplete {G : OpenPortHypergraph Sig boundary}
         simpa [FrontierComplete, toTraversalState, budChild, seenNode]
           using old_pending_to_child holdPending
 
+theorem connectChild_remainingEdges_lt {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
+    (st : SearchState G (activeLabel :: restLabels))
+    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest)
+    (mate : Fin rest.length)
+    (hmate : PortHypergraph.EdgeMate G.raw active (rest.get mate)) :
+    (st.connectChild hpending mate hmate).remainingEdges < st.remainingEdges := by
+  have hactive : active ∈ st.pending := by
+    rw [hpending]
+    simp
+  have hlt := st.processedEdges_length_lt_of_pending hactive
+  simp [remainingEdges, connectChild]
+  omega
+
+theorem budChild_remainingEdges_lt {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
+    (st : SearchState G (activeLabel :: restLabels))
+    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest)
+    (node : Fin G.raw.nodeCount)
+    (slot : Fin (G.raw.incident node).length)
+    (hmate :
+      PortHypergraph.EdgeMate G.raw active ((G.raw.incident node).get slot))
+    (hunseen : node ∉ st.seenNodes) :
+    (st.budChild hpending node slot hmate hunseen).remainingEdges <
+      st.remainingEdges := by
+  have hactive : active ∈ st.pending := by
+    rw [hpending]
+    simp
+  have hlt := st.processedEdges_length_lt_of_pending hactive
+  simp [remainingEdges, budChild]
+  omega
+
 end SearchState
 
 /--
@@ -2617,6 +2679,64 @@ theorem SearchState.firstPendingStepSearch?_exists_of_frontierComplete
       st.firstPendingStepSearch? active rest = some step :=
   st.firstPendingStepSearch?_exists_of_ready
     (st.firstPendingStepReady_of_frontierComplete hcomplete hpending)
+
+namespace SearchState
+
+/--
+Owned graph-to-syntax traversal from a finite search state.  The recursion
+always processes the first pending endpoint.  The `none` search branch is
+impossible by `firstPendingStepSearch?_exists_of_frontierComplete`, and child
+recursion decreases the finite count of unprocessed edges.
+-/
+def toDiag {G : OpenPortHypergraph Sig boundary} :
+    ∀ {frontier : List Sig.Port},
+      (st : SearchState G frontier) → st.FrontierComplete → Diag Sig frontier
+  | [], _st, _hcomplete => Diag.finish
+  | activeLabel :: restLabels, st, hcomplete =>
+      match hpending : st.pending with
+      | [] =>
+          False.elim (by
+            have hlabels := st.pending_labels
+            rw [hpending] at hlabels
+            simp at hlabels)
+      | active :: rest =>
+          match hstep : st.firstPendingStepSearch? active rest with
+          | none =>
+              False.elim (by
+                rcases st.firstPendingStepSearch?_exists_of_frontierComplete
+                    hcomplete hpending with ⟨step, hsome⟩
+                rw [hstep] at hsome
+                cases hsome)
+          | some step =>
+              match step with
+              | FirstPendingStep.connect mate hmate =>
+                  Diag.connect
+                    (st.restLabelIndex hpending mate)
+                    (st.connect_compatible hpending mate hmate)
+                    (toDiag
+                      (st.connectChild hpending mate hmate)
+                      (st.connectChild_frontierComplete hpending mate hmate
+                        hcomplete))
+              | FirstPendingStep.bud node slot hmate hunseen =>
+                  Diag.bud
+                    (G.raw.nodeLabel node)
+                    (budEntry node slot)
+                    (st.bud_compatible hpending node slot hmate)
+                    (toDiag
+                      (st.budChild hpending node slot hmate
+                        (by simpa [seenNode] using hunseen))
+                      (st.budChild_frontierComplete hpending node slot hmate
+                        (by simpa [seenNode] using hunseen) hcomplete))
+termination_by frontier st _hcomplete => st.remainingEdges
+decreasing_by
+  · exact st.connectChild_remainingEdges_lt hpending mate hmate
+  · exact st.budChild_remainingEdges_lt hpending node slot hmate
+      (by simpa [seenNode] using hunseen)
+
+end SearchState
+
+def fromGraph (G : OpenPortHypergraph Sig boundary) : Diag Sig boundary :=
+  (SearchState.initial G).toDiag (SearchState.initial_frontierComplete G)
 
 def isoRel (G H : OpenPortHypergraph Sig boundary) : Prop :=
   Nonempty (PortHypergraphIso G.raw H.raw)

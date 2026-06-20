@@ -143,10 +143,14 @@ lake exe bijform
   - `StringDiagram.OpenPortHypergraph.SearchState.initial`
   - `StringDiagram.OpenPortHypergraph.SearchState.initial_frontierComplete`
   - `StringDiagram.OpenPortHypergraph.SearchState.processedEdges_length_le`
+  - `StringDiagram.OpenPortHypergraph.SearchState.remainingEdges`
+  - `StringDiagram.OpenPortHypergraph.SearchState.processedEdges_length_lt_of_pending`
   - `StringDiagram.OpenPortHypergraph.SearchState.connectChild`
   - `StringDiagram.OpenPortHypergraph.SearchState.connectChild_frontierComplete`
+  - `StringDiagram.OpenPortHypergraph.SearchState.connectChild_remainingEdges_lt`
   - `StringDiagram.OpenPortHypergraph.SearchState.budChild`
   - `StringDiagram.OpenPortHypergraph.SearchState.budChild_frontierComplete`
+  - `StringDiagram.OpenPortHypergraph.SearchState.budChild_remainingEdges_lt`
   - `StringDiagram.PortHypergraphIso`
   - `StringDiagram.OpenPortHypergraphUpToIso`
   - `StringDiagram.OpenPortHypergraph.FirstPendingStep`
@@ -154,6 +158,8 @@ lake exe bijform
   - `StringDiagram.OpenPortHypergraph.firstPendingConnectSearch?`
   - `StringDiagram.OpenPortHypergraph.SearchState.firstPendingStepSearch?`
   - `StringDiagram.OpenPortHypergraph.SearchState.firstPendingStepSearch?_exists_of_frontierComplete`
+  - `StringDiagram.OpenPortHypergraph.SearchState.toDiag`
+  - `StringDiagram.OpenPortHypergraph.fromGraph`
   - `StringDiagram.OpenPortHypergraph.firstPendingTraversalReady_of_frontierComplete`
   - `StringDiagram.diagOpenPortHypergraphIso` (unfinished proof gap)
 
