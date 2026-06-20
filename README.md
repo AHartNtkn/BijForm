@@ -117,6 +117,8 @@ lake exe bijform
   - `StringDiagram.PortHypergraph`
   - `StringDiagram.PortHypergraphIso`
   - `StringDiagram.CanonicalTraversal`
+  - `StringDiagram.CanonicalTraversal.semanticCodeIso`
+  - `StringDiagram.CanonicalTraversal.semanticMuIso`
   - `StringDiagram.OpenPortHypergraphUpToIso`
   - `StringDiagram.diagOpenPortHypergraphIso` (unfinished proof gap)
 

@@ -534,7 +534,7 @@ def OpenPortHypergraphUpToIso (Sig : Signature) (boundary : List Sig.Port) :
   Quotient (OpenPortHypergraph.isoSetoid Sig boundary)
 
 /--
-The formal boundary for the canonical search procedure.  A completed procedure
+The formal boundary for the canonical search procedure.  A full procedure
 must choose the unique boundary-rooted traversal order for each open
 port-hypergraph and render syntax back to representatives, with inverse laws
 modulo ordered boundary-preserving isomorphism.
@@ -574,6 +574,26 @@ def CanonicalTraversal.iso (T : CanonicalTraversal Sig)
     intro G
     apply Quotient.sound
     exact T.to_from G
+
+/--
+Transport the semantic quotient to the generated traversal-code family.  This
+is conditional on supplied canonical traversal data; constructing such data is
+the remaining semantic bridge obligation below.
+-/
+def CanonicalTraversal.semanticCodeIso (T : CanonicalTraversal Sig)
+    (boundary : List Sig.Port) :
+    OpenPortHypergraphUpToIso Sig boundary ≃ᵢ Diag Sig boundary :=
+  Iso.symm (T.iso boundary)
+
+/--
+Transport the semantic quotient to the dependent-polynomial initial algebra.
+This is the semantic quotient's initial-algebra presentation, conditional on a
+canonical traversal.
+-/
+def CanonicalTraversal.semanticMuIso (T : CanonicalTraversal Sig)
+    (boundary : List Sig.Port) :
+    OpenPortHypergraphUpToIso Sig boundary ≃ᵢ Mu (poly Sig) boundary :=
+  Iso.trans (T.semanticCodeIso boundary) (Iso.symm (syntaxIso Sig boundary))
 
 /--
 UNFINISHED semantic bridge: typed rooted open diagrams should present exactly
