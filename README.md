@@ -132,6 +132,9 @@ lake exe bijform
   - `StringDiagram.PortHypergraph.edgeMateCandidate?`
   - `StringDiagram.PortHypergraph.edgeMateSearch?`
   - `StringDiagram.PortHypergraph.edgeMate_existsUnique`
+  - `StringDiagram.PortHypergraph.incident_nodup`
+  - `StringDiagram.PortHypergraph.incident_labels`
+  - `StringDiagram.PortHypergraph.incident_labels_except`
   - `StringDiagram.PortHypergraph.PortReachesBoundary`
   - `StringDiagram.OpenPortHypergraph`
   - `StringDiagram.OpenPortHypergraph.TraversalState`
@@ -139,6 +142,8 @@ lake exe bijform
   - `StringDiagram.OpenPortHypergraph.SearchState`
   - `StringDiagram.OpenPortHypergraph.SearchState.initial`
   - `StringDiagram.OpenPortHypergraph.SearchState.initial_frontierComplete`
+  - `StringDiagram.OpenPortHypergraph.SearchState.connectChild`
+  - `StringDiagram.OpenPortHypergraph.SearchState.budChild`
   - `StringDiagram.PortHypergraphIso`
   - `StringDiagram.OpenPortHypergraphUpToIso`
   - `StringDiagram.OpenPortHypergraph.FirstPendingStep`
