@@ -246,99 +246,111 @@ def PeanoNatLayerShapeInv (k : Nat) :
   | Sum.inr (Sum.inr (Sum.inr child)) =>
       ⟨⟨PeanoCtor.forallE, (k : Nat), rfl⟩, fun _ => child⟩
 
-theorem PeanoNatLayerShape_left_inv (k : Nat) :
-    Function.LeftInverse (PeanoNatLayerShapeInv k) (PeanoNatLayerShapeTo k) := by
-  intro x
-  cases x with
-  | mk code child =>
-    cases code with
-    | mk ctor param out_eq =>
-      cases ctor with
-      | eq =>
-        cases param with
-        | mk k' pair =>
-          cases pair with
-          | mk lhs rhs =>
-            dsimp [PeanoPoly, PeanoOut] at out_eq
-            cases out_eq
-            dsimp [PeanoNatLayerShapeTo, PeanoNatLayerShapeInv]
-            rw [(NumNatIso k).left_inv lhs, (NumNatIso k).left_inv rhs]
-            have hchild : (fun q => nomatch q) = child := by
-              child_eta_empty
-            cases hchild
-            refine Sigma.ext ?_ ?_
-            · apply congrArg
-                (fun h =>
-                  (⟨PeanoCtor.eq, ⟨k, (lhs, rhs)⟩, h⟩ : Fiber PeanoPoly k))
-              apply Subsingleton.elim
-            · apply heq_of_eq
-              child_eta_empty
-      | not =>
-          change PeanoParam PeanoCtor.not at param
-          change Nat at param
-          cases out_eq
-          dsimp [PeanoNatLayerShapeTo, PeanoNatLayerShapeInv]
-          have hchild : (fun _ => child ()) = child := by
-            child_eta_unit
-          cases hchild
-          rfl
-      | implies =>
-          change PeanoParam PeanoCtor.implies at param
-          change Nat at param
-          cases out_eq
-          dsimp [PeanoNatLayerShapeTo, PeanoNatLayerShapeInv]
-          have hchild : child = (fun
-              | false => child false
-              | true => child true) := by
-            child_eta_bool
-          rw [hchild]
-          rfl
-      | forallE =>
-          change PeanoParam PeanoCtor.forallE at param
-          change Nat at param
-          cases out_eq
-          dsimp [PeanoNatLayerShapeTo, PeanoNatLayerShapeInv]
-          have hchild : (fun _ => child ()) = child := by
-            child_eta_unit
-          cases hchild
-          rfl
-
-theorem PeanoNatLayerShape_right_inv (k : Nat) :
-    Function.RightInverse (PeanoNatLayerShapeInv k) (PeanoNatLayerShapeTo k) := by
-  intro x
-  cases x with
-  | inl p =>
-      cases p with
-      | mk lhs rhs =>
-        dsimp [PeanoNatLayerShapeTo, PeanoNatLayerShapeInv]
-        rw [(NumNatIso k).right_inv lhs, (NumNatIso k).right_inv rhs]
-  | inr tail =>
-      cases tail with
-      | inl child => rfl
-      | inr rest =>
-          cases rest with
-          | inl p =>
-              cases p
+def PeanoNatCodeLayerPresentation :
+    CodeLayerPresentation PeanoPoly PeanoInversion (fun _ => Nat) (fun _ => Nat) where
+  toCarrier k layer :=
+    CodeAlgebra.prodOrNatOrProdOrNat.toFun (PeanoNatLayerShapeTo k layer)
+  fromCarrier k n :=
+    PeanoNatLayerShapeInv k (CodeAlgebra.prodOrNatOrProdOrNat.invFun n)
+  left_inv := by
+    intro k x
+    have hshape :
+        Function.LeftInverse (PeanoNatLayerShapeInv k) (PeanoNatLayerShapeTo k) := by
+      intro x
+      cases x with
+      | mk code child =>
+        cases code with
+        | mk ctor param out_eq =>
+          cases ctor with
+          | eq =>
+            cases param with
+            | mk k' pair =>
+              cases pair with
+              | mk lhs rhs =>
+                dsimp [PeanoPoly, PeanoOut] at out_eq
+                cases out_eq
+                dsimp [PeanoNatLayerShapeTo, PeanoNatLayerShapeInv]
+                rw [(NumNatIso k).left_inv lhs, (NumNatIso k).left_inv rhs]
+                have hchild : (fun q => nomatch q) = child := by
+                  child_eta_empty
+                cases hchild
+                refine Sigma.ext ?_ ?_
+                · apply congrArg
+                    (fun h =>
+                      (⟨PeanoCtor.eq, ⟨k, (lhs, rhs)⟩, h⟩ : Fiber PeanoPoly k))
+                  apply Subsingleton.elim
+                · apply heq_of_eq
+                  child_eta_empty
+          | not =>
+              change PeanoParam PeanoCtor.not at param
+              change Nat at param
+              cases out_eq
+              dsimp [PeanoNatLayerShapeTo, PeanoNatLayerShapeInv]
+              have hchild : (fun _ => child ()) = child := by
+                child_eta_unit
+              cases hchild
               rfl
-          | inr child => rfl
-
-def PeanoNatLayerShapeIso (k : Nat) :
-    CodeLayer PeanoPoly PeanoInversion (fun _ => Nat) k ≃ᵢ PeanoNatLayerShape where
-  toFun := PeanoNatLayerShapeTo k
-  invFun := PeanoNatLayerShapeInv k
-  left_inv := PeanoNatLayerShape_left_inv k
-  right_inv := PeanoNatLayerShape_right_inv k
-
-def PeanoNatLayerIso (k : Nat) :
-    CodeLayer PeanoPoly PeanoInversion (fun _ => Nat) k ≃ᵢ Nat :=
-  Iso.trans (PeanoNatLayerShapeIso k) CodeAlgebra.prodOrNatOrProdOrNat
+          | implies =>
+              change PeanoParam PeanoCtor.implies at param
+              change Nat at param
+              cases out_eq
+              dsimp [PeanoNatLayerShapeTo, PeanoNatLayerShapeInv]
+              have hchild : child = (fun
+                  | false => child false
+                  | true => child true) := by
+                child_eta_bool
+              rw [hchild]
+              rfl
+          | forallE =>
+              change PeanoParam PeanoCtor.forallE at param
+              change Nat at param
+              cases out_eq
+              dsimp [PeanoNatLayerShapeTo, PeanoNatLayerShapeInv]
+              have hchild : (fun _ => child ()) = child := by
+                child_eta_unit
+              cases hchild
+              rfl
+    change
+      PeanoNatLayerShapeInv k
+        (CodeAlgebra.prodOrNatOrProdOrNat.invFun
+          (CodeAlgebra.prodOrNatOrProdOrNat.toFun
+            (PeanoNatLayerShapeTo k x))) = x
+    rw [CodeAlgebra.prodOrNatOrProdOrNat.left_inv (PeanoNatLayerShapeTo k x)]
+    exact hshape x
+  right_inv := by
+    intro k n
+    have hshape :
+        Function.RightInverse (PeanoNatLayerShapeInv k) (PeanoNatLayerShapeTo k) := by
+      intro x
+      cases x with
+      | inl p =>
+          cases p with
+          | mk lhs rhs =>
+            dsimp [PeanoNatLayerShapeTo, PeanoNatLayerShapeInv]
+            rw [(NumNatIso k).right_inv lhs, (NumNatIso k).right_inv rhs]
+      | inr tail =>
+          cases tail with
+          | inl child => rfl
+          | inr rest =>
+              cases rest with
+              | inl p =>
+                  cases p
+                  rfl
+              | inr child => rfl
+    change
+      CodeAlgebra.prodOrNatOrProdOrNat.toFun
+        (PeanoNatLayerShapeTo k
+          (PeanoNatLayerShapeInv k
+            (CodeAlgebra.prodOrNatOrProdOrNat.invFun n))) = n
+    rw [hshape (CodeAlgebra.prodOrNatOrProdOrNat.invFun n)]
+    exact CodeAlgebra.prodOrNatOrProdOrNat.right_inv n
 
 theorem PeanoNat_layer_child_lt :
     ∀ {k : Nat} (layer : CodeLayer PeanoPoly PeanoInversion (fun _ => Nat) k)
       (q : PeanoPoly.Pos
           (PeanoInversion.decode k layer.1).ctor
           (PeanoInversion.decode k layer.1).param),
-      layer.2 q < (PeanoNatLayerIso k).toFun layer := by
+      layer.2 q < (PeanoNatCodeLayerPresentation.iso k).toFun layer := by
   intro k layer
   cases layer with
   | mk code child =>
@@ -361,8 +373,8 @@ theorem PeanoNat_layer_child_lt :
           intro q
           cases q
           let c := child ()
-          simpa [c, PeanoNatLayerIso, PeanoNatLayerShapeIso, PeanoNatLayerShapeTo,
-            Iso.trans] using
+          simpa [c, CodeLayerPresentation.iso, PeanoNatCodeLayerPresentation,
+            PeanoNatLayerShapeTo] using
             CodeAlgebra.prodOrNatOrProdOrNat_toFun_inr_inl_lt c
       | implies =>
           change PeanoParam PeanoCtor.implies at param
@@ -370,12 +382,12 @@ theorem PeanoNat_layer_child_lt :
           cases out_eq
           intro q
           cases q
-          · simpa [PeanoNatLayerIso, PeanoNatLayerShapeIso, PeanoNatLayerShapeTo,
-              Iso.trans] using
+          · simpa [CodeLayerPresentation.iso, PeanoNatCodeLayerPresentation,
+              PeanoNatLayerShapeTo] using
               CodeAlgebra.prodOrNatOrProdOrNat_toFun_inr_inr_inl_fst_lt
                 (child false, child true)
-          · simpa [PeanoNatLayerIso, PeanoNatLayerShapeIso, PeanoNatLayerShapeTo,
-              Iso.trans] using
+          · simpa [CodeLayerPresentation.iso, PeanoNatCodeLayerPresentation,
+              PeanoNatLayerShapeTo] using
               CodeAlgebra.prodOrNatOrProdOrNat_toFun_inr_inr_inl_snd_lt
                 (child false, child true)
       | forallE =>
@@ -385,16 +397,18 @@ theorem PeanoNat_layer_child_lt :
           intro q
           cases q
           let c := child ()
-          simpa [c, PeanoNatLayerIso, PeanoNatLayerShapeIso, PeanoNatLayerShapeTo,
-            Iso.trans] using
+          simpa [c, CodeLayerPresentation.iso, PeanoNatCodeLayerPresentation,
+            PeanoNatLayerShapeTo] using
             CodeAlgebra.prodOrNatOrProdOrNat_toFun_inr_inr_inr_lt c
 
 def PeanoNatLayerPresentation : NatLayerPresentation PeanoPoly PeanoInversion where
-  layer := CodeLayerPresentation.ofIso PeanoNatLayerIso
+  layer := PeanoNatCodeLayerPresentation
   child_lt := by
     intro k n q
-    simpa [CodeLayerPresentation.iso, CodeLayerPresentation.ofIso] using
-      PeanoNat_layer_child_lt ((PeanoNatLayerIso k).invFun n) q
+    have h :=
+      PeanoNat_layer_child_lt ((PeanoNatCodeLayerPresentation.iso k).invFun n) q
+    rw [(PeanoNatCodeLayerPresentation.iso k).right_inv n] at h
+    exact h
 
 def PeanoNatGeneratedCode : GeneratedNatCode PeanoPoly :=
   PeanoNatLayerPresentation.generatedCode

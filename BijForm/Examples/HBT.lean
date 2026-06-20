@@ -168,105 +168,106 @@ readable syntax through generated layer coding. -/
 def HBTSyntaxIso (i : Nat) : Mu HBTPoly i ≃ᵢ HBTSyntax i :=
   HBTGeneratedCode.iso i
 
-def HBTNatZeroLayerIso :
-    CodeLayer HBTPoly HBTInversion (fun _ => Nat) 0 ≃ᵢ Nat where
-  toFun
-    | ⟨⟨.leaf, p, h⟩, _child⟩ => by
+def HBTNatCodeLayerPresentation :
+    CodeLayerPresentation HBTPoly HBTInversion (fun _ => Nat) (fun _ => Nat) where
+  toCarrier
+    | 0, ⟨⟨.leaf, p, h⟩, _child⟩ => by
         cases p with
         | mk height label =>
           cases h
           exact label
-    | ⟨⟨.branch, m, h⟩, _child⟩ => by cases h
-  invFun n := ⟨⟨HBTCtor.leaf, ((0, n) : Nat × Nat), rfl⟩, fun q => nomatch q⟩
-  left_inv := by
-    intro x
-    cases x with
-    | mk code child =>
-        cases code with
-        | mk ctor param out_eq =>
-          cases ctor with
-          | leaf =>
-              cases param with
-              | mk height label =>
-                cases out_eq
-                have hchild : (fun q => nomatch q) = child := by
-                  child_eta_empty
-                cases hchild
-                rfl
-          | branch => cases out_eq
-  right_inv := by
-    intro n
-    rfl
-
-def HBTNatSuccLayerSumIso (m : Nat) :
-    CodeLayer HBTPoly HBTInversion (fun _ => Nat) (m + 1) ≃ᵢ
-      (Nat ⊕ (Nat × Nat)) where
-  toFun
-    | ⟨⟨.leaf, p, h⟩, _child⟩ => by
+    | 0, ⟨⟨.branch, m, h⟩, _child⟩ => by cases h
+    | m + 1, ⟨⟨.leaf, p, h⟩, _child⟩ => by
         cases p with
         | mk height label =>
           cases h
-          exact Sum.inl label
-    | ⟨⟨.branch, _k, _h⟩, child⟩ => Sum.inr (child false, child true)
-  invFun
-    | Sum.inl label =>
-        ⟨⟨HBTCtor.leaf, ((m + 1, label) : Nat × Nat), rfl⟩, fun q => nomatch q⟩
-    | Sum.inr p => ⟨⟨HBTCtor.branch, (m : Nat), rfl⟩, fun
-        | false => p.1
-        | true => p.2⟩
+          exact CodeAlgebra.sumProdNat.toFun (Sum.inl label)
+    | m + 1, ⟨⟨.branch, _k, _h⟩, child⟩ =>
+        CodeAlgebra.sumProdNat.toFun (Sum.inr (child false, child true))
+  fromCarrier
+    | 0, n =>
+        ⟨⟨HBTCtor.leaf, ((0, n) : Nat × Nat), rfl⟩, fun q => nomatch q⟩
+    | m + 1, n =>
+        match CodeAlgebra.sumProdNat.invFun n with
+        | Sum.inl label =>
+            ⟨⟨HBTCtor.leaf, ((m + 1, label) : Nat × Nat), rfl⟩,
+              fun q => nomatch q⟩
+        | Sum.inr p => ⟨⟨HBTCtor.branch, (m : Nat), rfl⟩, fun
+            | false => p.1
+            | true => p.2⟩
   left_inv := by
-    intro x
-    cases x with
-    | mk code child =>
-        cases code with
-        | mk ctor param out_eq =>
-          cases ctor with
-          | leaf =>
-              cases param with
-              | mk height label =>
-                cases out_eq
-                have hchild : (fun q => nomatch q) = child := by
-                  child_eta_empty
-                cases hchild
-                rfl
-          | branch =>
-              cases out_eq
-              have hchild : child = (fun
-                  | false => child false
-                  | true => child true) := by
-                child_eta_bool
-              rw [hchild]
-              rfl
+    intro i x
+    cases i with
+    | zero =>
+        cases x with
+        | mk code child =>
+            cases code with
+            | mk ctor param out_eq =>
+              cases ctor with
+              | leaf =>
+                  cases param with
+                  | mk height label =>
+                    cases out_eq
+                    have hchild : (fun q => nomatch q) = child := by
+                      child_eta_empty
+                    cases hchild
+                    rfl
+              | branch => cases out_eq
+    | succ m =>
+        cases x with
+        | mk code child =>
+            cases code with
+            | mk ctor param out_eq =>
+              cases ctor with
+              | leaf =>
+                  cases param with
+                  | mk height label =>
+                    cases out_eq
+                    dsimp
+                    rw [CodeAlgebra.sumProdNat.left_inv (Sum.inl label)]
+                    have hchild : (fun q => nomatch q) = child := by
+                      child_eta_empty
+                    cases hchild
+                    rfl
+              | branch =>
+                  cases out_eq
+                  dsimp
+                  rw [CodeAlgebra.sumProdNat.left_inv (Sum.inr (child false, child true))]
+                  have hchild : child = (fun
+                      | false => child false
+                      | true => child true) := by
+                    child_eta_bool
+                  rw [hchild]
+                  rfl
   right_inv := by
-    intro x
-    cases x with
-    | inl label => rfl
-    | inr p =>
-        cases p
+    intro i n
+    cases i with
+    | zero =>
         rfl
-
-def HBTNatSuccLayerIso (m : Nat) :
-    CodeLayer HBTPoly HBTInversion (fun _ => Nat) (m + 1) ≃ᵢ Nat :=
-  Iso.trans (HBTNatSuccLayerSumIso m) CodeAlgebra.sumProdNat
-
-def HBTNatLayerIso :
-    ∀ i, CodeLayer HBTPoly HBTInversion (fun _ => Nat) i ≃ᵢ Nat
-  | 0 => HBTNatZeroLayerIso
-  | m + 1 => HBTNatSuccLayerIso m
+    | succ m =>
+        dsimp
+        generalize hsum : CodeAlgebra.sumProdNat.invFun n = s
+        have hright := CodeAlgebra.sumProdNat.right_inv n
+        rw [hsum] at hright
+        cases s with
+        | inl label =>
+            exact hright
+        | inr p =>
+            exact hright
 
 theorem HBTNat_child_lt :
     ∀ {i : Nat} (n : Nat)
       (q : HBTPoly.Pos
-          (HBTInversion.decode i ((HBTNatLayerIso i).invFun n).1).ctor
-          (HBTInversion.decode i ((HBTNatLayerIso i).invFun n).1).param),
-      (((HBTNatLayerIso i).invFun n).2 q) < n := by
+          (HBTInversion.decode i ((HBTNatCodeLayerPresentation.iso i).invFun n).1).ctor
+          (HBTInversion.decode i ((HBTNatCodeLayerPresentation.iso i).invFun n).1).param),
+      (((HBTNatCodeLayerPresentation.iso i).invFun n).2 q) < n := by
   intro i n
   cases i with
   | zero =>
       intro q
       cases q
   | succ m =>
-      dsimp [HBTNatLayerIso, HBTNatSuccLayerIso, Iso.trans]
+      dsimp [CodeLayerPresentation.iso, HBTNatCodeLayerPresentation]
       generalize hsum : CodeAlgebra.sumProdNat.invFun n = s
       cases s with
       | inl label =>
@@ -281,7 +282,7 @@ theorem HBTNat_child_lt :
             exact CodeAlgebra.sumProdNat_invFun_inr_snd_lt hsum
 
 def HBTNatLayerPresentation : NatLayerPresentation HBTPoly HBTInversion where
-  layer := CodeLayerPresentation.ofIso HBTNatLayerIso
+  layer := HBTNatCodeLayerPresentation
   child_lt := HBTNat_child_lt
 
 /-- Generated Nat coding data for height-bounded trees. The recursive encoder
