@@ -1248,6 +1248,34 @@ def renderTrace :
   | _active :: _frontier, bud node entry ok child, st =>
       renderTrace child (budStep node entry ok st)
 
+theorem renderTrace_validIds :
+    ∀ {frontier : List Sig.Port} (d : Diag Sig frontier)
+      (st : RenderState Sig frontier),
+      st.ValidIds → (renderTrace d st).ValidIds
+  | [], finish, st, hv => by
+      dsimp [renderTrace]
+      refine
+        { nextEndpoint_eq := hv.nextEndpoint_eq
+          frontier_bound := ?_
+          frontier_label := ?_
+          edge_left_bound := hv.edge_left_bound
+          edge_right_bound := hv.edge_right_bound
+          edge_left_label := hv.edge_left_label
+          edge_right_label := hv.edge_right_label
+          node_incident_length := hv.node_incident_length
+          node_incident_bound := hv.node_incident_bound
+          node_incident_label := hv.node_incident_label }
+      · intro id hmem
+        cases hmem
+      · intro n hid _hfrontier
+        cases hid
+  | _active :: _frontier, connect mate ok child, st, hv =>
+      renderTrace_validIds child (connectStep mate ok st)
+        (connectStep_validIds mate ok st hv)
+  | _active :: _frontier, bud node entry ok child, st, hv =>
+      renderTrace_validIds child (budStep node entry ok st)
+        (budStep_validIds node entry ok st hv)
+
 theorem renderTrace_connect
     {active : Sig.Port} {frontier : List Sig.Port}
     (mate : Fin frontier.length)
@@ -1348,6 +1376,12 @@ theorem budStep_endpoints_length
 def renderTraceFromBoundary {boundary : List Sig.Port} (d : Diag Sig boundary) :
     RenderState Sig [] :=
   renderTrace d (RenderState.initial Sig boundary)
+
+theorem renderTraceFromBoundary_validIds
+    {boundary : List Sig.Port} (d : Diag Sig boundary) :
+    (renderTraceFromBoundary d).ValidIds :=
+  renderTrace_validIds d (RenderState.initial Sig boundary)
+    (RenderState.initial_validIds boundary)
 
 theorem renderTraceFromBoundary_frontier_empty
     {boundary : List Sig.Port} (d : Diag Sig boundary) :

@@ -124,6 +124,8 @@ lake exe bijform
   - `StringDiagram.Diag.connectStep_validIds`
   - `StringDiagram.Diag.budStep_validIds`
   - `StringDiagram.Diag.renderTraceFromBoundary`
+  - `StringDiagram.Diag.renderTrace_validIds`
+  - `StringDiagram.Diag.renderTraceFromBoundary_validIds`
   - `StringDiagram.RenderState.ValidIds`
   - `StringDiagram.RenderState.initial_validIds`
   - `StringDiagram.RenderState.ValidIds.frontier_head_label`
