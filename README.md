@@ -160,6 +160,13 @@ lake exe bijform
   - `StringDiagram.OpenPortHypergraph.SearchState.firstPendingStepSearch?_exists_of_frontierComplete`
   - `StringDiagram.OpenPortHypergraph.SearchState.toDiag`
   - `StringDiagram.OpenPortHypergraph.fromGraph`
+  - `StringDiagram.OpenPortHypergraph.SearchState.GraphExhausted`
+  - `StringDiagram.OpenPortHypergraph.SearchState.pending_ne_nil_of_reachable_unprocessed`
+  - `StringDiagram.OpenPortHypergraph.SearchState.allNodesSeen_of_pending_nil`
+  - `StringDiagram.OpenPortHypergraph.SearchState.allEdgesProcessed_of_pending_nil`
+  - `StringDiagram.OpenPortHypergraph.SearchState.graphExhausted_of_pending_nil`
+  - `StringDiagram.OpenPortHypergraph.SearchState.pending_eq_nil_of_empty_frontier`
+  - `StringDiagram.OpenPortHypergraph.SearchState.graphExhausted_of_empty_frontier`
   - `StringDiagram.OpenPortHypergraph.firstPendingTraversalReady_of_frontierComplete`
   - `StringDiagram.diagOpenPortHypergraphIso` (unfinished proof gap)
 

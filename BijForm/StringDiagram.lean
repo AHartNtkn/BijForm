@@ -2738,6 +2738,147 @@ end SearchState
 def fromGraph (G : OpenPortHypergraph Sig boundary) : Diag Sig boundary :=
   (SearchState.initial G).toDiag (SearchState.initial_frontierComplete G)
 
+namespace SearchState
+
+/-- Semantic exhaustion for a finite search state: all constructors have been
+seen and all edges have been consumed by traversal steps. -/
+structure GraphExhausted {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port} (st : SearchState G frontier) : Prop where
+  allNodesSeen : ∀ node : Fin G.raw.nodeCount, node ∈ st.seenNodes
+  allEdgesProcessed : ∀ edge : Fin G.raw.edgeCount, edge ∈ st.processedEdges
+
+theorem pending_ne_nil_of_reachable_unprocessed
+    {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port} (st : SearchState G frontier)
+    (hcomplete : st.FrontierComplete)
+    {endpoint : Fin G.raw.endpointCount}
+    (hreach : PortHypergraph.PortReachesBoundary G.raw endpoint)
+    (hunprocessed : G.raw.endpointEdge endpoint ∉ st.processedEdges) :
+    st.pending ≠ [] := by
+  induction hreach with
+  | boundary b =>
+      intro hpendingNil
+      have hmem :
+          G.raw.boundaryPort b ∈ st.pending :=
+        hcomplete (G.raw.boundaryPort b) hunprocessed (.boundary b) rfl
+      rw [hpendingNil] at hmem
+      cases hmem
+  | throughEdge sameEdge _different _reach ih =>
+      apply ih
+      intro hprocessed
+      exact hunprocessed (by
+        rw [← sameEdge]
+        exact hprocessed)
+  | throughConstructor node fromSlot toSlot hp hq _reach ih =>
+      by_cases hseen : node ∈ st.seenNodes
+      · intro hpendingNil
+        have htoUnprocessed :
+            G.raw.endpointEdge ((G.raw.incident node).get toSlot) ∉
+              st.processedEdges := by
+          rw [hq]
+          exact hunprocessed
+        have hmem :
+            (G.raw.incident node).get toSlot ∈ st.pending :=
+          hcomplete ((G.raw.incident node).get toSlot) htoUnprocessed
+            (.constructor node toSlot) rfl hseen
+        rw [hpendingNil] at hmem
+        cases hmem
+      · have hfromUnprocessed :
+            G.raw.endpointEdge ((G.raw.incident node).get fromSlot) ∉
+              st.processedEdges :=
+          st.unseen_incident_unprocessed node hseen fromSlot
+        apply ih
+        rw [← hp]
+        exact hfromUnprocessed
+
+theorem allNodesSeen_of_pending_nil
+    {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port} (st : SearchState G frontier)
+    (hcomplete : st.FrontierComplete)
+    (hpendingNil : st.pending = []) :
+    ∀ node : Fin G.raw.nodeCount, node ∈ st.seenNodes := by
+  intro node
+  by_cases hseen : node ∈ st.seenNodes
+  · exact hseen
+  · rcases G.allConstructorsReachBoundary node with ⟨slot, hreach⟩
+    have hunprocessed :
+        G.raw.endpointEdge ((G.raw.incident node).get slot) ∉
+          st.processedEdges :=
+      st.unseen_incident_unprocessed node hseen slot
+    have hnonempty :=
+      st.pending_ne_nil_of_reachable_unprocessed hcomplete hreach hunprocessed
+    exact False.elim (hnonempty hpendingNil)
+
+theorem allEdgesProcessed_of_pending_nil
+    {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port} (st : SearchState G frontier)
+    (hcomplete : st.FrontierComplete)
+    (hpendingNil : st.pending = []) :
+    ∀ edge : Fin G.raw.edgeCount, edge ∈ st.processedEdges := by
+  intro edge
+  by_cases hprocessed : edge ∈ st.processedEdges
+  · exact hprocessed
+  · rcases G.raw.edge_two_endpoints edge with
+      ⟨left, _right, _hdiff, hleft, _hright, _hall⟩
+    have hleftUnprocessed :
+        G.raw.endpointEdge left ∉ st.processedEdges := by
+      intro hleftProcessed
+      exact hprocessed (by simpa [hleft] using hleftProcessed)
+    rcases G.raw.endpoint_owner left with ⟨owner, howner, _huniq⟩
+    cases owner with
+    | boundary boundaryIndex =>
+        have hownerEndpoint :
+            PortHypergraph.endpointOwnerEndpoint G.raw
+                (.boundary boundaryIndex) = left := by
+          simpa [PortHypergraph.endpointOwnerEndpoint] using howner
+        have hmem :
+            left ∈ st.pending :=
+          hcomplete left hleftUnprocessed (.boundary boundaryIndex)
+            hownerEndpoint
+        rw [hpendingNil] at hmem
+        cases hmem
+    | constructor node slot =>
+        have hownerEndpoint :
+            PortHypergraph.endpointOwnerEndpoint G.raw
+                (.constructor node slot) = left := by
+          simpa [PortHypergraph.endpointOwnerEndpoint] using howner
+        have hseen : node ∈ st.seenNodes :=
+          st.allNodesSeen_of_pending_nil hcomplete hpendingNil node
+        have hmem :
+            left ∈ st.pending :=
+          hcomplete left hleftUnprocessed (.constructor node slot)
+            hownerEndpoint hseen
+        rw [hpendingNil] at hmem
+        cases hmem
+
+theorem graphExhausted_of_pending_nil
+    {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port} (st : SearchState G frontier)
+    (hcomplete : st.FrontierComplete)
+    (hpendingNil : st.pending = []) :
+    st.GraphExhausted where
+  allNodesSeen := st.allNodesSeen_of_pending_nil hcomplete hpendingNil
+  allEdgesProcessed := st.allEdgesProcessed_of_pending_nil hcomplete hpendingNil
+
+theorem pending_eq_nil_of_empty_frontier
+    {G : OpenPortHypergraph Sig boundary} (st : SearchState G []) :
+    st.pending = [] := by
+  cases hpending : st.pending with
+  | nil => rfl
+  | cons active rest =>
+      have hlabels := st.pending_labels
+      rw [hpending] at hlabels
+      simp at hlabels
+
+theorem graphExhausted_of_empty_frontier
+    {G : OpenPortHypergraph Sig boundary} (st : SearchState G [])
+    (hcomplete : st.FrontierComplete) :
+    st.GraphExhausted :=
+  st.graphExhausted_of_pending_nil hcomplete
+    st.pending_eq_nil_of_empty_frontier
+
+end SearchState
+
 def isoRel (G H : OpenPortHypergraph Sig boundary) : Prop :=
   Nonempty (PortHypergraphIso G.raw H.raw)
 
