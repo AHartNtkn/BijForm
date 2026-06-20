@@ -457,12 +457,9 @@ def NFLayerShapeCodingData : LayerShapeCodingData NFSignature where
     intro Γ t layer q
     exact NFGeneratedLayer_child_rank_lt layer q
 
-def NFCodeCodingData : CodeCodingData NFSignature :=
-  NFLayerShapeCodingData.toCodeCodingData
-
 def NFSyntaxCodeIso (Γ : List NFSort) (t : NFSort) :
     NFTerm Γ t ≃ᵢ NFCode (Γ, t) :=
-  NFCodeCodingData.syntaxCodeIso Γ t
+  NFLayerShapeCodingData.syntaxCodeIso Γ t
 
 def NormalExpNatIso (Γ : List NFSort) : NormalExp Γ ≃ᵢ Nat :=
   NFSyntaxCodeIso Γ .normalExp

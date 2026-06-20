@@ -109,7 +109,7 @@ lake exe bijform
   - `BijForm.Examples.Sorted`
   - `BijForm.Examples.FinChain`
   - `BijForm.Examples.Lambda`
-  - `BijForm.Examples.TypedBinding`
+  - `BijForm.TypedBinding`
   - `BijForm.Examples.TypedBinding.NF`
   - `BijForm.Examples.Num`
   - `BijForm.Examples.Peano`
@@ -289,7 +289,7 @@ Main results:
 
 ### Typed Binding Signatures
 
-Module: `BijForm.Examples.TypedBinding`
+Module: `BijForm.TypedBinding`
 
 Generic syntax:
 
@@ -307,15 +307,11 @@ Main results:
 - `TypedBinding.PolyOf (S) : DepPoly (List Ty x Ty)`
 - `TypedBinding.inversion (S) : OutputIndexInversion (TypedBinding.PolyOf S)`
 - `TypedBinding.syntaxIso (S) (Γ) (t) : Iso (Mu (TypedBinding.PolyOf S) (Γ, t)) (TypedBinding.Term S Γ t)`
-- `TypedBinding.CodeCodingData` packages arbitrary index-dependent concrete
-  carrier codings and layer-local rank proofs.
 - `TypedBinding.LayerShape` and `TypedBinding.CtorLayer` generate the
   one-step variable/constructor layer shape from the signature.
 - `TypedBinding.LayerShapeCodingData` packages carrier codings from that
   generated layer shape, so instances do not supply a raw `CodeLayer`
   equivalence.
-- `TypedBinding.ShapeCodingData` packages the concrete one-step carrier coding
-  and layer-local rank proof needed to obtain generated shape encodings.
 
 ### Typed Binding Normal Forms
 
@@ -329,7 +325,7 @@ expressions still code to `Nat`.
 
 Main results for this instance:
 
-- `TypedBinding.NFCodeCodingData : TypedBinding.CodeCodingData TypedBinding.NFSignature`
+- `TypedBinding.NFLayerShapeCodingData : TypedBinding.LayerShapeCodingData TypedBinding.NFSignature`
 - `TypedBinding.NFSyntaxCodeIso (Γ) (t) : Iso (TypedBinding.NFTerm Γ t) (TypedBinding.NFCode (Γ, t))`
 - `TypedBinding.NormalExpNatIso (Γ) : Iso (TypedBinding.NormalExp Γ) Nat`
 - `TypedBinding.AppTermCodeIso (Γ) : Iso (TypedBinding.AppTerm Γ) (Fin (TypedBinding.appTermCount Γ) x Nat)`

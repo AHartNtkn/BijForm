@@ -452,43 +452,6 @@ def iso (Γ : List Ty) (t : Ty) :
 
 end LayerShape
 
-/-- Coding data for a binding signature with an arbitrary index-dependent
-carrier family.  The rank proof is stated on the decoded one-step layer; the
-generic dependent-polynomial framework turns it into the encoded-parent
-well-foundedness proof. -/
-structure CodeCodingData {Ty : Type} (S : Signature Ty) where
-  Code : Poly.Ix S → Type
-  layer : ∀ i, CodeLayer (PolyOf S) (inversion S) Code i ≃ᵢ Code i
-  rank : ∀ i, Code i → Nat
-  layer_child_rank_lt :
-    ∀ {i : Poly.Ix S} (x : CodeLayer (PolyOf S) (inversion S) Code i)
-      (q : (PolyOf S).Pos
-          ((inversion S).decode i x.1).ctor
-          ((inversion S).decode i x.1).param),
-      rank ((PolyOf S).input ((inversion S).decode i x.1).param q) (x.2 q) <
-        rank i ((layer i).toFun x)
-
-namespace CodeCodingData
-
-variable {Ty : Type} {S : Signature Ty}
-
-def toGeneratedCode (D : CodeCodingData S) :
-    GeneratedCode (PolyOf S) D.Code :=
-  GeneratedCode.ofLayerChildRank (inversion S) D.layer D.rank
-    (by
-      intro i x q
-      exact D.layer_child_rank_lt x q)
-
-def iso (D : CodeCodingData S) (Γ : List Ty) (t : Ty) :
-    Mu (PolyOf S) (Γ, t) ≃ᵢ D.Code (Γ, t) :=
-  D.toGeneratedCode.iso (Γ, t)
-
-def syntaxCodeIso (D : CodeCodingData S) (Γ : List Ty) (t : Ty) :
-    Term S Γ t ≃ᵢ D.Code (Γ, t) :=
-  Iso.trans (Iso.symm (syntaxIso S Γ t)) (D.iso Γ t)
-
-end CodeCodingData
-
 /-- Layer-local descent obligation for carrier codings built from the generated
 typed-binding layer shape.  The child comes from the decoded raw layer, but the
 parent code is computed by first passing that layer through the generated
@@ -531,82 +494,24 @@ def layer (D : LayerShapeCodingData S) (i : Poly.Ix S) :
       exact Iso.trans (LayerShape.iso (S := S) (Code := D.Code) Γ t)
         (D.layerShape Γ t)
 
-def toCodeCodingData (D : LayerShapeCodingData S) :
-    CodeCodingData S where
-  Code := D.Code
-  layer := D.layer
-  rank := D.rank
-  layer_child_rank_lt := by
-    intro i layer q
-    cases i with
-    | mk Γ t =>
-        exact D.shape_child_rank_lt layer q
-
 def toGeneratedCode (D : LayerShapeCodingData S) :
     GeneratedCode (PolyOf S) D.Code :=
-  D.toCodeCodingData.toGeneratedCode
+  GeneratedCode.ofLayerChildRank (inversion S) D.layer D.rank
+    (by
+      intro i layer q
+      cases i with
+      | mk Γ t =>
+          exact D.shape_child_rank_lt layer q)
 
 def iso (D : LayerShapeCodingData S) (Γ : List Ty) (t : Ty) :
     Mu (PolyOf S) (Γ, t) ≃ᵢ D.Code (Γ, t) :=
-  D.toCodeCodingData.iso Γ t
+  D.toGeneratedCode.iso (Γ, t)
 
 def syntaxCodeIso (D : LayerShapeCodingData S) (Γ : List Ty) (t : Ty) :
     Term S Γ t ≃ᵢ D.Code (Γ, t) :=
-  D.toCodeCodingData.syntaxCodeIso Γ t
+  Iso.trans (Iso.symm (syntaxIso S Γ t)) (D.iso Γ t)
 
 end LayerShapeCodingData
-
-/-- Shape-coding data for a binding signature.  The generic binding module
-generates the polynomial and syntax route; a concrete signature supplies this
-one-step shape coding and rank proof when it wants an actual code carrier. -/
-structure ShapeCodingData {Ty : Type} (S : Signature Ty) where
-  shape : Poly.Ix S → CodeShape
-  layer : ∀ i,
-    CodeLayer (PolyOf S) (inversion S) (fun j => (shape j).Carrier) i ≃ᵢ
-      (shape i).Carrier
-  rank : ∀ i, (shape i).Carrier → Nat
-  layer_child_rank_lt :
-    ∀ {i : Poly.Ix S}
-      (x : CodeLayer (PolyOf S) (inversion S) (fun j => (shape j).Carrier) i)
-      (q : (PolyOf S).Pos
-          ((inversion S).decode i x.1).ctor
-          ((inversion S).decode i x.1).param),
-      rank ((PolyOf S).input ((inversion S).decode i x.1).param q) (x.2 q) <
-        rank i ((layer i).toFun x)
-
-namespace ShapeCodingData
-
-variable {Ty : Type} {S : Signature Ty}
-
-def toCodeCodingData (D : ShapeCodingData S) :
-    CodeCodingData S where
-  Code := fun i => (D.shape i).Carrier
-  layer := D.layer
-  rank := D.rank
-  layer_child_rank_lt := by
-    intro i x q
-    exact D.layer_child_rank_lt x q
-
-def toGeneratedShapeCode (D : ShapeCodingData S) :
-    GeneratedShapeCode (PolyOf S) where
-  shape := D.shape
-  inversion := inversion S
-  layer := D.layer
-  rank := D.rank
-  child_rank_lt := by
-    intro i z q
-    simpa using
-      D.layer_child_rank_lt ((D.layer i).invFun z) q
-
-def iso (D : ShapeCodingData S) (Γ : List Ty) (t : Ty) :
-    Mu (PolyOf S) (Γ, t) ≃ᵢ (D.shape (Γ, t)).Carrier :=
-  D.toCodeCodingData.iso Γ t
-
-def syntaxCarrierIso (D : ShapeCodingData S) (Γ : List Ty) (t : Ty) :
-    Term S Γ t ≃ᵢ (D.shape (Γ, t)).Carrier :=
-  D.toCodeCodingData.syntaxCodeIso Γ t
-
-end ShapeCodingData
 
 end TypedBinding
 end BijForm
