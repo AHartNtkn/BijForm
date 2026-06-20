@@ -1720,6 +1720,65 @@ theorem bud_compatible {G : OpenPortHypergraph Sig boundary}
   rw [hslot] at hcompat
   exact hcompat
 
+def connectChild {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
+    (st : SearchState G (activeLabel :: restLabels))
+    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest)
+    (mate : Fin rest.length)
+    (hmate : PortHypergraph.EdgeMate G.raw active (rest.get mate)) :
+    SearchState G (eraseFin restLabels (st.restLabelIndex hpending mate)) where
+  pending := eraseFin rest mate
+  pending_labels := by
+    calc
+      (eraseFin rest mate).map G.raw.endpointLabel =
+          eraseFin (rest.map G.raw.endpointLabel) (Fin.cast (by simp) mate) :=
+        map_eraseFin G.raw.endpointLabel rest mate
+      _ = eraseFin restLabels (st.restLabelIndex hpending mate) := by
+        have hrest := st.rest_labels_eq hpending
+        cases hrest
+        simp [restLabelIndex]
+  pending_nodup :=
+    nodup_eraseFin rest mate (st.rest_nodup hpending)
+  seenNodes := st.seenNodes
+  processedEdges := G.raw.endpointEdge active :: st.processedEdges
+  pending_unprocessed := by
+    intro endpoint hmem hprocessed
+    have hrestMem : endpoint ∈ rest :=
+      mem_of_mem_eraseFin rest mate hmem
+    have hstPending : endpoint ∈ st.pending := by
+      rw [hpending]
+      right
+      exact hrestMem
+    simp at hprocessed
+    rcases hprocessed with hnew | hold
+    · have hactiveNe : active ≠ endpoint := by
+        intro hactiveEndpoint
+        exact st.active_not_mem_rest hpending (by
+          simpa [hactiveEndpoint] using hrestMem)
+      have hendpointMate : endpoint = rest.get mate := by
+        rcases PortHypergraph.edgeMate_existsUnique G.raw active with
+          ⟨uniqueMate, _huniqueMate, huniq⟩
+        have hmateEq : rest.get mate = uniqueMate :=
+          huniq (rest.get mate) hmate
+        have hendpointEq : endpoint = uniqueMate :=
+          huniq endpoint ⟨hactiveNe, hnew.symm⟩
+        exact hendpointEq.trans hmateEq.symm
+      have hmateNotMem :
+          rest.get mate ∉ eraseFin rest mate :=
+        get_not_mem_eraseFin_of_nodup rest mate (st.rest_nodup hpending)
+      exact hmateNotMem (by simpa [hendpointMate] using hmem)
+    · exact st.pending_unprocessed endpoint hstPending hold
+  pending_owner_seen := by
+    intro endpoint hmem owner howner
+    have hrestMem : endpoint ∈ rest :=
+      mem_of_mem_eraseFin rest mate hmem
+    have hstPending : endpoint ∈ st.pending := by
+      rw [hpending]
+      right
+      exact hrestMem
+    exact st.pending_owner_seen endpoint hstPending owner howner
+
 end SearchState
 
 /--
