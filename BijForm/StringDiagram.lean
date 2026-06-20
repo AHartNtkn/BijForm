@@ -1349,6 +1349,15 @@ structure SearchState (G : OpenPortHypergraph Sig boundary)
   pending_unprocessed :
     ∀ endpoint : Fin G.raw.endpointCount,
       endpoint ∈ pending → G.raw.endpointEdge endpoint ∉ processedEdges
+  pending_owner_seen :
+    ∀ endpoint : Fin G.raw.endpointCount,
+      endpoint ∈ pending →
+        ∀ owner : EndpointOwner boundary.length G.raw.nodeCount
+            (fun node => (G.raw.incident node).length),
+          PortHypergraph.endpointOwnerEndpoint G.raw owner = endpoint →
+            match owner with
+            | .boundary _ => True
+            | .constructor node _ => node ∈ seenNodes
 
 namespace SearchState
 
@@ -1395,6 +1404,41 @@ def initial (G : OpenPortHypergraph Sig boundary) : SearchState G boundary where
   pending_unprocessed := by
     intro _endpoint _hpending
     simp
+  pending_owner_seen := by
+    intro endpoint hpending owner howner
+    rw [List.mem_ofFn] at hpending
+    rcases hpending with ⟨boundaryIndex, hboundary⟩
+    cases owner with
+    | boundary _ =>
+        trivial
+    | constructor node slot =>
+        have hboundaryOwner :
+            PortHypergraph.endpointOwnerEndpoint G.raw
+                (.boundary boundaryIndex) = endpoint := by
+          exact hboundary
+        have hconstructorOwner :
+            PortHypergraph.endpointOwnerEndpoint G.raw
+                (.constructor node slot) = endpoint := howner
+        rcases G.raw.endpoint_owner endpoint with ⟨owner₀, _howner₀, huniq⟩
+        have hboundaryEq :
+            (.boundary boundaryIndex :
+              EndpointOwner boundary.length G.raw.nodeCount
+                (fun node => (G.raw.incident node).length)) = owner₀ := by
+          apply huniq
+          simpa [PortHypergraph.endpointOwnerEndpoint] using hboundaryOwner
+        have hconstructorEq :
+            (.constructor node slot :
+              EndpointOwner boundary.length G.raw.nodeCount
+                (fun node => (G.raw.incident node).length)) = owner₀ := by
+          apply huniq
+          simpa [PortHypergraph.endpointOwnerEndpoint] using hconstructorOwner
+        have himpossible :
+            (.constructor node slot :
+              EndpointOwner boundary.length G.raw.nodeCount
+                (fun node => (G.raw.incident node).length)) =
+              .boundary boundaryIndex := by
+          exact hconstructorEq.trans hboundaryEq.symm
+        cases himpossible
 
 theorem initial_frontierComplete (G : OpenPortHypergraph Sig boundary) :
     (initial G).FrontierComplete := by
@@ -1494,6 +1538,19 @@ theorem restLabelIndex_get {G : OpenPortHypergraph Sig boundary}
   have hrest := st.rest_labels_eq hpending
   cases hrest
   simp [restLabelIndex]
+
+theorem constructor_seen_of_pending {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port}
+    (st : SearchState G frontier)
+    {endpoint : Fin G.raw.endpointCount}
+    (hpending : endpoint ∈ st.pending)
+    {node : Fin G.raw.nodeCount}
+    {slot : Fin (G.raw.incident node).length}
+    (howner :
+      PortHypergraph.endpointOwnerEndpoint G.raw (.constructor node slot) =
+        endpoint) :
+    node ∈ st.seenNodes :=
+  st.pending_owner_seen endpoint hpending (.constructor node slot) howner
 
 end SearchState
 
