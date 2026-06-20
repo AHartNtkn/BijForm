@@ -119,6 +119,39 @@ theorem list_get_append_right {α : Type} (xs ys : List α)
   change (xs ++ ys)[i] = ys[i - xs.length]
   exact List.getElem_append_right hi
 
+def listPrefixIndex {α : Type} {pref full suffix : List α}
+    (hfull : full = pref ++ suffix) (i : Fin pref.length) :
+    Fin full.length :=
+  ⟨i.val, by
+    rw [hfull]
+    simp
+    omega⟩
+
+theorem listPrefixIndex_get {α : Type} {pref full suffix : List α}
+    (hfull : full = pref ++ suffix) (i : Fin pref.length) :
+    full.get (listPrefixIndex hfull i) = pref.get i := by
+  have hbound : i.val < full.length := by
+    rw [hfull]
+    simp
+    omega
+  have hopt :
+      full[i.val]? = pref[i.val]? := by
+    rw [hfull]
+    exact List.getElem?_append_left (l₁ := pref) (l₂ := suffix) i.isLt
+  have hfullSome :
+      full[i.val]? = some (full.get ⟨i.val, hbound⟩) :=
+    List.getElem?_eq_getElem hbound
+  have hprefSome :
+      pref[i.val]? = some (pref.get i) :=
+    List.getElem?_eq_getElem i.isLt
+  rw [hfullSome, hprefSome] at hopt
+  injection hopt with hget
+
+theorem listPrefixIndex_val {α : Type} {pref full suffix : List α}
+    (hfull : full = pref ++ suffix) (i : Fin pref.length) :
+    (listPrefixIndex hfull i).val = i.val :=
+  rfl
+
 theorem append_pointwise_relation {α β : Type} {R : α → β → Prop}
     {leftIds rightIds : List α} {leftLabels rightLabels : List β}
     (hleftLen : leftIds.length = leftLabels.length)
@@ -8063,6 +8096,115 @@ theorem toOpenPortHypergraph_bud_initial_search
       hconnect nodeIndex slot hmate hunseen with
     ⟨hmate', hunseen', hstep⟩
   exact ⟨nodeIndex, slot, hmate', hunseen', hstep⟩
+
+/--
+Arbitrary-prefix version of rendered `connect` recognition.  If a completed
+render trace is viewed through semantic graph evidence, the edge introduced by
+the current top-level `connect` makes the active frontier endpoint and selected
+mate endpoint edge-mates in that semantic graph.
+-/
+theorem renderTrace_connect_edgeMate_of_invariants
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (child : Diag Sig (eraseFin frontier mate))
+    (st : RenderState Sig (active :: frontier))
+    {boundary : List Sig.Port}
+    (hv : (renderTrace (Diag.connect mate ok child) st).ValidIds)
+    (hp : (renderTrace (Diag.connect mate ok child) st).EndpointPartition)
+    (hn : (renderTrace (Diag.connect mate ok child) st).NodeIncidentNodup)
+    (pref :
+      (renderTrace (Diag.connect mate ok child) st).EndpointPrefix boundary)
+    (ho :
+      (renderTrace (Diag.connect mate ok child) st).OwnerIdPartition boundary)
+    {activeId : Nat} {restIds : List Nat}
+    (hids : st.frontierIds = activeId :: restIds) :
+    let final := renderTrace (Diag.connect mate ok child) st
+    let G :=
+      (RenderState.portHypergraphEvidenceOfInvariants
+        hv hp hn pref ho).toPortHypergraph
+    let mateId :=
+      restIds.get (Fin.cast (by
+        have hlen := st.frontierIds_length
+        rw [hids] at hlen
+        exact (Nat.succ.inj hlen).symm) mate)
+    ∃ (hactive : activeId < final.endpoints.length)
+      (hmateBound : mateId < final.endpoints.length),
+      PortHypergraph.EdgeMate G
+        ⟨activeId, hactive⟩ ⟨mateId, hmateBound⟩ := by
+  intro final G mateId
+  let edge : RenderEdge Sig :=
+    { label := Sig.portEdge active
+      leftLabel := active
+      rightLabel := frontier.get mate
+      left := activeId
+      right := mateId
+      left_label := rfl
+      right_label := (Sig.compatible_edge ok).symm
+      compatible := ok }
+  have hedgeMem : edge ∈ final.edges := by
+    simpa [final, edge, mateId] using
+      renderTrace_connect_edge_mem mate ok child st hids
+  rcases list_exists_get_of_mem final.edges hedgeMem with
+    ⟨edgeIndex, hedgeIndex⟩
+  have hleftEq : (final.edges.get edgeIndex).left = activeId := by
+    have h := congrArg RenderEdge.left hedgeIndex
+    simpa [edge] using h
+  have hrightEq : (final.edges.get edgeIndex).right = mateId := by
+    have h := congrArg RenderEdge.right hedgeIndex
+    simpa [edge] using h
+  have hleftEqRaw :
+      (((renderTrace (Diag.connect mate ok child) st).edges.get edgeIndex).left) =
+        activeId := by
+    simpa [final] using hleftEq
+  have hrightEqRaw :
+      (((renderTrace (Diag.connect mate ok child) st).edges.get edgeIndex).right) =
+        mateId := by
+    simpa [final] using hrightEq
+  have hactiveBound :
+      activeId < final.endpoints.length := by
+    have h := hv.edge_left_bound (final.edges.get edgeIndex)
+      (List.get_mem final.edges edgeIndex)
+    rw [hleftEqRaw] at h
+    simpa [final] using h
+  have hmateBound :
+      mateId < final.endpoints.length := by
+    have h := hv.edge_right_bound (final.edges.get edgeIndex)
+      (List.get_mem final.edges edgeIndex)
+    rw [hrightEqRaw] at h
+    simpa [final] using h
+  refine ⟨hactiveBound, hmateBound, ?_⟩
+  have hactiveVal :
+      (⟨activeId, hactiveBound⟩ : Fin final.endpoints.length).val =
+        (final.edges.get edgeIndex).left :=
+    hleftEq.symm
+  have hmateVal :
+      (⟨mateId, hmateBound⟩ : Fin final.endpoints.length).val =
+        (final.edges.get edgeIndex).right :=
+    hrightEq.symm
+  constructor
+  · intro hsame
+    have hval := congrArg (fun endpoint => endpoint.val) hsame
+    have hne := RenderState.edge_left_ne_right_of_partition hp edgeIndex
+    exact hne (by
+      calc
+        (final.edges.get edgeIndex).left =
+            (⟨activeId, hactiveBound⟩ : Fin final.endpoints.length).val :=
+          hactiveVal.symm
+        _ = (⟨mateId, hmateBound⟩ : Fin final.endpoints.length).val := hval
+        _ = (final.edges.get edgeIndex).right := hmateVal)
+  · have hleft :=
+      RenderState.endpointEdgeOfPartition_eq_of_endpoint_side hp
+        (⟨activeId, hactiveBound⟩ : Fin final.endpoints.length)
+        edgeIndex (Or.inl hactiveVal)
+    have hright :=
+      RenderState.endpointEdgeOfPartition_eq_of_endpoint_side hp
+        (⟨mateId, hmateBound⟩ : Fin final.endpoints.length)
+        edgeIndex (Or.inr hmateVal)
+    simpa [G, RenderState.PortHypergraphEvidence.toPortHypergraph,
+      RenderState.portHypergraphEvidenceOfInvariants,
+      RenderState.edgeEvidenceOfPartition,
+      RenderState.endpointEdgeEvidenceOfPartition] using hleft.trans hright.symm
 
 end Diag
 

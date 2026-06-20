@@ -182,6 +182,9 @@ lake exe bijform
   - `StringDiagram.Diag.renderTraceFromBoundary_boundaryEvidence`
   - `StringDiagram.Diag.renderTraceFromBoundary_incidenceEvidence`
   - `StringDiagram.Diag.renderTraceFromBoundary_graphEvidence`
+  - `StringDiagram.listPrefixIndex`
+  - `StringDiagram.listPrefixIndex_get`
+  - `StringDiagram.listPrefixIndex_val`
   - `StringDiagram.nodup_append_left`
   - `StringDiagram.nodup_append_right`
   - `StringDiagram.nodup_append_disjoint`
@@ -255,6 +258,7 @@ lake exe bijform
   - `StringDiagram.Diag.toOpenPortHypergraph_bud_boundary_entry_edgeMate`
   - `StringDiagram.Diag.toOpenPortHypergraph_connect_initial_search`
   - `StringDiagram.Diag.toOpenPortHypergraph_bud_initial_search`
+  - `StringDiagram.Diag.renderTrace_connect_edgeMate_of_invariants`
   - `StringDiagram.EndpointOwner`
   - `StringDiagram.PortHypergraph`
   - `StringDiagram.PortHypergraph.endpointOwnersOf`
