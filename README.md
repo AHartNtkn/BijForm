@@ -133,9 +133,6 @@ lake exe bijform
   - `StringDiagram.OpenPortHypergraph`
   - `StringDiagram.OpenPortHypergraph.TraversalState`
   - `StringDiagram.PortHypergraphIso`
-  - `StringDiagram.CanonicalTraversalBlueprint`
-  - `StringDiagram.CanonicalTraversalBlueprint.semanticCodeIso` (blueprint-level)
-  - `StringDiagram.CanonicalTraversalBlueprint.semanticMuIso` (blueprint-level)
   - `StringDiagram.OpenPortHypergraphUpToIso`
   - `StringDiagram.diagOpenPortHypergraphIso` (unfinished proof gap)
 

@@ -1273,66 +1273,6 @@ def OpenPortHypergraphUpToIso (Sig : Signature) (boundary : List Sig.Port) :
   Quotient (OpenPortHypergraph.isoSetoid Sig boundary)
 
 /--
-Blueprint for the canonical search procedure.  This structure records the
-data that a completed owned traversal must provide; it is not the completed
-semantic bridge.
--/
-structure CanonicalTraversalBlueprint (Sig : Signature) where
-  toGraph :
-    ∀ {boundary : List Sig.Port}, Diag Sig boundary → OpenPortHypergraph Sig boundary
-  fromGraph :
-    ∀ {boundary : List Sig.Port}, OpenPortHypergraph Sig boundary → Diag Sig boundary
-  from_to :
-    ∀ {boundary : List Sig.Port} (d : Diag Sig boundary),
-      fromGraph (toGraph d) = d
-  to_from :
-    ∀ {boundary : List Sig.Port} (G : OpenPortHypergraph Sig boundary),
-      OpenPortHypergraph.isoRel (toGraph (fromGraph G)) G
-  from_isoRel :
-    ∀ {boundary : List Sig.Port} {G H : OpenPortHypergraph Sig boundary},
-      OpenPortHypergraph.isoRel G H → fromGraph G = fromGraph H
-
-/-- A completed traversal blueprint induces the quotient semantic isomorphism. -/
-def CanonicalTraversalBlueprint.iso (T : CanonicalTraversalBlueprint Sig)
-    (boundary : List Sig.Port) :
-    Diag Sig boundary ≃ᵢ OpenPortHypergraphUpToIso Sig boundary where
-  toFun d := Quotient.mk (OpenPortHypergraph.isoSetoid Sig boundary) (T.toGraph d)
-  invFun q :=
-    Quotient.liftOn q
-      (fun G => T.fromGraph G)
-      (by
-        intro G H h
-        exact T.from_isoRel h)
-  left_inv := by
-    intro d
-    exact T.from_to d
-  right_inv := by
-    intro q
-    refine Quotient.inductionOn q ?_
-    intro G
-    apply Quotient.sound
-    exact T.to_from G
-
-/--
-Transport the semantic quotient to the generated traversal-code family.  This
-is blueprint-level: constructing the required traversal data is the remaining
-semantic bridge obligation below.
--/
-def CanonicalTraversalBlueprint.semanticCodeIso (T : CanonicalTraversalBlueprint Sig)
-    (boundary : List Sig.Port) :
-    OpenPortHypergraphUpToIso Sig boundary ≃ᵢ Diag Sig boundary :=
-  Iso.symm (T.iso boundary)
-
-/--
-Transport the semantic quotient to the dependent-polynomial initial algebra.
-This is blueprint-level and depends on completed canonical traversal data.
--/
-def CanonicalTraversalBlueprint.semanticMuIso (T : CanonicalTraversalBlueprint Sig)
-    (boundary : List Sig.Port) :
-    OpenPortHypergraphUpToIso Sig boundary ≃ᵢ Mu (poly Sig) boundary :=
-  Iso.trans (T.semanticCodeIso boundary) (Iso.symm (syntaxIso Sig boundary))
-
-/--
 UNFINISHED semantic bridge: typed rooted open diagrams should present exactly
 the finite typed open endpoint/edge/node port-hypergraphs whose edges and
 nodes are labeled, whose external boundary endpoints are ordered, and whose
