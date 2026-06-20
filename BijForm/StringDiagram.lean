@@ -1508,6 +1508,11 @@ structure SearchState (G : OpenPortHypergraph Sig boundary)
             match owner with
             | .boundary _ => True
             | .constructor node _ => node ∈ seenNodes
+  unseen_incident_unprocessed :
+    ∀ node : Fin G.raw.nodeCount,
+      node ∉ seenNodes →
+        ∀ slot : Fin (G.raw.incident node).length,
+          G.raw.endpointEdge ((G.raw.incident node).get slot) ∉ processedEdges
 
 namespace SearchState
 
@@ -1589,6 +1594,9 @@ def initial (G : OpenPortHypergraph Sig boundary) : SearchState G boundary where
               .boundary boundaryIndex := by
           exact hconstructorEq.trans hboundaryEq.symm
         cases himpossible
+  unseen_incident_unprocessed := by
+    intro _node _hunseen _slot
+    simp
 
 theorem initial_frontierComplete (G : OpenPortHypergraph Sig boundary) :
     (initial G).FrontierComplete := by
@@ -1859,6 +1867,46 @@ def connectChild {G : OpenPortHypergraph Sig boundary}
       right
       exact hrestMem
     exact st.pending_owner_seen endpoint hstPending owner howner
+  unseen_incident_unprocessed := by
+    intro node hunseen slot hprocessed
+    simp at hprocessed
+    rcases hprocessed with hnew | hold
+    · let endpoint := (G.raw.incident node).get slot
+      have hactiveNe : active ≠ endpoint := by
+        intro hactiveEndpoint
+        have hactivePending : active ∈ st.pending := by
+          rw [hpending]
+          simp
+        have hownerActive :
+            PortHypergraph.endpointOwnerEndpoint G.raw
+                (.constructor node slot) = active := by
+          change (G.raw.incident node).get slot = active
+          exact hactiveEndpoint.symm
+        have hseen : node ∈ st.seenNodes :=
+          st.constructor_seen_of_pending hactivePending hownerActive
+        exact hunseen hseen
+      have hendpointMate :
+          endpoint = rest.get mate := by
+        rcases PortHypergraph.edgeMate_existsUnique G.raw active with
+          ⟨uniqueMate, _huniqueMate, huniq⟩
+        have hmateEq : rest.get mate = uniqueMate :=
+          huniq (rest.get mate) hmate
+        have hendpointEq : endpoint = uniqueMate :=
+          huniq endpoint ⟨hactiveNe, hnew.symm⟩
+        exact hendpointEq.trans hmateEq.symm
+      have hmatePending : rest.get mate ∈ st.pending := by
+        rw [hpending]
+        right
+        exact List.get_mem rest mate
+      have hownerMate :
+          PortHypergraph.endpointOwnerEndpoint G.raw
+              (.constructor node slot) = rest.get mate := by
+        change (G.raw.incident node).get slot = rest.get mate
+        exact hendpointMate
+      have hseen : node ∈ st.seenNodes :=
+        st.constructor_seen_of_pending hmatePending hownerMate
+      exact hunseen hseen
+    · exact st.unseen_incident_unprocessed node hunseen slot hold
 
 end SearchState
 
