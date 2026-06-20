@@ -4586,6 +4586,102 @@ def toOpenPortHypergraph
     OpenPortHypergraph Sig boundary :=
   (renderTraceFromBoundary_openEvidence d).toOpenPortHypergraph
 
+/--
+Bridge support for the syntax round-trip: a rendered top-level `connect`
+really makes the first ordered boundary endpoint an edge mate of the selected
+later boundary endpoint in the semantic graph.
+-/
+theorem toOpenPortHypergraph_connect_boundary_edgeMate
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (child : Diag Sig (eraseFin frontier mate)) :
+    let d : Diag Sig (active :: frontier) := Diag.connect mate ok child
+    let G := Diag.toOpenPortHypergraph d
+    PortHypergraph.EdgeMate G.raw
+      (G.raw.boundaryPort ⟨0, by simp⟩)
+      (G.raw.boundaryPort ⟨mate.val + 1, by
+        simp⟩) := by
+  intro d G
+  let st := renderTraceFromBoundary d
+  let hp : st.EndpointPartition := renderTraceFromBoundary_endpointPartition d
+  let restIds : List Nat := List.map Nat.succ (List.range frontier.length)
+  let edge : RenderEdge Sig :=
+    { label := Sig.portEdge active
+      leftLabel := active
+      rightLabel := frontier.get mate
+      left := 0
+      right :=
+        restIds.get (Fin.cast (by
+          have hids :
+              (RenderState.initial Sig (active :: frontier)).frontierIds =
+                0 :: restIds := by
+            simp [RenderState.initial, restIds]
+            exact List.range_succ_eq_map
+          have hlen :=
+            (RenderState.initial Sig (active :: frontier)).frontierIds_length
+          rw [hids] at hlen
+          exact (Nat.succ.inj hlen).symm) mate)
+      left_label := rfl
+      right_label := (Sig.compatible_edge ok).symm
+      compatible := ok }
+  have hmem : edge ∈ st.edges := by
+    simpa [d, st, renderTraceFromBoundary, RenderState.initial, edge] using
+      renderTrace_connect_edge_mem mate ok child
+        (RenderState.initial Sig (active :: frontier))
+        (activeId := 0) (restIds := restIds)
+        (by
+          simp [RenderState.initial, restIds]
+          exact List.range_succ_eq_map)
+  rcases list_exists_get_of_mem st.edges hmem with ⟨edgeIndex, hedgeIndex⟩
+  have hactiveVal :
+      (G.raw.boundaryPort ⟨0, by simp⟩).val =
+        (st.edges.get edgeIndex).left := by
+    dsimp [G, Diag.toOpenPortHypergraph,
+      RenderState.OpenPortHypergraphEvidence.toOpenPortHypergraph,
+      renderTraceFromBoundary_openEvidence, renderTraceFromBoundary_graphEvidence,
+      RenderState.PortHypergraphEvidence.toPortHypergraph,
+      RenderState.portHypergraphEvidenceOfInvariants,
+      RenderState.boundaryEvidenceOfPrefix, edge] at *
+    rw [hedgeIndex]
+  have hmateVal :
+      (G.raw.boundaryPort ⟨mate.val + 1, by
+        simp⟩).val =
+        (st.edges.get edgeIndex).right := by
+    dsimp [G, Diag.toOpenPortHypergraph,
+      RenderState.OpenPortHypergraphEvidence.toOpenPortHypergraph,
+      renderTraceFromBoundary_openEvidence, renderTraceFromBoundary_graphEvidence,
+      RenderState.PortHypergraphEvidence.toPortHypergraph,
+      RenderState.portHypergraphEvidenceOfInvariants,
+      RenderState.boundaryEvidenceOfPrefix, edge] at *
+    rw [hedgeIndex]
+    simp [restIds]
+  constructor
+  · intro hsame
+    have hval := congrArg (fun endpoint => endpoint.val) hsame
+    have hne := RenderState.edge_left_ne_right_of_partition hp edgeIndex
+    exact hne (by
+      calc
+        (st.edges.get edgeIndex).left =
+            (G.raw.boundaryPort ⟨0, by simp⟩).val := hactiveVal.symm
+        _ = (G.raw.boundaryPort ⟨mate.val + 1, by
+              simp⟩).val := hval
+        _ = (st.edges.get edgeIndex).right := hmateVal)
+  · have hleft :=
+      RenderState.endpointEdgeOfPartition_eq_of_endpoint_side hp
+        (G.raw.boundaryPort ⟨0, by simp⟩) edgeIndex (Or.inl hactiveVal)
+    have hright :=
+      RenderState.endpointEdgeOfPartition_eq_of_endpoint_side hp
+        (G.raw.boundaryPort ⟨mate.val + 1, by
+          simp⟩) edgeIndex (Or.inr hmateVal)
+    simpa [G, Diag.toOpenPortHypergraph,
+      RenderState.OpenPortHypergraphEvidence.toOpenPortHypergraph,
+      renderTraceFromBoundary_openEvidence, renderTraceFromBoundary_graphEvidence,
+      RenderState.PortHypergraphEvidence.toPortHypergraph,
+      RenderState.portHypergraphEvidenceOfInvariants,
+      RenderState.edgeEvidenceOfPartition,
+      RenderState.endpointEdgeEvidenceOfPartition] using hleft.trans hright.symm
+
 end Diag
 
 /--
