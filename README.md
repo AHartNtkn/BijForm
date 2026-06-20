@@ -266,6 +266,7 @@ lake exe bijform
   - `StringDiagram.OpenPortHypergraph.SearchState.IsoRelated.seen_mem_reflected`
   - `StringDiagram.OpenPortHypergraph.SearchState.IsoRelated.processed_mem_preserved`
   - `StringDiagram.OpenPortHypergraph.SearchState.IsoRelated.processed_mem_reflected`
+  - `StringDiagram.OpenPortHypergraph.SearchState.IsoRelated.transport_contracts`
   - `StringDiagram.OpenPortHypergraph.SearchState.processedEdges_length_le`
   - `StringDiagram.OpenPortHypergraph.SearchState.remainingEdges`
   - `StringDiagram.OpenPortHypergraph.SearchState.processedEdges_length_lt_of_pending`
@@ -286,6 +287,16 @@ lake exe bijform
   - `StringDiagram.PortHypergraphIso.constructor_owner_preserved`
   - `StringDiagram.PortHypergraphIso.boundary_owner_reflected`
   - `StringDiagram.PortHypergraphIso.constructor_owner_reflected`
+  - `StringDiagram.PortHypergraphIso.endpointOwnerPreserved`
+  - `StringDiagram.PortHypergraphIso.endpointOwnerReflected`
+  - `StringDiagram.PortHypergraphIso.endpointOwnerEndpoint_preserved`
+  - `StringDiagram.PortHypergraphIso.endpointOwnerEndpoint_reflected`
+  - `StringDiagram.PortHypergraphIso.endpointOwnersOfPreserved`
+  - `StringDiagram.PortHypergraphIso.endpointOwnersOfReflected`
+  - `StringDiagram.PortHypergraphIso.endpointOwnersOfPreserved_unique`
+  - `StringDiagram.PortHypergraphIso.endpointOwnersOfReflected_unique`
+  - `StringDiagram.PortHypergraphIso.transport_contracts_preserved`
+  - `StringDiagram.PortHypergraphIso.transport_contracts_reflected`
   - `StringDiagram.OpenPortHypergraphUpToIso`
   - `StringDiagram.OpenPortHypergraph.FirstPendingStep`
   - `StringDiagram.OpenPortHypergraph.FirstPendingTraversalReady`

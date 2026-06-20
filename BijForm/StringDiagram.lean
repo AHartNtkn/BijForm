@@ -4794,6 +4794,130 @@ theorem constructor_owner_reflected {G H : PortHypergraph Sig boundary}
   simpa [PortHypergraph.endpointOwnerEndpoint] using
     incidence_get_reflected e node slot
 
+def endpointOwnerPreserved {G H : PortHypergraph Sig boundary}
+    (e : PortHypergraphIso G H) :
+    EndpointOwner boundary.length G.nodeCount
+        (fun node => (G.incident node).length) →
+      EndpointOwner boundary.length H.nodeCount
+        (fun node => (H.incident node).length)
+  | .boundary boundaryIndex => .boundary boundaryIndex
+  | .constructor node slot =>
+      .constructor (e.nodeEquiv.toFun node)
+        (incidenceSlotPreserved e node slot)
+
+def endpointOwnerReflected {G H : PortHypergraph Sig boundary}
+    (e : PortHypergraphIso G H) :
+    EndpointOwner boundary.length H.nodeCount
+        (fun node => (H.incident node).length) →
+      EndpointOwner boundary.length G.nodeCount
+        (fun node => (G.incident node).length)
+  | .boundary boundaryIndex => .boundary boundaryIndex
+  | .constructor node slot =>
+      .constructor (e.nodeEquiv.invFun node)
+        (incidenceSlotReflected e node slot)
+
+theorem endpointOwnerEndpoint_preserved {G H : PortHypergraph Sig boundary}
+    (e : PortHypergraphIso G H)
+    (owner : EndpointOwner boundary.length G.nodeCount
+        (fun node => (G.incident node).length)) :
+    PortHypergraph.endpointOwnerEndpoint H
+        (endpointOwnerPreserved e owner) =
+      e.endpointEquiv.toFun
+        (PortHypergraph.endpointOwnerEndpoint G owner) := by
+  cases owner with
+  | boundary boundaryIndex =>
+      exact boundary_owner_preserved e boundaryIndex
+  | constructor node slot =>
+      exact constructor_owner_preserved e node slot
+
+theorem endpointOwnerEndpoint_reflected {G H : PortHypergraph Sig boundary}
+    (e : PortHypergraphIso G H)
+    (owner : EndpointOwner boundary.length H.nodeCount
+        (fun node => (H.incident node).length)) :
+    PortHypergraph.endpointOwnerEndpoint G
+        (endpointOwnerReflected e owner) =
+      e.endpointEquiv.invFun
+        (PortHypergraph.endpointOwnerEndpoint H owner) := by
+  cases owner with
+  | boundary boundaryIndex =>
+      exact boundary_owner_reflected e boundaryIndex
+  | constructor node slot =>
+      exact constructor_owner_reflected e node slot
+
+def endpointOwnersOfPreserved {G H : PortHypergraph Sig boundary}
+    (e : PortHypergraphIso G H) {endpoint : Fin G.endpointCount}
+    (owner : PortHypergraph.endpointOwnersOf G endpoint) :
+    PortHypergraph.endpointOwnersOf H (e.endpointEquiv.toFun endpoint) :=
+  ⟨endpointOwnerPreserved e owner.1, by
+    rw [endpointOwnerEndpoint_preserved e owner.1, owner.2]⟩
+
+def endpointOwnersOfReflected {G H : PortHypergraph Sig boundary}
+    (e : PortHypergraphIso G H) {endpoint : Fin H.endpointCount}
+    (owner : PortHypergraph.endpointOwnersOf H endpoint) :
+    PortHypergraph.endpointOwnersOf G (e.endpointEquiv.invFun endpoint) :=
+  ⟨endpointOwnerReflected e owner.1, by
+    rw [endpointOwnerEndpoint_reflected e owner.1, owner.2]⟩
+
+theorem endpointOwnersOfPreserved_unique
+    {G H : PortHypergraph Sig boundary}
+    (e : PortHypergraphIso G H) {endpoint : Fin G.endpointCount}
+    (owner : PortHypergraph.endpointOwnersOf G endpoint) :
+    ∀ owner' : PortHypergraph.endpointOwnersOf H
+        (e.endpointEquiv.toFun endpoint),
+      owner' = endpointOwnersOfPreserved e owner := by
+  rcases PortHypergraph.endpointOwnersOf_existsUnique H
+      (e.endpointEquiv.toFun endpoint) with ⟨uniqueOwner, hunique⟩
+  intro owner'
+  exact (hunique owner').trans
+    (hunique (endpointOwnersOfPreserved e owner)).symm
+
+theorem endpointOwnersOfReflected_unique
+    {G H : PortHypergraph Sig boundary}
+    (e : PortHypergraphIso G H) {endpoint : Fin H.endpointCount}
+    (owner : PortHypergraph.endpointOwnersOf H endpoint) :
+    ∀ owner' : PortHypergraph.endpointOwnersOf G
+        (e.endpointEquiv.invFun endpoint),
+      owner' = endpointOwnersOfReflected e owner := by
+  rcases PortHypergraph.endpointOwnersOf_existsUnique G
+      (e.endpointEquiv.invFun endpoint) with ⟨uniqueOwner, hunique⟩
+  intro owner'
+  exact (hunique owner').trans
+    (hunique (endpointOwnersOfReflected e owner)).symm
+
+theorem transport_contracts_preserved {G H : PortHypergraph Sig boundary}
+    (e : PortHypergraphIso G H)
+    {endpoint mate : Fin G.endpointCount}
+    (hmate : PortHypergraph.EdgeMate G endpoint mate)
+    (owner : PortHypergraph.endpointOwnersOf G endpoint) :
+    PortHypergraph.EdgeMate H
+        (e.endpointEquiv.toFun endpoint) (e.endpointEquiv.toFun mate) ∧
+      PortHypergraph.endpointOwnerEndpoint H
+          (endpointOwnersOfPreserved e owner).1 =
+        e.endpointEquiv.toFun endpoint ∧
+      (∀ owner' : PortHypergraph.endpointOwnersOf H
+          (e.endpointEquiv.toFun endpoint),
+        owner' = endpointOwnersOfPreserved e owner) := by
+  exact ⟨edgeMate_preserved e hmate,
+    (endpointOwnersOfPreserved e owner).2,
+    endpointOwnersOfPreserved_unique e owner⟩
+
+theorem transport_contracts_reflected {G H : PortHypergraph Sig boundary}
+    (e : PortHypergraphIso G H)
+    {endpoint mate : Fin H.endpointCount}
+    (hmate : PortHypergraph.EdgeMate H endpoint mate)
+    (owner : PortHypergraph.endpointOwnersOf H endpoint) :
+    PortHypergraph.EdgeMate G
+        (e.endpointEquiv.invFun endpoint) (e.endpointEquiv.invFun mate) ∧
+      PortHypergraph.endpointOwnerEndpoint G
+          (endpointOwnersOfReflected e owner).1 =
+        e.endpointEquiv.invFun endpoint ∧
+      (∀ owner' : PortHypergraph.endpointOwnersOf G
+          (e.endpointEquiv.invFun endpoint),
+        owner' = endpointOwnersOfReflected e owner) := by
+  exact ⟨edgeMate_reflected e hmate,
+    (endpointOwnersOfReflected e owner).2,
+    endpointOwnersOfReflected_unique e owner⟩
+
 end PortHypergraphIso
 
 namespace OpenPortHypergraph
@@ -5126,6 +5250,43 @@ theorem IsoRelated.processed_mem_reflected
     rw [← heq]
     simp
   simpa [hpre] using hedge'
+
+theorem IsoRelated.transport_contracts
+    {G H : OpenPortHypergraph Sig boundary}
+    {e : PortHypergraphIso G.raw H.raw}
+    {frontier : List Sig.Port}
+    {left : SearchState G frontier} {right : SearchState H frontier}
+    (hr : IsoRelated e left right)
+    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
+    (hleft : left.pending = active :: rest)
+    {leftEndpoint : Fin G.raw.endpointCount}
+    {rightEndpoint : Fin H.raw.endpointCount}
+    (hleftPending : leftEndpoint ∈ left.pending)
+    (hrightPending : rightEndpoint ∈ right.pending)
+    {leftNode : Fin G.raw.nodeCount}
+    {rightNode : Fin H.raw.nodeCount}
+    (hleftSeen : leftNode ∈ left.seenNodes)
+    (hrightSeen : rightNode ∈ right.seenNodes)
+    {leftEdge : Fin G.raw.edgeCount}
+    {rightEdge : Fin H.raw.edgeCount}
+    (hleftProcessed : leftEdge ∈ left.processedEdges)
+    (hrightProcessed : rightEdge ∈ right.processedEdges) :
+    right.pending =
+        e.endpointEquiv.toFun active ::
+          rest.map e.endpointEquiv.toFun ∧
+      e.endpointEquiv.toFun leftEndpoint ∈ right.pending ∧
+      e.endpointEquiv.invFun rightEndpoint ∈ left.pending ∧
+      e.nodeEquiv.toFun leftNode ∈ right.seenNodes ∧
+      e.nodeEquiv.invFun rightNode ∈ left.seenNodes ∧
+      e.edgeEquiv.toFun leftEdge ∈ right.processedEdges ∧
+      e.edgeEquiv.invFun rightEdge ∈ left.processedEdges := by
+  exact ⟨hr.pending_cons hleft,
+    hr.pending_mem_preserved hleftPending,
+    hr.pending_mem_reflected hrightPending,
+    hr.seen_mem_preserved hleftSeen,
+    hr.seen_mem_reflected hrightSeen,
+    hr.processed_mem_preserved hleftProcessed,
+    hr.processed_mem_reflected hrightProcessed⟩
 
 theorem pending_cons_nodup {G : OpenPortHypergraph Sig boundary}
     {activeLabel : Sig.Port} {restLabels : List Sig.Port}
