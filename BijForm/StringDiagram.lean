@@ -262,13 +262,13 @@ def AllConstructorsReachBoundary (G : PortHypergraph Sig boundary) : Prop :=
 end PortHypergraph
 
 /--
-The semantic carrier for final encoded diagrams: finite open representatives
-whose constructors all lie in components connected to an external boundary
-port.
+The semantic carrier for final encoded diagrams: finite representatives with
+an ordered external boundary whose constructors all lie in components connected
+to that boundary.  The empty-boundary case is allowed so `Diag Sig 0` can
+contain `finish`.
 -/
 structure OpenPortHypergraph (Sig : Signature) (boundary : Nat) where
   raw : PortHypergraph Sig boundary
-  boundary_open : 0 < boundary
   allConstructorsReachBoundary :
     PortHypergraph.AllConstructorsReachBoundary raw
 
@@ -305,7 +305,7 @@ finite open boundary-connected port-hypergraphs up to boundary-preserving
 isomorphism.  The syntax/polynomial/generated-code results above do not close
 this graph-isomorphism theorem.
 -/
-def diagOpenPortHypergraphIso (Sig : Signature) {n : Nat} (hopen : 0 < n) :
+def diagOpenPortHypergraphIso (Sig : Signature) (n : Nat) :
     Diag Sig n ≃ᵢ OpenPortHypergraphUpToIso Sig n := by
   /-
   Proof gap: construct the traversal from `Diag` to finite representatives,
