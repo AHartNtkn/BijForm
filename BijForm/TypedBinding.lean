@@ -382,6 +382,140 @@ structure CtorLayer {Ty : Type} (S : Signature Ty) (Code : Poly.Ix S → Type)
     (q : S.ArgPos ctor) →
       Code ((S.arg ctor q).binders ++ Γ, (S.arg ctor q).sort)
 
+/-- Product of child codes for a concrete finite constructor-argument list. -/
+def ArgTuple {Ty : Type} (S : Signature Ty) (Code : Poly.Ix S → Type)
+    (Γ : List Ty) : List (Arg Ty) → Type
+  | [] => PUnit
+  | arg :: args => Code (arg.binders ++ Γ, arg.sort) × ArgTuple S Code Γ args
+
+namespace ArgTuple
+
+variable {Ty : Type} {S : Signature Ty} {Code : Poly.Ix S → Type}
+
+def ofChild (Γ : List Ty) :
+    {args : List (Arg Ty)} →
+      ((q : Fin args.length) →
+        Code (((args.get q).binders ++ Γ), (args.get q).sort)) →
+      ArgTuple S Code Γ args
+  | [], _child => PUnit.unit
+  | _arg :: args, child =>
+      (child ⟨0, by simp⟩,
+        ofChild Γ (args := args) (fun q => child q.succ))
+
+def toChild (Γ : List Ty) :
+    {args : List (Arg Ty)} →
+      ArgTuple S Code Γ args →
+        (q : Fin args.length) →
+          Code (((args.get q).binders ++ Γ), (args.get q).sort)
+  | [], _tuple, q => False.elim (Nat.not_lt_zero q.val q.isLt)
+  | _arg :: _args, tuple, q => by
+      cases q using Fin.cases with
+      | zero =>
+          exact tuple.1
+      | succ q =>
+          exact toChild Γ tuple.2 q
+
+theorem toChild_ofChild (Γ : List Ty) :
+    {args : List (Arg Ty)} →
+      (child :
+        (q : Fin args.length) →
+          Code (((args.get q).binders ++ Γ), (args.get q).sort)) →
+      toChild Γ (ofChild Γ child) = child
+  | [], child => by
+      funext q
+      exact False.elim (Nat.not_lt_zero q.val q.isLt)
+  | _arg :: args, child => by
+      funext q
+      cases q using Fin.cases with
+      | zero => rfl
+      | succ q =>
+          exact congrFun
+            (toChild_ofChild Γ (args := args) (fun q => child q.succ)) q
+
+theorem ofChild_toChild (Γ : List Ty) :
+    {args : List (Arg Ty)} →
+      (tuple : ArgTuple S Code Γ args) →
+      ofChild Γ (toChild Γ tuple) = tuple
+  | [], tuple => by
+      cases tuple
+      rfl
+  | _arg :: args, tuple => by
+      cases tuple with
+      | mk head tail =>
+          change (head, ofChild Γ (toChild Γ tail)) = (head, tail)
+          rw [ofChild_toChild Γ tail]
+
+def iso (Γ : List Ty) (args : List (Arg Ty)) :
+    ((q : Fin args.length) →
+        Code (((args.get q).binders ++ Γ), (args.get q).sort)) ≃ᵢ
+      ArgTuple S Code Γ args where
+  toFun := ofChild Γ
+  invFun := toChild Γ
+  left_inv := toChild_ofChild Γ
+  right_inv := ofChild_toChild Γ
+
+end ArgTuple
+
+/-- Generic constructor-family carrier for a same-return typed-binding layer. -/
+structure CtorFamily {Ty : Type} (S : Signature Ty) (Code : Poly.Ix S → Type)
+    (Γ : List Ty) (t : Ty) where
+  ctor : S.Ctor
+  ret_eq : S.ret ctor = t
+  args : ArgTuple S Code Γ (S.args ctor)
+
+namespace CtorLayer
+
+variable {Ty : Type} {S : Signature Ty} {Code : Poly.Ix S → Type}
+
+def toFamily (Γ : List Ty) (t : Ty) :
+    CtorLayer S Code Γ t → CtorFamily S Code Γ t
+  | ⟨c, h, child⟩ =>
+      ⟨c, h,
+        ArgTuple.ofChild (S := S) (Code := Code) Γ
+          (args := S.args c) child⟩
+
+def ofFamily (Γ : List Ty) (t : Ty) :
+    CtorFamily S Code Γ t → CtorLayer S Code Γ t
+  | ⟨c, h, args⟩ =>
+      ⟨c, h,
+        ArgTuple.toChild (S := S) (Code := Code) Γ
+          (args := S.args c) args⟩
+
+theorem ofFamily_toFamily (Γ : List Ty) (t : Ty) :
+    Function.LeftInverse (ofFamily (S := S) (Code := Code) Γ t)
+      (toFamily (S := S) (Code := Code) Γ t) := by
+  intro layer
+  cases layer with
+  | mk c h child =>
+      dsimp [toFamily, ofFamily]
+      rw [CtorLayer.mk.injEq]
+      constructor
+      · rfl
+      · apply heq_of_eq
+        exact ArgTuple.toChild_ofChild (S := S) (Code := Code) Γ child
+
+theorem toFamily_ofFamily (Γ : List Ty) (t : Ty) :
+    Function.RightInverse (ofFamily (S := S) (Code := Code) Γ t)
+      (toFamily (S := S) (Code := Code) Γ t) := by
+  intro family
+  cases family with
+  | mk c h args =>
+      dsimp [toFamily, ofFamily]
+      rw [CtorFamily.mk.injEq]
+      constructor
+      · rfl
+      · apply heq_of_eq
+        exact ArgTuple.ofChild_toChild (S := S) (Code := Code) Γ args
+
+def familyIso (Γ : List Ty) (t : Ty) :
+    CtorLayer S Code Γ t ≃ᵢ CtorFamily S Code Γ t where
+  toFun := toFamily (S := S) (Code := Code) Γ t
+  invFun := ofFamily (S := S) (Code := Code) Γ t
+  left_inv := ofFamily_toFamily (S := S) (Code := Code) Γ t
+  right_inv := toFamily_ofFamily (S := S) (Code := Code) Γ t
+
+end CtorLayer
+
 /-- Generic one-step layer shape for typed-binding signatures: either a
 context variable of the requested type, or a same-return constructor layer. -/
 abbrev LayerShape {Ty : Type} (S : Signature Ty) (Code : Poly.Ix S → Type)
@@ -449,6 +583,10 @@ def iso (Γ : List Ty) (t : Ty) :
   invFun := shapeToLayer (S := S) (Code := Code) Γ t
   left_inv := layerShape_left_inv (S := S) (Code := Code) Γ t
   right_inv := layerShape_right_inv (S := S) (Code := Code) Γ t
+
+def familyIso (Γ : List Ty) (t : Ty) :
+    LayerShape S Code Γ t ≃ᵢ (Var Γ t ⊕ CtorFamily S Code Γ t) :=
+  Iso.sum (Iso.refl (Var Γ t)) (CtorLayer.familyIso (S := S) (Code := Code) Γ t)
 
 end LayerShape
 

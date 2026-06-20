@@ -18,7 +18,7 @@ Output-index inversion is represented as same-fiber constructor data; examples
 must still show how this data is generated from their concrete constructors.
 -/
 
-universe u v w
+universe u v w x
 
 /-- A dependent polynomial signature whose recursive positions may point at
 indices computed from the constructor parameter. -/
@@ -639,6 +639,7 @@ namespace CodeLayerPresentation
 
 variable {P : DepPoly ι} {H : OutputIndexInversion P}
 variable {Code : ι → Type v} {Carrier : ι → Type w}
+variable {Shape : ι → Type x}
 
 def iso (D : CodeLayerPresentation P H Code Carrier) (i : ι) :
     CodeLayer P H Code i ≃ᵢ Carrier i where
@@ -654,7 +655,59 @@ def ofIso (layer : ∀ i, CodeLayer P H Code i ≃ᵢ Carrier i) :
   left_inv := fun i => (layer i).left_inv
   right_inv := fun i => (layer i).right_inv
 
+def transCarrier (D : CodeLayerPresentation P H Code Shape)
+    (carrier : ∀ i, Shape i ≃ᵢ Carrier i) :
+    CodeLayerPresentation P H Code Carrier where
+  toCarrier := fun i layer => (carrier i).toFun (D.toCarrier i layer)
+  fromCarrier := fun i z => D.fromCarrier i ((carrier i).invFun z)
+  left_inv := by
+    intro i layer
+    dsimp
+    rw [(carrier i).left_inv (D.toCarrier i layer)]
+    exact D.left_inv i layer
+  right_inv := by
+    intro i z
+    dsimp
+    rw [D.right_inv i ((carrier i).invFun z)]
+    exact (carrier i).right_inv z
+
 end CodeLayerPresentation
+
+/-- A layer presentation factored through an intermediate domain-specific
+shape.  The library owns the composition from raw `CodeLayer` to the final
+carrier; examples supply only the raw-to-shape presentation, the shape-to-carrier
+isomorphism, and the carrier descent proof. -/
+structure LayerShapePresentation
+    (P : DepPoly ι)
+    (H : OutputIndexInversion P)
+    (Code : ι → Type v)
+    (Shape : ι → Type w) where
+  layerShape : CodeLayerPresentation P H Code Shape
+  carrier : ∀ i, Shape i ≃ᵢ Code i
+  rank : ∀ i, Code i → Nat
+  child_rank_lt :
+    ∀ {i : ι} (z : Code i)
+      (q : P.Pos
+          (H.decode i
+            ((((layerShape.transCarrier carrier).iso i).invFun z).1)).ctor
+          (H.decode i
+            ((((layerShape.transCarrier carrier).iso i).invFun z).1)).param),
+      rank (P.input
+          (H.decode i
+            ((((layerShape.transCarrier carrier).iso i).invFun z).1)).param q)
+          ((((layerShape.transCarrier carrier).iso i).invFun z).2 q) <
+        rank i z
+
+namespace LayerShapePresentation
+
+variable {P : DepPoly ι} {H : OutputIndexInversion P}
+variable {Code : ι → Type v} {Shape : ι → Type w}
+
+def layer (D : LayerShapePresentation P H Code Shape) :
+    CodeLayerPresentation P H Code Code :=
+  D.layerShape.transCarrier D.carrier
+
+end LayerShapePresentation
 
 /-- Presentation of readable syntax as a generated code family.  The library
 compiles the one-step layer presentation into `GeneratedCode`. -/
@@ -780,6 +833,61 @@ def iso (D : ShapeLayerPresentation P H) (i : ι) :
   D.generatedCode.iso i
 
 end ShapeLayerPresentation
+
+namespace LayerShapePresentation
+
+variable {P : DepPoly ι} {H : OutputIndexInversion P}
+variable {Shape : ι → Type w}
+
+def toSyntaxPresentation {Syntax : ι → Type v}
+    (D : LayerShapePresentation P H Syntax Shape) :
+    SyntaxPresentation P H Syntax where
+  layer := D.layer
+  rank := D.rank
+  child_rank_lt := by
+    intro i z q
+    exact D.child_rank_lt z q
+
+def toNatLayerPresentation
+    (D : LayerShapePresentation P H (fun _ => Nat) Shape)
+    (child_lt :
+      ∀ {i : ι} (n : Nat)
+        (q : P.Pos
+            (H.decode i (((D.layer.iso i).invFun n).1)).ctor
+            (H.decode i (((D.layer.iso i).invFun n).1)).param),
+        (((D.layer.iso i).invFun n).2 q) < n) :
+    NatLayerPresentation P H where
+  layer := D.layer
+  child_lt := child_lt
+
+def toRankedNatLayerPresentation
+    (D : LayerShapePresentation P H (fun _ => Nat) Shape)
+    (rank : ι → Nat → Nat)
+    (child_rank_lt :
+      ∀ {i : ι} (n : Nat)
+        (q : P.Pos
+            (H.decode i (((D.layer.iso i).invFun n).1)).ctor
+            (H.decode i (((D.layer.iso i).invFun n).1)).param),
+        rank (P.input
+            (H.decode i (((D.layer.iso i).invFun n).1)).param q)
+            (((D.layer.iso i).invFun n).2 q) < rank i n) :
+    RankedNatLayerPresentation P H where
+  layer := D.layer
+  rank := rank
+  child_rank_lt := child_rank_lt
+
+def toShapeLayerPresentation
+    (shape : ι → CodeShape)
+    (D : LayerShapePresentation P H (fun i => (shape i).Carrier) Shape) :
+    ShapeLayerPresentation P H where
+  shape := shape
+  layer := D.layer
+  rank := D.rank
+  child_rank_lt := by
+    intro i z q
+    exact D.child_rank_lt z q
+
+end LayerShapePresentation
 
 /-- A well-founded one-step coding of each same-fiber polynomial layer induces
 a bijective coding of the dependent initial algebra. -/
