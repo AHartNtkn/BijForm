@@ -276,6 +276,39 @@ theorem nodup_append_of_nodup_disjoint {α : Type} :
             intro a hmemXs hmemYs
             exact hdisjoint a (by simp [hmemXs]) hmemYs)
 
+theorem nodup_append_left {α : Type} :
+    ∀ (xs ys : List α), (xs ++ ys).Nodup → xs.Nodup
+  | [], _ys, _hnodup => by simp
+  | head :: xs, ys, hnodup => by
+      have hsplit : head ∉ xs ++ ys ∧ (xs ++ ys).Nodup := by
+        simpa using hnodup
+      exact List.nodup_cons.mpr
+        ⟨by
+          intro hmem
+          exact hsplit.1 (by simp [hmem]),
+         nodup_append_left xs ys hsplit.2⟩
+
+theorem nodup_append_right {α : Type} :
+    ∀ (xs ys : List α), (xs ++ ys).Nodup → ys.Nodup
+  | [], ys, hnodup => by simpa using hnodup
+  | head :: xs, ys, hnodup => by
+      have hsplit : head ∉ xs ++ ys ∧ (xs ++ ys).Nodup := by
+        simpa using hnodup
+      exact nodup_append_right xs ys hsplit.2
+
+theorem nodup_append_disjoint {α : Type} :
+    ∀ (xs ys : List α) {x : α},
+      (xs ++ ys).Nodup → x ∈ xs → x ∈ ys → False
+  | [], _ys, _x, _hnodup, hleft, _hright => by cases hleft
+  | head :: xs, ys, x, hnodup, hleft, hright => by
+      have hsplit : head ∉ xs ++ ys ∧ (xs ++ ys).Nodup := by
+        simpa using hnodup
+      simp at hleft
+      rcases hleft with hhead | htail
+      · subst x
+        exact hsplit.1 (by simp [hright])
+      · exact nodup_append_disjoint xs ys hsplit.2 htail hright
+
 theorem list_exists_get_of_mem {α : Type} {x : α} :
     ∀ (xs : List α), x ∈ xs → ∃ i : Fin xs.length, xs.get i = x
   | [], h => by cases h
@@ -755,6 +788,31 @@ structure OwnerIdPartition {Sig : Signature} {frontier : List Sig.Port}
   owner_covered :
     ∀ id : Nat, id < st.endpoints.length → id ∈ st.ownerEndpointIds boundary
 
+theorem OwnerIdPartition.boundaryIds_nodup
+    {Sig : Signature} {frontier : List Sig.Port}
+    {st : RenderState Sig frontier} {boundary : List Sig.Port}
+    (ho : st.OwnerIdPartition boundary) :
+    (List.range boundary.length).Nodup :=
+  nodup_append_left (List.range boundary.length) st.nodeIncidentIds
+    (by simpa [ownerEndpointIds] using ho.owner_nodup)
+
+theorem OwnerIdPartition.nodeIncidentIds_nodup
+    {Sig : Signature} {frontier : List Sig.Port}
+    {st : RenderState Sig frontier} {boundary : List Sig.Port}
+    (ho : st.OwnerIdPartition boundary) :
+    st.nodeIncidentIds.Nodup :=
+  nodup_append_right (List.range boundary.length) st.nodeIncidentIds
+    (by simpa [ownerEndpointIds] using ho.owner_nodup)
+
+theorem OwnerIdPartition.boundary_nodeIncidentIds_disjoint
+    {Sig : Signature} {frontier : List Sig.Port}
+    {st : RenderState Sig frontier} {boundary : List Sig.Port}
+    (ho : st.OwnerIdPartition boundary) {id : Nat}
+    (hboundary : id ∈ List.range boundary.length)
+    (hnode : id ∈ st.nodeIncidentIds) : False :=
+  nodup_append_disjoint (List.range boundary.length) st.nodeIncidentIds
+    (by simpa [ownerEndpointIds] using ho.owner_nodup) hboundary hnode
+
 /-- `base` occurs as the ordered prefix of a renderer state's endpoint list. -/
 structure EndpointPrefix {Sig : Signature} {frontier : List Sig.Port}
     (st : RenderState Sig frontier) (base : List Sig.Port) where
@@ -803,6 +861,12 @@ def boundaryEvidenceOfPrefix {Sig : Signature} {st : RenderState Sig []}
       List.getElem?_eq_getElem b.isLt
     rw [hstSome, hboundarySome] at hopt
     simpa using hopt
+
+theorem boundaryEvidenceOfPrefix_boundaryPort_val {Sig : Signature}
+    {st : RenderState Sig []} {boundary : List Sig.Port}
+    (pref : EndpointPrefix st boundary) (b : Fin boundary.length) :
+    ((boundaryEvidenceOfPrefix pref).boundaryPort b).val = b.val :=
+  rfl
 
 theorem initial_validIds {Sig : Signature} (boundary : List Sig.Port) :
     (initial Sig boundary).ValidIds where
@@ -1321,6 +1385,16 @@ def incidentOfValidIds {Sig : Signature} {st : RenderState Sig []}
       hv.node_incident_bound (st.nodes.get node)
         (List.get_mem st.nodes node) slot⟩
 
+theorem incidentOfValidIds_val_mem_nodeIncidentIds {Sig : Signature}
+    {st : RenderState Sig []}
+    (hv : st.ValidIds) (node : Fin st.nodes.length)
+    (slot : Fin (incidentOfValidIds hv node).length) :
+    ((incidentOfValidIds hv node).get slot).val ∈ st.nodeIncidentIds := by
+  simp [incidentOfValidIds, nodeIncidentIds]
+  refine ⟨st.nodes.get node, List.get_mem st.nodes node, ?_⟩
+  exact List.get_mem (st.nodes.get node).incident
+    (Fin.cast (by simp [incidentOfValidIds]) slot)
+
 theorem incidentOfValidIds_length {Sig : Signature}
     {st : RenderState Sig []}
     (hv : st.ValidIds) (node : Fin st.nodes.length) :
@@ -1364,6 +1438,34 @@ theorem incidentOfValidIds_label {Sig : Signature}
       (List.get_mem st.nodes node)
       (Fin.cast (by simp [incidentOfValidIds]) slot)
   simpa [incidentOfValidIds, incidentOfValidIds_length] using hlabel
+
+theorem boundaryEvidenceOfPrefix_ne_incidentOfValidIds {Sig : Signature}
+    {st : RenderState Sig []} {boundary : List Sig.Port}
+    (pref : EndpointPrefix st boundary)
+    (hv : st.ValidIds)
+    (ho : st.OwnerIdPartition boundary)
+    (b : Fin boundary.length) (node : Fin st.nodes.length)
+    (slot : Fin (incidentOfValidIds hv node).length) :
+    (boundaryEvidenceOfPrefix pref).boundaryPort b ≠
+      (incidentOfValidIds hv node).get slot := by
+  intro h
+  have hval := congrArg (fun endpoint : Fin st.endpoints.length => endpoint.val) h
+  have hboundary : b.val ∈ List.range boundary.length :=
+    List.mem_range.mpr b.isLt
+  have hnodeRaw :
+      ((incidentOfValidIds hv node).get slot).val ∈ st.nodeIncidentIds :=
+    incidentOfValidIds_val_mem_nodeIncidentIds hv node slot
+  have hnode : b.val ∈ st.nodeIncidentIds := by
+    have hval' :
+        ((boundaryEvidenceOfPrefix pref).boundaryPort b).val =
+          ((incidentOfValidIds hv node).get slot).val := by
+      simpa using hval
+    have hincident :
+        ((incidentOfValidIds hv node).get slot).val = b.val := by
+      exact hval'.symm.trans
+        (boundaryEvidenceOfPrefix_boundaryPort_val pref b)
+    exact hincident ▸ hnodeRaw
+  exact ho.boundary_nodeIncidentIds_disjoint hboundary hnode
 
 /--
 Renderer-derived constructor incidence evidence.  It turns each rendered node's

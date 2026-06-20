@@ -150,6 +150,9 @@ lake exe bijform
   - `StringDiagram.Diag.renderTraceFromBoundary_edgeEvidence`
   - `StringDiagram.Diag.renderTraceFromBoundary_boundaryEvidence`
   - `StringDiagram.Diag.renderTraceFromBoundary_incidenceEvidence`
+  - `StringDiagram.nodup_append_left`
+  - `StringDiagram.nodup_append_right`
+  - `StringDiagram.nodup_append_disjoint`
   - `StringDiagram.RenderState.ValidIds`
   - `StringDiagram.RenderState.edgeEndpointIds`
   - `StringDiagram.RenderState.edgeEndpointIdsOfEdges`
@@ -166,9 +169,13 @@ lake exe bijform
   - `StringDiagram.RenderState.nodeIncidentIds`
   - `StringDiagram.RenderState.ownerEndpointIds`
   - `StringDiagram.RenderState.OwnerIdPartition`
+  - `StringDiagram.RenderState.OwnerIdPartition.boundaryIds_nodup`
+  - `StringDiagram.RenderState.OwnerIdPartition.nodeIncidentIds_nodup`
+  - `StringDiagram.RenderState.OwnerIdPartition.boundary_nodeIncidentIds_disjoint`
   - `StringDiagram.RenderState.EndpointPrefix`
   - `StringDiagram.RenderState.BoundaryEvidence`
   - `StringDiagram.RenderState.boundaryEvidenceOfPrefix`
+  - `StringDiagram.RenderState.boundaryEvidenceOfPrefix_boundaryPort_val`
   - `StringDiagram.RenderState.initial_validIds`
   - `StringDiagram.RenderState.initial_endpointPartition`
   - `StringDiagram.RenderState.initial_nodeIncidentNodup`
@@ -188,9 +195,11 @@ lake exe bijform
   - `StringDiagram.RenderState.EdgeEvidence`
   - `StringDiagram.RenderState.edgeEvidenceOfPartition`
   - `StringDiagram.RenderState.incidentOfValidIds`
+  - `StringDiagram.RenderState.incidentOfValidIds_val_mem_nodeIncidentIds`
   - `StringDiagram.RenderState.incidentOfValidIds_length`
   - `StringDiagram.RenderState.incidentOfValidIds_injective`
   - `StringDiagram.RenderState.incidentOfValidIds_label`
+  - `StringDiagram.RenderState.boundaryEvidenceOfPrefix_ne_incidentOfValidIds`
   - `StringDiagram.RenderState.IncidenceEvidence`
   - `StringDiagram.RenderState.incidenceEvidenceOfValidIds`
   - `StringDiagram.RenderState.ValidIds.frontier_head_label`
