@@ -6410,6 +6410,46 @@ theorem firstPendingStepSearch?_some_connect_exact_of_witness
   subst mate'
   exact ⟨hmate', hstep⟩
 
+theorem IsoRelated.firstPendingStepSearch?_connect
+    {G H : OpenPortHypergraph Sig boundary}
+    {e : PortHypergraphIso G.raw H.raw}
+    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
+    {left : SearchState G (activeLabel :: restLabels)}
+    {right : SearchState H (activeLabel :: restLabels)}
+    (hr : IsoRelated e left right)
+    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
+    (hpending : left.pending = active :: rest)
+    (mate : Fin rest.length)
+    (hmate : PortHypergraph.EdgeMate G.raw active (rest.get mate)) :
+    let rightMate : Fin (rest.map e.endpointEquiv.toFun).length :=
+      Fin.cast (by simp) mate
+    ∃ rightMateEdge :
+        PortHypergraph.EdgeMate H.raw (e.endpointEquiv.toFun active)
+          ((rest.map e.endpointEquiv.toFun).get rightMate),
+      right.firstPendingStepSearch? (e.endpointEquiv.toFun active)
+          (rest.map e.endpointEquiv.toFun) =
+        some (FirstPendingStep.connect rightMate rightMateEdge) := by
+  dsimp
+  let rightMate : Fin (rest.map e.endpointEquiv.toFun).length :=
+    Fin.cast (by simp) mate
+  have hget :
+      (rest.map e.endpointEquiv.toFun).get rightMate =
+        e.endpointEquiv.toFun (rest.get mate) := by
+    simp [rightMate]
+  have rightMateEdge :
+      PortHypergraph.EdgeMate H.raw (e.endpointEquiv.toFun active)
+        ((rest.map e.endpointEquiv.toFun).get rightMate) := by
+    rw [hget]
+    exact PortHypergraphIso.edgeMate_preserved e hmate
+  have hrightPending := hr.pending_cons hpending
+  have hrightNodup :
+      (rest.map e.endpointEquiv.toFun).Nodup :=
+    right.rest_nodup hrightPending
+  rcases right.firstPendingStepSearch?_some_connect_exact_of_witness
+      hrightNodup rightMate rightMateEdge with
+    ⟨rightMateEdge', hstep⟩
+  exact ⟨rightMateEdge', hstep⟩
+
 theorem firstPendingStepSearch?_some_bud_of_witness
     {G : OpenPortHypergraph Sig boundary}
     {frontier : List Sig.Port} (st : SearchState G frontier)
