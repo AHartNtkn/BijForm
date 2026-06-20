@@ -7803,6 +7803,62 @@ def isoSetoid (Sig : Signature) (boundary : List Sig.Port) :
 
 end OpenPortHypergraph
 
+namespace Diag
+
+variable {Sig : Signature}
+
+/--
+Bridge support for the syntax round-trip: in the semantic graph rendered from
+a top-level `connect`, the executable first-pending search on the initial
+ordered-boundary state returns the corresponding `connect` branch.
+-/
+theorem toOpenPortHypergraph_connect_initial_search
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (child : Diag Sig (eraseFin frontier mate)) :
+    let d : Diag Sig (active :: frontier) := Diag.connect mate ok child
+    let G := Diag.toOpenPortHypergraph d
+    let st := OpenPortHypergraph.SearchState.initial G
+    let rest : List (Fin G.raw.endpointCount) :=
+      List.ofFn fun i : Fin frontier.length =>
+        G.raw.boundaryPort ⟨i.val + 1, by
+          simp [i.isLt]⟩
+    ∃ hmate : PortHypergraph.EdgeMate G.raw
+        (G.raw.boundaryPort ⟨0, by simp⟩)
+        (rest.get (Fin.cast (by dsimp [rest]; simp) mate)),
+      st.firstPendingStepSearch?
+          (G.raw.boundaryPort ⟨0, by simp⟩) rest =
+        some (OpenPortHypergraph.FirstPendingStep.connect
+          (Fin.cast (by dsimp [rest]; simp) mate) hmate) := by
+  intro d G st rest
+  let mateTail : Fin rest.length := Fin.cast (by simp [rest]) mate
+  have hpending :
+      st.pending = G.raw.boundaryPort ⟨0, by simp⟩ :: rest := by
+    dsimp [st, OpenPortHypergraph.SearchState.initial, rest]
+    rw [List.ofFn_succ]
+    congr
+  have hrestGet :
+      rest.get mateTail =
+        G.raw.boundaryPort ⟨mate.val + 1, by
+          simp [mate.isLt]⟩ := by
+    simp [rest, mateTail]
+  have hmateBase :=
+    Diag.toOpenPortHypergraph_connect_boundary_edgeMate mate ok child
+  have hmate :
+      PortHypergraph.EdgeMate G.raw
+        (G.raw.boundaryPort ⟨0, by simp⟩)
+        (rest.get mateTail) := by
+    rw [hrestGet]
+    simpa [d, G] using hmateBase
+  have hrestNodup := st.rest_nodup hpending
+  rcases st.firstPendingStepSearch?_some_connect_exact_of_witness
+      hrestNodup mateTail hmate with ⟨hmate', hstep⟩
+  refine ⟨hmate', ?_⟩
+  simpa [mateTail] using hstep
+
+end Diag
+
 /-- Typed open boundary-connected port-hypergraphs quotiented by ordered
 boundary-preserving isomorphism. -/
 def OpenPortHypergraphUpToIso (Sig : Signature) (boundary : List Sig.Port) :
