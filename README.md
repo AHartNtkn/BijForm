@@ -128,6 +128,12 @@ lake exe bijform
   - `StringDiagram.Diag.connectStep_endpointPartition`
   - `StringDiagram.Diag.connectStep_nodeIncidentNodup`
   - `StringDiagram.Diag.connectStep_ownerIdPartition`
+  - `StringDiagram.Diag.connectStep_edge_mem_old`
+  - `StringDiagram.Diag.connectStep_node_mem_old`
+  - `StringDiagram.Diag.connectStep_node_mem_old_of_child`
+  - `StringDiagram.Diag.connectStep_frontier_mem_old`
+  - `StringDiagram.Diag.connectStep_rawReachesBoundary_of_old`
+  - `StringDiagram.Diag.connectStep_reachability`
   - `StringDiagram.Diag.budStep_validIds`
   - `StringDiagram.Diag.budStep_endpointPartition`
   - `StringDiagram.Diag.budStep_nodeIncidentNodup`
@@ -209,6 +215,10 @@ lake exe bijform
   - `StringDiagram.RenderState.incidenceEvidenceOfValidIds`
   - `StringDiagram.RenderState.ValidIds.frontier_head_label`
   - `StringDiagram.RenderState.ValidIds.frontier_tail_label`
+  - `StringDiagram.RenderState.RawReachesBoundary`
+  - `StringDiagram.RenderState.RawReachesBoundary.mono`
+  - `StringDiagram.RenderState.Reachability`
+  - `StringDiagram.RenderState.initial_reachability`
   - `StringDiagram.RenderState.PortHypergraphEvidence`
   - `StringDiagram.RenderState.portHypergraphEvidenceOfInvariants`
   - `StringDiagram.RenderState.OpenPortHypergraphEvidence`

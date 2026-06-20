@@ -1698,6 +1698,73 @@ theorem ValidIds.frontier_tail_label {Sig : Signature}
         simpa using Nat.succ_lt_succ hi)
   simpa [hids] using hlabel
 
+/--
+Raw endpoint-ID reachability for intermediate renderer states.  This relation
+is defined before the semantic `PortHypergraph` exists, so it can be preserved
+through render steps that still have pending frontier endpoints.
+-/
+inductive RawReachesBoundary {Sig : Signature} {frontier : List Sig.Port}
+    (st : RenderState Sig frontier) (boundaryLength : Nat) :
+    Nat → Prop
+  | boundary {id : Nat} (hboundary : id ∈ List.range boundaryLength) :
+      RawReachesBoundary st boundaryLength id
+  | throughEdgeLeft (edge : RenderEdge Sig) (hmem : edge ∈ st.edges)
+      (reach : RawReachesBoundary st boundaryLength edge.left) :
+      RawReachesBoundary st boundaryLength edge.right
+  | throughEdgeRight (edge : RenderEdge Sig) (hmem : edge ∈ st.edges)
+      (reach : RawReachesBoundary st boundaryLength edge.right) :
+      RawReachesBoundary st boundaryLength edge.left
+  | throughConstructor (node : RenderNode Sig) (hmem : node ∈ st.nodes)
+      (fromSlot toSlot : Fin node.incident.length)
+      (reach :
+        RawReachesBoundary st boundaryLength
+          (node.incident.get fromSlot)) :
+      RawReachesBoundary st boundaryLength (node.incident.get toSlot)
+
+theorem RawReachesBoundary.mono
+    {Sig : Signature} {frontier frontier' : List Sig.Port}
+    {st : RenderState Sig frontier} {st' : RenderState Sig frontier'}
+    {boundaryLength id : Nat}
+    (hedges : ∀ edge : RenderEdge Sig, edge ∈ st.edges → edge ∈ st'.edges)
+    (hnodes : ∀ node : RenderNode Sig, node ∈ st.nodes → node ∈ st'.nodes)
+    (reach : st.RawReachesBoundary boundaryLength id) :
+    st'.RawReachesBoundary boundaryLength id := by
+  induction reach with
+  | boundary hboundary =>
+      exact RawReachesBoundary.boundary hboundary
+  | throughEdgeLeft edge hmem _reach ih =>
+      exact RawReachesBoundary.throughEdgeLeft edge (hedges edge hmem) ih
+  | throughEdgeRight edge hmem _reach ih =>
+      exact RawReachesBoundary.throughEdgeRight edge (hedges edge hmem) ih
+  | throughConstructor node hmem fromSlot toSlot _reach ih =>
+      exact RawReachesBoundary.throughConstructor node (hnodes node hmem)
+        fromSlot toSlot ih
+
+/--
+Reachability invariant for intermediate renderer states.  Every pending
+endpoint is already in the boundary-connected component, and every rendered
+constructor has at least one incident endpoint in that component.
+-/
+structure Reachability {Sig : Signature} {frontier : List Sig.Port}
+    (st : RenderState Sig frontier) (boundary : List Sig.Port) : Prop where
+  frontier_reaches :
+    ∀ id : Nat, id ∈ st.frontierIds →
+      st.RawReachesBoundary boundary.length id
+  node_reaches :
+    ∀ node : RenderNode Sig, node ∈ st.nodes →
+      ∃ slot : Fin node.incident.length,
+        st.RawReachesBoundary boundary.length (node.incident.get slot)
+
+theorem initial_reachability {Sig : Signature} (boundary : List Sig.Port) :
+    (initial Sig boundary).Reachability boundary where
+  frontier_reaches := by
+    intro id hid
+    exact RawReachesBoundary.boundary (by
+      simpa [initial] using hid)
+  node_reaches := by
+    intro node hmem
+    simp [initial] at hmem
+
 end RenderState
 
 namespace Diag
@@ -1890,6 +1957,106 @@ def budStep {active : Sig.Port} {frontier : List Sig.Port}
           dsimp [childIds]
           simp [hrest, Signature.nodePortsExcept, Signature.nodePorts,
             nodeEndpoints, eraseFin_length] }
+
+theorem connectStep_edge_mem_old
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (st : RenderState Sig (active :: frontier))
+    {edge : RenderEdge Sig}
+    (hmem : edge ∈ st.edges) :
+    edge ∈ (connectStep mate ok st).edges := by
+  unfold connectStep
+  split
+  · rename_i hids
+    exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  · simp [hmem]
+
+theorem connectStep_node_mem_old
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (st : RenderState Sig (active :: frontier))
+    {node : RenderNode Sig}
+    (hmem : node ∈ st.nodes) :
+    node ∈ (connectStep mate ok st).nodes := by
+  unfold connectStep
+  split
+  · rename_i hids
+    exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  · simpa using hmem
+
+theorem connectStep_node_mem_old_of_child
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (st : RenderState Sig (active :: frontier))
+    {node : RenderNode Sig}
+    (hmem : node ∈ (connectStep mate ok st).nodes) :
+    node ∈ st.nodes := by
+  unfold connectStep at hmem
+  split at hmem
+  · rename_i hids
+    exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  · simpa using hmem
+
+theorem connectStep_frontier_mem_old
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (st : RenderState Sig (active :: frontier))
+    {id : Nat}
+    (hmem : id ∈ (connectStep mate ok st).frontierIds) :
+    id ∈ st.frontierIds := by
+  unfold connectStep at hmem
+  split at hmem
+  · rename_i hids
+    exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  · rename_i activeId restIds hids
+    have hrest : restIds.length = frontier.length := by
+      have hlen := st.frontierIds_length
+      rw [hids] at hlen
+      simpa using Nat.succ.inj hlen
+    rw [hids]
+    right
+    exact mem_of_mem_eraseFin restIds (Fin.cast hrest.symm mate) hmem
+
+theorem connectStep_rawReachesBoundary_of_old
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (st : RenderState Sig (active :: frontier))
+    {boundary : List Sig.Port} {id : Nat}
+    (reach : st.RawReachesBoundary boundary.length id) :
+    (connectStep mate ok st).RawReachesBoundary boundary.length id :=
+  RenderState.RawReachesBoundary.mono
+    (st := st)
+    (st' := connectStep mate ok st)
+    (boundaryLength := boundary.length)
+    (id := id)
+    (fun _edge hmem => connectStep_edge_mem_old mate ok st hmem)
+    (fun _node hmem => connectStep_node_mem_old mate ok st hmem)
+    reach
+
+theorem connectStep_reachability {active : Sig.Port}
+    {frontier : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (st : RenderState Sig (active :: frontier))
+    {boundary : List Sig.Port}
+    (hr : st.Reachability boundary) :
+    (connectStep mate ok st).Reachability boundary where
+  frontier_reaches := by
+    intro id hmem
+    exact connectStep_rawReachesBoundary_of_old mate ok st
+      (hr.frontier_reaches id
+        (connectStep_frontier_mem_old mate ok st hmem))
+  node_reaches := by
+    intro node hmem
+    rcases hr.node_reaches node
+        (connectStep_node_mem_old_of_child mate ok st hmem) with
+      ⟨slot, reach⟩
+    exact ⟨slot, connectStep_rawReachesBoundary_of_old mate ok st reach⟩
 
 theorem connectStep_validIds {active : Sig.Port} {frontier : List Sig.Port}
     (mate : Fin frontier.length)
