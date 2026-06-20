@@ -259,6 +259,13 @@ lake exe bijform
   - `StringDiagram.OpenPortHypergraph.SearchState.initial_frontierComplete`
   - `StringDiagram.OpenPortHypergraph.SearchState.IsoRelated`
   - `StringDiagram.OpenPortHypergraph.SearchState.initial_isoRelated`
+  - `StringDiagram.OpenPortHypergraph.SearchState.IsoRelated.pending_cons`
+  - `StringDiagram.OpenPortHypergraph.SearchState.IsoRelated.pending_mem_preserved`
+  - `StringDiagram.OpenPortHypergraph.SearchState.IsoRelated.pending_mem_reflected`
+  - `StringDiagram.OpenPortHypergraph.SearchState.IsoRelated.seen_mem_preserved`
+  - `StringDiagram.OpenPortHypergraph.SearchState.IsoRelated.seen_mem_reflected`
+  - `StringDiagram.OpenPortHypergraph.SearchState.IsoRelated.processed_mem_preserved`
+  - `StringDiagram.OpenPortHypergraph.SearchState.IsoRelated.processed_mem_reflected`
   - `StringDiagram.OpenPortHypergraph.SearchState.processedEdges_length_le`
   - `StringDiagram.OpenPortHypergraph.SearchState.remainingEdges`
   - `StringDiagram.OpenPortHypergraph.SearchState.processedEdges_length_lt_of_pending`

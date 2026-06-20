@@ -5035,6 +5035,98 @@ theorem initial_isoRelated {G H : OpenPortHypergraph Sig boundary}
   processedEdges_eq := by
     simp [initial]
 
+theorem IsoRelated.pending_cons {G H : OpenPortHypergraph Sig boundary}
+    {e : PortHypergraphIso G.raw H.raw}
+    {frontier : List Sig.Port}
+    {left : SearchState G frontier} {right : SearchState H frontier}
+    (hr : IsoRelated e left right)
+    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
+    (hleft : left.pending = active :: rest) :
+    right.pending =
+      e.endpointEquiv.toFun active :: rest.map e.endpointEquiv.toFun := by
+  rw [hr.pending_eq, hleft]
+  rfl
+
+theorem IsoRelated.pending_mem_preserved {G H : OpenPortHypergraph Sig boundary}
+    {e : PortHypergraphIso G.raw H.raw}
+    {frontier : List Sig.Port}
+    {left : SearchState G frontier} {right : SearchState H frontier}
+    (hr : IsoRelated e left right)
+    {endpoint : Fin G.raw.endpointCount}
+    (hmem : endpoint ∈ left.pending) :
+    e.endpointEquiv.toFun endpoint ∈ right.pending := by
+  rw [hr.pending_eq]
+  exact List.mem_map.mpr ⟨endpoint, hmem, rfl⟩
+
+theorem IsoRelated.pending_mem_reflected {G H : OpenPortHypergraph Sig boundary}
+    {e : PortHypergraphIso G.raw H.raw}
+    {frontier : List Sig.Port}
+    {left : SearchState G frontier} {right : SearchState H frontier}
+    (hr : IsoRelated e left right)
+    {endpoint : Fin H.raw.endpointCount}
+    (hmem : endpoint ∈ right.pending) :
+    e.endpointEquiv.invFun endpoint ∈ left.pending := by
+  rw [hr.pending_eq] at hmem
+  rcases List.mem_map.mp hmem with ⟨endpoint', hendpoint', heq⟩
+  have hpre : e.endpointEquiv.invFun endpoint = endpoint' := by
+    rw [← heq]
+    simp
+  simpa [hpre] using hendpoint'
+
+theorem IsoRelated.seen_mem_preserved {G H : OpenPortHypergraph Sig boundary}
+    {e : PortHypergraphIso G.raw H.raw}
+    {frontier : List Sig.Port}
+    {left : SearchState G frontier} {right : SearchState H frontier}
+    (hr : IsoRelated e left right)
+    {node : Fin G.raw.nodeCount}
+    (hmem : node ∈ left.seenNodes) :
+    e.nodeEquiv.toFun node ∈ right.seenNodes := by
+  rw [hr.seenNodes_eq]
+  exact List.mem_map.mpr ⟨node, hmem, rfl⟩
+
+theorem IsoRelated.seen_mem_reflected {G H : OpenPortHypergraph Sig boundary}
+    {e : PortHypergraphIso G.raw H.raw}
+    {frontier : List Sig.Port}
+    {left : SearchState G frontier} {right : SearchState H frontier}
+    (hr : IsoRelated e left right)
+    {node : Fin H.raw.nodeCount}
+    (hmem : node ∈ right.seenNodes) :
+    e.nodeEquiv.invFun node ∈ left.seenNodes := by
+  rw [hr.seenNodes_eq] at hmem
+  rcases List.mem_map.mp hmem with ⟨node', hnode', heq⟩
+  have hpre : e.nodeEquiv.invFun node = node' := by
+    rw [← heq]
+    simp
+  simpa [hpre] using hnode'
+
+theorem IsoRelated.processed_mem_preserved
+    {G H : OpenPortHypergraph Sig boundary}
+    {e : PortHypergraphIso G.raw H.raw}
+    {frontier : List Sig.Port}
+    {left : SearchState G frontier} {right : SearchState H frontier}
+    (hr : IsoRelated e left right)
+    {edge : Fin G.raw.edgeCount}
+    (hmem : edge ∈ left.processedEdges) :
+    e.edgeEquiv.toFun edge ∈ right.processedEdges := by
+  rw [hr.processedEdges_eq]
+  exact List.mem_map.mpr ⟨edge, hmem, rfl⟩
+
+theorem IsoRelated.processed_mem_reflected
+    {G H : OpenPortHypergraph Sig boundary}
+    {e : PortHypergraphIso G.raw H.raw}
+    {frontier : List Sig.Port}
+    {left : SearchState G frontier} {right : SearchState H frontier}
+    (hr : IsoRelated e left right)
+    {edge : Fin H.raw.edgeCount}
+    (hmem : edge ∈ right.processedEdges) :
+    e.edgeEquiv.invFun edge ∈ left.processedEdges := by
+  rw [hr.processedEdges_eq] at hmem
+  rcases List.mem_map.mp hmem with ⟨edge', hedge', heq⟩
+  have hpre : e.edgeEquiv.invFun edge = edge' := by
+    rw [← heq]
+    simp
+  simpa [hpre] using hedge'
+
 theorem pending_cons_nodup {G : OpenPortHypergraph Sig boundary}
     {activeLabel : Sig.Port} {restLabels : List Sig.Port}
     (st : SearchState G (activeLabel :: restLabels))
