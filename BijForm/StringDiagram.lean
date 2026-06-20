@@ -314,12 +314,14 @@ structure PortHypergraph (Sig : Signature) (boundary : List Sig.Port) where
   boundary_label :
     ∀ b : Fin boundary.length, portLabel (boundaryPort b) = boundary.get b
   nodeLabel : Fin nodeCount → Sig.Node
-  incident :
-    (node : Fin nodeCount) →
-      Fin (Sig.arity (nodeLabel node)) → Fin portCount
+  incident : Fin nodeCount → List (Fin portCount)
+  incident_length :
+    ∀ node : Fin nodeCount, (incident node).length = Sig.arity (nodeLabel node)
   incidence_compatible :
-    ∀ (node : Fin nodeCount) (slot : Fin (Sig.arity (nodeLabel node))),
-      Sig.compatible (portLabel (incident node slot)) (Sig.port (nodeLabel node) slot)
+    ∀ (node : Fin nodeCount) (slot : Fin (incident node).length),
+      Sig.compatible
+        (portLabel ((incident node).get slot))
+        (Sig.port (nodeLabel node) (Fin.cast (incident_length node) slot))
 
 namespace PortHypergraph
 
@@ -336,17 +338,17 @@ inductive PortReachesBoundary (G : PortHypergraph Sig boundary) :
       PortReachesBoundary G (G.boundaryPort b)
   | throughConstructor {p q : Fin G.portCount}
       (node : Fin G.nodeCount)
-      (fromSlot toSlot : Fin (Sig.arity (G.nodeLabel node)))
-      (hp : G.incident node fromSlot = p)
-      (hq : G.incident node toSlot = q)
+      (fromSlot toSlot : Fin (G.incident node).length)
+      (hp : (G.incident node).get fromSlot = p)
+      (hq : (G.incident node).get toSlot = q)
       (reach : PortReachesBoundary G p) :
       PortReachesBoundary G q
 
 /-- Every constructor is in some component connected to the external boundary. -/
 def AllConstructorsReachBoundary (G : PortHypergraph Sig boundary) : Prop :=
   ∀ node : Fin G.nodeCount,
-    ∃ slot : Fin (Sig.arity (G.nodeLabel node)),
-      PortReachesBoundary G (G.incident node slot)
+    ∃ slot : Fin (G.incident node).length,
+      PortReachesBoundary G ((G.incident node).get slot)
 
 end PortHypergraph
 
@@ -371,17 +373,26 @@ structure PortHypergraphIso {Sig : Signature} {boundary : List Sig.Port}
   nodeEquiv : Fin G.nodeCount ≃ᵢ Fin H.nodeCount
   boundary_preserved :
     ∀ b : Fin boundary.length, portEquiv.toFun (G.boundaryPort b) = H.boundaryPort b
+  boundary_reflected :
+    ∀ b : Fin boundary.length, portEquiv.invFun (H.boundaryPort b) = G.boundaryPort b
   port_label_preserved :
     ∀ p : Fin G.portCount, G.portLabel p = H.portLabel (portEquiv.toFun p)
+  port_label_reflected :
+    ∀ p : Fin H.portCount, H.portLabel p = G.portLabel (portEquiv.invFun p)
   node_label_preserved :
     ∀ node : Fin G.nodeCount,
       G.nodeLabel node = H.nodeLabel (nodeEquiv.toFun node)
+  node_label_reflected :
+    ∀ node : Fin H.nodeCount,
+      H.nodeLabel node = G.nodeLabel (nodeEquiv.invFun node)
   incidence_preserved :
     ∀ node : Fin G.nodeCount,
-      ∀ slot : Fin (Sig.arity (G.nodeLabel node)),
-        portEquiv.toFun (G.incident node slot) =
-          H.incident (nodeEquiv.toFun node)
-            (Fin.cast (by rw [node_label_preserved node]) slot)
+      (G.incident node).map portEquiv.toFun =
+        H.incident (nodeEquiv.toFun node)
+  incidence_reflected :
+    ∀ node : Fin H.nodeCount,
+      (H.incident node).map portEquiv.invFun =
+        G.incident (nodeEquiv.invFun node)
 
 namespace PortHypergraphIso
 
@@ -393,32 +404,102 @@ def refl (G : PortHypergraph Sig boundary) : PortHypergraphIso G G where
   boundary_preserved := by
     intro _
     rfl
+  boundary_reflected := by
+    intro _
+    rfl
   port_label_preserved := by
+    intro _
+    rfl
+  port_label_reflected := by
     intro _
     rfl
   node_label_preserved := by
     intro _
     rfl
-  incidence_preserved := by
-    intro _ _
+  node_label_reflected := by
+    intro _
     rfl
+  incidence_preserved := by
+    intro _
+    simp [Iso.refl]
+  incidence_reflected := by
+    intro _
+    simp [Iso.refl]
 
-/--
-UNFINISHED: inverse finite relabelings should witness symmetry of typed
-boundary-preserving port-hypergraph isomorphism.
--/
 def symm {G H : PortHypergraph Sig boundary}
-    (e : PortHypergraphIso G H) : PortHypergraphIso H G := by
-  sorry
+    (e : PortHypergraphIso G H) : PortHypergraphIso H G where
+  portEquiv := Iso.symm e.portEquiv
+  nodeEquiv := Iso.symm e.nodeEquiv
+  boundary_preserved := e.boundary_reflected
+  boundary_reflected := e.boundary_preserved
+  port_label_preserved := e.port_label_reflected
+  port_label_reflected := e.port_label_preserved
+  node_label_preserved := e.node_label_reflected
+  node_label_reflected := e.node_label_preserved
+  incidence_preserved := e.incidence_reflected
+  incidence_reflected := e.incidence_preserved
 
-/--
-UNFINISHED: composed finite relabelings should witness transitivity of typed
-boundary-preserving port-hypergraph isomorphism.
--/
 def trans {G H K : PortHypergraph Sig boundary}
     (e₁ : PortHypergraphIso G H) (e₂ : PortHypergraphIso H K) :
-    PortHypergraphIso G K := by
-  sorry
+    PortHypergraphIso G K where
+  portEquiv := Iso.trans e₁.portEquiv e₂.portEquiv
+  nodeEquiv := Iso.trans e₁.nodeEquiv e₂.nodeEquiv
+  boundary_preserved := by
+    intro b
+    simp [Iso.trans, Function.comp, e₁.boundary_preserved b,
+      e₂.boundary_preserved b]
+  boundary_reflected := by
+    intro b
+    simp [Iso.trans, Function.comp, e₂.boundary_reflected b,
+      e₁.boundary_reflected b]
+  port_label_preserved := by
+    intro p
+    calc
+      G.portLabel p = H.portLabel (e₁.portEquiv.toFun p) :=
+        e₁.port_label_preserved p
+      _ = K.portLabel (e₂.portEquiv.toFun (e₁.portEquiv.toFun p)) :=
+        e₂.port_label_preserved (e₁.portEquiv.toFun p)
+  port_label_reflected := by
+    intro p
+    calc
+      K.portLabel p = H.portLabel (e₂.portEquiv.invFun p) :=
+        e₂.port_label_reflected p
+      _ = G.portLabel (e₁.portEquiv.invFun (e₂.portEquiv.invFun p)) :=
+        e₁.port_label_reflected (e₂.portEquiv.invFun p)
+  node_label_preserved := by
+    intro node
+    calc
+      G.nodeLabel node = H.nodeLabel (e₁.nodeEquiv.toFun node) :=
+        e₁.node_label_preserved node
+      _ = K.nodeLabel (e₂.nodeEquiv.toFun (e₁.nodeEquiv.toFun node)) :=
+        e₂.node_label_preserved (e₁.nodeEquiv.toFun node)
+  node_label_reflected := by
+    intro node
+    calc
+      K.nodeLabel node = H.nodeLabel (e₂.nodeEquiv.invFun node) :=
+        e₂.node_label_reflected node
+      _ = G.nodeLabel (e₁.nodeEquiv.invFun (e₂.nodeEquiv.invFun node)) :=
+        e₁.node_label_reflected (e₂.nodeEquiv.invFun node)
+  incidence_preserved := by
+    intro node
+    calc
+      (G.incident node).map (Iso.trans e₁.portEquiv e₂.portEquiv).toFun =
+          ((G.incident node).map e₁.portEquiv.toFun).map e₂.portEquiv.toFun := by
+        simp [Iso.trans, List.map_map]
+      _ = (H.incident (e₁.nodeEquiv.toFun node)).map e₂.portEquiv.toFun := by
+        rw [e₁.incidence_preserved node]
+      _ = K.incident (e₂.nodeEquiv.toFun (e₁.nodeEquiv.toFun node)) := by
+        rw [e₂.incidence_preserved (e₁.nodeEquiv.toFun node)]
+  incidence_reflected := by
+    intro node
+    calc
+      (K.incident node).map (Iso.trans e₁.portEquiv e₂.portEquiv).invFun =
+          ((K.incident node).map e₂.portEquiv.invFun).map e₁.portEquiv.invFun := by
+        simp [Iso.trans, List.map_map]
+      _ = (H.incident (e₂.nodeEquiv.invFun node)).map e₁.portEquiv.invFun := by
+        rw [e₂.incidence_reflected node]
+      _ = G.incident (e₁.nodeEquiv.invFun (e₂.nodeEquiv.invFun node)) := by
+        rw [e₁.incidence_reflected (e₂.nodeEquiv.invFun node)]
 
 end PortHypergraphIso
 
