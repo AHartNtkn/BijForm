@@ -259,6 +259,7 @@ lake exe bijform
   - `StringDiagram.Diag.toOpenPortHypergraph_connect_initial_search`
   - `StringDiagram.Diag.toOpenPortHypergraph_bud_initial_search`
   - `StringDiagram.Diag.renderTrace_connect_edgeMate_of_invariants`
+  - `StringDiagram.Diag.renderTrace_bud_entry_edgeMate_of_invariants`
   - `StringDiagram.EndpointOwner`
   - `StringDiagram.PortHypergraph`
   - `StringDiagram.PortHypergraph.endpointOwnersOf`
