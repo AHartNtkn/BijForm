@@ -1246,6 +1246,67 @@ structure TraversalState (G : OpenPortHypergraph Sig boundary)
     ∀ endpoint : Fin G.raw.endpointCount,
       endpoint ∈ pending → ¬ processedEdge (G.raw.endpointEdge endpoint)
 
+namespace TraversalState
+
+/--
+The completeness invariant missing from the current traversal proof.  Every
+unprocessed boundary endpoint, and every unprocessed endpoint of an already
+seen constructor, must occur in the ordered pending frontier.
+-/
+def FrontierComplete {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port} (st : TraversalState G frontier) : Prop :=
+  ∀ endpoint : Fin G.raw.endpointCount,
+    ¬ st.processedEdge (G.raw.endpointEdge endpoint) →
+      ∀ owner : EndpointOwner boundary.length G.raw.nodeCount
+          (fun node => (G.raw.incident node).length),
+        PortHypergraph.endpointOwnerEndpoint G.raw owner = endpoint →
+          match owner with
+          | .boundary _ => endpoint ∈ st.pending
+          | .constructor node _ => st.seenNode node → endpoint ∈ st.pending
+
+end TraversalState
+
+/--
+The local step condition needed by the first-pending traversal.  For the
+active endpoint and the remaining ordered pending endpoints, the edge mate must
+either already be in the remaining pending list, giving a `connect`, or be an
+ordered port of an unseen constructor, giving a `bud`.
+-/
+def FirstPendingStepReady (G : OpenPortHypergraph Sig boundary)
+    (seenNode : Fin G.raw.nodeCount → Prop)
+    (active : Fin G.raw.endpointCount)
+    (rest : List (Fin G.raw.endpointCount)) : Prop :=
+  (∃ mate : Fin rest.length,
+    PortHypergraph.EdgeMate G.raw active (rest.get mate)) ∨
+  (∃ (node : Fin G.raw.nodeCount)
+      (slot : Fin (G.raw.incident node).length),
+    PortHypergraph.EdgeMate G.raw active ((G.raw.incident node).get slot) ∧
+      ¬ seenNode node)
+
+/--
+The global traversal-readiness invariant for an open representative.  It is
+the missing totality statement for the owned graph-to-`Diag` search: every
+nonempty ordered pending state has the constructor choice required by the
+syntax.
+-/
+def FirstPendingTraversalReady (G : OpenPortHypergraph Sig boundary) : Prop :=
+  ∀ {activeLabel : Sig.Port} {restLabels : List Sig.Port}
+    (st : TraversalState G (activeLabel :: restLabels))
+    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)},
+    st.FrontierComplete →
+    st.pending = active :: rest →
+      FirstPendingStepReady G st.seenNode active rest
+
+/--
+UNFINISHED traversal blocker: the current semantic bridge requires this theorem,
+plus initial/step preservation of `TraversalState.FrontierComplete`, to make
+the first-pending traversal total.
+-/
+theorem firstPendingTraversalReady_of_frontierComplete
+    (G : OpenPortHypergraph Sig boundary) :
+    FirstPendingTraversalReady G := by
+  sorry
+
 def isoRel (G H : OpenPortHypergraph Sig boundary) : Prop :=
   Nonempty (PortHypergraphIso G.raw H.raw)
 
@@ -1279,7 +1340,10 @@ nodes are labeled, whose external boundary endpoints are ordered, and whose
 constructors lie in components connected to that ordered boundary, up to
 ordered boundary-preserving isomorphism.  The proof must instantiate a
 canonical search procedure whose unique traversal order supplies the canonical
-edge and node labels used for linear isomorphism testing.
+edge and node labels used for linear isomorphism testing.  The immediate
+blocker is proving and preserving
+`OpenPortHypergraph.TraversalState.FrontierComplete`, then discharging
+`OpenPortHypergraph.firstPendingTraversalReady_of_frontierComplete`.
 -/
 def diagOpenPortHypergraphIso (Sig : Signature) (boundary : List Sig.Port) :
     Diag Sig boundary ≃ᵢ OpenPortHypergraphUpToIso Sig boundary := by
