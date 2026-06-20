@@ -50,53 +50,25 @@ def FinChainPoly : DepPoly Nat where
   Pos := FinChainPos
   input := FinChainInput
 
-inductive FinChainCode (i : Nat) where
-  | done
-  | step (n : Nat) (tag : Fin (n + 2)) (out_eq : n + 1 = i)
-
-def FinChainDecode (i : Nat) : FinChainCode i → Fiber FinChainPoly i
-  | .done => ⟨.done, i, rfl⟩
-  | .step n tag h => ⟨.step, ⟨n, tag⟩, h⟩
-
-def FinChainEncode (i : Nat) : Fiber FinChainPoly i → FinChainCode i
-  | ⟨.done, _n, _h⟩ => .done
-  | ⟨.step, p, h⟩ => .step p.1 p.2 h
-
-theorem FinChain_decode_encode (i : Nat) (f : Fiber FinChainPoly i) :
-    FinChainDecode i (FinChainEncode i f) = f := by
-  cases f with
-  | mk ctor param out_eq =>
-    cases ctor with
-    | done =>
-        cases out_eq
-        rfl
-    | step =>
-        cases param with
-        | mk n tag =>
-          rfl
-
-theorem FinChain_encode_decode (i : Nat) (c : FinChainCode i) :
-    FinChainEncode i (FinChainDecode i c) = c := by
-  cases c with
-  | done => rfl
-  | step n tag h => rfl
-
-def FinChainInversion : OutputIndexInversion FinChainPoly where
-  Code := FinChainCode
-  decode := FinChainDecode
-  encode := FinChainEncode
-  decode_encode := FinChain_decode_encode
-  encode_decode := FinChain_encode_decode
+def FinChainInversion : OutputIndexInversion FinChainPoly :=
+  OutputIndexInversion.canonical FinChainPoly
 
 def FinChainLayerToSyntax (i : Nat) :
     CodeLayer FinChainPoly FinChainInversion FinChainSyntax i → FinChainSyntax i
-  | ⟨.done, _child⟩ => .done
-  | ⟨.step _n tag h, child⟩ => h ▸ (.step tag (child ()))
+  | ⟨⟨.done, _n, h⟩, _child⟩ => by
+      cases h
+      exact .done
+  | ⟨⟨.step, p, h⟩, child⟩ => by
+      cases p with
+      | mk n tag =>
+          cases h
+          exact .step tag (child ())
 
 def FinChainSyntaxToLayer (i : Nat) :
     FinChainSyntax i → CodeLayer FinChainPoly FinChainInversion FinChainSyntax i
-  | .done => ⟨.done, fun q => nomatch q⟩
-  | @FinChainSyntax.step n tag child => ⟨.step n tag rfl, fun _ => child⟩
+  | .done => ⟨⟨FinChainCtor.done, (i : Nat), rfl⟩, fun q => nomatch q⟩
+  | @FinChainSyntax.step n tag child =>
+      ⟨⟨FinChainCtor.step, ⟨n, tag⟩, rfl⟩, fun _ => child⟩
 
 theorem FinChainLayer_left_inv (i : Nat) :
     Function.LeftInverse (FinChainSyntaxToLayer i) (FinChainLayerToSyntax i) := by
@@ -104,17 +76,22 @@ theorem FinChainLayer_left_inv (i : Nat) :
   cases layer with
   | mk code child =>
     cases code with
-    | done =>
-        have hchild : (fun q => nomatch q) = child := by
-          child_eta_empty
-        cases hchild
-        rfl
-    | step n tag h =>
-        cases h
-        have hchild : (fun _ => child ()) = child := by
-          child_eta_unit
-        cases hchild
-        rfl
+    | mk ctor param out_eq =>
+      cases ctor with
+      | done =>
+          cases out_eq
+          have hchild : (fun q => nomatch q) = child := by
+            child_eta_empty
+          cases hchild
+          rfl
+      | step =>
+          cases param with
+          | mk n tag =>
+            cases out_eq
+            have hchild : (fun _ => child ()) = child := by
+              child_eta_unit
+            cases hchild
+            rfl
 
 theorem FinChainLayer_right_inv (i : Nat) :
     Function.RightInverse (FinChainSyntaxToLayer i) (FinChainLayerToSyntax i) := by
@@ -141,8 +118,8 @@ theorem FinChain_layer_child_rank_lt :
   | done => cases q
   | step tag child =>
       cases q
-      simp [FinChainLayerIso, FinChainSyntaxToLayer, FinChainInversion, FinChainDecode,
-        FinChainSyntax.rank]
+      simp [FinChainLayerIso, FinChainSyntaxToLayer, FinChainInversion,
+        OutputIndexInversion.canonical, FinChainSyntax.rank]
 
 def FinChainGeneratedCode : GeneratedCode FinChainPoly FinChainSyntax where
   inversion := FinChainInversion
@@ -174,20 +151,29 @@ abbrev FinChainCarrier (i : Nat) : Type :=
 def FinChainZeroLayerIso :
     CodeLayer FinChainPoly FinChainInversion FinChainCarrier 0 ≃ᵢ FinChainCarrier 0 where
   toFun
-    | ⟨.done, _child⟩ => ⟨0, by decide⟩
-    | ⟨.step _m _tag h, _child⟩ => by cases h
-  invFun := fun _ => ⟨.done, fun q => nomatch q⟩
+    | ⟨⟨.done, _n, h⟩, _child⟩ => by
+        cases h
+        exact ⟨0, by decide⟩
+    | ⟨⟨.step, p, h⟩, _child⟩ => by
+        cases p with
+        | mk _m _tag => cases h
+  invFun := fun _ => ⟨⟨FinChainCtor.done, (0 : Nat), rfl⟩, fun q => nomatch q⟩
   left_inv := by
     intro layer
     cases layer with
     | mk code child =>
       cases code with
-      | done =>
-          have hchild : (fun q => nomatch q) = child := by
-            child_eta_empty
-          cases hchild
-          rfl
-      | step m tag h => cases h
+      | mk ctor param out_eq =>
+        cases ctor with
+        | done =>
+            cases out_eq
+            have hchild : (fun q => nomatch q) = child := by
+              child_eta_empty
+            cases hchild
+            rfl
+        | step =>
+            cases param with
+            | mk _m _tag => cases out_eq
   right_inv := by
     intro code
     have hcode : code = ⟨0, by decide⟩ := by
@@ -204,29 +190,39 @@ def FinChainSuccLayerShapeIso (n : Nat) :
     CodeLayer FinChainPoly FinChainInversion FinChainCarrier (n + 1) ≃ᵢ
       FinChainSuccLayerShape n where
   toFun
-    | ⟨.done, _child⟩ => Sum.inl ⟨0, by decide⟩
-    | ⟨.step _m tag h, child⟩ => by
+    | ⟨⟨.done, _m, h⟩, _child⟩ => by
         cases h
-        exact Sum.inr (tag, child ())
+        exact Sum.inl ⟨0, by decide⟩
+    | ⟨⟨.step, p, h⟩, child⟩ => by
+        cases p with
+        | mk m tag =>
+          cases h
+          exact Sum.inr (tag, child ())
   invFun
-    | Sum.inl _ => ⟨.done, fun q => nomatch q⟩
-    | Sum.inr payload => ⟨.step n payload.1 rfl, fun _ => payload.2⟩
+    | Sum.inl _ => ⟨⟨FinChainCtor.done, (n + 1 : Nat), rfl⟩, fun q => nomatch q⟩
+    | Sum.inr payload =>
+        ⟨⟨FinChainCtor.step, ⟨n, payload.1⟩, rfl⟩, fun _ => payload.2⟩
   left_inv := by
     intro layer
     cases layer with
     | mk code child =>
       cases code with
-      | done =>
-          have hchild : (fun q => nomatch q) = child := by
-            child_eta_empty
-          cases hchild
-          rfl
-      | step m tag h =>
-          cases h
-          have hchild : (fun _ => child ()) = child := by
-            child_eta_unit
-          cases hchild
-          rfl
+      | mk ctor param out_eq =>
+        cases ctor with
+        | done =>
+            cases out_eq
+            have hchild : (fun q => nomatch q) = child := by
+              child_eta_empty
+            cases hchild
+            rfl
+        | step =>
+            cases param with
+            | mk m tag =>
+              cases out_eq
+              have hchild : (fun _ => child ()) = child := by
+                child_eta_unit
+              cases hchild
+              rfl
   right_inv := by
     intro shape
     cases shape with
@@ -266,11 +262,16 @@ theorem FinChainShape_child_rank_lt :
   cases layer with
   | mk code child =>
     cases code with
-    | done => cases q
-    | step n tag h =>
-        cases h
-        cases q
-        simp [FinChainPoly, FinChainInput, FinChainInversion, FinChainDecode]
+    | mk ctor param out_eq =>
+      cases ctor with
+      | done => cases q
+      | step =>
+          cases param with
+          | mk n tag =>
+            cases out_eq
+            cases q
+            change n < n + 1
+            exact Nat.lt_succ_self n
 
 def FinChainGeneratedShapeCode : GeneratedShapeCode FinChainPoly where
   shape := FinChainShape

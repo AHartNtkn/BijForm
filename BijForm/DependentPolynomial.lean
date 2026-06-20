@@ -81,6 +81,34 @@ structure OutputIndexInversion (P : DepPoly ι) where
 
 namespace OutputIndexInversion
 
+/-- The canonical same-fiber inversion: the code for each output index is the
+fiber itself.  This is the generated default when no smaller constructor-code
+presentation is needed. -/
+def canonical (P : DepPoly ι) : OutputIndexInversion P where
+  Code := Fiber P
+  decode := fun _ f => f
+  encode := fun _ f => f
+  decode_encode := by
+    intro _ _
+    rfl
+  encode_decode := by
+    intro _ _
+    rfl
+
+/-- Build an output-index inversion from an explicit isomorphism between a
+chosen code family and the same-fiber constructor data. -/
+def ofIso {P : DepPoly ι} (Code : ι → Type u)
+    (e : ∀ i, Code i ≃ᵢ Fiber P i) : OutputIndexInversion P where
+  Code := Code
+  decode := fun i c => (e i).toFun c
+  encode := fun i f => (e i).invFun f
+  decode_encode := by
+    intro i f
+    exact (e i).right_inv f
+  encode_decode := by
+    intro i c
+    exact (e i).left_inv c
+
 def fiberIso {P : DepPoly ι} (H : OutputIndexInversion P) (i : ι) :
     H.Code i ≃ᵢ Fiber P i where
   toFun := H.decode i
