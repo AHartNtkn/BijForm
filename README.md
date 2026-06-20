@@ -109,7 +109,6 @@ lake exe bijform
   - `BijForm.Examples.Sorted`
   - `BijForm.Examples.FinChain`
   - `BijForm.Examples.Lambda`
-  - `BijForm.TypedBinding`
   - `BijForm.Examples.TypedBinding.NF`
   - `BijForm.Examples.Num`
   - `BijForm.Examples.Peano`
@@ -325,14 +324,14 @@ expressions still code to `Nat`.
 
 Main results for this instance:
 
-- `TypedBinding.NFLayerShapeCodingData : TypedBinding.LayerShapeCodingData TypedBinding.NFSignature`
-- `TypedBinding.NFSyntaxCodeIso (Γ) (t) : Iso (TypedBinding.NFTerm Γ t) (TypedBinding.NFCode (Γ, t))`
-- `TypedBinding.NormalExpNatIso (Γ) : Iso (TypedBinding.NormalExp Γ) Nat`
-- `TypedBinding.AppTermCodeIso (Γ) : Iso (TypedBinding.AppTerm Γ) (Fin (TypedBinding.appTermCount Γ) x Nat)`
-- `TypedBinding.NFClosedNatIso : Iso TypedBinding.NFClosed Nat`
-- `TypedBinding.NFCode_normalExp_carrier (Γ) : TypedBinding.NFCode (Γ, normalExp) = Nat`
-- `TypedBinding.NFCode_appTerm_carrier (Γ) : TypedBinding.NFCode (Γ, appTerm) = Fin (TypedBinding.appTermCount Γ) x Nat`
-- `TypedBinding.ClosedAppTermEmptyIso : Iso (TypedBinding.AppTerm []) Empty`
+- `BijForm.Examples.TypedBinding.NFLayerShapeCodingData : BijForm.TypedBinding.LayerShapeCodingData BijForm.Examples.TypedBinding.NFSignature`
+- `BijForm.Examples.TypedBinding.NFSyntaxCodeIso (Γ) (t) : Iso (BijForm.Examples.TypedBinding.NFTerm Γ t) (BijForm.Examples.TypedBinding.NFCode (Γ, t))`
+- `BijForm.Examples.TypedBinding.NormalExpNatIso (Γ) : Iso (BijForm.Examples.TypedBinding.NormalExp Γ) Nat`
+- `BijForm.Examples.TypedBinding.AppTermCodeIso (Γ) : Iso (BijForm.Examples.TypedBinding.AppTerm Γ) (Fin (BijForm.Examples.TypedBinding.appTermCount Γ) x Nat)`
+- `BijForm.Examples.TypedBinding.NFClosedNatIso : Iso BijForm.Examples.TypedBinding.NFClosed Nat`
+- `BijForm.Examples.TypedBinding.NFCode_normalExp_carrier (Γ) : BijForm.Examples.TypedBinding.NFCode (Γ, normalExp) = Nat`
+- `BijForm.Examples.TypedBinding.NFCode_appTerm_carrier (Γ) : BijForm.Examples.TypedBinding.NFCode (Γ, appTerm) = Fin (BijForm.Examples.TypedBinding.appTermCount Γ) x Nat`
+- `BijForm.Examples.TypedBinding.ClosedAppTermEmptyIso : Iso (BijForm.Examples.TypedBinding.AppTerm []) Empty`
 
 ### Numeric Expressions
 
