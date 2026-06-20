@@ -116,9 +116,12 @@ lake exe bijform
   - `StringDiagram.generatedCode`
   - `StringDiagram.syntaxIso`
   - `StringDiagram.RenderState`
+  - `StringDiagram.Diag.connectStep`
+  - `StringDiagram.Diag.budStep`
   - `StringDiagram.Diag.renderTraceFromBoundary`
   - `StringDiagram.EndpointOwner`
   - `StringDiagram.PortHypergraph`
+  - `StringDiagram.PortHypergraph.endpointOwnersOf`
   - `StringDiagram.PortHypergraph.PortReachesBoundary`
   - `StringDiagram.OpenPortHypergraph`
   - `StringDiagram.PortHypergraphIso`

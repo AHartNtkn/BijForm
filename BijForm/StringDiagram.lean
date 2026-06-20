@@ -12,6 +12,19 @@ def eraseFin {α : Type} : (xs : List α) → Fin xs.length → List α
   | x :: xs, ⟨n + 1, h⟩ =>
       x :: eraseFin xs ⟨n, Nat.lt_of_succ_lt_succ h⟩
 
+@[simp]
+theorem eraseFin_length {α : Type} :
+    ∀ (xs : List α) (i : Fin xs.length),
+      (eraseFin xs i).length = xs.length - 1
+  | [], i => nomatch i
+  | _ :: xs, ⟨0, _⟩ => by simp [eraseFin]
+  | x :: xs, ⟨n + 1, h⟩ => by
+      have ih := eraseFin_length xs ⟨n, Nat.lt_of_succ_lt_succ h⟩
+      have htail : n < xs.length := Nat.lt_of_succ_lt_succ h
+      have hpos : 0 < xs.length := Nat.lt_of_le_of_lt (Nat.zero_le n) htail
+      simp [eraseFin, ih]
+      exact Nat.sub_add_cancel (Nat.succ_le_of_lt hpos)
+
 /--
 A typed ordered-port string-diagram signature.
 
@@ -194,29 +207,31 @@ structure RenderNode (Sig : Signature) where
 /--
 Mutable-by-return construction state for rendering traversal syntax.
 
-The `frontier` field stores endpoint identifiers in the same order as the
-current `Diag` index.  `connect` consumes the head identifier and one later
-identifier.  `bud` consumes the head identifier, allocates the ordered
+The `frontierIds` field stores endpoint identifiers in the same order as the
+frontier in the type index.  `connect` consumes the head identifier and one
+later identifier.  `bud` consumes the head identifier, allocates the ordered
 constructor endpoints, connects the chosen entry endpoint, and appends the
 remaining constructor endpoints to the frontier.
 -/
-structure RenderState (Sig : Signature) where
+structure RenderState (Sig : Signature) (frontier : List Sig.Port) where
   nextEndpoint : Nat
   endpoints : List Sig.Port
   edges : List (RenderEdge Sig)
   nodes : List (RenderNode Sig)
-  frontier : List Nat
+  frontierIds : List Nat
+  frontierIds_length : frontierIds.length = frontier.length
 
 namespace RenderState
 
 variable (Sig : Signature)
 
-def initial (boundary : List Sig.Port) : RenderState Sig where
+def initial (boundary : List Sig.Port) : RenderState Sig boundary where
   nextEndpoint := boundary.length
   endpoints := boundary
   edges := []
   nodes := []
-  frontier := List.range boundary.length
+  frontierIds := List.range boundary.length
+  frontierIds_length := by simp
 
 end RenderState
 
@@ -227,15 +242,79 @@ variable {Sig : Signature}
 def freshNodeEndpoints (start arity : Nat) : List Nat :=
   (List.range arity).map fun offset => start + offset
 
-def getD (fallback : Nat) : List Nat → Nat → Nat
-  | [], _ => fallback
-  | x :: _, 0 => x
-  | _ :: xs, n + 1 => getD fallback xs n
+@[simp]
+theorem freshNodeEndpoints_length (start arity : Nat) :
+    (freshNodeEndpoints start arity).length = arity := by
+  simp [freshNodeEndpoints]
 
-def eraseNat : List Nat → Nat → List Nat
-  | [], _ => []
-  | _ :: xs, 0 => xs
-  | x :: xs, n + 1 => x :: eraseNat xs n
+/--
+One `connect` rendering step.  The type records the frontier effect: the
+active endpoint and selected mate are consumed, leaving `eraseFin frontier
+mate`.
+-/
+def connectStep {active : Sig.Port} {frontier : List Sig.Port}
+    (mate : Fin frontier.length)
+    (st : RenderState Sig (active :: frontier)) :
+    RenderState Sig (eraseFin frontier mate) :=
+  match hids : st.frontierIds with
+  | [] =>
+      False.elim (by
+        have hlen := st.frontierIds_length
+        rw [hids] at hlen
+        simp at hlen)
+  | activeId :: restIds =>
+      have hrest : restIds.length = frontier.length := by
+        have hlen := st.frontierIds_length
+        rw [hids] at hlen
+        simpa using Nat.succ.inj hlen
+      let mateId := restIds.get (Fin.cast hrest.symm mate)
+      let childIds := eraseFin restIds (Fin.cast hrest.symm mate)
+      { nextEndpoint := st.nextEndpoint
+        endpoints := st.endpoints
+        edges := st.edges ++
+          [{ label := Sig.portEdge active, left := activeId, right := mateId }]
+        nodes := st.nodes
+        frontierIds := childIds
+        frontierIds_length := by
+          dsimp [childIds]
+          simp [eraseFin_length, hrest] }
+
+/--
+One `bud` rendering step.  The type records the frontier effect: the active
+endpoint and selected constructor entry are consumed, and the remaining ordered
+constructor endpoints are appended after the existing rest frontier.
+-/
+def budStep {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (st : RenderState Sig (active :: frontier)) :
+    RenderState Sig (frontier ++ Sig.nodePortsExcept node entry) :=
+  match hids : st.frontierIds with
+  | [] =>
+      False.elim (by
+        have hlen := st.frontierIds_length
+        rw [hids] at hlen
+        simp at hlen)
+  | activeId :: restIds =>
+      have hrest : restIds.length = frontier.length := by
+        have hlen := st.frontierIds_length
+        rw [hids] at hlen
+        simpa using Nat.succ.inj hlen
+      let nodeEndpoints := freshNodeEndpoints st.nextEndpoint (Sig.arity node)
+      let entryId := nodeEndpoints.get
+        (Fin.cast (by simp [nodeEndpoints]) entry)
+      let childIds := restIds ++
+        eraseFin nodeEndpoints (Fin.cast (by simp [nodeEndpoints]) entry)
+      { nextEndpoint := st.nextEndpoint + Sig.arity node
+        endpoints := st.endpoints ++ Sig.nodePorts node
+        edges := st.edges ++
+          [{ label := Sig.portEdge active, left := activeId, right := entryId }]
+        nodes := st.nodes ++ [{ label := node, incident := nodeEndpoints }]
+        frontierIds := childIds
+        frontierIds_length := by
+          dsimp [childIds]
+          simp [hrest, Signature.nodePortsExcept, Signature.nodePorts,
+            nodeEndpoints, eraseFin_length] }
 
 /--
 Execute traversal syntax into a construction trace.
@@ -245,37 +324,54 @@ frontier-processing pass that the bridge uses to build a finished
 `PortHypergraph`.
 -/
 def renderTrace :
-    ∀ {frontier : List Sig.Port}, Diag Sig frontier → RenderState Sig → RenderState Sig
-  | [], finish, st => { st with frontier := [] }
-  | active :: _frontier, connect mate _ok child, st =>
-      match st.frontier with
-      | [] => renderTrace child st
-      | activeId :: rest =>
-          let mateId := getD activeId rest mate.val
-          let st' : RenderState Sig :=
-            { st with
-              edges := st.edges ++
-                [{ label := Sig.portEdge active, left := activeId, right := mateId }]
-              frontier := eraseNat rest mate.val }
-          renderTrace child st'
-  | active :: _frontier, bud node entry _ok child, st =>
-      match st.frontier with
-      | [] => renderTrace child st
-      | activeId :: rest =>
-          let nodeEndpoints := freshNodeEndpoints st.nextEndpoint (Sig.arity node)
-          let entryId := getD st.nextEndpoint nodeEndpoints entry.val
-          let st' : RenderState Sig :=
-            { nextEndpoint := st.nextEndpoint + Sig.arity node
-              endpoints := st.endpoints ++ Sig.nodePorts node
-              edges := st.edges ++
-                [{ label := Sig.portEdge active, left := activeId, right := entryId }]
-              nodes := st.nodes ++ [{ label := node, incident := nodeEndpoints }]
-              frontier := rest ++ eraseNat nodeEndpoints entry.val }
-          renderTrace child st'
+    ∀ {frontier : List Sig.Port}, Diag Sig frontier → RenderState Sig frontier →
+      RenderState Sig []
+  | [], finish, st =>
+      { nextEndpoint := st.nextEndpoint
+        endpoints := st.endpoints
+        edges := st.edges
+        nodes := st.nodes
+        frontierIds := []
+        frontierIds_length := rfl }
+  | _active :: _frontier, connect mate _ok child, st =>
+      renderTrace child (connectStep mate st)
+  | _active :: _frontier, bud node entry _ok child, st =>
+      renderTrace child (budStep node entry st)
+
+theorem renderTrace_connect
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (child : Diag Sig (eraseFin frontier mate))
+    (st : RenderState Sig (active :: frontier)) :
+    renderTrace (Diag.connect mate ok child) st =
+      renderTrace child (connectStep mate st) :=
+  rfl
+
+theorem renderTrace_bud
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (child : Diag Sig (frontier ++ Sig.nodePortsExcept node entry))
+    (st : RenderState Sig (active :: frontier)) :
+    renderTrace (Diag.bud node entry ok child) st =
+      renderTrace child (budStep node entry st) :=
+  rfl
 
 def renderTraceFromBoundary {boundary : List Sig.Port} (d : Diag Sig boundary) :
-    RenderState Sig :=
+    RenderState Sig [] :=
   renderTrace d (RenderState.initial Sig boundary)
+
+theorem renderTraceFromBoundary_frontier_empty
+    {boundary : List Sig.Port} (d : Diag Sig boundary) :
+    (renderTraceFromBoundary d).frontierIds = [] := by
+  have hlen := (renderTraceFromBoundary d).frontierIds_length
+  cases hids : (renderTraceFromBoundary d).frontierIds with
+  | nil => rfl
+  | cons _head _tail =>
+      rw [hids] at hlen
+      simp at hlen
 
 end Diag
 
@@ -443,7 +539,9 @@ def syntaxIso (Sig : Signature) (boundary : List Sig.Port) :
 The syntax above uses a frontier of endpoint labels.  The semantic
 representative separates those endpoint records from the edges/wires that
 connect them: endpoints carry `Sig.Port`, edges carry `Sig.Edge`, and every
-endpoint is incident to exactly one edge.
+endpoint is incident to exactly one edge.  Every endpoint also has exactly one
+semantic owner: either one ordered boundary position or one ordered
+constructor port.
 -/
 
 /-- The unique semantic role played by a graph endpoint. -/
@@ -459,7 +557,9 @@ inductive EndpointOwner (boundaryLength nodeCount : Nat)
 A finite typed port-hypergraph representative with an ordered external
 boundary.  Endpoints carry endpoint labels, edges carry wire labels, nodes
 carry constructor labels, and every constructor incidence points to an ordered
-constructor port.
+constructor port.  The `endpoint_owner` field is the global monogamy condition
+for endpoint ownership: local injectivity is not enough, so each endpoint must
+have exactly one boundary-or-constructor owner.
 -/
 structure PortHypergraph (Sig : Signature) (boundary : List Sig.Port) where
   endpointCount : Nat
@@ -517,6 +617,22 @@ structure PortHypergraph (Sig : Signature) (boundary : List Sig.Port) where
 namespace PortHypergraph
 
 variable {Sig : Signature} {boundary : List Sig.Port}
+
+/-- Interpret an endpoint owner as the endpoint it owns in a concrete graph. -/
+def endpointOwnerEndpoint (G : PortHypergraph Sig boundary) :
+    EndpointOwner boundary.length G.nodeCount
+        (fun node => (G.incident node).length) →
+      Fin G.endpointCount
+  | .boundary boundaryIndex => G.boundaryPort boundaryIndex
+  | .constructor node slot => (G.incident node).get slot
+
+/-- The owners of a fixed endpoint.  Valid semantic representatives require
+this subtype to have exactly one inhabitant for every endpoint. -/
+def endpointOwnersOf (G : PortHypergraph Sig boundary)
+    (endpoint : Fin G.endpointCount) : Type :=
+  { owner : EndpointOwner boundary.length G.nodeCount
+      (fun node => (G.incident node).length) //
+    endpointOwnerEndpoint G owner = endpoint }
 
 /--
 A port endpoint has a path to the ordered boundary when it is a boundary
