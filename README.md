@@ -165,6 +165,12 @@ lake exe bijform
   - `StringDiagram.Diag.renderTrace_connect_edge_mem`
   - `StringDiagram.Diag.renderTrace_bud_edge_mem`
   - `StringDiagram.Diag.renderTrace_bud_node_mem`
+  - `StringDiagram.Diag.connectStep_edgesPrefix`
+  - `StringDiagram.Diag.budStep_edgesPrefix`
+  - `StringDiagram.Diag.renderTrace_edgesPrefix`
+  - `StringDiagram.Diag.connectStep_nodesPrefix`
+  - `StringDiagram.Diag.budStep_nodesPrefix`
+  - `StringDiagram.Diag.renderTrace_nodesPrefix`
   - `StringDiagram.Diag.renderTraceFromBoundary_endpointPartition`
   - `StringDiagram.Diag.renderTraceFromBoundary_nodeIncidentNodup`
   - `StringDiagram.Diag.renderTraceFromBoundary_ownerIdPartition`

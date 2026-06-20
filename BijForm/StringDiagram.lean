@@ -3497,6 +3497,116 @@ theorem renderTrace_bud_node_mem
   exact renderTrace_node_mem_old child (budStep node entry ok st)
     (budStep_new_node_mem node entry ok st)
 
+theorem connectStep_edgesPrefix
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (st : RenderState Sig (active :: frontier)) :
+    ∃ suffix : List (RenderEdge Sig),
+      (connectStep mate ok st).edges = st.edges ++ suffix := by
+  unfold connectStep
+  split
+  · rename_i hids
+    exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  · exact ⟨[_], rfl⟩
+
+theorem budStep_edgesPrefix
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (st : RenderState Sig (active :: frontier)) :
+    ∃ suffix : List (RenderEdge Sig),
+      (budStep node entry ok st).edges = st.edges ++ suffix := by
+  unfold budStep
+  split
+  · rename_i hids
+    exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  · exact ⟨[_], rfl⟩
+
+/--
+Edges already in a render state remain an ordered prefix of the completed
+render trace.  The recursive bridge uses this stronger prefix fact, not just
+membership, to identify processed edge indices after a render prefix.
+-/
+theorem renderTrace_edgesPrefix :
+    ∀ {frontier : List Sig.Port} (d : Diag Sig frontier)
+      (st : RenderState Sig frontier),
+      ∃ suffix : List (RenderEdge Sig),
+        (renderTrace d st).edges = st.edges ++ suffix
+  | [], finish, st => by
+      refine ⟨[], ?_⟩
+      simp [renderTrace]
+  | _active :: _frontier, connect mate ok child, st => by
+      rcases renderTrace_edgesPrefix child (connectStep mate ok st) with
+        ⟨suffix, hsuffix⟩
+      rcases connectStep_edgesPrefix mate ok st with
+        ⟨stepSuffix, hstep⟩
+      refine ⟨stepSuffix ++ suffix, ?_⟩
+      rw [renderTrace_connect, hsuffix, hstep, List.append_assoc]
+  | _active :: _frontier, bud node entry ok child, st => by
+      rcases renderTrace_edgesPrefix child (budStep node entry ok st) with
+        ⟨suffix, hsuffix⟩
+      rcases budStep_edgesPrefix node entry ok st with
+        ⟨stepSuffix, hstep⟩
+      refine ⟨stepSuffix ++ suffix, ?_⟩
+      rw [renderTrace_bud, hsuffix, hstep, List.append_assoc]
+
+theorem connectStep_nodesPrefix
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (st : RenderState Sig (active :: frontier)) :
+    ∃ suffix : List (RenderNode Sig),
+      (connectStep mate ok st).nodes = st.nodes ++ suffix := by
+  unfold connectStep
+  split
+  · rename_i hids
+    exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  · exact ⟨[], by simp⟩
+
+theorem budStep_nodesPrefix
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (st : RenderState Sig (active :: frontier)) :
+    ∃ suffix : List (RenderNode Sig),
+      (budStep node entry ok st).nodes = st.nodes ++ suffix := by
+  unfold budStep
+  split
+  · rename_i hids
+    exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  · exact ⟨[_], rfl⟩
+
+/--
+Constructor nodes already in a render state remain an ordered prefix of the
+completed render trace.  The recursive bridge uses this to identify seen-node
+indices after a render prefix.
+-/
+theorem renderTrace_nodesPrefix :
+    ∀ {frontier : List Sig.Port} (d : Diag Sig frontier)
+      (st : RenderState Sig frontier),
+      ∃ suffix : List (RenderNode Sig),
+        (renderTrace d st).nodes = st.nodes ++ suffix
+  | [], finish, st => by
+      refine ⟨[], ?_⟩
+      simp [renderTrace]
+  | _active :: _frontier, connect mate ok child, st => by
+      rcases renderTrace_nodesPrefix child (connectStep mate ok st) with
+        ⟨suffix, hsuffix⟩
+      rcases connectStep_nodesPrefix mate ok st with
+        ⟨stepSuffix, hstep⟩
+      refine ⟨stepSuffix ++ suffix, ?_⟩
+      rw [renderTrace_connect, hsuffix, hstep, List.append_assoc]
+  | _active :: _frontier, bud node entry ok child, st => by
+      rcases renderTrace_nodesPrefix child (budStep node entry ok st) with
+        ⟨suffix, hsuffix⟩
+      rcases budStep_nodesPrefix node entry ok st with
+        ⟨stepSuffix, hstep⟩
+      refine ⟨stepSuffix ++ suffix, ?_⟩
+      rw [renderTrace_bud, hsuffix, hstep, List.append_assoc]
+
 theorem connectStep_edges_length
     {active : Sig.Port} {frontier : List Sig.Port}
     (mate : Fin frontier.length)
