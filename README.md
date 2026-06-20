@@ -160,6 +160,7 @@ lake exe bijform
   - `StringDiagram.Diag.renderTrace_reachability`
   - `StringDiagram.Diag.renderTraceFromBoundary_validIds`
   - `StringDiagram.Diag.renderTrace_edge_mem_old`
+  - `StringDiagram.Diag.renderTrace_node_mem_old`
   - `StringDiagram.Diag.renderTraceFromBoundary_endpointPartition`
   - `StringDiagram.Diag.renderTraceFromBoundary_nodeIncidentNodup`
   - `StringDiagram.Diag.renderTraceFromBoundary_ownerIdPartition`

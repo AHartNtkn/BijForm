@@ -3377,6 +3377,23 @@ theorem renderTrace_edge_mem_old :
       exact renderTrace_edge_mem_old child (budStep node entry ok st)
         (budStep_edge_mem_old node entry ok st hmem)
 
+/-- Constructor nodes already present before rendering a syntax subtree remain
+present in the completed render trace. -/
+theorem renderTrace_node_mem_old :
+    ∀ {frontier : List Sig.Port} (d : Diag Sig frontier)
+      (st : RenderState Sig frontier) {node : RenderNode Sig},
+      node ∈ st.nodes → node ∈ (renderTrace d st).nodes
+  | [], finish, st, node, hmem => by
+      simpa [renderTrace] using hmem
+  | _active :: _frontier, connect mate ok child, st, node, hmem => by
+      rw [renderTrace_connect]
+      exact renderTrace_node_mem_old child (connectStep mate ok st)
+        (connectStep_node_mem_old mate ok st hmem)
+  | _active :: _frontier, bud ctor entry ok child, st, node, hmem => by
+      rw [renderTrace_bud]
+      exact renderTrace_node_mem_old child (budStep ctor entry ok st)
+        (budStep_node_mem_old ctor entry ok st hmem)
+
 theorem connectStep_edges_length
     {active : Sig.Port} {frontier : List Sig.Port}
     (mate : Fin frontier.length)
