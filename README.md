@@ -122,6 +122,7 @@ lake exe bijform
   - `StringDiagram.EndpointOwner`
   - `StringDiagram.PortHypergraph`
   - `StringDiagram.PortHypergraph.endpointOwnersOf`
+  - `StringDiagram.PortHypergraph.endpointOwnersOf_existsUnique`
   - `StringDiagram.PortHypergraph.PortReachesBoundary`
   - `StringDiagram.OpenPortHypergraph`
   - `StringDiagram.PortHypergraphIso`

@@ -634,6 +634,22 @@ def endpointOwnersOf (G : PortHypergraph Sig boundary)
       (fun node => (G.incident node).length) //
     endpointOwnerEndpoint G owner = endpoint }
 
+/-- Every endpoint has exactly one boundary-or-constructor owner. -/
+theorem endpointOwnersOf_existsUnique (G : PortHypergraph Sig boundary)
+    (endpoint : Fin G.endpointCount) :
+    ∃ owner : endpointOwnersOf G endpoint,
+      ∀ owner' : endpointOwnersOf G endpoint, owner' = owner := by
+  rcases G.endpoint_owner endpoint with ⟨owner, howner, huniq⟩
+  have hownerEndpoint : endpointOwnerEndpoint G owner = endpoint := by
+    cases owner <;> simpa [endpointOwnerEndpoint] using howner
+  refine ⟨⟨owner, hownerEndpoint⟩, ?_⟩
+  intro owner'
+  rcases owner' with ⟨owner', howner'⟩
+  apply Subtype.ext
+  apply huniq
+  revert howner'
+  cases owner' <;> intro howner' <;> simpa [endpointOwnerEndpoint] using howner'
+
 /--
 A port endpoint has a path to the ordered boundary when it is a boundary
 endpoint, can cross an edge to the other endpoint on that edge, or can move
