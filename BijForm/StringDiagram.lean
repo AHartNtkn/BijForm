@@ -101,6 +101,28 @@ theorem eraseFin_eq_of_eq {α : Type} {xs ys : List α}
   cases hxy
   simp
 
+theorem nodup_append_of_nodup_disjoint {α : Type} :
+    ∀ (xs ys : List α),
+      xs.Nodup →
+      ys.Nodup →
+      (∀ x : α, x ∈ xs → x ∈ ys → False) →
+        (xs ++ ys).Nodup
+  | [], ys, _hxs, hys, _hdisjoint => by
+      simpa
+  | x :: xs, ys, hxs, hys, hdisjoint => by
+      have hsplit : x ∉ xs ∧ xs.Nodup := by
+        simpa using hxs
+      constructor
+      · intro a hmem heq
+        simp at hmem
+        rcases hmem with hmemXs | hmemYs
+        · exact hsplit.1 (by simpa [heq] using hmemXs)
+        · exact hdisjoint x (by simp) (by simpa [heq] using hmemYs)
+      · exact nodup_append_of_nodup_disjoint xs ys hsplit.2 hys
+          (by
+            intro a hmemXs hmemYs
+            exact hdisjoint a (by simp [hmemXs]) hmemYs)
+
 theorem list_exists_get_of_mem {α : Type} {x : α} :
     ∀ (xs : List α), x ∈ xs → ∃ i : Fin xs.length, xs.get i = x
   | [], h => by cases h
