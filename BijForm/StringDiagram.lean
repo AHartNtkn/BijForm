@@ -809,6 +809,32 @@ theorem freshNodeEndpoints_mem_lt {start arity id : Nat}
     simpa using i.isLt
   omega
 
+theorem freshNodeEndpoints_mem_ge {start arity id : Nat}
+    (hmem : id ∈ freshNodeEndpoints start arity) :
+    start ≤ id := by
+  rcases list_exists_get_of_mem (freshNodeEndpoints start arity) hmem with
+    ⟨i, hi⟩
+  rw [← hi, freshNodeEndpoints_get]
+  exact Nat.le_add_right start i.val
+
+theorem freshNodeEndpoints_mem_of_bounds {start arity id : Nat}
+    (hge : start ≤ id) (hlt : id < start + arity) :
+    id ∈ freshNodeEndpoints start arity := by
+  simp [freshNodeEndpoints]
+  refine ⟨id - start, ?_, ?_⟩
+  · omega
+  · omega
+
+theorem freshNodeEndpoints_nodup (start arity : Nat) :
+    (freshNodeEndpoints start arity).Nodup := by
+  apply list_nodup_of_get_injective
+  intro i j hget
+  change (freshNodeEndpoints start arity).get i =
+    (freshNodeEndpoints start arity).get j at hget
+  rw [freshNodeEndpoints_get, freshNodeEndpoints_get] at hget
+  apply Fin.ext
+  omega
+
 theorem freshNodeEndpoints_label_append
     {frontier : List Sig.Port} (st : RenderState Sig frontier)
     (hv : st.ValidIds) (node : Sig.Node)
@@ -1414,6 +1440,212 @@ theorem budStep_validIds {active : Sig.Port} {frontier : List Sig.Port}
             (fresh_bound_of_mem (List.get_mem nodeEndpoints slot))
         simpa [nodeEndpoints, Signature.nodePorts] using hlabel
 
+theorem budStep_endpointPartition {active : Sig.Port}
+    {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (st : RenderState Sig (active :: frontier))
+    (hv : st.ValidIds) (hp : st.EndpointPartition) :
+    (budStep node entry ok st).EndpointPartition := by
+  unfold budStep
+  split
+  · rename_i hids
+    exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  · rename_i activeId restIds hids
+    have hrest : restIds.length = frontier.length := by
+      have hlen := st.frontierIds_length
+      rw [hids] at hlen
+      simpa using Nat.succ.inj hlen
+    let nodeEndpoints := freshNodeEndpoints st.nextEndpoint (Sig.arity node)
+    let entryIdx : Fin nodeEndpoints.length :=
+      Fin.cast (by simp [nodeEndpoints]) entry
+    have oldFrontierNodup : (activeId :: restIds).Nodup := by
+      simpa [hids] using hp.frontier_nodup
+    have active_not_rest : activeId ∉ restIds := by
+      have hsplit : activeId ∉ restIds ∧ restIds.Nodup := by
+        simpa using oldFrontierNodup
+      exact hsplit.1
+    have rest_nodup : restIds.Nodup := by
+      have hsplit : activeId ∉ restIds ∧ restIds.Nodup := by
+        simpa using oldFrontierNodup
+      exact hsplit.2
+    have active_old_frontier : activeId ∈ st.frontierIds := by
+      rw [hids]
+      simp
+    have active_old_bound : activeId < st.endpoints.length :=
+      hv.frontier_bound activeId active_old_frontier
+    have entry_mem_fresh : nodeEndpoints.get entryIdx ∈ nodeEndpoints :=
+      List.get_mem nodeEndpoints entryIdx
+    have entry_fresh_ge : st.nextEndpoint ≤ nodeEndpoints.get entryIdx :=
+      freshNodeEndpoints_mem_ge entry_mem_fresh
+    have active_ne_entry : activeId ≠ nodeEndpoints.get entryIdx := by
+      intro hsame
+      have hnext := hv.nextEndpoint_eq
+      omega
+    dsimp
+    let newEdge : RenderEdge Sig :=
+      { label := Sig.portEdge active
+        leftLabel := active
+        rightLabel := Sig.port node entry
+        left := activeId
+        right := nodeEndpoints.get entryIdx
+        left_label := rfl
+        right_label := (Sig.compatible_edge ok).symm
+        compatible := ok }
+    let child : RenderState Sig (frontier ++ Sig.nodePortsExcept node entry) :=
+      { nextEndpoint := st.nextEndpoint + Sig.arity node
+        endpoints := st.endpoints ++ Sig.nodePorts node
+        edges := st.edges ++ [newEdge]
+        nodes := st.nodes ++ [{ label := node, incident := nodeEndpoints }]
+        frontierIds := restIds ++ eraseFin nodeEndpoints entryIdx
+        frontierIds_length := by
+          dsimp [nodeEndpoints, entryIdx]
+          simp [hrest, Signature.nodePortsExcept, Signature.nodePorts,
+            eraseFin_length] }
+    change child.EndpointPartition
+    have childConsumed_eq :
+        child.edgeEndpointIds =
+          st.edgeEndpointIds ++ [activeId, nodeEndpoints.get entryIdx] := by
+      simp [child, newEdge, RenderState.edgeEndpointIds]
+    have old_bound_lift {id : Nat} (hbound : id < st.endpoints.length) :
+        id < child.endpoints.length := by
+      simp [child, Signature.nodePorts]
+      omega
+    have fresh_bound_of_mem {id : Nat} (hmem : id ∈ nodeEndpoints) :
+        id < child.endpoints.length := by
+      have hlt := freshNodeEndpoints_mem_lt
+        (by simpa [nodeEndpoints] using hmem)
+      have hnext := hv.nextEndpoint_eq
+      simp [child, Signature.nodePorts] at hlt ⊢
+      omega
+    have old_fresh_disjoint
+        {id : Nat} (hold : id < st.endpoints.length)
+        (hfresh : id ∈ nodeEndpoints) : False := by
+      have hge := freshNodeEndpoints_mem_ge
+        (by simpa [nodeEndpoints] using hfresh)
+      have hnext := hv.nextEndpoint_eq
+      omega
+    refine
+      { frontier_nodup := ?_
+        consumed_nodup := ?_
+        consumed_bound := ?_
+        frontier_consumed_disjoint := ?_
+        endpoint_covered := ?_ }
+    · apply nodup_append_of_nodup_disjoint
+      · exact rest_nodup
+      · exact nodup_eraseFin nodeEndpoints entryIdx
+          (freshNodeEndpoints_nodup st.nextEndpoint (Sig.arity node))
+      · intro id hrestMem hfreshExcept
+        have hold := hv.frontier_bound id (by
+          rw [hids]
+          right
+          exact hrestMem)
+        have hfresh : id ∈ nodeEndpoints :=
+          mem_of_mem_eraseFin nodeEndpoints entryIdx hfreshExcept
+        exact old_fresh_disjoint hold hfresh
+    · have hnodup :
+          (st.edgeEndpointIds ++ [activeId, nodeEndpoints.get entryIdx]).Nodup := by
+        apply nodup_append_of_nodup_disjoint
+        · exact hp.consumed_nodup
+        · have hpair :
+            ([activeId, nodeEndpoints.get entryIdx] : List Nat).Nodup := by
+            simp
+            exact active_ne_entry
+          exact hpair
+        · intro id hold hnew
+          simp at hnew
+          rcases hnew with hactive | hentry
+          · exact hp.frontier_consumed_disjoint id
+              (by simpa [hactive] using active_old_frontier) hold
+          · have holdBound := hp.consumed_bound id hold
+            have hfresh : id ∈ nodeEndpoints := by
+              simp [hentry]
+            exact old_fresh_disjoint holdBound hfresh
+      rw [childConsumed_eq]
+      exact hnodup
+    · intro id hmem
+      rw [childConsumed_eq] at hmem
+      simp at hmem
+      rcases hmem with hold | hnew
+      · exact old_bound_lift (hp.consumed_bound id hold)
+      · rcases hnew with hactive | hentry
+        · simpa [hactive] using old_bound_lift active_old_bound
+        · have hfresh : id ∈ nodeEndpoints := by
+            simp [hentry]
+          exact fresh_bound_of_mem hfresh
+    · intro id hfrontier hconsumed
+      rw [childConsumed_eq] at hconsumed
+      change id ∈ restIds ++ eraseFin nodeEndpoints entryIdx at hfrontier
+      simp at hfrontier
+      simp at hconsumed
+      rcases hfrontier with hrestMem | hfreshExcept
+      · rcases hconsumed with holdConsumed | hnew
+        · have oldFrontier : id ∈ st.frontierIds := by
+            rw [hids]
+            right
+            exact hrestMem
+          exact hp.frontier_consumed_disjoint id oldFrontier holdConsumed
+        · rcases hnew with hactive | hentry
+          · exact active_not_rest (by simpa [hactive] using hrestMem)
+          · have hold := hv.frontier_bound id (by
+              rw [hids]
+              right
+              exact hrestMem)
+            have hfresh : id ∈ nodeEndpoints := by
+              simp [hentry]
+            exact old_fresh_disjoint hold hfresh
+      · have hfresh : id ∈ nodeEndpoints :=
+          mem_of_mem_eraseFin nodeEndpoints entryIdx hfreshExcept
+        rcases hconsumed with holdConsumed | hnew
+        · have holdBound := hp.consumed_bound id holdConsumed
+          exact old_fresh_disjoint holdBound hfresh
+        · rcases hnew with hactive | hentry
+          · have hold := active_old_bound
+            have hactiveEq : id = activeId := hactive
+            exact old_fresh_disjoint (by simpa [hactiveEq]) hfresh
+          · have hentryNotMem :
+              nodeEndpoints.get entryIdx ∉ eraseFin nodeEndpoints entryIdx :=
+              get_not_mem_eraseFin_of_nodup nodeEndpoints entryIdx
+                (freshNodeEndpoints_nodup st.nextEndpoint (Sig.arity node))
+            exact hentryNotMem (by simpa [hentry] using hfreshExcept)
+    · intro id hid
+      by_cases hold : id < st.endpoints.length
+      · rcases hp.endpoint_covered id hold with holdFrontier | holdConsumed
+        · rw [hids] at holdFrontier
+          simp at holdFrontier
+          rcases holdFrontier with hactive | hrestMem
+          · right
+            rw [childConsumed_eq]
+            simp [hactive]
+          · left
+            change id ∈ restIds ++ eraseFin nodeEndpoints entryIdx
+            simp [hrestMem]
+        · right
+          rw [childConsumed_eq]
+          simp [holdConsumed]
+      · have hge : st.endpoints.length ≤ id := Nat.le_of_not_gt hold
+        have hnext := hv.nextEndpoint_eq
+        have hfresh : id ∈ nodeEndpoints := by
+          apply freshNodeEndpoints_mem_of_bounds
+          · omega
+          · have hchildLen :
+                child.endpoints.length =
+                  st.endpoints.length + Sig.arity node := by
+              simp [child, Signature.nodePorts]
+            have hid' := hid
+            rw [hchildLen] at hid'
+            omega
+        by_cases hentry : id = nodeEndpoints.get entryIdx
+        · right
+          rw [childConsumed_eq]
+          simp [hentry]
+        · left
+          change id ∈ restIds ++ eraseFin nodeEndpoints entryIdx
+          simp
+          right
+          exact mem_eraseFin_of_mem_ne_get nodeEndpoints entryIdx hfresh hentry
+
 /--
 Execute traversal syntax into a construction trace.
 
@@ -1463,6 +1695,40 @@ theorem renderTrace_validIds :
   | _active :: _frontier, bud node entry ok child, st, hv =>
       renderTrace_validIds child (budStep node entry ok st)
         (budStep_validIds node entry ok st hv)
+
+theorem renderTrace_endpointPartition :
+    ∀ {frontier : List Sig.Port} (d : Diag Sig frontier)
+      (st : RenderState Sig frontier),
+      st.ValidIds → st.EndpointPartition →
+        (renderTrace d st).EndpointPartition
+  | [], finish, st, _hv, hp => by
+      dsimp [renderTrace]
+      refine
+        { frontier_nodup := ?_
+          consumed_nodup := ?_
+          consumed_bound := ?_
+          frontier_consumed_disjoint := ?_
+          endpoint_covered := ?_ }
+      · simp
+      · simpa [RenderState.edgeEndpointIds] using hp.consumed_nodup
+      · intro id hmem
+        exact hp.consumed_bound id (by
+          simpa [RenderState.edgeEndpointIds] using hmem)
+      · intro id hfrontier _hconsumed
+        cases hfrontier
+      · intro id hid
+        right
+        simpa [RenderState.edgeEndpointIds] using
+          (RenderState.EndpointPartition.endpoint_consumed_of_frontier_empty
+            hp ⟨id, hid⟩)
+  | _active :: _frontier, connect mate ok child, st, hv, hp =>
+      renderTrace_endpointPartition child (connectStep mate ok st)
+        (connectStep_validIds mate ok st hv)
+        (connectStep_endpointPartition mate ok st hv hp)
+  | _active :: _frontier, bud node entry ok child, st, hv, hp =>
+      renderTrace_endpointPartition child (budStep node entry ok st)
+        (budStep_validIds node entry ok st hv)
+        (budStep_endpointPartition node entry ok st hv hp)
 
 theorem renderTrace_connect
     {active : Sig.Port} {frontier : List Sig.Port}
@@ -1570,6 +1836,13 @@ theorem renderTraceFromBoundary_validIds
     (renderTraceFromBoundary d).ValidIds :=
   renderTrace_validIds d (RenderState.initial Sig boundary)
     (RenderState.initial_validIds boundary)
+
+theorem renderTraceFromBoundary_endpointPartition
+    {boundary : List Sig.Port} (d : Diag Sig boundary) :
+    (renderTraceFromBoundary d).EndpointPartition :=
+  renderTrace_endpointPartition d (RenderState.initial Sig boundary)
+    (RenderState.initial_validIds boundary)
+    (RenderState.initial_endpointPartition boundary)
 
 theorem renderTraceFromBoundary_frontier_empty
     {boundary : List Sig.Port} (d : Diag Sig boundary) :

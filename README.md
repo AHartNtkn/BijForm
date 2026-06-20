@@ -120,13 +120,19 @@ lake exe bijform
   - `StringDiagram.Diag.budStep`
   - `StringDiagram.Diag.freshNodeEndpoints_get`
   - `StringDiagram.Diag.freshNodeEndpoints_mem_lt`
+  - `StringDiagram.Diag.freshNodeEndpoints_mem_ge`
+  - `StringDiagram.Diag.freshNodeEndpoints_mem_of_bounds`
+  - `StringDiagram.Diag.freshNodeEndpoints_nodup`
   - `StringDiagram.Diag.freshNodeEndpoints_label_append`
   - `StringDiagram.Diag.connectStep_validIds`
   - `StringDiagram.Diag.connectStep_endpointPartition`
   - `StringDiagram.Diag.budStep_validIds`
+  - `StringDiagram.Diag.budStep_endpointPartition`
   - `StringDiagram.Diag.renderTraceFromBoundary`
   - `StringDiagram.Diag.renderTrace_validIds`
+  - `StringDiagram.Diag.renderTrace_endpointPartition`
   - `StringDiagram.Diag.renderTraceFromBoundary_validIds`
+  - `StringDiagram.Diag.renderTraceFromBoundary_endpointPartition`
   - `StringDiagram.RenderState.ValidIds`
   - `StringDiagram.RenderState.edgeEndpointIds`
   - `StringDiagram.RenderState.EndpointPartition`
