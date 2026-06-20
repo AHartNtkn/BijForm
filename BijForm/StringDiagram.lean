@@ -6387,6 +6387,29 @@ theorem firstPendingStepSearch?_some_connect_of_witness
   rw [hstep]
   exact ⟨mate', hmate', by simp [hstepEq]⟩
 
+theorem firstPendingStepSearch?_some_connect_exact_of_witness
+    {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port} (st : SearchState G frontier)
+    {active : Fin G.raw.endpointCount}
+    {rest : List (Fin G.raw.endpointCount)}
+    (hrestNodup : rest.Nodup)
+    (mate : Fin rest.length)
+    (hmate : PortHypergraph.EdgeMate G.raw active (rest.get mate)) :
+    ∃ hmate' : PortHypergraph.EdgeMate G.raw active (rest.get mate),
+      st.firstPendingStepSearch? active rest =
+        some (FirstPendingStep.connect mate hmate') := by
+  rcases st.firstPendingStepSearch?_some_connect_of_witness mate hmate with
+    ⟨mate', hmate', hstep⟩
+  have hget : rest.get mate' = rest.get mate := by
+    rcases PortHypergraph.edgeMate_existsUnique G.raw active with
+      ⟨uniqueMate, _huniqueMate, huniq⟩
+    exact (huniq (rest.get mate') hmate').trans
+      (huniq (rest.get mate) hmate).symm
+  have hmateEq : mate' = mate :=
+    list_get_injective_of_nodup rest hrestNodup hget
+  subst mate'
+  exact ⟨hmate', hstep⟩
+
 theorem firstPendingStepSearch?_some_bud_of_witness
     {G : OpenPortHypergraph Sig boundary}
     {frontier : List Sig.Port} (st : SearchState G frontier)

@@ -309,6 +309,7 @@ lake exe bijform
   - `StringDiagram.OpenPortHypergraph.SearchState.firstPendingStepSearch?`
   - `StringDiagram.OpenPortHypergraph.SearchState.firstPendingBudSearch?_some_bud`
   - `StringDiagram.OpenPortHypergraph.SearchState.firstPendingStepSearch?_some_connect_of_witness`
+  - `StringDiagram.OpenPortHypergraph.SearchState.firstPendingStepSearch?_some_connect_exact_of_witness`
   - `StringDiagram.OpenPortHypergraph.SearchState.firstPendingStepSearch?_some_bud_of_witness`
   - `StringDiagram.OpenPortHypergraph.SearchState.firstPendingStepSearch?_exists_of_frontierComplete`
   - `StringDiagram.OpenPortHypergraph.SearchState.toDiag`
