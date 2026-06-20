@@ -246,6 +246,7 @@ lake exe bijform
   - `StringDiagram.Diag.renderTraceFromBoundary_openEvidence`
   - `StringDiagram.Diag.toOpenPortHypergraph`
   - `StringDiagram.Diag.toOpenPortHypergraph_connect_boundary_edgeMate`
+  - `StringDiagram.Diag.toOpenPortHypergraph_bud_boundary_entry_edgeMate`
   - `StringDiagram.EndpointOwner`
   - `StringDiagram.PortHypergraph`
   - `StringDiagram.PortHypergraph.endpointOwnersOf`
