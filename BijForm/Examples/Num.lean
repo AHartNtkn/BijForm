@@ -289,14 +289,10 @@ def NumNatLayerShapeInv (k : Nat) :
       | false => p.1
       | true => p.2⟩
 
-def NumNatCodeLayerPresentation :
-    CodeLayerPresentation NumPoly NumInversion (fun _ => Nat) (fun _ => Nat) where
-  toCarrier k layer :=
-    (CodeAlgebra.finPrefixNat (k + 2) CodeAlgebra.natOrProdOrProdNat).toFun
-      (NumNatLayerShapeTo k layer)
-  fromCarrier k n :=
-    NumNatLayerShapeInv k
-      ((CodeAlgebra.finPrefixNat (k + 2) CodeAlgebra.natOrProdOrProdNat).invFun n)
+def NumNatLayerShapeLayerPresentation :
+    CodeLayerPresentation NumPoly NumInversion (fun _ => Nat) NumNatLayerShape where
+  toCarrier := NumNatLayerShapeTo
+  fromCarrier := NumNatLayerShapeInv
   left_inv := by
     intro k x
     have hshape :
@@ -377,16 +373,9 @@ def NumNatCodeLayerPresentation :
                 child_eta_bool
               rw [hchild]
               rfl
-    change
-      NumNatLayerShapeInv k
-        ((CodeAlgebra.finPrefixNat (k + 2) CodeAlgebra.natOrProdOrProdNat).invFun
-          ((CodeAlgebra.finPrefixNat (k + 2) CodeAlgebra.natOrProdOrProdNat).toFun
-            (NumNatLayerShapeTo k x))) = x
-    rw [(CodeAlgebra.finPrefixNat (k + 2) CodeAlgebra.natOrProdOrProdNat).left_inv
-      (NumNatLayerShapeTo k x)]
     exact hshape x
   right_inv := by
-    intro k n
+    intro k x
     have hshape :
         Function.RightInverse (NumNatLayerShapeInv k) (NumNatLayerShapeTo k) := by
       intro x
@@ -411,23 +400,16 @@ def NumNatCodeLayerPresentation :
               | inr p =>
                   cases p
                   rfl
-    change
-      (CodeAlgebra.finPrefixNat (k + 2) CodeAlgebra.natOrProdOrProdNat).toFun
-        (NumNatLayerShapeTo k
-          (NumNatLayerShapeInv k
-            ((CodeAlgebra.finPrefixNat (k + 2)
-              CodeAlgebra.natOrProdOrProdNat).invFun n))) = n
-    rw [hshape ((CodeAlgebra.finPrefixNat (k + 2)
-      CodeAlgebra.natOrProdOrProdNat).invFun n)]
-    exact (CodeAlgebra.finPrefixNat (k + 2)
-      CodeAlgebra.natOrProdOrProdNat).right_inv n
+    exact hshape x
 
 theorem NumNat_layer_child_lt :
     ∀ {k : Nat} (layer : CodeLayer NumPoly NumInversion (fun _ => Nat) k)
       (q : NumPoly.Pos
           (NumInversion.decode k layer.1).ctor
           (NumInversion.decode k layer.1).param),
-      layer.2 q < (NumNatCodeLayerPresentation.iso k).toFun layer := by
+      layer.2 q <
+        (CodeAlgebra.finPrefixNat (k + 2) CodeAlgebra.natOrProdOrProdNat).toFun
+          (NumNatLayerShapeTo k layer) := by
   intro k layer
   cases layer with
   | mk code child =>
@@ -455,8 +437,7 @@ theorem NumNat_layer_child_lt :
           have hlt := CodeAlgebra.finPrefixNat_toFun_inr_lt_of_le
             (k + 2) (by omega) CodeAlgebra.natOrProdOrProdNat
             (a := Sum.inl c) htail
-          simpa [c, CodeLayerPresentation.iso, NumNatCodeLayerPresentation,
-            NumNatLayerShapeTo] using hlt
+          simpa [c, NumNatLayerShapeTo] using hlt
         | plus =>
           change NumParam NumCtor.plus at param
           change Nat at param
@@ -471,16 +452,14 @@ theorem NumNat_layer_child_lt :
             have hlt := CodeAlgebra.finPrefixNat_toFun_inr_lt_of_le
               (k + 2) (by omega) CodeAlgebra.natOrProdOrProdNat
               (a := Sum.inr (Sum.inl (child false, child true))) htail
-            simpa [CodeLayerPresentation.iso, NumNatCodeLayerPresentation,
-              NumNatLayerShapeTo] using hlt
+            simpa [NumNatLayerShapeTo] using hlt
           · have htail :=
               CodeAlgebra.natOrProdOrProdNat_toFun_inr_inl_snd_le
                 (child false, child true)
             have hlt := CodeAlgebra.finPrefixNat_toFun_inr_lt_of_le
               (k + 2) (by omega) CodeAlgebra.natOrProdOrProdNat
               (a := Sum.inr (Sum.inl (child false, child true))) htail
-            simpa [CodeLayerPresentation.iso, NumNatCodeLayerPresentation,
-              NumNatLayerShapeTo] using hlt
+            simpa [NumNatLayerShapeTo] using hlt
         | times =>
           change NumParam NumCtor.times at param
           change Nat at param
@@ -495,24 +474,38 @@ theorem NumNat_layer_child_lt :
             have hlt := CodeAlgebra.finPrefixNat_toFun_inr_lt_of_le
               (k + 2) (by omega) CodeAlgebra.natOrProdOrProdNat
               (a := Sum.inr (Sum.inr (child false, child true))) htail
-            simpa [CodeLayerPresentation.iso, NumNatCodeLayerPresentation,
-              NumNatLayerShapeTo] using hlt
+            simpa [NumNatLayerShapeTo] using hlt
           · have htail :=
               CodeAlgebra.natOrProdOrProdNat_toFun_inr_inr_snd_le
                 (child false, child true)
             have hlt := CodeAlgebra.finPrefixNat_toFun_inr_lt_of_le
               (k + 2) (by omega) CodeAlgebra.natOrProdOrProdNat
               (a := Sum.inr (Sum.inr (child false, child true))) htail
-            simpa [CodeLayerPresentation.iso, NumNatCodeLayerPresentation,
-              NumNatLayerShapeTo] using hlt
+            simpa [NumNatLayerShapeTo] using hlt
+
+def NumNatLayerShapePresentation :
+    LayerShapePresentation NumPoly NumInversion (fun _ => Nat) NumNatLayerShape where
+  layerShape := NumNatLayerShapeLayerPresentation
+  carrier := fun k =>
+    CodeAlgebra.finPrefixNat (k + 2) CodeAlgebra.natOrProdOrProdNat
+  rank := fun _ n => n
+  child_rank_lt := by
+    intro k n q
+    let layerIso :=
+      (NumNatLayerShapeLayerPresentation.transCarrier
+        (fun k => CodeAlgebra.finPrefixNat (k + 2)
+          CodeAlgebra.natOrProdOrProdNat)).iso k
+    have h := NumNat_layer_child_lt (layerIso.invFun n) q
+    change (layerIso.invFun n).2 q < layerIso.toFun (layerIso.invFun n) at h
+    rw [layerIso.right_inv n] at h
+    exact h
 
 def NumNatLayerPresentation : NatLayerPresentation NumPoly NumInversion where
-  layer := NumNatCodeLayerPresentation
+  layer := NumNatLayerShapePresentation.layer
   child_lt := by
     intro k n q
     have h :=
-      NumNat_layer_child_lt ((NumNatCodeLayerPresentation.iso k).invFun n) q
-    rw [(NumNatCodeLayerPresentation.iso k).right_inv n] at h
+      NumNatLayerShapePresentation.child_rank_lt n q
     exact h
 
 def NumNatGeneratedCode : GeneratedNatCode NumPoly :=
