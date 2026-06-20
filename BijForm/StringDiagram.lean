@@ -94,6 +94,13 @@ theorem nodup_eraseFin {α : Type} :
           (mem_of_mem_eraseFin xs ⟨n, Nat.lt_of_succ_lt_succ h⟩ hmem)
       simp [eraseFin, hnot, htail]
 
+theorem eraseFin_eq_of_eq {α : Type} {xs ys : List α}
+    (hxy : xs = ys) (i : Fin xs.length) :
+    eraseFin xs i =
+      eraseFin ys (Fin.cast (by rw [← hxy]) i) := by
+  cases hxy
+  simp
+
 theorem list_exists_get_of_mem {α : Type} {x : α} :
     ∀ (xs : List α), x ∈ xs → ∃ i : Fin xs.length, xs.get i = x
   | [], h => by cases h
@@ -132,6 +139,23 @@ theorem list_nodup_ofFn_injective {α : Type} {n : Nat}
         intro i j hij
         have hidx : i.succ = j.succ := hf hij
         exact (Fin.succ_inj.mp hidx)
+
+theorem list_ofFn_get {α : Type} (xs : List α) :
+    List.ofFn (fun i : Fin xs.length => xs.get i) = xs := by
+  apply List.ext_getElem
+  · simp
+  · intro i hleft hright
+    simp [List.getElem_ofFn]
+
+theorem list_nodup_of_get_injective {α : Type} (xs : List α)
+    (hf : Function.Injective fun i : Fin xs.length => xs.get i) :
+    xs.Nodup := by
+  have hnodup :
+      (List.ofFn (fun i : Fin xs.length => xs.get i)).Nodup :=
+    list_nodup_ofFn_injective
+      (fun i : Fin xs.length => xs.get i) hf
+  rw [list_ofFn_get xs] at hnodup
+  exact hnodup
 
 /--
 A typed ordered-port string-diagram signature.
@@ -934,6 +958,41 @@ theorem edgeMate_compatible (G : PortHypergraph Sig boundary)
     (hmate : EdgeMate G endpoint mate) :
     Sig.compatible (G.endpointLabel endpoint) (G.endpointLabel mate) :=
   G.edge_compatible endpoint mate hmate.2 hmate.1
+
+theorem incident_nodup (G : PortHypergraph Sig boundary)
+    (node : Fin G.nodeCount) :
+    (G.incident node).Nodup :=
+  list_nodup_of_get_injective (G.incident node) (G.incident_injective node)
+
+theorem incident_labels (G : PortHypergraph Sig boundary)
+    (node : Fin G.nodeCount) :
+    (G.incident node).map G.endpointLabel =
+      Sig.nodePorts (G.nodeLabel node) := by
+  apply List.ext_getElem
+  · simp [Signature.nodePorts, G.incident_length node]
+  · intro i hleft hright
+    rw [List.getElem_map]
+    have hslot : i < (G.incident node).length := by
+      simpa using hleft
+    have hinc := G.incidence_label node ⟨i, hslot⟩
+    simpa [Signature.nodePorts] using hinc
+
+theorem incident_labels_except (G : PortHypergraph Sig boundary)
+    (node : Fin G.nodeCount)
+    (slot : Fin (G.incident node).length) :
+    (eraseFin (G.incident node) slot).map G.endpointLabel =
+      Sig.nodePortsExcept (G.nodeLabel node)
+        (Fin.cast (G.incident_length node) slot) := by
+  calc
+    (eraseFin (G.incident node) slot).map G.endpointLabel =
+        eraseFin ((G.incident node).map G.endpointLabel)
+          (Fin.cast (by simp) slot) :=
+      map_eraseFin G.endpointLabel (G.incident node) slot
+    _ = Sig.nodePortsExcept (G.nodeLabel node)
+          (Fin.cast (G.incident_length node) slot) := by
+      have hlabels := G.incident_labels node
+      rw [eraseFin_eq_of_eq hlabels]
+      simp [Signature.nodePortsExcept, Signature.nodePorts]
 
 /--
 A port endpoint has a path to the ordered boundary when it is a boundary
