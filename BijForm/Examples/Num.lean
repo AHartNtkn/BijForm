@@ -182,53 +182,61 @@ theorem NumLayer_right_inv (k : Nat) :
   intro e
   cases e <;> simp [NumLayerToSyntax, NumSyntaxToLayer]
 
-def NumLayerIso (k : Nat) :
-    CodeLayer NumPoly NumInversion NumSyntax k ≃ᵢ NumSyntax k where
-  toFun := NumLayerToSyntax k
-  invFun := NumSyntaxToLayer k
-  left_inv := NumLayer_left_inv k
-  right_inv := NumLayer_right_inv k
+def NumSyntaxLayerPresentation :
+    CodeLayerPresentation NumPoly NumInversion NumSyntax NumSyntax where
+  toCarrier := NumLayerToSyntax
+  fromCarrier := NumSyntaxToLayer
+  left_inv := NumLayer_left_inv
+  right_inv := NumLayer_right_inv
 
 theorem Num_layer_child_rank_lt :
     ∀ {k : Nat} (z : NumSyntax k)
       (q : NumPoly.Pos
-          (NumInversion.decode k ((NumLayerIso k).invFun z).1).ctor
-          (NumInversion.decode k ((NumLayerIso k).invFun z).1).param),
-      NumSyntax.rank (((NumLayerIso k).invFun z).2 q) < NumSyntax.rank z := by
+          (NumInversion.decode k ((NumSyntaxLayerPresentation.iso k).invFun z).1).ctor
+          (NumInversion.decode k ((NumSyntaxLayerPresentation.iso k).invFun z).1).param),
+      NumSyntax.rank (((NumSyntaxLayerPresentation.iso k).invFun z).2 q) <
+        NumSyntax.rank z := by
   intro k z q
   cases z with
   | var v => cases q
   | zero => cases q
   | succ e =>
       cases q
-      simp [NumLayerIso, NumSyntaxToLayer, NumInversion,
+      simp [CodeLayerPresentation.iso, NumSyntaxLayerPresentation, NumSyntaxToLayer,
+        NumInversion,
         OutputIndexInversion.canonical, NumSyntax.rank]
   | plus lhs rhs =>
       cases q
-      · simpa [NumLayerIso, NumSyntaxToLayer, NumInversion,
+      · simpa [CodeLayerPresentation.iso, NumSyntaxLayerPresentation, NumSyntaxToLayer,
+          NumInversion,
           OutputIndexInversion.canonical,
           NumSyntax.rank] using
           Nat.lt_succ_of_le (Nat.le_max_left (NumSyntax.rank lhs) (NumSyntax.rank rhs))
-      · simpa [NumLayerIso, NumSyntaxToLayer, NumInversion,
+      · simpa [CodeLayerPresentation.iso, NumSyntaxLayerPresentation, NumSyntaxToLayer,
+          NumInversion,
           OutputIndexInversion.canonical,
           NumSyntax.rank] using
           Nat.lt_succ_of_le (Nat.le_max_right (NumSyntax.rank lhs) (NumSyntax.rank rhs))
   | times lhs rhs =>
       cases q
-      · simpa [NumLayerIso, NumSyntaxToLayer, NumInversion,
+      · simpa [CodeLayerPresentation.iso, NumSyntaxLayerPresentation, NumSyntaxToLayer,
+          NumInversion,
           OutputIndexInversion.canonical,
           NumSyntax.rank] using
           Nat.lt_succ_of_le (Nat.le_max_left (NumSyntax.rank lhs) (NumSyntax.rank rhs))
-      · simpa [NumLayerIso, NumSyntaxToLayer, NumInversion,
+      · simpa [CodeLayerPresentation.iso, NumSyntaxLayerPresentation, NumSyntaxToLayer,
+          NumInversion,
           OutputIndexInversion.canonical,
           NumSyntax.rank] using
           Nat.lt_succ_of_le (Nat.le_max_right (NumSyntax.rank lhs) (NumSyntax.rank rhs))
 
-def NumGeneratedCode : GeneratedCode NumPoly NumSyntax where
-  inversion := NumInversion
-  layer := NumLayerIso
+def NumSyntaxPresentation : SyntaxPresentation NumPoly NumInversion NumSyntax where
+  layer := NumSyntaxLayerPresentation
   rank := fun _ e => NumSyntax.rank e
   child_rank_lt := Num_layer_child_rank_lt
+
+def NumGeneratedCode : GeneratedCode NumPoly NumSyntax :=
+  NumSyntaxPresentation.generatedCode
 
 def NumWellFoundedCode : WellFoundedCode NumPoly NumSyntax :=
   NumGeneratedCode.toWellFoundedCode
@@ -481,11 +489,15 @@ theorem NumNat_layer_child_lt :
             simpa [NumNatLayerIso, NumNatLayerShapeIso, NumNatLayerShapeTo,
               Iso.trans] using hlt
 
+def NumNatLayerPresentation : NatLayerPresentation NumPoly NumInversion where
+  layer := CodeLayerPresentation.ofIso NumNatLayerIso
+  child_lt := by
+    intro k n q
+    simpa [CodeLayerPresentation.iso, CodeLayerPresentation.ofIso] using
+      NumNat_layer_child_lt ((NumNatLayerIso k).invFun n) q
+
 def NumNatGeneratedCode : GeneratedNatCode NumPoly :=
-  GeneratedNatCode.ofLayerChildLt NumInversion NumNatLayerIso
-    (by
-      intro k layer q
-      exact NumNat_layer_child_lt layer q)
+  NumNatLayerPresentation.generatedCode
 
 def NumNatIso (k : Nat) : Mu NumPoly k ≃ᵢ Nat :=
   NumNatGeneratedCode.iso k

@@ -119,28 +119,31 @@ theorem HBTLayer_right_inv (i : Nat) :
   intro t
   cases t <;> simp [HBTLayerToSyntax, HBTSyntaxToLayer]
 
-def HBTLayerIso (i : Nat) :
-    CodeLayer HBTPoly HBTInversion HBTSyntax i ≃ᵢ HBTSyntax i where
-  toFun := HBTLayerToSyntax i
-  invFun := HBTSyntaxToLayer i
-  left_inv := HBTLayer_left_inv i
-  right_inv := HBTLayer_right_inv i
+def HBTSyntaxLayerPresentation :
+    CodeLayerPresentation HBTPoly HBTInversion HBTSyntax HBTSyntax where
+  toCarrier := HBTLayerToSyntax
+  fromCarrier := HBTSyntaxToLayer
+  left_inv := HBTLayer_left_inv
+  right_inv := HBTLayer_right_inv
 
 theorem HBT_layer_child_rank_lt :
     ∀ {i : Nat} (z : HBTSyntax i)
-      (q : HBTPoly.Pos
-          (HBTInversion.decode i ((HBTLayerIso i).invFun z).1).ctor
-          (HBTInversion.decode i ((HBTLayerIso i).invFun z).1).param),
-      HBTSyntax.rank (((HBTLayerIso i).invFun z).2 q) < HBTSyntax.rank z := by
+          (q : HBTPoly.Pos
+          (HBTInversion.decode i ((HBTSyntaxLayerPresentation.iso i).invFun z).1).ctor
+          (HBTInversion.decode i ((HBTSyntaxLayerPresentation.iso i).invFun z).1).param),
+      HBTSyntax.rank (((HBTSyntaxLayerPresentation.iso i).invFun z).2 q) <
+        HBTSyntax.rank z := by
   intro i z q
   cases z with
   | leaf label => cases q
   | branch lhs rhs =>
       cases q
-      · simpa [HBTLayerIso, HBTSyntaxToLayer, HBTInversion,
+      · simpa [CodeLayerPresentation.iso, HBTSyntaxLayerPresentation, HBTSyntaxToLayer,
+          HBTInversion,
           OutputIndexInversion.canonical, HBTSyntax.rank] using
           Nat.lt_succ_of_le (Nat.le_max_left (HBTSyntax.rank lhs) (HBTSyntax.rank rhs))
-      · simpa [HBTLayerIso, HBTSyntaxToLayer, HBTInversion,
+      · simpa [CodeLayerPresentation.iso, HBTSyntaxLayerPresentation, HBTSyntaxToLayer,
+          HBTInversion,
           OutputIndexInversion.canonical, HBTSyntax.rank] using
           Nat.lt_succ_of_le (Nat.le_max_right (HBTSyntax.rank lhs) (HBTSyntax.rank rhs))
 
@@ -149,11 +152,13 @@ Generated coding data for height-bounded trees. The example supplies only
 the local layer coding over `HBTInversion`; the full object-layer step is
 produced by `GeneratedCode.toWellFoundedCode`.
 -/
-def HBTGeneratedCode : GeneratedCode HBTPoly HBTSyntax where
-  inversion := HBTInversion
-  layer := HBTLayerIso
+def HBTSyntaxPresentation : SyntaxPresentation HBTPoly HBTInversion HBTSyntax where
+  layer := HBTSyntaxLayerPresentation
   rank := fun _ t => HBTSyntax.rank t
   child_rank_lt := HBT_layer_child_rank_lt
+
+def HBTGeneratedCode : GeneratedCode HBTPoly HBTSyntax :=
+  HBTSyntaxPresentation.generatedCode
 
 def HBTWellFoundedCode : WellFoundedCode HBTPoly HBTSyntax :=
   HBTGeneratedCode.toWellFoundedCode
@@ -275,13 +280,15 @@ theorem HBTNat_child_lt :
           · change pair.2 < n
             exact CodeAlgebra.sumProdNat_invFun_inr_snd_lt hsum
 
+def HBTNatLayerPresentation : NatLayerPresentation HBTPoly HBTInversion where
+  layer := CodeLayerPresentation.ofIso HBTNatLayerIso
+  child_lt := HBTNat_child_lt
+
 /-- Generated Nat coding data for height-bounded trees. The recursive encoder
 and decoder are produced by `GeneratedNatCode`, not by an example-specific
 recursive function. -/
-def HBTNatGeneratedCode : GeneratedNatCode HBTPoly where
-  inversion := HBTInversion
-  layer := HBTNatLayerIso
-  child_lt := HBTNat_child_lt
+def HBTNatGeneratedCode : GeneratedNatCode HBTPoly :=
+  HBTNatLayerPresentation.generatedCode
 
 def HBTNatIso (i : Nat) : Mu HBTPoly i ≃ᵢ Nat :=
   HBTNatGeneratedCode.iso i

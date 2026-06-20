@@ -123,40 +123,46 @@ theorem LamLayer_right_inv (k : Nat) :
   intro t
   cases t <;> simp [LamLayerToSyntax, LamSyntaxToLayer]
 
-def LamLayerIso (k : Nat) :
-    CodeLayer LamPoly LamInversion LamSyntax k ≃ᵢ LamSyntax k where
-  toFun := LamLayerToSyntax k
-  invFun := LamSyntaxToLayer k
-  left_inv := LamLayer_left_inv k
-  right_inv := LamLayer_right_inv k
+def LamSyntaxLayerPresentation :
+    CodeLayerPresentation LamPoly LamInversion LamSyntax LamSyntax where
+  toCarrier := LamLayerToSyntax
+  fromCarrier := LamSyntaxToLayer
+  left_inv := LamLayer_left_inv
+  right_inv := LamLayer_right_inv
 
 theorem Lam_layer_child_rank_lt :
     ∀ {k : Nat} (z : LamSyntax k)
       (q : LamPoly.Pos
-          (LamInversion.decode k ((LamLayerIso k).invFun z).1).ctor
-          (LamInversion.decode k ((LamLayerIso k).invFun z).1).param),
-      LamSyntax.rank (((LamLayerIso k).invFun z).2 q) < LamSyntax.rank z := by
+          (LamInversion.decode k ((LamSyntaxLayerPresentation.iso k).invFun z).1).ctor
+          (LamInversion.decode k ((LamSyntaxLayerPresentation.iso k).invFun z).1).param),
+      LamSyntax.rank (((LamSyntaxLayerPresentation.iso k).invFun z).2 q) <
+        LamSyntax.rank z := by
   intro k z q
   cases z with
   | var v => cases q
   | lam body =>
       cases q
-      simp [LamLayerIso, LamSyntaxToLayer, LamInversion,
+      simp [CodeLayerPresentation.iso, LamSyntaxLayerPresentation, LamSyntaxToLayer,
+        LamInversion,
         OutputIndexInversion.canonical, LamSyntax.rank]
   | app fn arg =>
       cases q
-      · simpa [LamLayerIso, LamSyntaxToLayer, LamInversion,
+      · simpa [CodeLayerPresentation.iso, LamSyntaxLayerPresentation, LamSyntaxToLayer,
+          LamInversion,
           OutputIndexInversion.canonical, LamSyntax.rank] using
           Nat.lt_succ_of_le (Nat.le_max_left (LamSyntax.rank fn) (LamSyntax.rank arg))
-      · simpa [LamLayerIso, LamSyntaxToLayer, LamInversion,
+      · simpa [CodeLayerPresentation.iso, LamSyntaxLayerPresentation, LamSyntaxToLayer,
+          LamInversion,
           OutputIndexInversion.canonical, LamSyntax.rank] using
           Nat.lt_succ_of_le (Nat.le_max_right (LamSyntax.rank fn) (LamSyntax.rank arg))
 
-def LamGeneratedCode : GeneratedCode LamPoly LamSyntax where
-  inversion := LamInversion
-  layer := LamLayerIso
+def LamSyntaxPresentation : SyntaxPresentation LamPoly LamInversion LamSyntax where
+  layer := LamSyntaxLayerPresentation
   rank := fun _ t => LamSyntax.rank t
   child_rank_lt := Lam_layer_child_rank_lt
+
+def LamGeneratedCode : GeneratedCode LamPoly LamSyntax :=
+  LamSyntaxPresentation.generatedCode
 
 /-- Lambda terms as the generic initial algebra are bijective with readable
 syntax through generated layer coding. -/
@@ -339,11 +345,16 @@ theorem LamNat_layer_child_rank_lt :
           · simpa [hk, LamNatLayerIso, LamNatLayerShapeIso, LamNatLayerShapeTo,
               Iso.trans] using hchild_lt_parent
 
+def LamNatLayerPresentation : RankedNatLayerPresentation LamPoly LamInversion where
+  layer := CodeLayerPresentation.ofIso LamNatLayerIso
+  rank := LamNatRank
+  child_rank_lt := by
+    intro k n q
+    simpa [CodeLayerPresentation.iso, CodeLayerPresentation.ofIso] using
+      LamNat_layer_child_rank_lt ((LamNatLayerIso k).invFun n) q
+
 def LamNatGeneratedCode : GeneratedRankedNatCode LamPoly :=
-  GeneratedRankedNatCode.ofLayerChildRank LamInversion LamNatLayerIso LamNatRank
-    (by
-      intro k layer q
-      exact LamNat_layer_child_rank_lt layer q)
+  LamNatLayerPresentation.generatedCode
 
 def LamNatIso (k : Nat) : Mu LamPoly k ≃ᵢ Nat :=
   LamNatGeneratedCode.iso k

@@ -100,32 +100,39 @@ theorem FinChainLayer_right_inv (i : Nat) :
   | done => rfl
   | step tag child => rfl
 
-def FinChainLayerIso (i : Nat) :
-    CodeLayer FinChainPoly FinChainInversion FinChainSyntax i ≃ᵢ FinChainSyntax i where
-  toFun := FinChainLayerToSyntax i
-  invFun := FinChainSyntaxToLayer i
-  left_inv := FinChainLayer_left_inv i
-  right_inv := FinChainLayer_right_inv i
+def FinChainSyntaxLayerPresentation :
+    CodeLayerPresentation FinChainPoly FinChainInversion FinChainSyntax FinChainSyntax where
+  toCarrier := FinChainLayerToSyntax
+  fromCarrier := FinChainSyntaxToLayer
+  left_inv := FinChainLayer_left_inv
+  right_inv := FinChainLayer_right_inv
 
 theorem FinChain_layer_child_rank_lt :
     ∀ {i : Nat} (z : FinChainSyntax i)
       (q : FinChainPoly.Pos
-          (FinChainInversion.decode i ((FinChainLayerIso i).invFun z).1).ctor
-          (FinChainInversion.decode i ((FinChainLayerIso i).invFun z).1).param),
-      FinChainSyntax.rank (((FinChainLayerIso i).invFun z).2 q) < FinChainSyntax.rank z := by
+          (FinChainInversion.decode i
+            ((FinChainSyntaxLayerPresentation.iso i).invFun z).1).ctor
+          (FinChainInversion.decode i
+            ((FinChainSyntaxLayerPresentation.iso i).invFun z).1).param),
+      FinChainSyntax.rank (((FinChainSyntaxLayerPresentation.iso i).invFun z).2 q) <
+        FinChainSyntax.rank z := by
   intro i z q
   cases z with
   | done => cases q
   | step tag child =>
       cases q
-      simp [FinChainLayerIso, FinChainSyntaxToLayer, FinChainInversion,
+      simp [CodeLayerPresentation.iso, FinChainSyntaxLayerPresentation,
+        FinChainSyntaxToLayer, FinChainInversion,
         OutputIndexInversion.canonical, FinChainSyntax.rank]
 
-def FinChainGeneratedCode : GeneratedCode FinChainPoly FinChainSyntax where
-  inversion := FinChainInversion
-  layer := FinChainLayerIso
+def FinChainSyntaxPresentation :
+    SyntaxPresentation FinChainPoly FinChainInversion FinChainSyntax where
+  layer := FinChainSyntaxLayerPresentation
   rank := fun _ t => FinChainSyntax.rank t
   child_rank_lt := FinChain_layer_child_rank_lt
+
+def FinChainGeneratedCode : GeneratedCode FinChainPoly FinChainSyntax :=
+  FinChainSyntaxPresentation.generatedCode
 
 /-- Bounded tagged chains as the generic initial algebra are bijective with
 readable syntax through generated layer coding. -/
@@ -273,14 +280,17 @@ theorem FinChainShape_child_rank_lt :
             change n < n + 1
             exact Nat.lt_succ_self n
 
-def FinChainGeneratedShapeCode : GeneratedShapeCode FinChainPoly where
+def FinChainShapeLayerPresentation :
+    ShapeLayerPresentation FinChainPoly FinChainInversion where
   shape := FinChainShape
-  inversion := FinChainInversion
-  layer := FinChainShapeLayerIso
+  layer := CodeLayerPresentation.ofIso FinChainShapeLayerIso
   rank := fun i _ => i
   child_rank_lt := by
     intro i z q
     exact FinChainShape_child_rank_lt z q
+
+def FinChainGeneratedShapeCode : GeneratedShapeCode FinChainPoly :=
+  FinChainShapeLayerPresentation.generatedCode
 
 def FinChainShapeIso (i : Nat) : Mu FinChainPoly i ≃ᵢ FinChainCarrier i :=
   FinChainGeneratedShapeCode.iso i

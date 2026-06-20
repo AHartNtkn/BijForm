@@ -190,36 +190,43 @@ theorem SortedLayer_right_inv (i : SortedIx) :
   | leaf => rfl
   | branch pivot lhs rhs => rfl
 
-def SortedLayerIso (i : SortedIx) :
-    CodeLayer SortedPoly SortedInversion SortedSyntax i ≃ᵢ SortedSyntax i where
-  toFun := SortedLayerToSyntax i
-  invFun := SortedSyntaxToLayer i
-  left_inv := SortedLayer_left_inv i
-  right_inv := SortedLayer_right_inv i
+def SortedSyntaxLayerPresentation :
+    CodeLayerPresentation SortedPoly SortedInversion SortedSyntax SortedSyntax where
+  toCarrier := SortedLayerToSyntax
+  fromCarrier := SortedSyntaxToLayer
+  left_inv := SortedLayer_left_inv
+  right_inv := SortedLayer_right_inv
 
 theorem Sorted_layer_child_rank_lt :
     ∀ {i : SortedIx} (z : SortedSyntax i)
       (q : SortedPoly.Pos
-          (SortedInversion.decode i ((SortedLayerIso i).invFun z).1).ctor
-          (SortedInversion.decode i ((SortedLayerIso i).invFun z).1).param),
-      SortedSyntax.rank (((SortedLayerIso i).invFun z).2 q) < SortedSyntax.rank z := by
+          (SortedInversion.decode i
+            ((SortedSyntaxLayerPresentation.iso i).invFun z).1).ctor
+          (SortedInversion.decode i
+            ((SortedSyntaxLayerPresentation.iso i).invFun z).1).param),
+      SortedSyntax.rank (((SortedSyntaxLayerPresentation.iso i).invFun z).2 q) <
+        SortedSyntax.rank z := by
   intro i z q
   cases z with
   | leaf => cases q
   | branch pivot lhs rhs =>
       cases q
-      · simpa [SortedLayerIso, SortedSyntaxToLayer, SortedInversion,
+      · simpa [CodeLayerPresentation.iso, SortedSyntaxLayerPresentation,
+          SortedSyntaxToLayer, SortedInversion,
           OutputIndexInversion.canonical, sortedBranchFiber, SortedSyntax.rank] using
           Nat.lt_succ_of_le (Nat.le_max_left (SortedSyntax.rank lhs) (SortedSyntax.rank rhs))
-      · simpa [SortedLayerIso, SortedSyntaxToLayer, SortedInversion,
+      · simpa [CodeLayerPresentation.iso, SortedSyntaxLayerPresentation,
+          SortedSyntaxToLayer, SortedInversion,
           OutputIndexInversion.canonical, sortedBranchFiber, SortedSyntax.rank] using
           Nat.lt_succ_of_le (Nat.le_max_right (SortedSyntax.rank lhs) (SortedSyntax.rank rhs))
 
-def SortedGeneratedCode : GeneratedCode SortedPoly SortedSyntax where
-  inversion := SortedInversion
-  layer := SortedLayerIso
+def SortedSyntaxPresentation : SyntaxPresentation SortedPoly SortedInversion SortedSyntax where
+  layer := SortedSyntaxLayerPresentation
   rank := fun _ t => SortedSyntax.rank t
   child_rank_lt := Sorted_layer_child_rank_lt
+
+def SortedGeneratedCode : GeneratedCode SortedPoly SortedSyntax :=
+  SortedSyntaxPresentation.generatedCode
 
 def SortedWellFoundedCode : WellFoundedCode SortedPoly SortedSyntax :=
   SortedGeneratedCode.toWellFoundedCode
@@ -692,12 +699,18 @@ theorem SortedShape_layer_child_rank_lt :
                     cases out_eq
                     exact False.elim (h pivot.bound_le)
 
+def SortedShapeLayerPresentation :
+    ShapeLayerPresentation SortedPoly SortedInversion where
+  shape := SortedShape
+  layer := CodeLayerPresentation.ofIso SortedShapeLayerIso
+  rank := SortedCarrierRank
+  child_rank_lt := by
+    intro i z q
+    simpa [CodeLayerPresentation.iso, CodeLayerPresentation.ofIso] using
+      SortedShape_layer_child_rank_lt ((SortedShapeLayerIso i).invFun z) q
+
 def SortedGeneratedShapeCode : GeneratedShapeCode SortedPoly :=
-  GeneratedShapeCode.ofLayerChildRank SortedShape SortedInversion SortedShapeLayerIso
-    SortedCarrierRank
-    (by
-      intro i layer q
-      exact SortedShape_layer_child_rank_lt layer q)
+  SortedShapeLayerPresentation.generatedCode
 
 def SortedShapeIso (i : SortedIx) : Mu SortedPoly i ≃ᵢ SortedCarrier i :=
   SortedGeneratedShapeCode.iso i

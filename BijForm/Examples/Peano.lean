@@ -150,48 +150,57 @@ theorem PeanoLayer_right_inv (k : Nat) :
   intro e
   cases e <;> simp [PeanoLayerToSyntax, PeanoSyntaxToLayer]
 
-def PeanoLayerIso (k : Nat) :
-    CodeLayer PeanoPoly PeanoInversion PeanoSyntax k ≃ᵢ PeanoSyntax k where
-  toFun := PeanoLayerToSyntax k
-  invFun := PeanoSyntaxToLayer k
-  left_inv := PeanoLayer_left_inv k
-  right_inv := PeanoLayer_right_inv k
+def PeanoSyntaxLayerPresentation :
+    CodeLayerPresentation PeanoPoly PeanoInversion PeanoSyntax PeanoSyntax where
+  toCarrier := PeanoLayerToSyntax
+  fromCarrier := PeanoSyntaxToLayer
+  left_inv := PeanoLayer_left_inv
+  right_inv := PeanoLayer_right_inv
 
 theorem Peano_layer_child_rank_lt :
     ∀ {k : Nat} (z : PeanoSyntax k)
       (q : PeanoPoly.Pos
-          (PeanoInversion.decode k ((PeanoLayerIso k).invFun z).1).ctor
-          (PeanoInversion.decode k ((PeanoLayerIso k).invFun z).1).param),
-      PeanoSyntax.rank (((PeanoLayerIso k).invFun z).2 q) < PeanoSyntax.rank z := by
+          (PeanoInversion.decode k
+            ((PeanoSyntaxLayerPresentation.iso k).invFun z).1).ctor
+          (PeanoInversion.decode k
+            ((PeanoSyntaxLayerPresentation.iso k).invFun z).1).param),
+      PeanoSyntax.rank (((PeanoSyntaxLayerPresentation.iso k).invFun z).2 q) <
+        PeanoSyntax.rank z := by
   intro k z q
   cases z with
   | eq lhs rhs => cases q
   | not e =>
       cases q
-      simp [PeanoLayerIso, PeanoSyntaxToLayer, PeanoInversion,
+      simp [CodeLayerPresentation.iso, PeanoSyntaxLayerPresentation, PeanoSyntaxToLayer,
+        PeanoInversion,
         OutputIndexInversion.canonical,
         PeanoSyntax.rank]
   | implies lhs rhs =>
       cases q
-      · simpa [PeanoLayerIso, PeanoSyntaxToLayer, PeanoInversion,
+      · simpa [CodeLayerPresentation.iso, PeanoSyntaxLayerPresentation,
+          PeanoSyntaxToLayer, PeanoInversion,
           OutputIndexInversion.canonical,
           PeanoSyntax.rank] using
           Nat.lt_succ_of_le (Nat.le_max_left (PeanoSyntax.rank lhs) (PeanoSyntax.rank rhs))
-      · simpa [PeanoLayerIso, PeanoSyntaxToLayer, PeanoInversion,
+      · simpa [CodeLayerPresentation.iso, PeanoSyntaxLayerPresentation,
+          PeanoSyntaxToLayer, PeanoInversion,
           OutputIndexInversion.canonical,
           PeanoSyntax.rank] using
           Nat.lt_succ_of_le (Nat.le_max_right (PeanoSyntax.rank lhs) (PeanoSyntax.rank rhs))
   | forallE e =>
       cases q
-      simp [PeanoLayerIso, PeanoSyntaxToLayer, PeanoInversion,
+      simp [CodeLayerPresentation.iso, PeanoSyntaxLayerPresentation, PeanoSyntaxToLayer,
+        PeanoInversion,
         OutputIndexInversion.canonical,
         PeanoSyntax.rank]
 
-def PeanoGeneratedCode : GeneratedCode PeanoPoly PeanoSyntax where
-  inversion := PeanoInversion
-  layer := PeanoLayerIso
+def PeanoSyntaxPresentation : SyntaxPresentation PeanoPoly PeanoInversion PeanoSyntax where
+  layer := PeanoSyntaxLayerPresentation
   rank := fun _ e => PeanoSyntax.rank e
   child_rank_lt := Peano_layer_child_rank_lt
+
+def PeanoGeneratedCode : GeneratedCode PeanoPoly PeanoSyntax :=
+  PeanoSyntaxPresentation.generatedCode
 
 def PeanoWellFoundedCode : WellFoundedCode PeanoPoly PeanoSyntax :=
   PeanoGeneratedCode.toWellFoundedCode
@@ -380,11 +389,15 @@ theorem PeanoNat_layer_child_lt :
             Iso.trans] using
             CodeAlgebra.prodOrNatOrProdOrNat_toFun_inr_inr_inr_lt c
 
+def PeanoNatLayerPresentation : NatLayerPresentation PeanoPoly PeanoInversion where
+  layer := CodeLayerPresentation.ofIso PeanoNatLayerIso
+  child_lt := by
+    intro k n q
+    simpa [CodeLayerPresentation.iso, CodeLayerPresentation.ofIso] using
+      PeanoNat_layer_child_lt ((PeanoNatLayerIso k).invFun n) q
+
 def PeanoNatGeneratedCode : GeneratedNatCode PeanoPoly :=
-  GeneratedNatCode.ofLayerChildLt PeanoInversion PeanoNatLayerIso
-    (by
-      intro k layer q
-      exact PeanoNat_layer_child_lt layer q)
+  PeanoNatLayerPresentation.generatedCode
 
 def PeanoNatIso (k : Nat) : Mu PeanoPoly k ≃ᵢ Nat :=
   PeanoNatGeneratedCode.iso k
