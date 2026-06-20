@@ -550,12 +550,11 @@ structure CanonicalTraversal (Sig : Signature) where
   to_from :
     ∀ {boundary : List Sig.Port} (G : OpenPortHypergraph Sig boundary),
       OpenPortHypergraph.isoRel (toGraph (fromGraph G)) G
+  from_isoRel :
+    ∀ {boundary : List Sig.Port} {G H : OpenPortHypergraph Sig boundary},
+      OpenPortHypergraph.isoRel G H → fromGraph G = fromGraph H
 
-/--
-UNFINISHED: a canonical traversal procedure should induce the quotient semantic
-isomorphism.  The remaining obligation is that boundary-preserving isomorphic
-representatives decode to the same canonical traversal syntax.
--/
+/-- A canonical traversal procedure induces the quotient semantic isomorphism. -/
 def CanonicalTraversal.iso (T : CanonicalTraversal Sig)
     (boundary : List Sig.Port) :
     Diag Sig boundary ≃ᵢ OpenPortHypergraphUpToIso Sig boundary where
@@ -565,11 +564,7 @@ def CanonicalTraversal.iso (T : CanonicalTraversal Sig)
       (fun G => T.fromGraph G)
       (by
         intro G H h
-        /-
-        UNFINISHED: canonical traversal uniqueness should prove that
-        isomorphic representatives decode to the same traversal syntax.
-        -/
-        sorry)
+        exact T.from_isoRel h)
   left_inv := by
     intro d
     exact T.from_to d
