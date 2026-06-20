@@ -133,12 +133,22 @@ lake exe bijform
   - `StringDiagram.Diag.renderTrace_endpointPartition`
   - `StringDiagram.Diag.renderTraceFromBoundary_validIds`
   - `StringDiagram.Diag.renderTraceFromBoundary_endpointPartition`
+  - `StringDiagram.Diag.renderTraceFromBoundary_endpointEdgeEvidence`
+  - `StringDiagram.Diag.renderTraceFromBoundary_endpointEdge`
+  - `StringDiagram.Diag.renderTraceFromBoundary_endpoint_edge_label`
   - `StringDiagram.RenderState.ValidIds`
   - `StringDiagram.RenderState.edgeEndpointIds`
+  - `StringDiagram.RenderState.edgeEndpointIdsOfEdges`
+  - `StringDiagram.RenderState.edgeEndpointRefOfEndpointId`
   - `StringDiagram.RenderState.EndpointPartition`
   - `StringDiagram.RenderState.initial_validIds`
   - `StringDiagram.RenderState.initial_endpointPartition`
   - `StringDiagram.RenderState.EndpointPartition.endpoint_consumed_of_frontier_empty`
+  - `StringDiagram.RenderState.endpointEdgeOfPartition`
+  - `StringDiagram.RenderState.endpointEdgeOfPartition_endpoint`
+  - `StringDiagram.RenderState.endpointEdgeOfPartition_label`
+  - `StringDiagram.RenderState.EndpointEdgeEvidence`
+  - `StringDiagram.RenderState.endpointEdgeEvidenceOfPartition`
   - `StringDiagram.RenderState.ValidIds.frontier_head_label`
   - `StringDiagram.RenderState.ValidIds.frontier_tail_label`
   - `StringDiagram.RenderState.PortHypergraphEvidence`

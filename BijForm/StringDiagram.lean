@@ -746,6 +746,124 @@ theorem EndpointPartition.endpoint_consumed_of_frontier_empty
     cases hfrontier
   · exact hconsumed
 
+def edgeEndpointIdsOfEdges {Sig : Signature}
+    (edges : List (RenderEdge Sig)) : List Nat :=
+  edges.flatMap fun edge => [edge.left, edge.right]
+
+/--
+Find the rendered edge that consumed an endpoint ID.  The input membership is
+the consumed side of `EndpointPartition`, not a raw-ID guess.
+-/
+def edgeEndpointRefOfEndpointId {Sig : Signature} :
+    ∀ (edges : List (RenderEdge Sig)) {id : Nat},
+      id ∈ edgeEndpointIdsOfEdges edges →
+        { edge : Fin edges.length //
+          id = (edges.get edge).left ∨ id = (edges.get edge).right }
+  | [], _id, hmem => by
+      simp [edgeEndpointIdsOfEdges] at hmem
+  | edge :: edges, id, hmem => by
+      by_cases hleft : id = edge.left
+      · exact ⟨⟨0, by simp⟩, Or.inl hleft⟩
+      · by_cases hright : id = edge.right
+        · exact ⟨⟨0, by simp⟩, Or.inr hright⟩
+        · have hmemAppend :
+              id ∈ [edge.left, edge.right] ++ edgeEndpointIdsOfEdges edges := by
+            simpa [edgeEndpointIdsOfEdges] using hmem
+          have htail : id ∈ edgeEndpointIdsOfEdges edges := by
+            rcases List.mem_append.mp hmemAppend with hhead | htail
+            · simp at hhead
+              rcases hhead with hleft' | hright'
+              · exact False.elim (hleft hleft')
+              · exact False.elim (hright hright')
+            · exact htail
+          rcases edgeEndpointRefOfEndpointId edges htail with
+            ⟨edgeIndex, hside⟩
+          refine ⟨⟨edgeIndex.val + 1, by simp [edgeIndex.isLt]⟩, ?_⟩
+          simpa using hside
+
+def endpointEdgeOfPartition {Sig : Signature} {st : RenderState Sig []}
+    (hp : st.EndpointPartition)
+    (endpoint : Fin st.endpoints.length) : Fin st.edges.length :=
+  (edgeEndpointRefOfEndpointId st.edges (id := endpoint.val) (by
+    have hconsumed :=
+      EndpointPartition.endpoint_consumed_of_frontier_empty hp endpoint
+    simpa [edgeEndpointIds, edgeEndpointIdsOfEdges] using hconsumed)).1
+
+theorem endpointEdgeOfPartition_endpoint
+    {Sig : Signature} {st : RenderState Sig []}
+    (hp : st.EndpointPartition)
+    (endpoint : Fin st.endpoints.length) :
+    endpoint.val =
+        (st.edges.get (endpointEdgeOfPartition hp endpoint)).left ∨
+      endpoint.val =
+        (st.edges.get (endpointEdgeOfPartition hp endpoint)).right := by
+  unfold endpointEdgeOfPartition
+  have hconsumed :=
+    EndpointPartition.endpoint_consumed_of_frontier_empty hp endpoint
+  exact
+    (edgeEndpointRefOfEndpointId st.edges (id := endpoint.val) (by
+      simpa [edgeEndpointIds, edgeEndpointIdsOfEdges] using hconsumed)).2
+
+theorem endpointEdgeOfPartition_label
+    {Sig : Signature} {st : RenderState Sig []}
+    (hv : st.ValidIds) (hp : st.EndpointPartition)
+    (endpoint : Fin st.endpoints.length) :
+    Sig.portEdge (st.endpoints.get endpoint) =
+      (st.edges.get (endpointEdgeOfPartition hp endpoint)).label := by
+  let edgeIndex := endpointEdgeOfPartition hp endpoint
+  let edge := st.edges.get edgeIndex
+  have hedgeMem : edge ∈ st.edges := List.get_mem st.edges edgeIndex
+  have hside : endpoint.val = edge.left ∨ endpoint.val = edge.right := by
+    simpa [edgeIndex, edge] using
+      endpointEdgeOfPartition_endpoint hp endpoint
+  change Sig.portEdge (st.endpoints.get endpoint) = edge.label
+  rcases hside with hleft | hright
+  · have hfin : endpoint = ⟨edge.left, hv.edge_left_bound edge hedgeMem⟩ := by
+      apply Fin.ext
+      exact hleft
+    calc
+      Sig.portEdge (st.endpoints.get endpoint) =
+          Sig.portEdge
+            (st.endpoints.get
+              ⟨edge.left, hv.edge_left_bound edge hedgeMem⟩) := by
+        rw [hfin]
+      _ = Sig.portEdge edge.leftLabel := by
+        rw [hv.edge_left_label edge hedgeMem]
+      _ = edge.label := edge.left_label
+  · have hfin : endpoint = ⟨edge.right, hv.edge_right_bound edge hedgeMem⟩ := by
+      apply Fin.ext
+      exact hright
+    calc
+      Sig.portEdge (st.endpoints.get endpoint) =
+          Sig.portEdge
+            (st.endpoints.get
+              ⟨edge.right, hv.edge_right_bound edge hedgeMem⟩) := by
+        rw [hfin]
+      _ = Sig.portEdge edge.rightLabel := by
+        rw [hv.edge_right_label edge hedgeMem]
+      _ = edge.label := edge.right_label
+
+/--
+The semantic endpoint-to-edge slice of graph evidence derived from renderer
+invariants.  Full `PortHypergraphEvidence` additionally needs edge
+compatibility, two-endpoint edge laws, boundary ports, constructor incidence,
+and owner uniqueness.
+-/
+structure EndpointEdgeEvidence {Sig : Signature}
+    (st : RenderState Sig []) where
+  endpointEdge : Fin st.endpoints.length → Fin st.edges.length
+  endpoint_edge_label :
+    ∀ endpoint : Fin st.endpoints.length,
+      Sig.portEdge (st.endpoints.get endpoint) =
+        (st.edges.get (endpointEdge endpoint)).label
+
+def endpointEdgeEvidenceOfPartition
+    {Sig : Signature} {st : RenderState Sig []}
+    (hv : st.ValidIds) (hp : st.EndpointPartition) :
+    EndpointEdgeEvidence st where
+  endpointEdge := endpointEdgeOfPartition hp
+  endpoint_edge_label := endpointEdgeOfPartition_label hv hp
+
 theorem ValidIds.frontier_head_label {Sig : Signature}
     {active : Sig.Port} {frontier : List Sig.Port}
     {st : RenderState Sig (active :: frontier)}
@@ -1844,6 +1962,27 @@ theorem renderTraceFromBoundary_endpointPartition
     (RenderState.initial_validIds boundary)
     (RenderState.initial_endpointPartition boundary)
 
+def renderTraceFromBoundary_endpointEdgeEvidence
+    {boundary : List Sig.Port} (d : Diag Sig boundary) :
+    RenderState.EndpointEdgeEvidence (renderTraceFromBoundary d) :=
+  RenderState.endpointEdgeEvidenceOfPartition
+    (renderTraceFromBoundary_validIds d)
+    (renderTraceFromBoundary_endpointPartition d)
+
+def renderTraceFromBoundary_endpointEdge
+    {boundary : List Sig.Port} (d : Diag Sig boundary) :
+    Fin (renderTraceFromBoundary d).endpoints.length →
+      Fin (renderTraceFromBoundary d).edges.length :=
+  (renderTraceFromBoundary_endpointEdgeEvidence d).endpointEdge
+
+theorem renderTraceFromBoundary_endpoint_edge_label
+    {boundary : List Sig.Port} (d : Diag Sig boundary)
+    (endpoint : Fin (renderTraceFromBoundary d).endpoints.length) :
+    Sig.portEdge ((renderTraceFromBoundary d).endpoints.get endpoint) =
+      ((renderTraceFromBoundary d).edges.get
+        (renderTraceFromBoundary_endpointEdge d endpoint)).label :=
+  (renderTraceFromBoundary_endpointEdgeEvidence d).endpoint_edge_label endpoint
+
 theorem renderTraceFromBoundary_frontier_empty
     {boundary : List Sig.Port} (d : Diag Sig boundary) :
     (renderTraceFromBoundary d).frontierIds = [] := by
@@ -2294,24 +2433,22 @@ the finite maps and proofs required by the semantic representative.
 -/
 structure PortHypergraphEvidence
     (st : RenderState Sig []) (boundary : List Sig.Port) where
-  endpointEdge : Fin st.endpoints.length → Fin st.edges.length
-  endpoint_edge_label :
-    ∀ endpoint : Fin st.endpoints.length,
-      Sig.portEdge (st.endpoints.get endpoint) =
-        (st.edges.get (endpointEdge endpoint)).label
+  endpointEdgeEvidence : EndpointEdgeEvidence st
   edge_compatible :
     ∀ left right : Fin st.endpoints.length,
-      endpointEdge left = endpointEdge right →
-        left ≠ right →
-          Sig.compatible (st.endpoints.get left) (st.endpoints.get right)
+      endpointEdgeEvidence.endpointEdge left =
+        endpointEdgeEvidence.endpointEdge right →
+      left ≠ right →
+        Sig.compatible (st.endpoints.get left) (st.endpoints.get right)
   edge_two_endpoints :
     ∀ edge : Fin st.edges.length,
       ∃ left right : Fin st.endpoints.length,
         left ≠ right ∧
-        endpointEdge left = edge ∧
-        endpointEdge right = edge ∧
+        endpointEdgeEvidence.endpointEdge left = edge ∧
+        endpointEdgeEvidence.endpointEdge right = edge ∧
         ∀ endpoint : Fin st.endpoints.length,
-          endpointEdge endpoint = edge → endpoint = left ∨ endpoint = right
+          endpointEdgeEvidence.endpointEdge endpoint = edge →
+            endpoint = left ∨ endpoint = right
   boundaryPort : Fin boundary.length → Fin st.endpoints.length
   boundary_injective : Function.Injective boundaryPort
   boundary_label :
@@ -2347,49 +2484,44 @@ namespace PortHypergraphEvidence
 
 def toPortHypergraph {st : RenderState Sig []} {boundary : List Sig.Port}
     (ev : PortHypergraphEvidence st boundary) :
-    PortHypergraph Sig boundary := by
-  cases ev with
-  | mk endpointEdge endpoint_edge_label edge_compatible edge_two_endpoints
-      boundaryPort boundary_injective boundary_label incident incident_length
-      incident_injective incidence_label endpoint_owner =>
-    exact
-      { endpointCount := st.endpoints.length
-        edgeCount := st.edges.length
-        nodeCount := st.nodes.length
-        endpointLabel := st.endpoints.get
-        edgeLabel := fun edge => (st.edges.get edge).label
-        endpointEdge := endpointEdge
-        endpoint_edge_label := endpoint_edge_label
-        edge_compatible := edge_compatible
-        edge_two_endpoints := edge_two_endpoints
-        boundaryPort := boundaryPort
-        boundary_injective := boundary_injective
-        boundary_label := boundary_label
-        nodeLabel := fun node => (st.nodes.get node).label
-        incident := incident
-        incident_length := incident_length
-        incident_injective := incident_injective
-        incidence_label := incidence_label
-        endpoint_owner := by
-          intro endpoint
-          rcases endpoint_owner endpoint with ⟨owner, howner, huniq⟩
-          cases owner with
-          | boundary boundaryIndex =>
-              refine ⟨.boundary boundaryIndex, by simpa using howner, ?_⟩
-              intro owner' howner'
-              cases owner' with
-              | boundary boundaryIndex' =>
-                  exact huniq (.boundary boundaryIndex') (by simpa using howner')
-              | constructor node slot =>
-                  exact huniq (.constructor node slot) (by simpa using howner')
-          | constructor node slot =>
-              refine ⟨.constructor node slot, by simpa using howner, ?_⟩
-              intro owner' howner'
-              cases owner' with
-              | boundary boundaryIndex =>
-                  exact huniq (.boundary boundaryIndex) (by simpa using howner')
-              | constructor node' slot' =>
-                  exact huniq (.constructor node' slot') (by simpa using howner') }
+    PortHypergraph Sig boundary where
+  endpointCount := st.endpoints.length
+  edgeCount := st.edges.length
+  nodeCount := st.nodes.length
+  endpointLabel := st.endpoints.get
+  edgeLabel := fun edge => (st.edges.get edge).label
+  endpointEdge := ev.endpointEdgeEvidence.endpointEdge
+  endpoint_edge_label := ev.endpointEdgeEvidence.endpoint_edge_label
+  edge_compatible := ev.edge_compatible
+  edge_two_endpoints := ev.edge_two_endpoints
+  boundaryPort := ev.boundaryPort
+  boundary_injective := ev.boundary_injective
+  boundary_label := ev.boundary_label
+  nodeLabel := fun node => (st.nodes.get node).label
+  incident := ev.incident
+  incident_length := ev.incident_length
+  incident_injective := ev.incident_injective
+  incidence_label := ev.incidence_label
+  endpoint_owner := by
+    intro endpoint
+    rcases ev.endpoint_owner endpoint with ⟨owner, howner, huniq⟩
+    cases owner with
+    | boundary boundaryIndex =>
+        refine ⟨.boundary boundaryIndex, by simpa using howner, ?_⟩
+        intro owner' howner'
+        cases owner' with
+        | boundary boundaryIndex' =>
+            exact huniq (.boundary boundaryIndex') (by simpa using howner')
+        | constructor node slot =>
+            exact huniq (.constructor node slot) (by simpa using howner')
+    | constructor node slot =>
+        refine ⟨.constructor node slot, by simpa using howner, ?_⟩
+        intro owner' howner'
+        cases owner' with
+        | boundary boundaryIndex =>
+            exact huniq (.boundary boundaryIndex) (by simpa using howner')
+        | constructor node' slot' =>
+            exact huniq (.constructor node' slot') (by simpa using howner')
 
 end PortHypergraphEvidence
 
@@ -2420,11 +2552,24 @@ variable {Sig : Signature}
 UNFINISHED renderer validity: the trace produced from traversal syntax carries
 exactly the endpoint, edge, boundary, and ordered-constructor incidence
 evidence required to be an open `PortHypergraph`.
+
+The endpoint-to-edge assignment slice is already constructed by
+`renderTraceFromBoundary_endpointEdgeEvidence` from
+`renderTraceFromBoundary_validIds` and
+`renderTraceFromBoundary_endpointPartition`.  The remaining unfinished fields
+are edge compatibility, two-endpoint edge laws, ordered boundary map,
+constructor incidence map, endpoint-owner uniqueness, and boundary
+reachability.
 -/
 def renderTraceFromBoundary_openEvidence
     {boundary : List Sig.Port} (d : Diag Sig boundary) :
     RenderState.OpenPortHypergraphEvidence
       (renderTraceFromBoundary d) boundary := by
+  let endpointEdgeEvidence :
+      RenderState.EndpointEdgeEvidence (renderTraceFromBoundary d) :=
+    renderTraceFromBoundary_endpointEdgeEvidence d
+  have endpointEdge := endpointEdgeEvidence.endpointEdge
+  have endpoint_edge_label := endpointEdgeEvidence.endpoint_edge_label
   sorry
 
 /--
