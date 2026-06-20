@@ -977,6 +977,255 @@ theorem connectStep_validIds {active : Sig.Port} {frontier : List Sig.Port}
       · cases hnew
         exact hv.frontier_tail_label hids hrest (Fin.cast hrest.symm mate)
 
+theorem budStep_validIds {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (st : RenderState Sig (active :: frontier))
+    (hv : st.ValidIds) :
+    (budStep node entry ok st).ValidIds := by
+  unfold budStep
+  split
+  · rename_i hids
+    exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  · rename_i activeId restIds hids
+    have hrest : restIds.length = frontier.length := by
+      have hlen := st.frontierIds_length
+      rw [hids] at hlen
+      simpa using Nat.succ.inj hlen
+    dsimp
+    let nodeEndpoints := freshNodeEndpoints st.nextEndpoint (Sig.arity node)
+    let entryIdx : Fin nodeEndpoints.length :=
+      Fin.cast (by simp [nodeEndpoints]) entry
+    have nodeEndpoints_length :
+        nodeEndpoints.length = Sig.arity node := by
+      simp [nodeEndpoints]
+    have nodeEndpoints_labels :
+        ∀ (n : Nat) (hid : n < nodeEndpoints.length)
+          (hlabel : n < (Sig.nodePorts node).length),
+          ∃ hbound : nodeEndpoints.get ⟨n, hid⟩ <
+              (st.endpoints ++ Sig.nodePorts node).length,
+            (st.endpoints ++ Sig.nodePorts node).get
+                ⟨nodeEndpoints.get ⟨n, hid⟩, hbound⟩ =
+              (Sig.nodePorts node).get ⟨n, hlabel⟩ := by
+      intro n hid hlabel
+      have hbound :
+          nodeEndpoints.get ⟨n, hid⟩ <
+            (st.endpoints ++ Sig.nodePorts node).length := by
+        have hlt := freshNodeEndpoints_mem_lt
+          (start := st.nextEndpoint) (arity := Sig.arity node)
+          (id := nodeEndpoints.get ⟨n, hid⟩)
+          (by
+            simp [nodeEndpoints])
+        have hnext := hv.nextEndpoint_eq
+        simp [Signature.nodePorts] at hlt ⊢
+        omega
+      refine ⟨hbound, ?_⟩
+      have hlabel' :=
+        freshNodeEndpoints_label_append st hv node ⟨n, hid⟩ hbound
+      simpa [nodeEndpoints] using hlabel'
+    have old_bound_lift {id : Nat} (hbound : id < st.endpoints.length) :
+        id < (st.endpoints ++ Sig.nodePorts node).length := by
+      have hle :
+          st.endpoints.length ≤
+            (st.endpoints ++ Sig.nodePorts node).length := by
+        simp
+      exact Nat.lt_of_lt_of_le hbound hle
+    have fresh_bound_of_mem {id : Nat} (hmem : id ∈ nodeEndpoints) :
+        id < (st.endpoints ++ Sig.nodePorts node).length := by
+      have hlt := freshNodeEndpoints_mem_lt
+        (by simpa [nodeEndpoints] using hmem)
+      have hnext := hv.nextEndpoint_eq
+      simp [Signature.nodePorts] at hlt ⊢
+      omega
+    refine
+      { nextEndpoint_eq := ?_
+        frontier_bound := ?_
+        frontier_label := ?_
+        edge_left_bound := ?_
+        edge_right_bound := ?_
+        edge_left_label := ?_
+        edge_right_label := ?_
+        node_incident_length := ?_
+        node_incident_bound := ?_
+        node_incident_label := ?_ }
+    · simp [Signature.nodePorts, hv.nextEndpoint_eq]
+    · intro id hid
+      simp at hid
+      rcases hid with hold | hnew
+      · have holdBound := hv.frontier_bound id (by
+          rw [hids]
+          right
+          exact hold)
+        exact old_bound_lift holdBound
+      · have hmem : id ∈ nodeEndpoints :=
+          mem_of_mem_eraseFin nodeEndpoints entryIdx hnew
+        exact fresh_bound_of_mem hmem
+    · intro n hid hfrontier
+      let portEntry : Fin (Sig.nodePorts node).length :=
+        Fin.cast (by simp [Signature.nodePorts]) entry
+      have hleft :
+          ∀ (n : Nat) (hid : n < restIds.length)
+            (hlabel : n < frontier.length),
+            ∃ hbound : restIds.get ⟨n, hid⟩ <
+                (st.endpoints ++ Sig.nodePorts node).length,
+              (st.endpoints ++ Sig.nodePorts node).get
+                  ⟨restIds.get ⟨n, hid⟩, hbound⟩ =
+                frontier.get ⟨n, hlabel⟩ := by
+        intro n hid hlabel
+        have oldLabel :=
+          hv.frontier_tail_label hids hrest ⟨n, hid⟩
+        have oldBound :=
+          hv.frontier_bound (restIds.get ⟨n, hid⟩) (by
+            rw [hids]
+            right
+            exact List.get_mem restIds ⟨n, hid⟩)
+        refine ⟨old_bound_lift oldBound, ?_⟩
+        calc
+          (st.endpoints ++ Sig.nodePorts node).get
+              ⟨restIds.get ⟨n, hid⟩, old_bound_lift oldBound⟩ =
+              st.endpoints.get
+                ⟨restIds.get ⟨n, hid⟩, oldBound⟩ := by
+                exact list_get_append_left st.endpoints
+                  (Sig.nodePorts node) oldBound (old_bound_lift oldBound)
+          _ = frontier.get ⟨n, hlabel⟩ := by
+              simpa using oldLabel
+      have hright :
+          ∀ (n : Nat)
+            (hid : n < (eraseFin nodeEndpoints entryIdx).length)
+            (hlabel : n < (Sig.nodePortsExcept node entry).length),
+            ∃ hbound : (eraseFin nodeEndpoints entryIdx).get ⟨n, hid⟩ <
+                (st.endpoints ++ Sig.nodePorts node).length,
+              (st.endpoints ++ Sig.nodePorts node).get
+                  ⟨(eraseFin nodeEndpoints entryIdx).get ⟨n, hid⟩,
+                    hbound⟩ =
+                (Sig.nodePortsExcept node entry).get ⟨n, hlabel⟩ := by
+        intro n hid hlabel
+        have hlabel' :
+            n < (eraseFin (Sig.nodePorts node) portEntry).length := by
+          simpa [Signature.nodePortsExcept, portEntry] using hlabel
+        have haligned :=
+          eraseFin_pointwise_relation
+            (R := fun id label =>
+              ∃ hbound : id <
+                  (st.endpoints ++ Sig.nodePorts node).length,
+                (st.endpoints ++ Sig.nodePorts node).get
+                    ⟨id, hbound⟩ = label)
+            (by simp [nodeEndpoints, Signature.nodePorts])
+            nodeEndpoints_labels entryIdx portEntry
+            (by simp [entryIdx, portEntry])
+            n hid hlabel'
+        rcases haligned with ⟨hbound, hlabelEq⟩
+        refine ⟨hbound, ?_⟩
+        simpa [Signature.nodePortsExcept, portEntry] using hlabelEq
+      have haligned :=
+        append_pointwise_relation
+          (R := fun id label =>
+            ∃ hbound : id < (st.endpoints ++ Sig.nodePorts node).length,
+              (st.endpoints ++ Sig.nodePorts node).get
+                ⟨id, hbound⟩ = label)
+          hrest
+          (by
+            simp [Signature.nodePortsExcept, nodeEndpoints,
+              Signature.nodePorts, eraseFin_length])
+          hleft hright n hid hfrontier
+      rcases haligned with ⟨hbound, hlabelEq⟩
+      simpa using hlabelEq
+    · intro edge hmem
+      simp at hmem
+      rcases hmem with hold | hnew
+      · have hbound := hv.edge_left_bound edge hold
+        exact old_bound_lift hbound
+      · cases hnew
+        have hbound := hv.frontier_bound activeId (by rw [hids]; simp)
+        exact old_bound_lift hbound
+    · intro edge hmem
+      simp at hmem
+      rcases hmem with hold | hnew
+      · have hbound := hv.edge_right_bound edge hold
+        exact old_bound_lift hbound
+      · cases hnew
+        have hmem :
+            nodeEndpoints.get entryIdx ∈ nodeEndpoints :=
+          List.get_mem nodeEndpoints entryIdx
+        exact fresh_bound_of_mem hmem
+    · intro edge hmem
+      simp at hmem
+      rcases hmem with hold | hnew
+      · have hlabel := hv.edge_left_label edge hold
+        have hbound := hv.edge_left_bound edge hold
+        calc
+          (st.endpoints ++ Sig.nodePorts node).get
+              ⟨edge.left, old_bound_lift hbound⟩ =
+              st.endpoints.get ⟨edge.left, hbound⟩ := by
+                exact list_get_append_left st.endpoints
+                  (Sig.nodePorts node) hbound (old_bound_lift hbound)
+          _ = edge.leftLabel := hlabel
+      · cases hnew
+        have hlabel := hv.frontier_head_label hids
+        have hbound := hv.frontier_bound activeId (by rw [hids]; simp)
+        calc
+          (st.endpoints ++ Sig.nodePorts node).get
+              ⟨activeId, old_bound_lift hbound⟩ =
+              st.endpoints.get ⟨activeId, hbound⟩ := by
+                exact list_get_append_left st.endpoints
+                  (Sig.nodePorts node) hbound (old_bound_lift hbound)
+          _ = active := hlabel
+    · intro edge hmem
+      simp at hmem
+      rcases hmem with hold | hnew
+      · have hlabel := hv.edge_right_label edge hold
+        have hbound := hv.edge_right_bound edge hold
+        calc
+          (st.endpoints ++ Sig.nodePorts node).get
+              ⟨edge.right, old_bound_lift hbound⟩ =
+              st.endpoints.get ⟨edge.right, hbound⟩ := by
+                exact list_get_append_left st.endpoints
+                  (Sig.nodePorts node) hbound (old_bound_lift hbound)
+          _ = edge.rightLabel := hlabel
+      · cases hnew
+        have hlabel :=
+          freshNodeEndpoints_label_append st hv node entryIdx
+            (fresh_bound_of_mem (List.get_mem nodeEndpoints entryIdx))
+        simpa [nodeEndpoints, entryIdx, Signature.nodePorts] using hlabel
+    · intro renderNode hmem
+      simp at hmem
+      rcases hmem with hold | hnew
+      · exact hv.node_incident_length renderNode hold
+      · cases hnew
+        simp
+    · intro renderNode hmem slot
+      simp at hmem
+      rcases hmem with hold | hnew
+      · have hbound := hv.node_incident_bound renderNode hold slot
+        exact old_bound_lift hbound
+      · cases hnew
+        have hmem :
+            nodeEndpoints.get slot ∈ nodeEndpoints :=
+          List.get_mem nodeEndpoints slot
+        exact fresh_bound_of_mem hmem
+    · intro renderNode hmem slot
+      simp at hmem
+      rcases hmem with hold | hnew
+      · have hlabel := hv.node_incident_label renderNode hold slot
+        have hbound := hv.node_incident_bound renderNode hold slot
+        calc
+          (st.endpoints ++ Sig.nodePorts node).get
+              ⟨renderNode.incident.get slot, old_bound_lift hbound⟩ =
+              st.endpoints.get
+                ⟨renderNode.incident.get slot, hbound⟩ := by
+                exact list_get_append_left st.endpoints
+                  (Sig.nodePorts node) hbound (old_bound_lift hbound)
+          _ =
+              Sig.port renderNode.label
+                (Fin.cast (hv.node_incident_length renderNode hold) slot) :=
+                hlabel
+      · cases hnew
+        have hlabel :=
+          freshNodeEndpoints_label_append st hv node slot
+            (fresh_bound_of_mem (List.get_mem nodeEndpoints slot))
+        simpa [nodeEndpoints, Signature.nodePorts] using hlabel
+
 /--
 Execute traversal syntax into a construction trace.
 
