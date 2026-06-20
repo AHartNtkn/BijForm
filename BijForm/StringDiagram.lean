@@ -25,6 +25,75 @@ theorem eraseFin_length {α : Type} :
       simp [eraseFin, ih]
       exact Nat.sub_add_cancel (Nat.succ_le_of_lt hpos)
 
+theorem map_eraseFin {α β : Type} (f : α → β) :
+    ∀ (xs : List α) (i : Fin xs.length),
+      (eraseFin xs i).map f =
+        eraseFin (xs.map f) (Fin.cast (by simp) i)
+  | [], i => nomatch i
+  | _ :: xs, ⟨0, _⟩ => by
+      change xs.map f = xs.map f
+      rfl
+  | x :: xs, ⟨n + 1, h⟩ => by
+      have ih := map_eraseFin f xs ⟨n, Nat.lt_of_succ_lt_succ h⟩
+      simp [eraseFin, ih]
+
+theorem mem_of_mem_eraseFin {α : Type} :
+    ∀ (xs : List α) (i : Fin xs.length) {x : α},
+      x ∈ eraseFin xs i → x ∈ xs
+  | [], i, _x, _hmem => nomatch i
+  | y :: _ys, ⟨0, _⟩, x, hmem => by
+      right
+      simpa [eraseFin] using hmem
+  | y :: ys, ⟨n + 1, h⟩, x, hmem => by
+      simp [eraseFin] at hmem
+      rcases hmem with hxy | htail
+      · simp [hxy]
+      · have htailOrig :
+            x ∈ ys :=
+          mem_of_mem_eraseFin ys ⟨n, Nat.lt_of_succ_lt_succ h⟩ htail
+        simp [htailOrig]
+
+theorem get_not_mem_eraseFin_of_nodup {α : Type} :
+    ∀ (xs : List α) (i : Fin xs.length),
+      xs.Nodup → xs.get i ∉ eraseFin xs i
+  | [], i, _hnodup => nomatch i
+  | head :: xs, ⟨0, _⟩, hnodup => by
+      have hsplit : head ∉ xs ∧ xs.Nodup := by
+        simpa using hnodup
+      simpa [eraseFin] using hsplit.1
+  | x :: xs, ⟨n + 1, h⟩, hnodup => by
+      intro hmem
+      have hsplit : x ∉ xs ∧ xs.Nodup := by
+        simpa using hnodup
+      simp [eraseFin] at hmem
+      rcases hmem with hhead | htail
+      · exact hsplit.1 (by
+          rw [← hhead]
+          exact List.get_mem xs ⟨n, Nat.lt_of_succ_lt_succ h⟩)
+      · exact get_not_mem_eraseFin_of_nodup xs
+          ⟨n, Nat.lt_of_succ_lt_succ h⟩ hsplit.2 htail
+
+theorem nodup_eraseFin {α : Type} :
+    ∀ (xs : List α) (i : Fin xs.length),
+      xs.Nodup → (eraseFin xs i).Nodup
+  | [], i, _hnodup => nomatch i
+  | head :: xs, ⟨0, _⟩, hnodup => by
+      have hsplit : head ∉ xs ∧ xs.Nodup := by
+        simpa using hnodup
+      simpa [eraseFin] using hsplit.2
+  | x :: xs, ⟨n + 1, h⟩, hnodup => by
+      have hsplit : x ∉ xs ∧ xs.Nodup := by
+        simpa using hnodup
+      have htail :
+          (eraseFin xs ⟨n, Nat.lt_of_succ_lt_succ h⟩).Nodup :=
+        nodup_eraseFin xs ⟨n, Nat.lt_of_succ_lt_succ h⟩ hsplit.2
+      have hnot :
+          x ∉ eraseFin xs ⟨n, Nat.lt_of_succ_lt_succ h⟩ := by
+        intro hmem
+        exact hsplit.1
+          (mem_of_mem_eraseFin xs ⟨n, Nat.lt_of_succ_lt_succ h⟩ hmem)
+      simp [eraseFin, hnot, htail]
+
 theorem list_exists_get_of_mem {α : Type} {x : α} :
     ∀ (xs : List α), x ∈ xs → ∃ i : Fin xs.length, xs.get i = x
   | [], h => by cases h
