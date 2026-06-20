@@ -128,6 +128,7 @@ lake exe bijform
   - `StringDiagram.Diag.connectStep_endpointPartition`
   - `StringDiagram.Diag.connectStep_nodeIncidentNodup`
   - `StringDiagram.Diag.connectStep_ownerIdPartition`
+  - `StringDiagram.Diag.connectStep_new_edge_mem`
   - `StringDiagram.Diag.connectStep_edge_mem_old`
   - `StringDiagram.Diag.connectStep_node_mem_old`
   - `StringDiagram.Diag.connectStep_node_mem_old_of_child`
@@ -161,6 +162,9 @@ lake exe bijform
   - `StringDiagram.Diag.renderTraceFromBoundary_validIds`
   - `StringDiagram.Diag.renderTrace_edge_mem_old`
   - `StringDiagram.Diag.renderTrace_node_mem_old`
+  - `StringDiagram.Diag.renderTrace_connect_edge_mem`
+  - `StringDiagram.Diag.renderTrace_bud_edge_mem`
+  - `StringDiagram.Diag.renderTrace_bud_node_mem`
   - `StringDiagram.Diag.renderTraceFromBoundary_endpointPartition`
   - `StringDiagram.Diag.renderTraceFromBoundary_nodeIncidentNodup`
   - `StringDiagram.Diag.renderTraceFromBoundary_ownerIdPartition`

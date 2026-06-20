@@ -2027,6 +2027,39 @@ theorem connectStep_node_mem_old_of_child
     exact False.elim (RenderState.frontierIds_ne_nil st hids)
   · simpa using hmem
 
+/-- The concrete edge introduced by a `connect` render step is present in the
+step result. -/
+theorem connectStep_new_edge_mem
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (st : RenderState Sig (active :: frontier))
+    {activeId : Nat} {restIds : List Nat}
+    (hids : st.frontierIds = activeId :: restIds) :
+    ({ label := Sig.portEdge active
+       leftLabel := active
+       rightLabel := frontier.get mate
+       left := activeId
+       right :=
+        restIds.get (Fin.cast (by
+          have hlen := st.frontierIds_length
+          rw [hids] at hlen
+          exact (Nat.succ.inj hlen).symm) mate)
+       left_label := rfl
+       right_label := (Sig.compatible_edge ok).symm
+       compatible := ok } : RenderEdge Sig) ∈
+      (connectStep mate ok st).edges := by
+  unfold connectStep
+  split
+  · rename_i hidsNil
+    exact False.elim (RenderState.frontierIds_ne_nil st hidsNil)
+  · rename_i activeId' restIds' hids'
+    rw [hids] at hids'
+    injection hids' with hactive hrest
+    subst activeId'
+    subst restIds'
+    simp
+
 theorem connectStep_frontier_mem_old
     {active : Sig.Port} {frontier : List Sig.Port}
     (mate : Fin frontier.length)
@@ -3393,6 +3426,76 @@ theorem renderTrace_node_mem_old :
       rw [renderTrace_bud]
       exact renderTrace_node_mem_old child (budStep ctor entry ok st)
         (budStep_node_mem_old ctor entry ok st hmem)
+
+/-- The concrete edge introduced by a top-level `connect` remains present after
+rendering the child diagram. -/
+theorem renderTrace_connect_edge_mem
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (child : Diag Sig (eraseFin frontier mate))
+    (st : RenderState Sig (active :: frontier))
+    {activeId : Nat} {restIds : List Nat}
+    (hids : st.frontierIds = activeId :: restIds) :
+    ({ label := Sig.portEdge active
+       leftLabel := active
+       rightLabel := frontier.get mate
+       left := activeId
+       right :=
+        restIds.get (Fin.cast (by
+          have hlen := st.frontierIds_length
+          rw [hids] at hlen
+          exact (Nat.succ.inj hlen).symm) mate)
+       left_label := rfl
+       right_label := (Sig.compatible_edge ok).symm
+       compatible := ok } : RenderEdge Sig) ∈
+      (renderTrace (Diag.connect mate ok child) st).edges := by
+  rw [renderTrace_connect]
+  exact renderTrace_edge_mem_old child (connectStep mate ok st)
+    (connectStep_new_edge_mem mate ok st hids)
+
+/-- The concrete edge introduced by a top-level `bud` remains present after
+rendering the child diagram. -/
+theorem renderTrace_bud_edge_mem
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (child : Diag Sig (frontier ++ Sig.nodePortsExcept node entry))
+    (st : RenderState Sig (active :: frontier))
+    {activeId : Nat} {restIds : List Nat}
+    (hids : st.frontierIds = activeId :: restIds) :
+    ({ label := Sig.portEdge active
+       leftLabel := active
+       rightLabel := Sig.port node entry
+       left := activeId
+       right :=
+        (freshNodeEndpoints st.nextEndpoint (Sig.arity node)).get
+          (Fin.cast (by simp [freshNodeEndpoints]) entry)
+       left_label := rfl
+       right_label := (Sig.compatible_edge ok).symm
+       compatible := ok } : RenderEdge Sig) ∈
+      (renderTrace (Diag.bud node entry ok child) st).edges := by
+  rw [renderTrace_bud]
+  exact renderTrace_edge_mem_old child (budStep node entry ok st)
+    (budStep_new_edge_mem node entry ok st hids)
+
+/-- The concrete constructor node introduced by a top-level `bud` remains
+present after rendering the child diagram. -/
+theorem renderTrace_bud_node_mem
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (child : Diag Sig (frontier ++ Sig.nodePortsExcept node entry))
+    (st : RenderState Sig (active :: frontier)) :
+    ({ label := node
+       incident := freshNodeEndpoints st.nextEndpoint (Sig.arity node) } :
+        RenderNode Sig) ∈
+      (renderTrace (Diag.bud node entry ok child) st).nodes := by
+  rw [renderTrace_bud]
+  exact renderTrace_node_mem_old child (budStep node entry ok st)
+    (budStep_new_node_mem node entry ok st)
 
 theorem connectStep_edges_length
     {active : Sig.Port} {frontier : List Sig.Port}
