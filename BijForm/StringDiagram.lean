@@ -15,18 +15,21 @@ def eraseFin {α : Type} : (xs : List α) → Fin xs.length → List α
 /--
 A typed ordered-port string-diagram signature.
 
-`Port` is the label carried by open frontier endpoints.  Unoriented signatures
-usually take `Port` to be a wire type.  Oriented signatures usually take `Port`
-to be a direction paired with a wire type.  `compatible` states when two
-frontier endpoints may be joined.
+`Edge` is the label carried by wires/edges.  `Port` is the label carried by
+open frontier endpoints.  Unoriented signatures usually take `Port` to be the
+same type as `Edge`.  Oriented signatures usually take `Port` to be a direction
+paired with an edge type.  `portEdge` forgets endpoint-only data and
+`compatible` states when two frontier endpoints may be joined.
 
 Each node label has a finite ordered list of ports, represented by `arity` and
 `port`.  The order is part of the formal data because the canonical traversal
 and linear isomorphism test depend on it.
 -/
 structure Signature where
+  Edge : Type
   Port : Type
   Node : Type
+  portEdge : Port → Edge
   arity : Node → Nat
   port : (node : Node) → Fin (arity node) → Port
   compatible : Port → Port → Prop
@@ -39,8 +42,10 @@ def signature (Ty Node : Type)
     (arity : Node → Nat)
     (portTy : (node : Node) → Fin (arity node) → Ty) :
     Signature where
+  Edge := Ty
   Port := Ty
   Node := Node
+  portEdge := id
   arity := arity
   port := portTy
   compatible := Eq
@@ -79,8 +84,10 @@ def signature (Ty Node : Type)
     (arity : Node → Nat)
     (portSpec : (node : Node) → Fin (arity node) → Endpoint Ty) :
     Signature where
+  Edge := Ty
   Port := Endpoint Ty
   Node := Node
+  portEdge := fun p => p.ty
   arity := arity
   port := portSpec
   compatible := fun p q =>
@@ -300,43 +307,86 @@ def syntaxIso (Sig : Signature) (boundary : List Sig.Port) :
     Mu (poly Sig) boundary ≃ᵢ Diag Sig boundary :=
   (generatedCode Sig).iso boundary
 
+/-!
+## Semantic port-hypergraph representatives
+
+The syntax above uses a frontier of endpoint labels.  The semantic
+representative separates those endpoint records from the edges/wires that
+connect them: endpoints carry `Sig.Port`, edges carry `Sig.Edge`, and every
+endpoint is incident to exactly one edge.
+-/
+
 /--
 A finite typed port-hypergraph representative with an ordered external
-boundary.  The finite ports carry endpoint labels, nodes carry constructor
-labels, and every constructor incidence points to an ordered constructor port.
+boundary.  Endpoints carry endpoint labels, edges carry wire labels, nodes
+carry constructor labels, and every constructor incidence points to an ordered
+constructor port.
 -/
 structure PortHypergraph (Sig : Signature) (boundary : List Sig.Port) where
-  portCount : Nat
+  endpointCount : Nat
+  edgeCount : Nat
   nodeCount : Nat
-  portLabel : Fin portCount → Sig.Port
-  boundaryPort : Fin boundary.length → Fin portCount
+  endpointLabel : Fin endpointCount → Sig.Port
+  edgeLabel : Fin edgeCount → Sig.Edge
+  endpointEdge : Fin endpointCount → Fin edgeCount
+  endpoint_edge_label :
+    ∀ endpoint : Fin endpointCount,
+      Sig.portEdge (endpointLabel endpoint) = edgeLabel (endpointEdge endpoint)
+  edge_compatible :
+    ∀ left right : Fin endpointCount,
+      endpointEdge left = endpointEdge right →
+        left ≠ right →
+          Sig.compatible (endpointLabel left) (endpointLabel right)
+  edge_two_endpoints :
+    ∀ edge : Fin edgeCount,
+      ∃ left right : Fin endpointCount,
+        left ≠ right ∧
+        endpointEdge left = edge ∧
+        endpointEdge right = edge ∧
+        ∀ endpoint : Fin endpointCount,
+          endpointEdge endpoint = edge → endpoint = left ∨ endpoint = right
+  boundaryPort : Fin boundary.length → Fin endpointCount
   boundary_injective : Function.Injective boundaryPort
   boundary_label :
-    ∀ b : Fin boundary.length, portLabel (boundaryPort b) = boundary.get b
+    ∀ b : Fin boundary.length, endpointLabel (boundaryPort b) = boundary.get b
   nodeLabel : Fin nodeCount → Sig.Node
-  incident : Fin nodeCount → List (Fin portCount)
+  incident : Fin nodeCount → List (Fin endpointCount)
   incident_length :
     ∀ node : Fin nodeCount, (incident node).length = Sig.arity (nodeLabel node)
-  incidence_compatible :
+  incident_injective :
+    ∀ node : Fin nodeCount,
+      Function.Injective fun slot : Fin (incident node).length =>
+        (incident node).get slot
+  incidence_label :
     ∀ (node : Fin nodeCount) (slot : Fin (incident node).length),
-      Sig.compatible
-        (portLabel ((incident node).get slot))
-        (Sig.port (nodeLabel node) (Fin.cast (incident_length node) slot))
+      endpointLabel ((incident node).get slot) =
+        Sig.port (nodeLabel node) (Fin.cast (incident_length node) slot)
+  endpoint_covered :
+    ∀ endpoint : Fin endpointCount,
+      (∃ boundaryIndex : Fin boundary.length,
+        boundaryPort boundaryIndex = endpoint) ∨
+      ∃ (node : Fin nodeCount) (slot : Fin (incident node).length),
+        (incident node).get slot = endpoint
 
 namespace PortHypergraph
 
 variable {Sig : Signature} {boundary : List Sig.Port}
 
 /--
-A port has a path to the ordered boundary when it is a boundary port or can be
-reached by moving across the ordered incidences of a constructor already in the
-same component.
+A port endpoint has a path to the ordered boundary when it is a boundary
+endpoint, can cross an edge to the other endpoint on that edge, or can move
+across the ordered incidences of a constructor already in the same component.
 -/
 inductive PortReachesBoundary (G : PortHypergraph Sig boundary) :
-    Fin G.portCount → Prop
+    Fin G.endpointCount → Prop
   | boundary (b : Fin boundary.length) :
       PortReachesBoundary G (G.boundaryPort b)
-  | throughConstructor {p q : Fin G.portCount}
+  | throughEdge {p q : Fin G.endpointCount}
+      (sameEdge : G.endpointEdge p = G.endpointEdge q)
+      (different : p ≠ q)
+      (reach : PortReachesBoundary G p) :
+      PortReachesBoundary G q
+  | throughConstructor {p q : Fin G.endpointCount}
       (node : Fin G.nodeCount)
       (fromSlot toSlot : Fin (G.incident node).length)
       (hp : (G.incident node).get fromSlot = p)
@@ -364,21 +414,43 @@ structure OpenPortHypergraph (Sig : Signature) (boundary : List Sig.Port) where
 
 /--
 Boundary-preserving isomorphism of typed finite representatives.  It relabels
-ports and nodes, preserves the ordered boundary pointwise, preserves port and
-node labels, and preserves every ordered constructor-port incidence.
+endpoints, edges, and nodes, preserves the ordered boundary pointwise,
+preserves endpoint/edge/node labels, preserves endpoint-to-edge incidence, and
+preserves every ordered constructor-port incidence.
 -/
 structure PortHypergraphIso {Sig : Signature} {boundary : List Sig.Port}
     (G H : PortHypergraph Sig boundary) where
-  portEquiv : Fin G.portCount ≃ᵢ Fin H.portCount
+  endpointEquiv : Fin G.endpointCount ≃ᵢ Fin H.endpointCount
+  edgeEquiv : Fin G.edgeCount ≃ᵢ Fin H.edgeCount
   nodeEquiv : Fin G.nodeCount ≃ᵢ Fin H.nodeCount
   boundary_preserved :
-    ∀ b : Fin boundary.length, portEquiv.toFun (G.boundaryPort b) = H.boundaryPort b
+    ∀ b : Fin boundary.length,
+      endpointEquiv.toFun (G.boundaryPort b) = H.boundaryPort b
   boundary_reflected :
-    ∀ b : Fin boundary.length, portEquiv.invFun (H.boundaryPort b) = G.boundaryPort b
-  port_label_preserved :
-    ∀ p : Fin G.portCount, G.portLabel p = H.portLabel (portEquiv.toFun p)
-  port_label_reflected :
-    ∀ p : Fin H.portCount, H.portLabel p = G.portLabel (portEquiv.invFun p)
+    ∀ b : Fin boundary.length,
+      endpointEquiv.invFun (H.boundaryPort b) = G.boundaryPort b
+  endpoint_label_preserved :
+    ∀ endpoint : Fin G.endpointCount,
+      G.endpointLabel endpoint =
+        H.endpointLabel (endpointEquiv.toFun endpoint)
+  endpoint_label_reflected :
+    ∀ endpoint : Fin H.endpointCount,
+      H.endpointLabel endpoint =
+        G.endpointLabel (endpointEquiv.invFun endpoint)
+  edge_label_preserved :
+    ∀ edge : Fin G.edgeCount,
+      G.edgeLabel edge = H.edgeLabel (edgeEquiv.toFun edge)
+  edge_label_reflected :
+    ∀ edge : Fin H.edgeCount,
+      H.edgeLabel edge = G.edgeLabel (edgeEquiv.invFun edge)
+  endpoint_edge_preserved :
+    ∀ endpoint : Fin G.endpointCount,
+      H.endpointEdge (endpointEquiv.toFun endpoint) =
+        edgeEquiv.toFun (G.endpointEdge endpoint)
+  endpoint_edge_reflected :
+    ∀ endpoint : Fin H.endpointCount,
+      G.endpointEdge (endpointEquiv.invFun endpoint) =
+        edgeEquiv.invFun (H.endpointEdge endpoint)
   node_label_preserved :
     ∀ node : Fin G.nodeCount,
       G.nodeLabel node = H.nodeLabel (nodeEquiv.toFun node)
@@ -387,11 +459,11 @@ structure PortHypergraphIso {Sig : Signature} {boundary : List Sig.Port}
       H.nodeLabel node = G.nodeLabel (nodeEquiv.invFun node)
   incidence_preserved :
     ∀ node : Fin G.nodeCount,
-      (G.incident node).map portEquiv.toFun =
+      (G.incident node).map endpointEquiv.toFun =
         H.incident (nodeEquiv.toFun node)
   incidence_reflected :
     ∀ node : Fin H.nodeCount,
-      (H.incident node).map portEquiv.invFun =
+      (H.incident node).map endpointEquiv.invFun =
         G.incident (nodeEquiv.invFun node)
 
 namespace PortHypergraphIso
@@ -399,7 +471,8 @@ namespace PortHypergraphIso
 variable {Sig : Signature} {boundary : List Sig.Port}
 
 def refl (G : PortHypergraph Sig boundary) : PortHypergraphIso G G where
-  portEquiv := Iso.refl (Fin G.portCount)
+  endpointEquiv := Iso.refl (Fin G.endpointCount)
+  edgeEquiv := Iso.refl (Fin G.edgeCount)
   nodeEquiv := Iso.refl (Fin G.nodeCount)
   boundary_preserved := by
     intro _
@@ -407,10 +480,22 @@ def refl (G : PortHypergraph Sig boundary) : PortHypergraphIso G G where
   boundary_reflected := by
     intro _
     rfl
-  port_label_preserved := by
+  endpoint_label_preserved := by
     intro _
     rfl
-  port_label_reflected := by
+  endpoint_label_reflected := by
+    intro _
+    rfl
+  edge_label_preserved := by
+    intro _
+    rfl
+  edge_label_reflected := by
+    intro _
+    rfl
+  endpoint_edge_preserved := by
+    intro _
+    rfl
+  endpoint_edge_reflected := by
     intro _
     rfl
   node_label_preserved := by
@@ -428,12 +513,17 @@ def refl (G : PortHypergraph Sig boundary) : PortHypergraphIso G G where
 
 def symm {G H : PortHypergraph Sig boundary}
     (e : PortHypergraphIso G H) : PortHypergraphIso H G where
-  portEquiv := Iso.symm e.portEquiv
+  endpointEquiv := Iso.symm e.endpointEquiv
+  edgeEquiv := Iso.symm e.edgeEquiv
   nodeEquiv := Iso.symm e.nodeEquiv
   boundary_preserved := e.boundary_reflected
   boundary_reflected := e.boundary_preserved
-  port_label_preserved := e.port_label_reflected
-  port_label_reflected := e.port_label_preserved
+  endpoint_label_preserved := e.endpoint_label_reflected
+  endpoint_label_reflected := e.endpoint_label_preserved
+  edge_label_preserved := e.edge_label_reflected
+  edge_label_reflected := e.edge_label_preserved
+  endpoint_edge_preserved := e.endpoint_edge_reflected
+  endpoint_edge_reflected := e.endpoint_edge_preserved
   node_label_preserved := e.node_label_reflected
   node_label_reflected := e.node_label_preserved
   incidence_preserved := e.incidence_reflected
@@ -442,7 +532,8 @@ def symm {G H : PortHypergraph Sig boundary}
 def trans {G H K : PortHypergraph Sig boundary}
     (e₁ : PortHypergraphIso G H) (e₂ : PortHypergraphIso H K) :
     PortHypergraphIso G K where
-  portEquiv := Iso.trans e₁.portEquiv e₂.portEquiv
+  endpointEquiv := Iso.trans e₁.endpointEquiv e₂.endpointEquiv
+  edgeEquiv := Iso.trans e₁.edgeEquiv e₂.edgeEquiv
   nodeEquiv := Iso.trans e₁.nodeEquiv e₂.nodeEquiv
   boundary_preserved := by
     intro b
@@ -452,20 +543,64 @@ def trans {G H K : PortHypergraph Sig boundary}
     intro b
     simp [Iso.trans, Function.comp, e₂.boundary_reflected b,
       e₁.boundary_reflected b]
-  port_label_preserved := by
-    intro p
+  endpoint_label_preserved := by
+    intro endpoint
     calc
-      G.portLabel p = H.portLabel (e₁.portEquiv.toFun p) :=
-        e₁.port_label_preserved p
-      _ = K.portLabel (e₂.portEquiv.toFun (e₁.portEquiv.toFun p)) :=
-        e₂.port_label_preserved (e₁.portEquiv.toFun p)
-  port_label_reflected := by
-    intro p
+      G.endpointLabel endpoint =
+          H.endpointLabel (e₁.endpointEquiv.toFun endpoint) :=
+        e₁.endpoint_label_preserved endpoint
+      _ =
+          K.endpointLabel
+            (e₂.endpointEquiv.toFun (e₁.endpointEquiv.toFun endpoint)) :=
+        e₂.endpoint_label_preserved (e₁.endpointEquiv.toFun endpoint)
+  endpoint_label_reflected := by
+    intro endpoint
     calc
-      K.portLabel p = H.portLabel (e₂.portEquiv.invFun p) :=
-        e₂.port_label_reflected p
-      _ = G.portLabel (e₁.portEquiv.invFun (e₂.portEquiv.invFun p)) :=
-        e₁.port_label_reflected (e₂.portEquiv.invFun p)
+      K.endpointLabel endpoint =
+          H.endpointLabel (e₂.endpointEquiv.invFun endpoint) :=
+        e₂.endpoint_label_reflected endpoint
+      _ =
+          G.endpointLabel
+            (e₁.endpointEquiv.invFun (e₂.endpointEquiv.invFun endpoint)) :=
+        e₁.endpoint_label_reflected (e₂.endpointEquiv.invFun endpoint)
+  edge_label_preserved := by
+    intro edge
+    calc
+      G.edgeLabel edge = H.edgeLabel (e₁.edgeEquiv.toFun edge) :=
+        e₁.edge_label_preserved edge
+      _ = K.edgeLabel (e₂.edgeEquiv.toFun (e₁.edgeEquiv.toFun edge)) :=
+        e₂.edge_label_preserved (e₁.edgeEquiv.toFun edge)
+  edge_label_reflected := by
+    intro edge
+    calc
+      K.edgeLabel edge = H.edgeLabel (e₂.edgeEquiv.invFun edge) :=
+        e₂.edge_label_reflected edge
+      _ = G.edgeLabel (e₁.edgeEquiv.invFun (e₂.edgeEquiv.invFun edge)) :=
+        e₁.edge_label_reflected (e₂.edgeEquiv.invFun edge)
+  endpoint_edge_preserved := by
+    intro endpoint
+    calc
+      K.endpointEdge
+          (e₂.endpointEquiv.toFun (e₁.endpointEquiv.toFun endpoint)) =
+          e₂.edgeEquiv.toFun
+            (H.endpointEdge (e₁.endpointEquiv.toFun endpoint)) :=
+        e₂.endpoint_edge_preserved (e₁.endpointEquiv.toFun endpoint)
+      _ =
+          e₂.edgeEquiv.toFun
+            (e₁.edgeEquiv.toFun (G.endpointEdge endpoint)) := by
+        rw [e₁.endpoint_edge_preserved endpoint]
+  endpoint_edge_reflected := by
+    intro endpoint
+    calc
+      G.endpointEdge
+          (e₁.endpointEquiv.invFun (e₂.endpointEquiv.invFun endpoint)) =
+          e₁.edgeEquiv.invFun
+            (H.endpointEdge (e₂.endpointEquiv.invFun endpoint)) :=
+        e₁.endpoint_edge_reflected (e₂.endpointEquiv.invFun endpoint)
+      _ =
+          e₁.edgeEquiv.invFun
+            (e₂.edgeEquiv.invFun (K.endpointEdge endpoint)) := by
+        rw [e₂.endpoint_edge_reflected endpoint]
   node_label_preserved := by
     intro node
     calc
@@ -483,20 +618,24 @@ def trans {G H K : PortHypergraph Sig boundary}
   incidence_preserved := by
     intro node
     calc
-      (G.incident node).map (Iso.trans e₁.portEquiv e₂.portEquiv).toFun =
-          ((G.incident node).map e₁.portEquiv.toFun).map e₂.portEquiv.toFun := by
+      (G.incident node).map (Iso.trans e₁.endpointEquiv e₂.endpointEquiv).toFun =
+          ((G.incident node).map e₁.endpointEquiv.toFun).map
+            e₂.endpointEquiv.toFun := by
         simp [Iso.trans, List.map_map]
-      _ = (H.incident (e₁.nodeEquiv.toFun node)).map e₂.portEquiv.toFun := by
+      _ = (H.incident (e₁.nodeEquiv.toFun node)).map
+            e₂.endpointEquiv.toFun := by
         rw [e₁.incidence_preserved node]
       _ = K.incident (e₂.nodeEquiv.toFun (e₁.nodeEquiv.toFun node)) := by
         rw [e₂.incidence_preserved (e₁.nodeEquiv.toFun node)]
   incidence_reflected := by
     intro node
     calc
-      (K.incident node).map (Iso.trans e₁.portEquiv e₂.portEquiv).invFun =
-          ((K.incident node).map e₂.portEquiv.invFun).map e₁.portEquiv.invFun := by
+      (K.incident node).map (Iso.trans e₁.endpointEquiv e₂.endpointEquiv).invFun =
+          ((K.incident node).map e₂.endpointEquiv.invFun).map
+            e₁.endpointEquiv.invFun := by
         simp [Iso.trans, List.map_map]
-      _ = (H.incident (e₂.nodeEquiv.invFun node)).map e₁.portEquiv.invFun := by
+      _ = (H.incident (e₂.nodeEquiv.invFun node)).map
+            e₁.endpointEquiv.invFun := by
         rw [e₂.incidence_reflected node]
       _ = G.incident (e₁.nodeEquiv.invFun (e₂.nodeEquiv.invFun node)) := by
         rw [e₁.incidence_reflected (e₂.nodeEquiv.invFun node)]
@@ -597,11 +736,12 @@ def CanonicalTraversal.semanticMuIso (T : CanonicalTraversal Sig)
 
 /--
 UNFINISHED semantic bridge: typed rooted open diagrams should present exactly
-the finite typed open port-hypergraphs whose constructors lie in components
-connected to the ordered external boundary, up to ordered boundary-preserving
-isomorphism.  The proof must instantiate a canonical search procedure whose
-unique traversal order supplies the canonical labels used for linear
-isomorphism testing.
+the finite typed open endpoint/edge/node port-hypergraphs whose edges and
+nodes are labeled, whose external boundary endpoints are ordered, and whose
+constructors lie in components connected to that ordered boundary, up to
+ordered boundary-preserving isomorphism.  The proof must instantiate a
+canonical search procedure whose unique traversal order supplies the canonical
+edge and node labels used for linear isomorphism testing.
 -/
 def diagOpenPortHypergraphIso (Sig : Signature) (boundary : List Sig.Port) :
     Diag Sig boundary ≃ᵢ OpenPortHypergraphUpToIso Sig boundary := by

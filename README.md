@@ -106,7 +106,8 @@ lake exe bijform
   Defines typed ordered-port rooted open string-diagram syntax, unoriented and
   oriented signature builders, its dependent polynomial presentation, the
   generated-code isomorphism, and the unfinished semantic bridge to open
-  port-hypergraphs up to ordered-boundary-preserving isomorphism:
+  endpoint/edge/node port-hypergraphs up to ordered-boundary-preserving
+  isomorphism:
   - `StringDiagram.Signature`
   - `StringDiagram.Unoriented.signature`
   - `StringDiagram.Oriented.signature`
@@ -115,6 +116,8 @@ lake exe bijform
   - `StringDiagram.generatedCode`
   - `StringDiagram.syntaxIso`
   - `StringDiagram.PortHypergraph`
+  - `StringDiagram.PortHypergraph.PortReachesBoundary`
+  - `StringDiagram.OpenPortHypergraph`
   - `StringDiagram.PortHypergraphIso`
   - `StringDiagram.CanonicalTraversal`
   - `StringDiagram.CanonicalTraversal.semanticCodeIso`
