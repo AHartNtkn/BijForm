@@ -127,9 +127,11 @@ lake exe bijform
   - `StringDiagram.Diag.connectStep_validIds`
   - `StringDiagram.Diag.connectStep_endpointPartition`
   - `StringDiagram.Diag.connectStep_nodeIncidentNodup`
+  - `StringDiagram.Diag.connectStep_ownerIdPartition`
   - `StringDiagram.Diag.budStep_validIds`
   - `StringDiagram.Diag.budStep_endpointPartition`
   - `StringDiagram.Diag.budStep_nodeIncidentNodup`
+  - `StringDiagram.Diag.budStep_ownerIdPartition`
   - `StringDiagram.Diag.budStep_endpoints`
   - `StringDiagram.Diag.renderTraceFromBoundary`
   - `StringDiagram.Diag.renderTrace_endpointPrefix`
@@ -137,9 +139,11 @@ lake exe bijform
   - `StringDiagram.Diag.renderTrace_validIds`
   - `StringDiagram.Diag.renderTrace_endpointPartition`
   - `StringDiagram.Diag.renderTrace_nodeIncidentNodup`
+  - `StringDiagram.Diag.renderTrace_ownerIdPartition`
   - `StringDiagram.Diag.renderTraceFromBoundary_validIds`
   - `StringDiagram.Diag.renderTraceFromBoundary_endpointPartition`
   - `StringDiagram.Diag.renderTraceFromBoundary_nodeIncidentNodup`
+  - `StringDiagram.Diag.renderTraceFromBoundary_ownerIdPartition`
   - `StringDiagram.Diag.renderTraceFromBoundary_endpointEdgeEvidence`
   - `StringDiagram.Diag.renderTraceFromBoundary_endpointEdge`
   - `StringDiagram.Diag.renderTraceFromBoundary_endpoint_edge_label`
@@ -159,12 +163,16 @@ lake exe bijform
   - `StringDiagram.RenderState.edgeEndpointRefOfEndpointId_unique`
   - `StringDiagram.RenderState.EndpointPartition`
   - `StringDiagram.RenderState.NodeIncidentNodup`
+  - `StringDiagram.RenderState.nodeIncidentIds`
+  - `StringDiagram.RenderState.ownerEndpointIds`
+  - `StringDiagram.RenderState.OwnerIdPartition`
   - `StringDiagram.RenderState.EndpointPrefix`
   - `StringDiagram.RenderState.BoundaryEvidence`
   - `StringDiagram.RenderState.boundaryEvidenceOfPrefix`
   - `StringDiagram.RenderState.initial_validIds`
   - `StringDiagram.RenderState.initial_endpointPartition`
   - `StringDiagram.RenderState.initial_nodeIncidentNodup`
+  - `StringDiagram.RenderState.initial_ownerIdPartition`
   - `StringDiagram.RenderState.EndpointPartition.endpoint_consumed_of_frontier_empty`
   - `StringDiagram.RenderState.endpointEdgeOfPartition`
   - `StringDiagram.RenderState.endpointEdgeOfPartition_endpoint`

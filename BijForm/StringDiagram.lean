@@ -734,6 +734,27 @@ structure NodeIncidentNodup {Sig : Signature} {frontier : List Sig.Port}
   node_incident_nodup :
     ∀ node : RenderNode Sig, node ∈ st.nodes → node.incident.Nodup
 
+def nodeIncidentIds {Sig : Signature} {frontier : List Sig.Port}
+    (st : RenderState Sig frontier) : List Nat :=
+  st.nodes.flatMap fun node => node.incident
+
+def ownerEndpointIds {Sig : Signature} {frontier : List Sig.Port}
+    (st : RenderState Sig frontier) (boundary : List Sig.Port) : List Nat :=
+  List.range boundary.length ++ st.nodeIncidentIds
+
+/--
+Endpoint-ID inventory for semantic owners.  Boundary positions own the initial
+range of endpoint IDs, and rendered constructor nodes own their ordered
+incident IDs.
+-/
+structure OwnerIdPartition {Sig : Signature} {frontier : List Sig.Port}
+    (st : RenderState Sig frontier) (boundary : List Sig.Port) : Prop where
+  owner_nodup : (st.ownerEndpointIds boundary).Nodup
+  owner_bound :
+    ∀ id : Nat, id ∈ st.ownerEndpointIds boundary → id < st.endpoints.length
+  owner_covered :
+    ∀ id : Nat, id < st.endpoints.length → id ∈ st.ownerEndpointIds boundary
+
 /-- `base` occurs as the ordered prefix of a renderer state's endpoint list. -/
 structure EndpointPrefix {Sig : Signature} {frontier : List Sig.Port}
     (st : RenderState Sig frontier) (base : List Sig.Port) where
@@ -837,6 +858,18 @@ theorem initial_nodeIncidentNodup {Sig : Signature} (boundary : List Sig.Port) :
   node_incident_nodup := by
     intro node hmem
     simp [initial] at hmem
+
+theorem initial_ownerIdPartition {Sig : Signature} (boundary : List Sig.Port) :
+    (initial Sig boundary).OwnerIdPartition boundary where
+  owner_nodup := by
+    simp [ownerEndpointIds, nodeIncidentIds, initial, List.nodup_range]
+  owner_bound := by
+    intro id hmem
+    simpa [ownerEndpointIds, nodeIncidentIds, initial] using hmem
+  owner_covered := by
+    intro id hid
+    simpa [ownerEndpointIds, nodeIncidentIds, initial] using
+      (List.mem_range.mpr hid)
 
 theorem EndpointPartition.endpoint_consumed_of_frontier_empty
     {Sig : Signature} {st : RenderState Sig []}
@@ -1821,6 +1854,29 @@ theorem connectStep_nodeIncidentNodup {active : Sig.Port}
     intro node hmem
     exact hn.node_incident_nodup node hmem
 
+theorem connectStep_ownerIdPartition {active : Sig.Port}
+    {frontier : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (st : RenderState Sig (active :: frontier))
+    {boundary : List Sig.Port}
+    (ho : st.OwnerIdPartition boundary) :
+    (connectStep mate ok st).OwnerIdPartition boundary := by
+  unfold connectStep
+  split
+  · rename_i hids
+    exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  · constructor
+    · simpa [RenderState.ownerEndpointIds, RenderState.nodeIncidentIds]
+        using ho.owner_nodup
+    · intro id hmem
+      exact ho.owner_bound id (by
+        simpa [RenderState.ownerEndpointIds, RenderState.nodeIncidentIds]
+          using hmem)
+    · intro id hid
+      simpa [RenderState.ownerEndpointIds, RenderState.nodeIncidentIds] using
+        ho.owner_covered id hid
+
 theorem budStep_validIds {active : Sig.Port} {frontier : List Sig.Port}
     (node : Sig.Node)
     (entry : Fin (Sig.arity node))
@@ -2298,6 +2354,109 @@ theorem budStep_nodeIncidentNodup {active : Sig.Port}
     · cases hnew
       exact freshNodeEndpoints_nodup st.nextEndpoint (Sig.arity node)
 
+theorem budStep_ownerIdPartition {active : Sig.Port}
+    {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (st : RenderState Sig (active :: frontier))
+    (hv : st.ValidIds)
+    {boundary : List Sig.Port}
+    (ho : st.OwnerIdPartition boundary) :
+    (budStep node entry ok st).OwnerIdPartition boundary := by
+  unfold budStep
+  split
+  · rename_i hids
+    exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  · rename_i activeId restIds hids
+    have hrest : restIds.length = frontier.length := by
+      have hlen := st.frontierIds_length
+      rw [hids] at hlen
+      simpa using Nat.succ.inj hlen
+    let nodeEndpoints := freshNodeEndpoints st.nextEndpoint (Sig.arity node)
+    let entryIdx : Fin nodeEndpoints.length :=
+      Fin.cast (by simp [nodeEndpoints]) entry
+    let child : RenderState Sig (frontier ++ Sig.nodePortsExcept node entry) :=
+      { nextEndpoint := st.nextEndpoint + Sig.arity node
+        endpoints := st.endpoints ++ Sig.nodePorts node
+        edges := st.edges ++
+          [{ label := Sig.portEdge active
+             leftLabel := active
+             rightLabel := Sig.port node entry
+             left := activeId
+             right := nodeEndpoints.get entryIdx
+             left_label := rfl
+             right_label := (Sig.compatible_edge ok).symm
+             compatible := ok }]
+        nodes := st.nodes ++ [{ label := node, incident := nodeEndpoints }]
+        frontierIds := restIds ++ eraseFin nodeEndpoints entryIdx
+        frontierIds_length := by
+          dsimp [nodeEndpoints, entryIdx]
+          simp [hrest, Signature.nodePortsExcept, Signature.nodePorts,
+            eraseFin_length] }
+    change child.OwnerIdPartition boundary
+    have childOwners_eq :
+        child.ownerEndpointIds boundary =
+          st.ownerEndpointIds boundary ++ nodeEndpoints := by
+      simp [child, RenderState.ownerEndpointIds, RenderState.nodeIncidentIds]
+    have childEndpoints_len :
+        child.endpoints.length = st.endpoints.length + Sig.arity node := by
+      simp [child, Signature.nodePorts]
+    have old_bound_lift {id : Nat} (hbound : id < st.endpoints.length) :
+        id < child.endpoints.length := by
+      rw [childEndpoints_len]
+      omega
+    have fresh_bound {id : Nat} (hmem : id ∈ nodeEndpoints) :
+        id < child.endpoints.length := by
+      have hlt := freshNodeEndpoints_mem_lt
+        (by simpa [nodeEndpoints] using hmem)
+      have hnext := hv.nextEndpoint_eq
+      rw [childEndpoints_len]
+      simp at hlt
+      omega
+    have old_fresh_disjoint {id : Nat}
+        (hold : id ∈ st.ownerEndpointIds boundary)
+        (hfresh : id ∈ nodeEndpoints) : False := by
+      have holdBound := ho.owner_bound id hold
+      have hge := freshNodeEndpoints_mem_ge
+        (by simpa [nodeEndpoints] using hfresh)
+      have hnext := hv.nextEndpoint_eq
+      omega
+    refine
+      { owner_nodup := ?_
+        owner_bound := ?_
+        owner_covered := ?_ }
+    · rw [childOwners_eq]
+      apply nodup_append_of_nodup_disjoint
+      · exact ho.owner_nodup
+      · exact freshNodeEndpoints_nodup st.nextEndpoint (Sig.arity node)
+      · intro id hold hfresh
+        exact old_fresh_disjoint hold hfresh
+    · intro id hmem
+      rw [childOwners_eq] at hmem
+      simp at hmem
+      rcases hmem with hold | hfresh
+      · exact old_bound_lift (ho.owner_bound id hold)
+      · exact fresh_bound hfresh
+    · intro id hid
+      by_cases hold : id < st.endpoints.length
+      · have holdOwner := ho.owner_covered id hold
+        rw [childOwners_eq]
+        exact List.mem_append_left nodeEndpoints holdOwner
+      · have hge : st.endpoints.length ≤ id := Nat.le_of_not_gt hold
+        have hfresh : id ∈ nodeEndpoints := by
+          apply freshNodeEndpoints_mem_of_bounds
+          · have hnext := hv.nextEndpoint_eq
+            simp
+            omega
+          · have hid' := hid
+            rw [childEndpoints_len] at hid'
+            have hnext := hv.nextEndpoint_eq
+            simp
+            omega
+        rw [childOwners_eq]
+        exact List.mem_append_right (st.ownerEndpointIds boundary) hfresh
+
 /--
 Execute traversal syntax into a construction trace.
 
@@ -2397,6 +2556,35 @@ theorem renderTrace_nodeIncidentNodup :
   | _active :: _frontier, bud node entry ok child, st, hn =>
       renderTrace_nodeIncidentNodup child (budStep node entry ok st)
         (budStep_nodeIncidentNodup node entry ok st hn)
+
+theorem renderTrace_ownerIdPartition :
+    ∀ {frontier : List Sig.Port} (d : Diag Sig frontier)
+      (st : RenderState Sig frontier) (boundary : List Sig.Port),
+      st.ValidIds → st.OwnerIdPartition boundary →
+        (renderTrace d st).OwnerIdPartition boundary
+  | [], finish, st, boundary, _hv, ho => by
+      dsimp [renderTrace]
+      refine
+        { owner_nodup := ?_
+          owner_bound := ?_
+          owner_covered := ?_ }
+      · simpa [RenderState.ownerEndpointIds, RenderState.nodeIncidentIds]
+          using ho.owner_nodup
+      · intro id hmem
+        exact ho.owner_bound id (by
+          simpa [RenderState.ownerEndpointIds, RenderState.nodeIncidentIds]
+            using hmem)
+      · intro id hid
+        simpa [RenderState.ownerEndpointIds, RenderState.nodeIncidentIds]
+          using ho.owner_covered id hid
+  | _active :: _frontier, connect mate ok child, st, boundary, hv, ho =>
+      renderTrace_ownerIdPartition child (connectStep mate ok st) boundary
+        (connectStep_validIds mate ok st hv)
+        (connectStep_ownerIdPartition mate ok st ho)
+  | _active :: _frontier, bud node entry ok child, st, boundary, hv, ho =>
+      renderTrace_ownerIdPartition child (budStep node entry ok st) boundary
+        (budStep_validIds node entry ok st hv)
+        (budStep_ownerIdPartition node entry ok st hv ho)
 
 theorem renderTrace_connect
     {active : Sig.Port} {frontier : List Sig.Port}
@@ -2587,6 +2775,13 @@ theorem renderTraceFromBoundary_nodeIncidentNodup
     (renderTraceFromBoundary d).NodeIncidentNodup :=
   renderTrace_nodeIncidentNodup d (RenderState.initial Sig boundary)
     (RenderState.initial_nodeIncidentNodup boundary)
+
+theorem renderTraceFromBoundary_ownerIdPartition
+    {boundary : List Sig.Port} (d : Diag Sig boundary) :
+    (renderTraceFromBoundary d).OwnerIdPartition boundary :=
+  renderTrace_ownerIdPartition d (RenderState.initial Sig boundary) boundary
+    (RenderState.initial_validIds boundary)
+    (RenderState.initial_ownerIdPartition boundary)
 
 def renderTraceFromBoundary_endpointEdgeEvidence
     {boundary : List Sig.Port} (d : Diag Sig boundary) :
@@ -3182,8 +3377,9 @@ two-endpoint edge laws are constructed by
 constructed by `renderTraceFromBoundary_boundaryEvidence` from endpoint-prefix
 preservation.  Constructor incidence evidence is constructed by
 `renderTraceFromBoundary_incidenceEvidence` from `ValidIds` and node-incident
-nodup preservation.  The remaining unfinished fields are endpoint-owner
-uniqueness and boundary reachability.
+nodup preservation.  The boundary-or-constructor owner endpoint-ID inventory is
+constructed by `renderTraceFromBoundary_ownerIdPartition`.  The remaining
+unfinished fields are endpoint-owner uniqueness and boundary reachability.
 -/
 def renderTraceFromBoundary_openEvidence
     {boundary : List Sig.Port} (d : Diag Sig boundary) :
@@ -3212,6 +3408,7 @@ def renderTraceFromBoundary_openEvidence
   have incident_length := incidenceEvidence.incident_length
   have incident_injective := incidenceEvidence.incident_injective
   have incidence_label := incidenceEvidence.incidence_label
+  have ownerIdPartition := renderTraceFromBoundary_ownerIdPartition d
   sorry
 
 /--
