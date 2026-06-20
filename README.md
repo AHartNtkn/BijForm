@@ -283,7 +283,10 @@ lake exe bijform
   - `StringDiagram.OpenPortHypergraph.SearchState.pending_eq_nil_of_empty_frontier`
   - `StringDiagram.OpenPortHypergraph.SearchState.graphExhausted_of_empty_frontier`
   - `StringDiagram.OpenPortHypergraph.firstPendingTraversalReady_of_frontierComplete`
-  - `StringDiagram.diagOpenPortHypergraphIso` (unfinished proof gap)
+  - `StringDiagram.OpenPortHypergraph.fromGraph_respects_iso` (unfinished inverse-law proof gap)
+  - `StringDiagram.Diag.fromGraph_toOpenPortHypergraph` (unfinished inverse-law proof gap)
+  - `StringDiagram.OpenPortHypergraph.toOpenPortHypergraph_fromGraph_iso` (unfinished inverse-law proof gap)
+  - `StringDiagram.diagOpenPortHypergraphIso` (depends on unfinished inverse-law declarations)
 
 - `BijForm.Examples`
   Imports the worked example modules:

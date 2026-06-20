@@ -6033,20 +6033,64 @@ def OpenPortHypergraphUpToIso (Sig : Signature) (boundary : List Sig.Port) :
   Quotient (OpenPortHypergraph.isoSetoid Sig boundary)
 
 /--
-UNFINISHED semantic bridge: typed rooted open diagrams should present exactly
-the finite typed open endpoint/edge/node port-hypergraphs whose edges and
-nodes are labeled, whose external boundary endpoints are ordered, and whose
-constructors lie in components connected to that ordered boundary, up to
-ordered boundary-preserving isomorphism.  The proof must instantiate a
-canonical search procedure whose unique traversal order supplies the canonical
-edge and node labels used for linear isomorphism testing.  The immediate
-blockers are initial/step preservation of
-`OpenPortHypergraph.TraversalState.FrontierComplete`, renderer validity, and
-the renderer/traversal inverse laws.
+UNFINISHED inverse law: the owned graph-to-`Diag` traversal is invariant under
+ordered-boundary-preserving isomorphism.  This is the well-definedness
+obligation for descending `OpenPortHypergraph.fromGraph` to
+`OpenPortHypergraphUpToIso`.
+-/
+theorem OpenPortHypergraph.fromGraph_respects_iso
+    {Sig : Signature} {boundary : List Sig.Port}
+    {G H : OpenPortHypergraph Sig boundary}
+    (h : OpenPortHypergraph.isoRel G H) :
+    OpenPortHypergraph.fromGraph G = OpenPortHypergraph.fromGraph H := by
+  sorry
+
+/--
+UNFINISHED inverse law: rendering a syntax diagram to a semantic graph and then
+running the owned first-pending traversal recovers the original syntax exactly.
+-/
+theorem Diag.fromGraph_toOpenPortHypergraph
+    {Sig : Signature} {boundary : List Sig.Port}
+    (d : Diag Sig boundary) :
+    OpenPortHypergraph.fromGraph (Diag.toOpenPortHypergraph d) = d := by
+  sorry
+
+/--
+UNFINISHED inverse law: traversing an open graph to syntax and rendering that
+syntax gives an ordered-boundary-preserving isomorphic semantic graph.
+-/
+theorem OpenPortHypergraph.toOpenPortHypergraph_fromGraph_iso
+    {Sig : Signature} {boundary : List Sig.Port}
+    (G : OpenPortHypergraph Sig boundary) :
+    OpenPortHypergraph.isoRel
+      (Diag.toOpenPortHypergraph (OpenPortHypergraph.fromGraph G)) G := by
+  sorry
+
+/--
+UNFINISHED semantic bridge assembly.  The quotient maps are now wired through
+the owned renderer and traversal, but this declaration still depends on the
+three unfinished inverse-law declarations above.
 -/
 def diagOpenPortHypergraphIso (Sig : Signature) (boundary : List Sig.Port) :
-    Diag Sig boundary ≃ᵢ OpenPortHypergraphUpToIso Sig boundary := by
-  sorry
+    Diag Sig boundary ≃ᵢ OpenPortHypergraphUpToIso Sig boundary where
+  toFun d :=
+    Quotient.mk (OpenPortHypergraph.isoSetoid Sig boundary)
+      (Diag.toOpenPortHypergraph d)
+  invFun :=
+    Quotient.lift
+      (fun G : OpenPortHypergraph Sig boundary => OpenPortHypergraph.fromGraph G)
+      (by
+        intro G H h
+        exact OpenPortHypergraph.fromGraph_respects_iso h)
+  left_inv := by
+    intro d
+    exact Diag.fromGraph_toOpenPortHypergraph d
+  right_inv := by
+    intro q
+    refine Quotient.inductionOn q ?_
+    intro G
+    exact Quotient.sound
+      (OpenPortHypergraph.toOpenPortHypergraph_fromGraph_iso G)
 
 end StringDiagram
 end BijForm
