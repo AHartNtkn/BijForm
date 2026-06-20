@@ -6438,6 +6438,57 @@ theorem firstPendingStepSearch?_some_bud_of_witness
   rw [hconnect, hstep]
   exact ⟨node', slot', hmate', hunseen', by simp [hstepEq]⟩
 
+theorem firstPendingStepSearch?_some_bud_exact_of_witness
+    {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port} (st : SearchState G frontier)
+    {active : Fin G.raw.endpointCount}
+    {rest : List (Fin G.raw.endpointCount)}
+    (hconnect :
+      firstPendingConnectSearch? G st.seenNode active rest = none)
+    (node : Fin G.raw.nodeCount)
+    (slot : Fin (G.raw.incident node).length)
+    (hmate :
+      PortHypergraph.EdgeMate G.raw active ((G.raw.incident node).get slot))
+    (hunseen : ¬ st.seenNode node) :
+    ∃ (hmate' :
+          PortHypergraph.EdgeMate G.raw active ((G.raw.incident node).get slot))
+      (hunseen' : ¬ st.seenNode node),
+      st.firstPendingStepSearch? active rest =
+        some (FirstPendingStep.bud node slot hmate' hunseen') := by
+  rcases st.firstPendingStepSearch?_some_bud_of_witness
+      hconnect node slot hmate hunseen with
+    ⟨node', slot', hmate', hunseen', hstep⟩
+  have hendpointEq :
+      (G.raw.incident node').get slot' = (G.raw.incident node).get slot := by
+    rcases PortHypergraph.edgeMate_existsUnique G.raw active with
+      ⟨uniqueMate, _huniqueMate, huniq⟩
+    exact (huniq ((G.raw.incident node').get slot') hmate').trans
+      (huniq ((G.raw.incident node).get slot) hmate).symm
+  have hownerEq :
+      (.constructor node' slot' :
+        EndpointOwner boundary.length G.raw.nodeCount
+          (fun node => (G.raw.incident node).length)) =
+      (.constructor node slot :
+        EndpointOwner boundary.length G.raw.nodeCount
+          (fun node => (G.raw.incident node).length)) := by
+    let endpoint := (G.raw.incident node).get slot
+    rcases G.raw.endpoint_owner endpoint with ⟨owner₀, _howner₀, huniq⟩
+    have hleft :
+        (.constructor node' slot' :
+          EndpointOwner boundary.length G.raw.nodeCount
+            (fun node => (G.raw.incident node).length)) = owner₀ := by
+      apply huniq
+      exact hendpointEq
+    have hright :
+        (.constructor node slot :
+          EndpointOwner boundary.length G.raw.nodeCount
+            (fun node => (G.raw.incident node).length)) = owner₀ := by
+      apply huniq
+      rfl
+    exact hleft.trans hright.symm
+  cases hownerEq
+  exact ⟨hmate', hunseen', hstep⟩
+
 end SearchState
 
 /--
