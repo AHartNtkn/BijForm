@@ -196,8 +196,13 @@ end Diag
 /-- An edge recorded by the concrete traversal renderer. -/
 structure RenderEdge (Sig : Signature) where
   label : Sig.Edge
+  leftLabel : Sig.Port
+  rightLabel : Sig.Port
   left : Nat
   right : Nat
+  left_label : Sig.portEdge leftLabel = label
+  right_label : Sig.portEdge rightLabel = label
+  compatible : Sig.compatible leftLabel rightLabel
 
 /-- A constructor node recorded by the concrete traversal renderer. -/
 structure RenderNode (Sig : Signature) where
@@ -233,6 +238,15 @@ def initial (boundary : List Sig.Port) : RenderState Sig boundary where
   frontierIds := List.range boundary.length
   frontierIds_length := by simp
 
+theorem frontierIds_ne_nil {Sig : Signature}
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (st : RenderState Sig (active :: frontier)) :
+    st.frontierIds ≠ [] := by
+  intro hids
+  have hlen := st.frontierIds_length
+  rw [hids] at hlen
+  simp at hlen
+
 end RenderState
 
 namespace Diag
@@ -254,6 +268,7 @@ mate`.
 -/
 def connectStep {active : Sig.Port} {frontier : List Sig.Port}
     (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
     (st : RenderState Sig (active :: frontier)) :
     RenderState Sig (eraseFin frontier mate) :=
   match hids : st.frontierIds with
@@ -272,7 +287,14 @@ def connectStep {active : Sig.Port} {frontier : List Sig.Port}
       { nextEndpoint := st.nextEndpoint
         endpoints := st.endpoints
         edges := st.edges ++
-          [{ label := Sig.portEdge active, left := activeId, right := mateId }]
+          [{ label := Sig.portEdge active
+             leftLabel := active
+             rightLabel := frontier.get mate
+             left := activeId
+             right := mateId
+             left_label := rfl
+             right_label := (Sig.compatible_edge ok).symm
+             compatible := ok }]
         nodes := st.nodes
         frontierIds := childIds
         frontierIds_length := by
@@ -287,6 +309,7 @@ constructor endpoints are appended after the existing rest frontier.
 def budStep {active : Sig.Port} {frontier : List Sig.Port}
     (node : Sig.Node)
     (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
     (st : RenderState Sig (active :: frontier)) :
     RenderState Sig (frontier ++ Sig.nodePortsExcept node entry) :=
   match hids : st.frontierIds with
@@ -308,7 +331,14 @@ def budStep {active : Sig.Port} {frontier : List Sig.Port}
       { nextEndpoint := st.nextEndpoint + Sig.arity node
         endpoints := st.endpoints ++ Sig.nodePorts node
         edges := st.edges ++
-          [{ label := Sig.portEdge active, left := activeId, right := entryId }]
+          [{ label := Sig.portEdge active
+             leftLabel := active
+             rightLabel := Sig.port node entry
+             left := activeId
+             right := entryId
+             left_label := rfl
+             right_label := (Sig.compatible_edge ok).symm
+             compatible := ok }]
         nodes := st.nodes ++ [{ label := node, incident := nodeEndpoints }]
         frontierIds := childIds
         frontierIds_length := by
@@ -333,10 +363,10 @@ def renderTrace :
         nodes := st.nodes
         frontierIds := []
         frontierIds_length := rfl }
-  | _active :: _frontier, connect mate _ok child, st =>
-      renderTrace child (connectStep mate st)
-  | _active :: _frontier, bud node entry _ok child, st =>
-      renderTrace child (budStep node entry st)
+  | _active :: _frontier, connect mate ok child, st =>
+      renderTrace child (connectStep mate ok st)
+  | _active :: _frontier, bud node entry ok child, st =>
+      renderTrace child (budStep node entry ok st)
 
 theorem renderTrace_connect
     {active : Sig.Port} {frontier : List Sig.Port}
@@ -345,7 +375,7 @@ theorem renderTrace_connect
     (child : Diag Sig (eraseFin frontier mate))
     (st : RenderState Sig (active :: frontier)) :
     renderTrace (Diag.connect mate ok child) st =
-      renderTrace child (connectStep mate st) :=
+      renderTrace child (connectStep mate ok st) :=
   rfl
 
 theorem renderTrace_bud
@@ -356,8 +386,84 @@ theorem renderTrace_bud
     (child : Diag Sig (frontier ++ Sig.nodePortsExcept node entry))
     (st : RenderState Sig (active :: frontier)) :
     renderTrace (Diag.bud node entry ok child) st =
-      renderTrace child (budStep node entry st) :=
+      renderTrace child (budStep node entry ok st) :=
   rfl
+
+theorem connectStep_edges_length
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (st : RenderState Sig (active :: frontier)) :
+    (connectStep mate ok st).edges.length = st.edges.length + 1 := by
+  unfold connectStep
+  split
+  · rename_i hids
+    exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  · simp
+
+theorem connectStep_nodes
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (st : RenderState Sig (active :: frontier)) :
+    (connectStep mate ok st).nodes = st.nodes := by
+  unfold connectStep
+  split
+  · rename_i hids
+    exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  · rfl
+
+theorem connectStep_endpoints
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (st : RenderState Sig (active :: frontier)) :
+    (connectStep mate ok st).endpoints = st.endpoints := by
+  unfold connectStep
+  split
+  · rename_i hids
+    exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  · rfl
+
+theorem budStep_edges_length
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (st : RenderState Sig (active :: frontier)) :
+    (budStep node entry ok st).edges.length = st.edges.length + 1 := by
+  unfold budStep
+  split
+  · rename_i hids
+    exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  · simp
+
+theorem budStep_nodes_length
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (st : RenderState Sig (active :: frontier)) :
+    (budStep node entry ok st).nodes.length = st.nodes.length + 1 := by
+  unfold budStep
+  split
+  · rename_i hids
+    exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  · simp
+
+theorem budStep_endpoints_length
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (st : RenderState Sig (active :: frontier)) :
+    (budStep node entry ok st).endpoints.length =
+      st.endpoints.length + Sig.arity node := by
+  unfold budStep
+  split
+  · rename_i hids
+    exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  · simp [Signature.nodePorts]
 
 def renderTraceFromBoundary {boundary : List Sig.Port} (d : Diag Sig boundary) :
     RenderState Sig [] :=
@@ -690,6 +796,160 @@ structure OpenPortHypergraph (Sig : Signature) (boundary : List Sig.Port) where
   allConstructorsReachBoundary :
     PortHypergraph.AllConstructorsReachBoundary raw
 
+namespace RenderState
+
+variable {Sig : Signature}
+
+/--
+Evidence that a completed render trace presents a semantic
+`PortHypergraph`.  The trace lists are the storage; this structure supplies
+the finite maps and proofs required by the semantic representative.
+-/
+structure PortHypergraphEvidence
+    (st : RenderState Sig []) (boundary : List Sig.Port) where
+  endpointEdge : Fin st.endpoints.length → Fin st.edges.length
+  endpoint_edge_label :
+    ∀ endpoint : Fin st.endpoints.length,
+      Sig.portEdge (st.endpoints.get endpoint) =
+        (st.edges.get (endpointEdge endpoint)).label
+  edge_compatible :
+    ∀ left right : Fin st.endpoints.length,
+      endpointEdge left = endpointEdge right →
+        left ≠ right →
+          Sig.compatible (st.endpoints.get left) (st.endpoints.get right)
+  edge_two_endpoints :
+    ∀ edge : Fin st.edges.length,
+      ∃ left right : Fin st.endpoints.length,
+        left ≠ right ∧
+        endpointEdge left = edge ∧
+        endpointEdge right = edge ∧
+        ∀ endpoint : Fin st.endpoints.length,
+          endpointEdge endpoint = edge → endpoint = left ∨ endpoint = right
+  boundaryPort : Fin boundary.length → Fin st.endpoints.length
+  boundary_injective : Function.Injective boundaryPort
+  boundary_label :
+    ∀ b : Fin boundary.length,
+      st.endpoints.get (boundaryPort b) = boundary.get b
+  incident : Fin st.nodes.length → List (Fin st.endpoints.length)
+  incident_length :
+    ∀ node : Fin st.nodes.length,
+      (incident node).length = Sig.arity ((st.nodes.get node).label)
+  incident_injective :
+    ∀ node : Fin st.nodes.length,
+      Function.Injective fun slot : Fin (incident node).length =>
+        (incident node).get slot
+  incidence_label :
+    ∀ (node : Fin st.nodes.length) (slot : Fin (incident node).length),
+      st.endpoints.get ((incident node).get slot) =
+        Sig.port ((st.nodes.get node).label) (Fin.cast (incident_length node) slot)
+  endpoint_owner :
+    ∀ endpoint : Fin st.endpoints.length,
+      ∃ owner : EndpointOwner boundary.length st.nodes.length
+          (fun node => (incident node).length),
+        (match owner with
+          | .boundary boundaryIndex => boundaryPort boundaryIndex
+          | .constructor node slot => (incident node).get slot) = endpoint ∧
+        ∀ owner' : EndpointOwner boundary.length st.nodes.length
+            (fun node => (incident node).length),
+          (match owner' with
+            | .boundary boundaryIndex => boundaryPort boundaryIndex
+            | .constructor node slot => (incident node).get slot) = endpoint →
+          owner' = owner
+
+namespace PortHypergraphEvidence
+
+def toPortHypergraph {st : RenderState Sig []} {boundary : List Sig.Port}
+    (ev : PortHypergraphEvidence st boundary) :
+    PortHypergraph Sig boundary := by
+  cases ev with
+  | mk endpointEdge endpoint_edge_label edge_compatible edge_two_endpoints
+      boundaryPort boundary_injective boundary_label incident incident_length
+      incident_injective incidence_label endpoint_owner =>
+    exact
+      { endpointCount := st.endpoints.length
+        edgeCount := st.edges.length
+        nodeCount := st.nodes.length
+        endpointLabel := st.endpoints.get
+        edgeLabel := fun edge => (st.edges.get edge).label
+        endpointEdge := endpointEdge
+        endpoint_edge_label := endpoint_edge_label
+        edge_compatible := edge_compatible
+        edge_two_endpoints := edge_two_endpoints
+        boundaryPort := boundaryPort
+        boundary_injective := boundary_injective
+        boundary_label := boundary_label
+        nodeLabel := fun node => (st.nodes.get node).label
+        incident := incident
+        incident_length := incident_length
+        incident_injective := incident_injective
+        incidence_label := incidence_label
+        endpoint_owner := by
+          intro endpoint
+          rcases endpoint_owner endpoint with ⟨owner, howner, huniq⟩
+          cases owner with
+          | boundary boundaryIndex =>
+              refine ⟨.boundary boundaryIndex, by simpa using howner, ?_⟩
+              intro owner' howner'
+              cases owner' with
+              | boundary boundaryIndex' =>
+                  exact huniq (.boundary boundaryIndex') (by simpa using howner')
+              | constructor node slot =>
+                  exact huniq (.constructor node slot) (by simpa using howner')
+          | constructor node slot =>
+              refine ⟨.constructor node slot, by simpa using howner, ?_⟩
+              intro owner' howner'
+              cases owner' with
+              | boundary boundaryIndex =>
+                  exact huniq (.boundary boundaryIndex) (by simpa using howner')
+              | constructor node' slot' =>
+                  exact huniq (.constructor node' slot') (by simpa using howner') }
+
+end PortHypergraphEvidence
+
+/-- Evidence that a completed render trace presents an open semantic graph. -/
+structure OpenPortHypergraphEvidence
+    (st : RenderState Sig []) (boundary : List Sig.Port) where
+  graph : PortHypergraphEvidence st boundary
+  allConstructorsReachBoundary :
+    PortHypergraph.AllConstructorsReachBoundary graph.toPortHypergraph
+
+namespace OpenPortHypergraphEvidence
+
+def toOpenPortHypergraph {st : RenderState Sig []} {boundary : List Sig.Port}
+    (ev : OpenPortHypergraphEvidence st boundary) :
+    OpenPortHypergraph Sig boundary where
+  raw := ev.graph.toPortHypergraph
+  allConstructorsReachBoundary := ev.allConstructorsReachBoundary
+
+end OpenPortHypergraphEvidence
+
+end RenderState
+
+namespace Diag
+
+variable {Sig : Signature}
+
+/--
+UNFINISHED renderer validity: the trace produced from traversal syntax carries
+exactly the endpoint, edge, boundary, and ordered-constructor incidence
+evidence required to be an open `PortHypergraph`.
+-/
+def renderTraceFromBoundary_openEvidence
+    {boundary : List Sig.Port} (d : Diag Sig boundary) :
+    RenderState.OpenPortHypergraphEvidence
+      (renderTraceFromBoundary d) boundary := by
+  sorry
+
+/--
+Semantic renderer obtained from `renderTraceFromBoundary_openEvidence`; this
+declaration depends on the unfinished renderer-validity proof above.
+-/
+def toOpenPortHypergraph {boundary : List Sig.Port} (d : Diag Sig boundary) :
+    OpenPortHypergraph Sig boundary :=
+  (renderTraceFromBoundary_openEvidence d).toOpenPortHypergraph
+
+end Diag
+
 /--
 Boundary-preserving isomorphism of typed finite representatives.  It relabels
 endpoints, edges, and nodes, preserves the ordered boundary pointwise,
@@ -923,6 +1183,20 @@ end PortHypergraphIso
 namespace OpenPortHypergraph
 
 variable {Sig : Signature} {boundary : List Sig.Port}
+
+/--
+State for the boundary-rooted graph-to-syntax traversal.  The pending endpoint
+list is ordered, and its labels are exactly the `Diag` frontier index.
+-/
+structure TraversalState (G : OpenPortHypergraph Sig boundary)
+    (frontier : List Sig.Port) where
+  pending : List (Fin G.raw.endpointCount)
+  pending_labels : pending.map G.raw.endpointLabel = frontier
+  seenNode : Fin G.raw.nodeCount → Prop
+  processedEdge : Fin G.raw.edgeCount → Prop
+  pending_unprocessed :
+    ∀ endpoint : Fin G.raw.endpointCount,
+      endpoint ∈ pending → ¬ processedEdge (G.raw.endpointEdge endpoint)
 
 def isoRel (G H : OpenPortHypergraph Sig boundary) : Prop :=
   Nonempty (PortHypergraphIso G.raw H.raw)

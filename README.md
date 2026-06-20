@@ -119,12 +119,17 @@ lake exe bijform
   - `StringDiagram.Diag.connectStep`
   - `StringDiagram.Diag.budStep`
   - `StringDiagram.Diag.renderTraceFromBoundary`
+  - `StringDiagram.RenderState.PortHypergraphEvidence`
+  - `StringDiagram.RenderState.OpenPortHypergraphEvidence`
+  - `StringDiagram.Diag.renderTraceFromBoundary_openEvidence` (unfinished proof gap)
+  - `StringDiagram.Diag.toOpenPortHypergraph` (depends on unfinished renderer validity)
   - `StringDiagram.EndpointOwner`
   - `StringDiagram.PortHypergraph`
   - `StringDiagram.PortHypergraph.endpointOwnersOf`
   - `StringDiagram.PortHypergraph.endpointOwnersOf_existsUnique`
   - `StringDiagram.PortHypergraph.PortReachesBoundary`
   - `StringDiagram.OpenPortHypergraph`
+  - `StringDiagram.OpenPortHypergraph.TraversalState`
   - `StringDiagram.PortHypergraphIso`
   - `StringDiagram.CanonicalTraversal`
   - `StringDiagram.CanonicalTraversal.semanticCodeIso`
