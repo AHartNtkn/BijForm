@@ -480,6 +480,114 @@ theorem frontierIds_ne_nil {Sig : Signature}
   rw [hids] at hlen
   simp at hlen
 
+/--
+ID-level validity for a renderer state.  It is the proof layer that turns the
+raw `Nat` endpoint identifiers stored in the trace into valid finite endpoint
+indices with the labels required by semantic evidence.
+-/
+structure ValidIds {Sig : Signature} {frontier : List Sig.Port}
+    (st : RenderState Sig frontier) : Prop where
+  nextEndpoint_eq : st.nextEndpoint = st.endpoints.length
+  frontier_bound :
+    ∀ id : Nat, id ∈ st.frontierIds → id < st.endpoints.length
+  frontier_label :
+    ∀ i : Fin st.frontierIds.length,
+      st.endpoints.get
+        ⟨st.frontierIds.get i,
+          frontier_bound (st.frontierIds.get i) (List.get_mem st.frontierIds i)⟩ =
+      frontier.get (Fin.cast st.frontierIds_length i)
+  edge_left_bound :
+    ∀ edge : RenderEdge Sig, edge ∈ st.edges → edge.left < st.endpoints.length
+  edge_right_bound :
+    ∀ edge : RenderEdge Sig, edge ∈ st.edges → edge.right < st.endpoints.length
+  edge_left_label :
+    ∀ (edge : RenderEdge Sig) (hmem : edge ∈ st.edges),
+      st.endpoints.get ⟨edge.left, edge_left_bound edge hmem⟩ =
+        edge.leftLabel
+  edge_right_label :
+    ∀ (edge : RenderEdge Sig) (hmem : edge ∈ st.edges),
+      st.endpoints.get ⟨edge.right, edge_right_bound edge hmem⟩ =
+        edge.rightLabel
+  node_incident_length :
+    ∀ node : RenderNode Sig, node ∈ st.nodes →
+      node.incident.length = Sig.arity node.label
+  node_incident_bound :
+    ∀ (node : RenderNode Sig) (_hmem : node ∈ st.nodes)
+      (slot : Fin node.incident.length),
+      node.incident.get slot < st.endpoints.length
+  node_incident_label :
+    ∀ (node : RenderNode Sig) (hmem : node ∈ st.nodes)
+      (slot : Fin node.incident.length),
+      st.endpoints.get
+        ⟨node.incident.get slot,
+          node_incident_bound node hmem slot⟩ =
+        Sig.port node.label
+          (Fin.cast (node_incident_length node hmem) slot)
+
+theorem initial_validIds {Sig : Signature} (boundary : List Sig.Port) :
+    (initial Sig boundary).ValidIds where
+  nextEndpoint_eq := by
+    simp [initial]
+  frontier_bound := by
+    intro id hid
+    simpa [initial] using hid
+  frontier_label := by
+    intro i
+    simp [initial]
+  edge_left_bound := by
+    intro edge hmem
+    simp [initial] at hmem
+  edge_right_bound := by
+    intro edge hmem
+    simp [initial] at hmem
+  edge_left_label := by
+    intro edge hmem
+    simp [initial] at hmem
+  edge_right_label := by
+    intro edge hmem
+    simp [initial] at hmem
+  node_incident_length := by
+    intro node hmem
+    simp [initial] at hmem
+  node_incident_bound := by
+    intro node hmem slot
+    simp [initial] at hmem
+  node_incident_label := by
+    intro node hmem slot
+    simp [initial] at hmem
+
+theorem ValidIds.frontier_head_label {Sig : Signature}
+    {active : Sig.Port} {frontier : List Sig.Port}
+    {st : RenderState Sig (active :: frontier)}
+    (hv : st.ValidIds)
+    {activeId : Nat} {restIds : List Nat}
+    (hids : st.frontierIds = activeId :: restIds) :
+    st.endpoints.get
+      ⟨activeId, hv.frontier_bound activeId (by rw [hids]; simp)⟩ =
+      active := by
+  have hlabel :=
+    hv.frontier_label ⟨0, by rw [hids]; simp⟩
+  simpa [hids] using hlabel
+
+theorem ValidIds.frontier_tail_label {Sig : Signature}
+    {active : Sig.Port} {frontier : List Sig.Port}
+    {st : RenderState Sig (active :: frontier)}
+    (hv : st.ValidIds)
+    {activeId : Nat} {restIds : List Nat}
+    (hids : st.frontierIds = activeId :: restIds)
+    (hrest : restIds.length = frontier.length)
+    (i : Fin restIds.length) :
+    st.endpoints.get
+      ⟨restIds.get i,
+        hv.frontier_bound (restIds.get i) (by rw [hids]; simp)⟩ =
+      frontier.get (Fin.cast hrest i) := by
+  let oldIndex : Fin st.frontierIds.length :=
+    ⟨i.val + 1, by
+      rw [hids]
+      simp [i.isLt]⟩
+  have hlabel := hv.frontier_label oldIndex
+  simpa [oldIndex, hids] using hlabel
+
 end RenderState
 
 namespace Diag

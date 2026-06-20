@@ -119,6 +119,10 @@ lake exe bijform
   - `StringDiagram.Diag.connectStep`
   - `StringDiagram.Diag.budStep`
   - `StringDiagram.Diag.renderTraceFromBoundary`
+  - `StringDiagram.RenderState.ValidIds`
+  - `StringDiagram.RenderState.initial_validIds`
+  - `StringDiagram.RenderState.ValidIds.frontier_head_label`
+  - `StringDiagram.RenderState.ValidIds.frontier_tail_label`
   - `StringDiagram.RenderState.PortHypergraphEvidence`
   - `StringDiagram.RenderState.OpenPortHypergraphEvidence`
   - `StringDiagram.Diag.renderTraceFromBoundary_openEvidence` (unfinished proof gap)
