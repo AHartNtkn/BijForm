@@ -217,5 +217,104 @@ polynomial presentation through the generic generated-code construction.
 def syntaxIso (Sig : Signature) (n : Nat) : Mu (poly Sig) n ≃ᵢ Diag Sig n :=
   (generatedCode Sig).iso n
 
+/--
+A finite single-typed port-hypergraph representative with `boundary` ordered
+external ports.  Ports are the wire-like connection objects; each constructor
+port is incident to one such port, and boundary ports are distinguished ports
+of the same finite carrier.
+-/
+structure PortHypergraph (Sig : Signature) (boundary : Nat) where
+  portCount : Nat
+  nodeCount : Nat
+  boundaryPort : Fin boundary → Fin portCount
+  boundary_injective : Function.Injective boundaryPort
+  nodeLabel : Fin nodeCount → Fin Sig.ctorCount
+  incident :
+    (node : Fin nodeCount) →
+      Fin (Sig.portsMinusOne (nodeLabel node) + 1) → Fin portCount
+
+namespace PortHypergraph
+
+variable {Sig : Signature} {boundary : Nat}
+
+/--
+A port has a path to the boundary when it is a boundary port or can be reached
+through constructor incidences from a port already known to reach the boundary.
+-/
+inductive PortReachesBoundary (G : PortHypergraph Sig boundary) :
+    Fin G.portCount → Prop
+  | boundary (b : Fin boundary) :
+      PortReachesBoundary G (G.boundaryPort b)
+  | throughConstructor {p q : Fin G.portCount}
+      (node : Fin G.nodeCount)
+      (fromSlot toSlot : Fin (Sig.portsMinusOne (G.nodeLabel node) + 1))
+      (hp : G.incident node fromSlot = p)
+      (hq : G.incident node toSlot = q)
+      (reach : PortReachesBoundary G p) :
+      PortReachesBoundary G q
+
+/-- Every constructor is in a boundary-reachable component. -/
+def AllConstructorsReachBoundary (G : PortHypergraph Sig boundary) : Prop :=
+  ∀ node : Fin G.nodeCount,
+    ∃ slot : Fin (Sig.portsMinusOne (G.nodeLabel node) + 1),
+      PortReachesBoundary G (G.incident node slot)
+
+end PortHypergraph
+
+/--
+The semantic carrier for final encoded diagrams: finite open representatives
+whose constructors all lie in components connected to an external boundary
+port.
+-/
+structure OpenPortHypergraph (Sig : Signature) (boundary : Nat) where
+  raw : PortHypergraph Sig boundary
+  boundary_open : 0 < boundary
+  allConstructorsReachBoundary :
+    PortHypergraph.AllConstructorsReachBoundary raw
+
+/--
+Boundary-preserving isomorphism of finite representatives.  It relabels ports
+and constructors, preserves the ordered boundary, preserves constructor labels,
+and preserves constructor-port incidence.
+-/
+structure PortHypergraphIso {Sig : Signature} {boundary : Nat}
+    (G H : PortHypergraph Sig boundary) where
+  portEquiv : Fin G.portCount ≃ᵢ Fin H.portCount
+  nodeEquiv : Fin G.nodeCount ≃ᵢ Fin H.nodeCount
+  boundary_preserved :
+    ∀ b : Fin boundary, portEquiv.toFun (G.boundaryPort b) = H.boundaryPort b
+  node_label_preserved :
+    ∀ node : Fin G.nodeCount,
+      G.nodeLabel node = H.nodeLabel (nodeEquiv.toFun node)
+  incidence_preserved :
+    ∀ node : Fin G.nodeCount,
+      ∀ slot : Fin (Sig.portsMinusOne (G.nodeLabel node) + 1),
+        portEquiv.toFun (G.incident node slot) =
+          H.incident (nodeEquiv.toFun node)
+            (Fin.cast (by rw [node_label_preserved node]) slot)
+
+/-- Open boundary-connected port-hypergraphs quotiented by boundary-preserving
+isomorphism. -/
+def OpenPortHypergraphUpToIso (Sig : Signature) (boundary : Nat) : Type :=
+  Quot fun G H : OpenPortHypergraph Sig boundary =>
+    Nonempty (PortHypergraphIso G.raw H.raw)
+
+/--
+UNFINISHED semantic bridge: rooted open diagrams should present exactly the
+finite open boundary-connected port-hypergraphs up to boundary-preserving
+isomorphism.  The syntax/polynomial/generated-code results above do not close
+this graph-isomorphism theorem.
+-/
+def diagOpenPortHypergraphIso (Sig : Signature) {n : Nat} (hopen : 0 < n) :
+    Diag Sig n ≃ᵢ OpenPortHypergraphUpToIso Sig n := by
+  /-
+  Proof gap: construct the traversal from `Diag` to finite representatives,
+  canonicalize boundary-rooted traversals back to `Diag`, and prove both
+  directions inverse modulo `PortHypergraphIso`.  This is the single-typed
+  analogue of the richer bounded-isomorphism/canonicalization boundary in the
+  sibling `../diagegraph` work.
+  -/
+  sorry
+
 end StringDiagram
 end BijForm

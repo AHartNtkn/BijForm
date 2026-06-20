@@ -104,12 +104,15 @@ lake exe bijform
 
 - `BijForm.StringDiagram`
   Defines the single-typed rooted open string-diagram syntax, its dependent
-  polynomial presentation, and the generated-code isomorphism:
+  polynomial presentation, the generated-code isomorphism, and the unfinished
+  semantic bridge to open port-hypergraphs up to isomorphism:
   - `StringDiagram.Signature`
   - `StringDiagram.Diag`
   - `StringDiagram.poly`
   - `StringDiagram.generatedCode`
   - `StringDiagram.syntaxIso`
+  - `StringDiagram.OpenPortHypergraphUpToIso`
+  - `StringDiagram.diagOpenPortHypergraphIso` (unfinished proof gap)
 
 - `BijForm.Examples`
   Imports the worked example modules:
