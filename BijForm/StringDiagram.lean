@@ -2245,6 +2245,82 @@ def budChild {G : OpenPortHypergraph Sig boundary}
       exact hotherUnseen (by simp)
     · exact st.unseen_incident_unprocessed otherNode hotherNotSeen otherSlot hold
 
+theorem budChild_frontierComplete {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
+    (st : SearchState G (activeLabel :: restLabels))
+    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest)
+    (node : Fin G.raw.nodeCount)
+    (slot : Fin (G.raw.incident node).length)
+    (hmate :
+      PortHypergraph.EdgeMate G.raw active ((G.raw.incident node).get slot))
+    (hunseen : node ∉ st.seenNodes)
+    (hcomplete : st.FrontierComplete) :
+    (st.budChild hpending node slot hmate hunseen).FrontierComplete := by
+  intro endpoint hunprocessed owner howner
+  have hchildUnprocessed :
+      G.raw.endpointEdge endpoint ∉
+        G.raw.endpointEdge active :: st.processedEdges := by
+    simpa [FrontierComplete, toTraversalState, budChild, processedEdge]
+      using hunprocessed
+  have hnotActiveEdge :
+      G.raw.endpointEdge endpoint ≠ G.raw.endpointEdge active := by
+    intro hedge
+    exact hchildUnprocessed (by simp [hedge])
+  have holdUnprocessed :
+      G.raw.endpointEdge endpoint ∉ st.processedEdges := by
+    intro hold
+    exact hchildUnprocessed (by simp [hold])
+  have old_pending_to_child
+      (holdPending : endpoint ∈ st.pending) :
+      endpoint ∈ rest ++ eraseFin (G.raw.incident node) slot := by
+    have hrest : endpoint ∈ rest := by
+      rw [hpending] at holdPending
+      exact list_mem_tail_of_mem_cons_ne holdPending (by
+        intro hactiveEndpoint
+        exact hnotActiveEdge (by
+          rw [← hactiveEndpoint]))
+    exact List.mem_append_left _ hrest
+  cases owner with
+  | boundary boundaryIndex =>
+      have holdPending :
+          endpoint ∈ st.pending :=
+        hcomplete endpoint holdUnprocessed (.boundary boundaryIndex) howner
+      simpa [FrontierComplete, toTraversalState, budChild]
+        using old_pending_to_child holdPending
+  | constructor ownerNode ownerSlot =>
+      intro hseen
+      have hseen' : ownerNode ∈ node :: st.seenNodes := by
+        simpa [FrontierComplete, toTraversalState, budChild, seenNode]
+          using hseen
+      simp at hseen'
+      rcases hseen' with hnew | holdSeen
+      · cases hnew
+        have hownerEndpoint :
+            (G.raw.incident node).get ownerSlot = endpoint := by
+          simpa [PortHypergraph.endpointOwnerEndpoint] using howner
+        have hnotEntry :
+            endpoint ≠ (G.raw.incident node).get slot := by
+          intro hendpointEntry
+          exact hnotActiveEdge (by
+            rw [hendpointEntry]
+            exact hmate.2.symm)
+        have hmemIncident :
+            endpoint ∈ G.raw.incident node := by
+          rw [← hownerEndpoint]
+          exact List.get_mem (G.raw.incident node) ownerSlot
+        have hmemExcept :
+            endpoint ∈ eraseFin (G.raw.incident node) slot :=
+          mem_eraseFin_of_mem_ne_get (G.raw.incident node) slot
+            hmemIncident hnotEntry
+        exact List.mem_append_right rest hmemExcept
+      · have holdPending :
+            endpoint ∈ st.pending :=
+          hcomplete endpoint holdUnprocessed
+            (.constructor ownerNode ownerSlot) howner holdSeen
+        simpa [FrontierComplete, toTraversalState, budChild, seenNode]
+          using old_pending_to_child holdPending
+
 end SearchState
 
 /--
