@@ -68,17 +68,12 @@ def HBTRawBranchObj {m : Nat} (lhs rhs : Mu HBTPoly m) :
     | false => lhs
     | true => rhs
 
-/-- The branch-swap layer relation is respected by the quotient constructor
-from already-quotiented child layers. -/
-theorem HBTChildSwap_inn_branch_sound {m : Nat} (lhs rhs : Mu HBTPoly m) :
-    HBTChildSwapQuotient.inn
-        (Obj.map (fun i => HBTChildSwapQuotient.ofMu (i := i))
-          (HBTRawBranchObj lhs rhs))
+/-- The branch-swap layer relation is respected by raw quotient introduction. -/
+theorem HBTChildSwap_innRaw_branch_sound {m : Nat} (lhs rhs : Mu HBTPoly m) :
+    HBTChildSwapQuotient.innRaw (HBTRawBranchObj lhs rhs)
       =
-      HBTChildSwapQuotient.inn
-        (Obj.map (fun i => HBTChildSwapQuotient.ofMu (i := i))
-          (HBTRawBranchObj rhs lhs)) := by
-  exact HBTChildSwapQuotient.inn_layer_sound
+      HBTChildSwapQuotient.innRaw (HBTRawBranchObj rhs lhs) := by
+  exact HBTChildSwapQuotient.innRaw_layer_sound
     (HBTSwapLayerRel.branch lhs rhs)
 
 /-- The Nat-code relation induced by the branch-swap quotient and the existing

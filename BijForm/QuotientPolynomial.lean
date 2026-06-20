@@ -129,50 +129,22 @@ theorem fold_sup {P : DepPoly ι} {A : ι → Type v}
 
 end Mu
 
-noncomputable section
+/-- Introduce a raw polynomial constructor layer into the quotient carrier. -/
+def innRaw (Q : QuotientPresentation P) {i : ι}
+    (x : Obj P (Mu P) i) : Carrier Q i :=
+  ofMu Q (Mu.inn x)
 
-/-- A representative for a quotient class. This is used only to define the
-quotient-layer constructor; well-definedness is proved with `Quotient.exact`
-against the explicit generated setoid. -/
-def repr (Q : QuotientPresentation P) {i : ι} (x : Carrier Q i) : Mu P i :=
-  Classical.choose (Quotient.exists_rep x)
-
-theorem ofMu_repr (Q : QuotientPresentation P) {i : ι} (x : Carrier Q i) :
-    ofMu Q (repr Q x) = x :=
-  Classical.choose_spec (Quotient.exists_rep x)
-
-/-- Constructor for the quotient initial algebra from a layer of already
-quotiented recursive children. -/
-def inn (Q : QuotientPresentation P) {i : ι}
-    (x : Obj P (Carrier Q) i) : Carrier Q i :=
-  ofMu Q
-    (Mu.inn
-      { ctor := x.ctor
-        param := x.param
-        out_eq := x.out_eq
-        child := fun q => repr Q (x.child q) })
-
-/-- The quotient constructor agrees with the raw polynomial constructor when
-all quotient children are introduced by the quotient map. -/
-theorem inn_ofMu_obj (Q : QuotientPresentation P) {i : ι}
+theorem innRaw_eq (Q : QuotientPresentation P) {i : ι}
     (x : Obj P (Mu P) i) :
-    inn Q (Obj.map (fun j => ofMu Q (i := j)) x) = ofMu Q (Mu.inn x) := by
-  apply sound Q
-  apply Rel.congr
-  intro q
-  apply exact Q
-  exact ofMu_repr Q (ofMu Q (x.child q))
+    innRaw Q x = ofMu Q (Mu.inn x) :=
+  rfl
 
-/-- Constructor-layer quotient equations are respected by the quotient
-constructor. -/
-theorem inn_layer_sound (Q : QuotientPresentation P) {i : ι}
+/-- Constructor-layer quotient equations are respected by raw quotient
+introduction. -/
+theorem innRaw_layer_sound (Q : QuotientPresentation P) {i : ι}
     {x y : Obj P (Mu P) i} (h : Q.LayerRel i x y) :
-    inn Q (Obj.map (fun j => ofMu Q (i := j)) x) =
-      inn Q (Obj.map (fun j => ofMu Q (i := j)) y) := by
-  rw [inn_ofMu_obj Q x, inn_ofMu_obj Q y]
-  exact sound Q (Rel.layer h)
-
-end
+    innRaw Q x = innRaw Q y :=
+  sound Q (Rel.layer h)
 
 /-- Recursor for quotient presentations. A fold over `Mu P` descends exactly
 when it respects the generated quotient relation. -/
