@@ -53,48 +53,9 @@ def HBTPoly : DepPoly Nat where
   Pos := HBTPos
   input := HBTInput
 
-/-- Index-local constructor codes for height-bounded trees. At target height
-`i`, a branch code must include an explicit predecessor `m` with `m + 1 = i`. -/
-inductive HBTCode (i : Nat) where
-  | leaf (label : Nat)
-  | branch (m : Nat) (out_eq : m + 1 = i)
-
-def HBTDecode (i : Nat) : HBTCode i → Fiber HBTPoly i
-  | .leaf label => ⟨.leaf, (i, label), rfl⟩
-  | .branch m h => ⟨.branch, m, h⟩
-
-def HBTEncode (i : Nat) : Fiber HBTPoly i → HBTCode i
-  | ⟨.leaf, p, h⟩ =>
-      have _ : HBTPoly.out HBTCtor.leaf p = i := h
-      .leaf (i := i) p.2
-  | ⟨.branch, m, h⟩ => .branch (i := i) m h
-
-theorem HBT_decode_encode (i : Nat) (f : Fiber HBTPoly i) :
-    HBTDecode i (HBTEncode i f) = f := by
-  cases f with
-  | mk ctor param out_eq =>
-    cases ctor with
-    | leaf =>
-        cases param with
-        | mk n label =>
-          cases out_eq
-          rfl
-    | branch =>
-        rfl
-
-theorem HBT_encode_decode (i : Nat) (c : HBTCode i) :
-    HBTEncode i (HBTDecode i c) = c := by
-  cases c with
-  | leaf label => rfl
-  | branch m h => rfl
-
 /-- The non-opaque output-index inversion for the height-bounded-tree example. -/
-def HBTInversion : OutputIndexInversion HBTPoly where
-  Code := HBTCode
-  decode := HBTDecode
-  encode := HBTEncode
-  decode_encode := HBT_decode_encode
-  encode_decode := HBT_encode_decode
+def HBTInversion : OutputIndexInversion HBTPoly :=
+  OutputIndexInversion.canonical HBTPoly
 
 /-- The fiber of branch constructors at height zero is empty. -/
 theorem no_zero_height_branch (f : Fiber HBTPoly 0) (hctor : f.ctor = .branch) :
@@ -106,21 +67,25 @@ theorem no_zero_height_branch (f : Fiber HBTPoly 0) (hctor : f.ctor = .branch) :
 
 /-- The fiber of branch constructors at `m+1` contains the predecessor `m`. -/
 def branchAtSucc (m : Nat) : Fiber HBTPoly (m + 1) :=
-  HBTDecode (m + 1) (.branch m rfl)
+  ⟨HBTCtor.branch, (m : Nat), rfl⟩
 
 def HBTLayerToSyntax (i : Nat) :
     CodeLayer HBTPoly HBTInversion HBTSyntax i → HBTSyntax i
-  | ⟨.leaf label, _child⟩ =>
-      .leaf label
-  | ⟨.branch _m h, child⟩ =>
-      h ▸ (.branch (child false) (child true))
+  | ⟨⟨.leaf, p, h⟩, _child⟩ => by
+      cases p with
+      | mk height label =>
+        cases h
+        exact .leaf label
+  | ⟨⟨.branch, m, h⟩, child⟩ => by
+      cases h
+      exact .branch (child false) (child true)
 
 def HBTSyntaxToLayer (i : Nat) :
     HBTSyntax i → CodeLayer HBTPoly HBTInversion HBTSyntax i
   | .leaf label =>
-      ⟨.leaf label, fun q => nomatch q⟩
+      ⟨⟨HBTCtor.leaf, ((i, label) : Nat × Nat), rfl⟩, fun q => nomatch q⟩
   | @HBTSyntax.branch m lhs rhs =>
-      ⟨.branch m rfl, fun
+      ⟨⟨HBTCtor.branch, (m : Nat), rfl⟩, fun
         | false => lhs
         | true => rhs⟩
 
@@ -130,19 +95,24 @@ theorem HBTLayer_left_inv (i : Nat) :
   cases layer with
   | mk code child =>
     cases code with
-    | leaf label =>
-        have hchild : (fun q => nomatch q) = child := by
-          child_eta_empty
-        cases hchild
-        rfl
-    | branch m h =>
-        cases h
-        have hchild : child = (fun
-            | false => child false
-            | true => child true) := by
-          child_eta_bool
-        rw [hchild]
-        rfl
+    | mk ctor param out_eq =>
+      cases ctor with
+      | leaf =>
+          cases param with
+          | mk height label =>
+            cases out_eq
+            have hchild : (fun q => nomatch q) = child := by
+              child_eta_empty
+            cases hchild
+            rfl
+      | branch =>
+          cases out_eq
+          have hchild : child = (fun
+              | false => child false
+              | true => child true) := by
+            child_eta_bool
+          rw [hchild]
+          rfl
 
 theorem HBTLayer_right_inv (i : Nat) :
     Function.RightInverse (HBTSyntaxToLayer i) (HBTLayerToSyntax i) := by
@@ -167,11 +137,11 @@ theorem HBT_layer_child_rank_lt :
   | leaf label => cases q
   | branch lhs rhs =>
       cases q
-      · simpa [HBTLayerIso, HBTSyntaxToLayer, HBTInversion, HBTDecode,
-          HBTSyntax.rank] using
+      · simpa [HBTLayerIso, HBTSyntaxToLayer, HBTInversion,
+          OutputIndexInversion.canonical, HBTSyntax.rank] using
           Nat.lt_succ_of_le (Nat.le_max_left (HBTSyntax.rank lhs) (HBTSyntax.rank rhs))
-      · simpa [HBTLayerIso, HBTSyntaxToLayer, HBTInversion, HBTDecode,
-          HBTSyntax.rank] using
+      · simpa [HBTLayerIso, HBTSyntaxToLayer, HBTInversion,
+          OutputIndexInversion.canonical, HBTSyntax.rank] using
           Nat.lt_succ_of_le (Nat.le_max_right (HBTSyntax.rank lhs) (HBTSyntax.rank rhs))
 
 /--
@@ -196,20 +166,29 @@ def HBTSyntaxIso (i : Nat) : Mu HBTPoly i ≃ᵢ HBTSyntax i :=
 def HBTNatZeroLayerIso :
     CodeLayer HBTPoly HBTInversion (fun _ => Nat) 0 ≃ᵢ Nat where
   toFun
-    | ⟨.leaf label, _child⟩ => label
-    | ⟨.branch _ h, _child⟩ => by cases h
-  invFun n := ⟨.leaf n, fun q => nomatch q⟩
+    | ⟨⟨.leaf, p, h⟩, _child⟩ => by
+        cases p with
+        | mk height label =>
+          cases h
+          exact label
+    | ⟨⟨.branch, m, h⟩, _child⟩ => by cases h
+  invFun n := ⟨⟨HBTCtor.leaf, ((0, n) : Nat × Nat), rfl⟩, fun q => nomatch q⟩
   left_inv := by
     intro x
     cases x with
     | mk code child =>
         cases code with
-        | leaf label =>
-            have hchild : (fun q => nomatch q) = child := by
-              child_eta_empty
-            cases hchild
-            rfl
-        | branch m h => cases h
+        | mk ctor param out_eq =>
+          cases ctor with
+          | leaf =>
+              cases param with
+              | mk height label =>
+                cases out_eq
+                have hchild : (fun q => nomatch q) = child := by
+                  child_eta_empty
+                cases hchild
+                rfl
+          | branch => cases out_eq
   right_inv := by
     intro n
     rfl
@@ -218,11 +197,16 @@ def HBTNatSuccLayerSumIso (m : Nat) :
     CodeLayer HBTPoly HBTInversion (fun _ => Nat) (m + 1) ≃ᵢ
       (Nat ⊕ (Nat × Nat)) where
   toFun
-    | ⟨.leaf label, _child⟩ => Sum.inl label
-    | ⟨.branch _ _h, child⟩ => Sum.inr (child false, child true)
+    | ⟨⟨.leaf, p, h⟩, _child⟩ => by
+        cases p with
+        | mk height label =>
+          cases h
+          exact Sum.inl label
+    | ⟨⟨.branch, _k, _h⟩, child⟩ => Sum.inr (child false, child true)
   invFun
-    | Sum.inl label => ⟨.leaf label, fun q => nomatch q⟩
-    | Sum.inr p => ⟨.branch m rfl, fun
+    | Sum.inl label =>
+        ⟨⟨HBTCtor.leaf, ((m + 1, label) : Nat × Nat), rfl⟩, fun q => nomatch q⟩
+    | Sum.inr p => ⟨⟨HBTCtor.branch, (m : Nat), rfl⟩, fun
         | false => p.1
         | true => p.2⟩
   left_inv := by
@@ -230,19 +214,24 @@ def HBTNatSuccLayerSumIso (m : Nat) :
     cases x with
     | mk code child =>
         cases code with
-        | leaf label =>
-            have hchild : (fun q => nomatch q) = child := by
-              child_eta_empty
-            cases hchild
-            rfl
-        | branch k h =>
-            cases h
-            have hchild : child = (fun
-                | false => child false
-                | true => child true) := by
-              child_eta_bool
-            rw [hchild]
-            rfl
+        | mk ctor param out_eq =>
+          cases ctor with
+          | leaf =>
+              cases param with
+              | mk height label =>
+                cases out_eq
+                have hchild : (fun q => nomatch q) = child := by
+                  child_eta_empty
+                cases hchild
+                rfl
+          | branch =>
+              cases out_eq
+              have hchild : child = (fun
+                  | false => child false
+                  | true => child true) := by
+                child_eta_bool
+              rw [hchild]
+              rfl
   right_inv := by
     intro x
     cases x with

@@ -58,62 +58,28 @@ def LamPoly : DepPoly Nat where
   Pos := LamPos
   input := LamInput
 
-inductive LamCode (k : Nat) where
-  | var (v : Fin k)
-  | lam
-  | app
-
-def LamDecode (k : Nat) : LamCode k → Fiber LamPoly k
-  | .var v => ⟨.var, ⟨k, v⟩, rfl⟩
-  | .lam => ⟨.lam, k, rfl⟩
-  | .app => ⟨.app, k, rfl⟩
-
-def LamEncode (k : Nat) : Fiber LamPoly k → LamCode k
-  | ⟨.var, p, h⟩ =>
-      have _ : LamPoly.out LamCtor.var p = k := h
-      .var (k := k) (h ▸ p.2)
-  | ⟨.lam, _, _⟩ => .lam
-  | ⟨.app, _, _⟩ => .app
-
-theorem Lam_decode_encode (k : Nat) (f : Fiber LamPoly k) :
-    LamDecode k (LamEncode k f) = f := by
-  cases f with
-  | mk ctor param out_eq =>
-    cases ctor with
-    | var =>
-        cases param with
-        | mk k' v =>
-          cases out_eq
-          rfl
-    | lam =>
-        cases out_eq
-        rfl
-    | app =>
-        cases out_eq
-        rfl
-
-theorem Lam_encode_decode (k : Nat) (c : LamCode k) :
-    LamEncode k (LamDecode k c) = c := by
-  cases c <;> rfl
-
-def LamInversion : OutputIndexInversion LamPoly where
-  Code := LamCode
-  decode := LamDecode
-  encode := LamEncode
-  decode_encode := Lam_decode_encode
-  encode_decode := Lam_encode_decode
+def LamInversion : OutputIndexInversion LamPoly :=
+  OutputIndexInversion.canonical LamPoly
 
 def LamLayerToSyntax (k : Nat) :
     CodeLayer LamPoly LamInversion LamSyntax k → LamSyntax k
-  | ⟨.var v, _child⟩ => .var v
-  | ⟨.lam, child⟩ => .lam (child ())
-  | ⟨.app, child⟩ => .app (child false) (child true)
+  | ⟨⟨.var, p, h⟩, _child⟩ => by
+      cases p with
+      | mk k' v =>
+        cases h
+        exact .var v
+  | ⟨⟨.lam, _k, h⟩, child⟩ => by
+      cases h
+      exact .lam (child ())
+  | ⟨⟨.app, _k, h⟩, child⟩ => by
+      cases h
+      exact .app (child false) (child true)
 
 def LamSyntaxToLayer (k : Nat) :
     LamSyntax k → CodeLayer LamPoly LamInversion LamSyntax k
-  | .var v => ⟨.var v, fun q => nomatch q⟩
-  | .lam body => ⟨.lam, fun _ => body⟩
-  | .app fn arg => ⟨.app, fun
+  | .var v => ⟨⟨LamCtor.var, ⟨k, v⟩, rfl⟩, fun q => nomatch q⟩
+  | .lam body => ⟨⟨LamCtor.lam, (k : Nat), rfl⟩, fun _ => body⟩
+  | .app fn arg => ⟨⟨LamCtor.app, (k : Nat), rfl⟩, fun
       | false => fn
       | true => arg⟩
 
@@ -123,23 +89,34 @@ theorem LamLayer_left_inv (k : Nat) :
   cases layer with
   | mk code child =>
     cases code with
-    | var v =>
-      have hchild : (fun q => nomatch q) = child := by
-        child_eta_empty
-      cases hchild
-      rfl
-    | lam =>
-      have hchild : (fun _ => child ()) = child := by
-        child_eta_unit
-      cases hchild
-      rfl
-    | app =>
-      have hchild : child = (fun
-          | false => child false
-          | true => child true) := by
-        child_eta_bool
-      rw [hchild]
-      rfl
+    | mk ctor param out_eq =>
+      cases ctor with
+      | var =>
+        cases param with
+        | mk k' v =>
+          cases out_eq
+          have hchild : (fun q => nomatch q) = child := by
+            child_eta_empty
+          cases hchild
+          rfl
+      | lam =>
+        change LamParam LamCtor.lam at param
+        change Nat at param
+        cases out_eq
+        have hchild : (fun _ => child ()) = child := by
+          child_eta_unit
+        cases hchild
+        rfl
+      | app =>
+        change LamParam LamCtor.app at param
+        change Nat at param
+        cases out_eq
+        have hchild : child = (fun
+            | false => child false
+            | true => child true) := by
+          child_eta_bool
+        rw [hchild]
+        rfl
 
 theorem LamLayer_right_inv (k : Nat) :
     Function.RightInverse (LamSyntaxToLayer k) (LamLayerToSyntax k) := by
@@ -164,14 +141,15 @@ theorem Lam_layer_child_rank_lt :
   | var v => cases q
   | lam body =>
       cases q
-      simp [LamLayerIso, LamSyntaxToLayer, LamInversion, LamDecode, LamSyntax.rank]
+      simp [LamLayerIso, LamSyntaxToLayer, LamInversion,
+        OutputIndexInversion.canonical, LamSyntax.rank]
   | app fn arg =>
       cases q
-      · simpa [LamLayerIso, LamSyntaxToLayer, LamInversion, LamDecode,
-          LamSyntax.rank] using
+      · simpa [LamLayerIso, LamSyntaxToLayer, LamInversion,
+          OutputIndexInversion.canonical, LamSyntax.rank] using
           Nat.lt_succ_of_le (Nat.le_max_left (LamSyntax.rank fn) (LamSyntax.rank arg))
-      · simpa [LamLayerIso, LamSyntaxToLayer, LamInversion, LamDecode,
-          LamSyntax.rank] using
+      · simpa [LamLayerIso, LamSyntaxToLayer, LamInversion,
+          OutputIndexInversion.canonical, LamSyntax.rank] using
           Nat.lt_succ_of_le (Nat.le_max_right (LamSyntax.rank fn) (LamSyntax.rank arg))
 
 def LamGeneratedCode : GeneratedCode LamPoly LamSyntax where
@@ -190,15 +168,23 @@ abbrev LamNatLayerShape (k : Nat) :=
 
 def LamNatLayerShapeTo (k : Nat) :
     CodeLayer LamPoly LamInversion (fun _ => Nat) k → LamNatLayerShape k
-  | ⟨.var v, _child⟩ => Sum.inl v
-  | ⟨.lam, child⟩ => Sum.inr (Sum.inl (child ()))
-  | ⟨.app, child⟩ => Sum.inr (Sum.inr (child false, child true))
+  | ⟨⟨.var, p, h⟩, _child⟩ => by
+      cases p with
+      | mk k' v =>
+        cases h
+        exact Sum.inl v
+  | ⟨⟨.lam, _k, h⟩, child⟩ => by
+      cases h
+      exact Sum.inr (Sum.inl (child ()))
+  | ⟨⟨.app, _k, h⟩, child⟩ => by
+      cases h
+      exact Sum.inr (Sum.inr (child false, child true))
 
 def LamNatLayerShapeInv (k : Nat) :
     LamNatLayerShape k → CodeLayer LamPoly LamInversion (fun _ => Nat) k
-  | Sum.inl v => ⟨.var v, fun q => nomatch q⟩
-  | Sum.inr (Sum.inl body) => ⟨.lam, fun _ => body⟩
-  | Sum.inr (Sum.inr pair) => ⟨.app, fun
+  | Sum.inl v => ⟨⟨LamCtor.var, ⟨k, v⟩, rfl⟩, fun q => nomatch q⟩
+  | Sum.inr (Sum.inl body) => ⟨⟨LamCtor.lam, (k : Nat), rfl⟩, fun _ => body⟩
+  | Sum.inr (Sum.inr pair) => ⟨⟨LamCtor.app, (k : Nat), rfl⟩, fun
       | false => pair.1
       | true => pair.2⟩
 
@@ -208,23 +194,34 @@ theorem LamNatLayerShape_left_inv (k : Nat) :
   cases layer with
   | mk code child =>
     cases code with
-    | var v =>
-      have hchild : (fun q => nomatch q) = child := by
-        child_eta_empty
-      cases hchild
-      rfl
-    | lam =>
-      have hchild : (fun _ => child ()) = child := by
-        child_eta_unit
-      cases hchild
-      rfl
-    | app =>
-      have hchild : child = (fun
-          | false => child false
-          | true => child true) := by
-        child_eta_bool
-      rw [hchild]
-      rfl
+    | mk ctor param out_eq =>
+      cases ctor with
+      | var =>
+        cases param with
+        | mk k' v =>
+          cases out_eq
+          have hchild : (fun q => nomatch q) = child := by
+            child_eta_empty
+          cases hchild
+          rfl
+      | lam =>
+        change LamParam LamCtor.lam at param
+        change Nat at param
+        cases out_eq
+        have hchild : (fun _ => child ()) = child := by
+          child_eta_unit
+        cases hchild
+        rfl
+      | app =>
+        change LamParam LamCtor.app at param
+        change Nat at param
+        cases out_eq
+        have hchild : child = (fun
+            | false => child false
+            | true => child true) := by
+          child_eta_bool
+        rw [hchild]
+        rfl
 
 theorem LamNatLayerShape_right_inv (k : Nat) :
     Function.RightInverse (LamNatLayerShapeInv k) (LamNatLayerShapeTo k) := by
@@ -262,7 +259,8 @@ theorem LamNatRank_closed_zero_child :
 /-- At the empty context, code `0` selects `lam`, not `app`; otherwise the
 decoder would recurse at the same index and code. -/
 theorem LamNatLayer_zero_invFun_zero :
-    (LamNatLayerIso 0).invFun 0 = ⟨LamCode.lam, fun _ => 0⟩ := by
+    (LamNatLayerIso 0).invFun 0 =
+      ⟨⟨LamCtor.lam, (0 : Nat), rfl⟩, fun _ => 0⟩ := by
   rfl
 
 theorem LamNat_layer_child_rank_lt :
@@ -277,67 +275,79 @@ theorem LamNat_layer_child_rank_lt :
   cases layer with
   | mk code child =>
     cases code with
-    | var v =>
+    | mk ctor param out_eq =>
+      cases ctor with
+      | var =>
         intro q
         cases q
-    | lam =>
+      | lam =>
+        dsimp [LamPoly, LamParam] at param
+        cases out_eq
         intro q
         cases q
         let bodyCode := child ()
         have hparent :
-            (LamNatLayerIso k).toFun ⟨LamCode.lam, child⟩ = k + 2 * bodyCode := by
+            (LamNatLayerIso param).toFun ⟨⟨LamCtor.lam, (param : Nat), rfl⟩, child⟩ =
+              param + 2 * bodyCode := by
           simp [bodyCode, LamNatLayerIso, LamNatLayerShapeIso, LamNatLayerShapeTo,
             CodeAlgebra.finPrefixNat, CodeAlgebra.sumProdNat, Iso.trans, Iso.sum,
             CodeAlgebra.finPlusNat,
             CodeAlgebra.sumNat, Iso.refl]
-        change LamNatRank (k + 1) bodyCode <
-          LamNatRank k ((LamNatLayerIso k).toFun ⟨LamCode.lam, child⟩)
+        change LamNatRank (param + 1) bodyCode <
+          LamNatRank param
+            ((LamNatLayerIso param).toFun ⟨⟨LamCtor.lam, (param : Nat), rfl⟩, child⟩)
         rw [hparent]
         dsimp [LamNatRank]
-        by_cases hk : k = 0
-        · subst k
+        by_cases hk : param = 0
+        · subst param
           simp
           omega
-        · have hkpos : 0 < k := Nat.pos_of_ne_zero hk
+        · have hkpos : 0 < param := Nat.pos_of_ne_zero hk
           simp [hk]
           omega
-    | app =>
+      | app =>
+        dsimp [LamPoly, LamParam] at param
+        cases out_eq
         intro q
         let pairCode := CodeAlgebra.prodNat.toFun (child false, child true)
         have hparent :
-            (LamNatLayerIso k).toFun ⟨LamCode.app, child⟩ =
-              k + (2 * pairCode + 1) := by
+            (LamNatLayerIso param).toFun ⟨⟨LamCtor.app, (param : Nat), rfl⟩, child⟩ =
+              param + (2 * pairCode + 1) := by
           simp [pairCode, LamNatLayerIso, LamNatLayerShapeIso, LamNatLayerShapeTo,
             CodeAlgebra.finPrefixNat, CodeAlgebra.sumProdNat, Iso.trans, Iso.sum,
             CodeAlgebra.finPlusNat,
             CodeAlgebra.sumNat, Iso.refl]
         cases q
-        · change LamNatRank k (child false) <
-            LamNatRank k ((LamNatLayerIso k).toFun ⟨LamCode.app, child⟩)
+        · change LamNatRank param (child false) <
+            LamNatRank param
+              ((LamNatLayerIso param).toFun
+                ⟨⟨LamCtor.app, (param : Nat), rfl⟩, child⟩)
           rw [hparent]
           have hchild_le : child false ≤ pairCode := by
             simpa [pairCode] using
               CodeAlgebra.prodNat_toFun_fst_le (child false, child true)
-          have hpair_lt : pairCode < k + (2 * pairCode + 1) := by
+          have hpair_lt : pairCode < param + (2 * pairCode + 1) := by
             omega
-          have hchild_lt_parent : child false < k + (2 * pairCode + 1) :=
+          have hchild_lt_parent : child false < param + (2 * pairCode + 1) :=
             Nat.lt_of_le_of_lt hchild_le hpair_lt
           dsimp [LamNatRank]
-          by_cases hk : k = 0
+          by_cases hk : param = 0
           · simpa [hk] using hchild_lt_parent
           · simpa [hk] using hchild_lt_parent
-        · change LamNatRank k (child true) <
-            LamNatRank k ((LamNatLayerIso k).toFun ⟨LamCode.app, child⟩)
+        · change LamNatRank param (child true) <
+            LamNatRank param
+              ((LamNatLayerIso param).toFun
+                ⟨⟨LamCtor.app, (param : Nat), rfl⟩, child⟩)
           rw [hparent]
           have hchild_le : child true ≤ pairCode := by
             simpa [pairCode] using
               CodeAlgebra.prodNat_toFun_snd_le (child false, child true)
-          have hpair_lt : pairCode < k + (2 * pairCode + 1) := by
+          have hpair_lt : pairCode < param + (2 * pairCode + 1) := by
             omega
-          have hchild_lt_parent : child true < k + (2 * pairCode + 1) :=
+          have hchild_lt_parent : child true < param + (2 * pairCode + 1) :=
             Nat.lt_of_le_of_lt hchild_le hpair_lt
           dsimp [LamNatRank]
-          by_cases hk : k = 0
+          by_cases hk : param = 0
           · simpa [hk] using hchild_lt_parent
           · simpa [hk] using hchild_lt_parent
 
