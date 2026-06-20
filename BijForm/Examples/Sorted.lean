@@ -365,24 +365,24 @@ def SortedFiniteLayerShapeIso (lower upper : Nat) (h : lower ≤ upper) :
             rfl
         | branch =>
             cases param with
-          | mk _i pivot =>
-              cases out_eq
-              dsimp [sortedBranchFiber]
-              rw [(BoundedPivotFiniteIso lower upper h).left_inv pivot]
-              have hchild :
-                  child =
-                  (fun
-                    | false => SortedCarrier.ofNat (i := (lower, some pivot.1)) pivot.property.1
-                        (SortedCarrier.toNat (i := (lower, some pivot.1)) pivot.property.1 (child false))
-                    | true => SortedCarrier.ofNat (i := (pivot.1, some upper)) pivot.property.2
-                        (SortedCarrier.toNat (i := (pivot.1, some upper)) pivot.property.2 (child true))) := by
-                funext q
-                cases q
-                · exact (SortedCarrier.ofNat_toNat (i := (lower, some pivot.1)) pivot.property.1 (child false)).symm
-                · exact (SortedCarrier.ofNat_toNat (i := (pivot.1, some upper)) pivot.property.2 (child true)).symm
-              apply Sigma.ext
-              · rfl
-              · exact heq_of_eq hchild.symm
+            | mk _i pivot =>
+                cases out_eq
+                dsimp [sortedBranchFiber]
+                rw [(BoundedPivotFiniteIso lower upper h).left_inv pivot]
+                have hchild :
+                    child =
+                    (fun
+                      | false => SortedCarrier.ofNat (i := (lower, some pivot.1)) pivot.property.1
+                          (SortedCarrier.toNat (i := (lower, some pivot.1)) pivot.property.1 (child false))
+                      | true => SortedCarrier.ofNat (i := (pivot.1, some upper)) pivot.property.2
+                          (SortedCarrier.toNat (i := (pivot.1, some upper)) pivot.property.2 (child true))) := by
+                  funext q
+                  cases q
+                  · exact (SortedCarrier.ofNat_toNat (i := (lower, some pivot.1)) pivot.property.1 (child false)).symm
+                  · exact (SortedCarrier.ofNat_toNat (i := (pivot.1, some upper)) pivot.property.2 (child true)).symm
+                apply Sigma.ext
+                · rfl
+                · exact heq_of_eq hchild.symm
   right_inv := by
     intro shape
     cases shape with
@@ -451,24 +451,24 @@ def SortedInfiniteLayerShapeIso (lower : Nat) :
             rfl
         | branch =>
             cases param with
-          | mk _i pivot =>
-              cases out_eq
-              dsimp [sortedBranchFiber]
-              rw [(BoundedPivotInfiniteIso lower).left_inv pivot]
-              have hchild :
-                  child =
-                  (fun
-                    | false => SortedCarrier.ofNat (i := (lower, some pivot.1)) pivot.property.1
-                        (SortedCarrier.toNat (i := (lower, some pivot.1)) pivot.property.1 (child false))
-                    | true => SortedCarrier.ofNat (i := (pivot.1, none)) pivot.property.2
-                        (SortedCarrier.toNat (i := (pivot.1, none)) pivot.property.2 (child true))) := by
-                funext q
-                cases q
-                · exact (SortedCarrier.ofNat_toNat (i := (lower, some pivot.1)) pivot.property.1 (child false)).symm
-                · exact (SortedCarrier.ofNat_toNat (i := (pivot.1, none)) pivot.property.2 (child true)).symm
-              apply Sigma.ext
-              · rfl
-              · exact heq_of_eq hchild.symm
+            | mk _i pivot =>
+                cases out_eq
+                dsimp [sortedBranchFiber]
+                rw [(BoundedPivotInfiniteIso lower).left_inv pivot]
+                have hchild :
+                    child =
+                    (fun
+                      | false => SortedCarrier.ofNat (i := (lower, some pivot.1)) pivot.property.1
+                          (SortedCarrier.toNat (i := (lower, some pivot.1)) pivot.property.1 (child false))
+                      | true => SortedCarrier.ofNat (i := (pivot.1, none)) pivot.property.2
+                          (SortedCarrier.toNat (i := (pivot.1, none)) pivot.property.2 (child true))) := by
+                  funext q
+                  cases q
+                  · exact (SortedCarrier.ofNat_toNat (i := (lower, some pivot.1)) pivot.property.1 (child false)).symm
+                  · exact (SortedCarrier.ofNat_toNat (i := (pivot.1, none)) pivot.property.2 (child true)).symm
+                apply Sigma.ext
+                · rfl
+                · exact heq_of_eq hchild.symm
   right_inv := by
     intro shape
     cases shape with
