@@ -83,52 +83,46 @@ def LamSyntaxToLayer (k : Nat) :
       | false => fn
       | true => arg⟩
 
-theorem LamLayer_left_inv (k : Nat) :
-    Function.LeftInverse (LamSyntaxToLayer k) (LamLayerToSyntax k) := by
-  intro layer
-  cases layer with
-  | mk code child =>
-    cases code with
-    | mk ctor param out_eq =>
-      cases ctor with
-      | var =>
-        cases param with
-        | mk k' v =>
-          cases out_eq
-          have hchild : (fun q => nomatch q) = child := by
-            child_eta_empty
-          cases hchild
-          rfl
-      | lam =>
-        change LamParam LamCtor.lam at param
-        change Nat at param
-        cases out_eq
-        have hchild : (fun _ => child ()) = child := by
-          child_eta_unit
-        cases hchild
-        rfl
-      | app =>
-        change LamParam LamCtor.app at param
-        change Nat at param
-        cases out_eq
-        have hchild : child = (fun
-            | false => child false
-            | true => child true) := by
-          child_eta_bool
-        rw [hchild]
-        rfl
-
-theorem LamLayer_right_inv (k : Nat) :
-    Function.RightInverse (LamSyntaxToLayer k) (LamLayerToSyntax k) := by
-  intro t
-  cases t <;> simp [LamLayerToSyntax, LamSyntaxToLayer]
-
 def LamSyntaxLayerPresentation :
     CodeLayerPresentation LamPoly LamInversion LamSyntax LamSyntax where
   toCarrier := LamLayerToSyntax
   fromCarrier := LamSyntaxToLayer
-  left_inv := LamLayer_left_inv
-  right_inv := LamLayer_right_inv
+  left_inv := by
+    intro k layer
+    cases layer with
+    | mk code child =>
+      cases code with
+      | mk ctor param out_eq =>
+        cases ctor with
+        | var =>
+          cases param with
+          | mk k' v =>
+            cases out_eq
+            have hchild : (fun q => nomatch q) = child := by
+              child_eta_empty
+            cases hchild
+            rfl
+        | lam =>
+          change LamParam LamCtor.lam at param
+          change Nat at param
+          cases out_eq
+          have hchild : (fun _ => child ()) = child := by
+            child_eta_unit
+          cases hchild
+          rfl
+        | app =>
+          change LamParam LamCtor.app at param
+          change Nat at param
+          cases out_eq
+          have hchild : child = (fun
+              | false => child false
+              | true => child true) := by
+            child_eta_bool
+          rw [hchild]
+          rfl
+  right_inv := by
+    intro k t
+    cases t <;> simp [LamLayerToSyntax, LamSyntaxToLayer]
 
 theorem Lam_layer_child_rank_lt :
     ∀ {k : Nat} (z : LamSyntax k)

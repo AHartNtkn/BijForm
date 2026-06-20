@@ -728,6 +728,30 @@ namespace SyntaxPresentation
 
 variable {P : DepPoly ι} {H : OutputIndexInversion P} {Syntax : ι → Type v}
 
+def ofLayerMaps
+    (toSyntax : ∀ i, CodeLayer P H Syntax i → Syntax i)
+    (fromSyntax : ∀ i, Syntax i → CodeLayer P H Syntax i)
+    (left_inv : ∀ i, Function.LeftInverse (fromSyntax i) (toSyntax i))
+    (right_inv : ∀ i, Function.RightInverse (fromSyntax i) (toSyntax i))
+    (rank : ∀ i, Syntax i → Nat)
+    (child_rank_lt :
+      ∀ {i : ι} (z : Syntax i)
+        (q : P.Pos (H.decode i ((fromSyntax i z).1)).ctor
+            (H.decode i ((fromSyntax i z).1)).param),
+        rank (P.input (H.decode i ((fromSyntax i z).1)).param q)
+            ((fromSyntax i z).2 q) < rank i z) :
+    SyntaxPresentation P H Syntax where
+  layer := {
+    toCarrier := toSyntax
+    fromCarrier := fromSyntax
+    left_inv := left_inv
+    right_inv := right_inv
+  }
+  rank := rank
+  child_rank_lt := by
+    intro i z q
+    exact child_rank_lt z q
+
 def generatedCode (D : SyntaxPresentation P H Syntax) :
     GeneratedCode P Syntax where
   inversion := H

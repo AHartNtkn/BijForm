@@ -99,63 +99,57 @@ def PeanoSyntaxToLayer (k : Nat) :
       | true => rhs⟩
   | .forallE e => ⟨⟨PeanoCtor.forallE, (k : Nat), rfl⟩, fun _ => e⟩
 
-theorem PeanoLayer_left_inv (k : Nat) :
-    Function.LeftInverse (PeanoSyntaxToLayer k) (PeanoLayerToSyntax k) := by
-  intro layer
-  cases layer with
-  | mk code child =>
-    cases code with
-    | mk ctor param out_eq =>
-      cases ctor with
-      | eq =>
-        cases param with
-        | mk k' pair =>
-          cases pair with
-          | mk lhs rhs =>
-            dsimp [PeanoPoly, PeanoOut] at out_eq
-            cases out_eq
-            have hchild : (fun q => nomatch q) = child := by
-              child_eta_empty
-            cases hchild
-            rfl
-      | not =>
-        change PeanoParam PeanoCtor.not at param
-        change Nat at param
-        cases out_eq
-        have hchild : (fun _ => child ()) = child := by
-          child_eta_unit
-        cases hchild
-        rfl
-      | implies =>
-        change PeanoParam PeanoCtor.implies at param
-        change Nat at param
-        cases out_eq
-        have hchild : child = (fun
-            | false => child false
-            | true => child true) := by
-          child_eta_bool
-        rw [hchild]
-        rfl
-      | forallE =>
-        change PeanoParam PeanoCtor.forallE at param
-        change Nat at param
-        cases out_eq
-        have hchild : (fun _ => child ()) = child := by
-          child_eta_unit
-        cases hchild
-        rfl
-
-theorem PeanoLayer_right_inv (k : Nat) :
-    Function.RightInverse (PeanoSyntaxToLayer k) (PeanoLayerToSyntax k) := by
-  intro e
-  cases e <;> simp [PeanoLayerToSyntax, PeanoSyntaxToLayer]
-
 def PeanoSyntaxLayerPresentation :
     CodeLayerPresentation PeanoPoly PeanoInversion PeanoSyntax PeanoSyntax where
   toCarrier := PeanoLayerToSyntax
   fromCarrier := PeanoSyntaxToLayer
-  left_inv := PeanoLayer_left_inv
-  right_inv := PeanoLayer_right_inv
+  left_inv := by
+    intro k layer
+    cases layer with
+    | mk code child =>
+      cases code with
+      | mk ctor param out_eq =>
+        cases ctor with
+        | eq =>
+          cases param with
+          | mk k' pair =>
+            cases pair with
+            | mk lhs rhs =>
+              dsimp [PeanoPoly, PeanoOut] at out_eq
+              cases out_eq
+              have hchild : (fun q => nomatch q) = child := by
+                child_eta_empty
+              cases hchild
+              rfl
+        | not =>
+          change PeanoParam PeanoCtor.not at param
+          change Nat at param
+          cases out_eq
+          have hchild : (fun _ => child ()) = child := by
+            child_eta_unit
+          cases hchild
+          rfl
+        | implies =>
+          change PeanoParam PeanoCtor.implies at param
+          change Nat at param
+          cases out_eq
+          have hchild : child = (fun
+              | false => child false
+              | true => child true) := by
+            child_eta_bool
+          rw [hchild]
+          rfl
+        | forallE =>
+          change PeanoParam PeanoCtor.forallE at param
+          change Nat at param
+          cases out_eq
+          have hchild : (fun _ => child ()) = child := by
+            child_eta_unit
+          cases hchild
+          rfl
+  right_inv := by
+    intro k e
+    cases e <;> simp [PeanoLayerToSyntax, PeanoSyntaxToLayer]
 
 theorem Peano_layer_child_rank_lt :
     ∀ {k : Nat} (z : PeanoSyntax k)

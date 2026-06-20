@@ -89,42 +89,36 @@ def HBTSyntaxToLayer (i : Nat) :
         | false => lhs
         | true => rhs⟩
 
-theorem HBTLayer_left_inv (i : Nat) :
-    Function.LeftInverse (HBTSyntaxToLayer i) (HBTLayerToSyntax i) := by
-  intro layer
-  cases layer with
-  | mk code child =>
-    cases code with
-    | mk ctor param out_eq =>
-      cases ctor with
-      | leaf =>
-          cases param with
-          | mk height label =>
-            cases out_eq
-            have hchild : (fun q => nomatch q) = child := by
-              child_eta_empty
-            cases hchild
-            rfl
-      | branch =>
-          cases out_eq
-          have hchild : child = (fun
-              | false => child false
-              | true => child true) := by
-            child_eta_bool
-          rw [hchild]
-          rfl
-
-theorem HBTLayer_right_inv (i : Nat) :
-    Function.RightInverse (HBTSyntaxToLayer i) (HBTLayerToSyntax i) := by
-  intro t
-  cases t <;> simp [HBTLayerToSyntax, HBTSyntaxToLayer]
-
 def HBTSyntaxLayerPresentation :
     CodeLayerPresentation HBTPoly HBTInversion HBTSyntax HBTSyntax where
   toCarrier := HBTLayerToSyntax
   fromCarrier := HBTSyntaxToLayer
-  left_inv := HBTLayer_left_inv
-  right_inv := HBTLayer_right_inv
+  left_inv := by
+    intro i layer
+    cases layer with
+    | mk code child =>
+      cases code with
+      | mk ctor param out_eq =>
+        cases ctor with
+        | leaf =>
+            cases param with
+            | mk height label =>
+              cases out_eq
+              have hchild : (fun q => nomatch q) = child := by
+                child_eta_empty
+              cases hchild
+              rfl
+        | branch =>
+            cases out_eq
+            have hchild : child = (fun
+                | false => child false
+                | true => child true) := by
+              child_eta_bool
+            rw [hchild]
+            rfl
+  right_inv := by
+    intro i t
+    cases t <;> simp [HBTLayerToSyntax, HBTSyntaxToLayer]
 
 theorem HBT_layer_child_rank_lt :
     ∀ {i : Nat} (z : HBTSyntax i)

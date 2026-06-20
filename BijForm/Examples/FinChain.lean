@@ -70,42 +70,36 @@ def FinChainSyntaxToLayer (i : Nat) :
   | @FinChainSyntax.step n tag child =>
       ⟨⟨FinChainCtor.step, ⟨n, tag⟩, rfl⟩, fun _ => child⟩
 
-theorem FinChainLayer_left_inv (i : Nat) :
-    Function.LeftInverse (FinChainSyntaxToLayer i) (FinChainLayerToSyntax i) := by
-  intro layer
-  cases layer with
-  | mk code child =>
-    cases code with
-    | mk ctor param out_eq =>
-      cases ctor with
-      | done =>
-          cases out_eq
-          have hchild : (fun q => nomatch q) = child := by
-            child_eta_empty
-          cases hchild
-          rfl
-      | step =>
-          cases param with
-          | mk n tag =>
-            cases out_eq
-            have hchild : (fun _ => child ()) = child := by
-              child_eta_unit
-            cases hchild
-            rfl
-
-theorem FinChainLayer_right_inv (i : Nat) :
-    Function.RightInverse (FinChainSyntaxToLayer i) (FinChainLayerToSyntax i) := by
-  intro t
-  cases t with
-  | done => rfl
-  | step tag child => rfl
-
 def FinChainSyntaxLayerPresentation :
     CodeLayerPresentation FinChainPoly FinChainInversion FinChainSyntax FinChainSyntax where
   toCarrier := FinChainLayerToSyntax
   fromCarrier := FinChainSyntaxToLayer
-  left_inv := FinChainLayer_left_inv
-  right_inv := FinChainLayer_right_inv
+  left_inv := by
+    intro i layer
+    cases layer with
+    | mk code child =>
+      cases code with
+      | mk ctor param out_eq =>
+        cases ctor with
+        | done =>
+            cases out_eq
+            have hchild : (fun q => nomatch q) = child := by
+              child_eta_empty
+            cases hchild
+            rfl
+        | step =>
+            cases param with
+            | mk n tag =>
+              cases out_eq
+              have hchild : (fun _ => child ()) = child := by
+                child_eta_unit
+              cases hchild
+              rfl
+  right_inv := by
+    intro i t
+    cases t with
+    | done => rfl
+    | step tag child => rfl
 
 theorem FinChain_layer_child_rank_lt :
     ∀ {i : Nat} (z : FinChainSyntax i)

@@ -60,6 +60,10 @@ def BoundedPivotFiniteIso (lower upper : Nat) (h : lower ≤ upper) :
     apply Fin.ext
     exact Nat.add_sub_cancel_left lower code.val
 
+private theorem sortedFinitePayloadPositive (lower upper : Nat) (_h : lower ≤ upper) :
+    0 < upper - lower + 1 := by
+  omega
+
 def BoundedPivotInfiniteIso (lower : Nat) :
     BoundedPivot (lower, none) ≃ᵢ Nat where
   toFun pivot := pivot.1 - lower
@@ -158,44 +162,38 @@ def SortedSyntaxToLayer (i : SortedIx) :
         | false => lhs
         | true => rhs⟩
 
-theorem SortedLayer_left_inv (i : SortedIx) :
-    Function.LeftInverse (SortedSyntaxToLayer i) (SortedLayerToSyntax i) := by
-  intro layer
-  cases layer with
-  | mk code child =>
-    cases code with
-    | mk ctor param out_eq =>
-      cases ctor with
-      | leaf =>
-          cases out_eq
-          have hchild : (fun q => nomatch q) = child := by
-            child_eta_empty
-          cases hchild
-          rfl
-      | branch =>
-          cases param with
-          | mk _i pivot =>
-            cases out_eq
-            have hchild : child = (fun
-                | false => child false
-                | true => child true) := by
-              child_eta_bool
-            rw [hchild]
-            rfl
-
-theorem SortedLayer_right_inv (i : SortedIx) :
-    Function.RightInverse (SortedSyntaxToLayer i) (SortedLayerToSyntax i) := by
-  intro t
-  cases t with
-  | leaf => rfl
-  | branch pivot lhs rhs => rfl
-
 def SortedSyntaxLayerPresentation :
     CodeLayerPresentation SortedPoly SortedInversion SortedSyntax SortedSyntax where
   toCarrier := SortedLayerToSyntax
   fromCarrier := SortedSyntaxToLayer
-  left_inv := SortedLayer_left_inv
-  right_inv := SortedLayer_right_inv
+  left_inv := by
+    intro i layer
+    cases layer with
+    | mk code child =>
+      cases code with
+      | mk ctor param out_eq =>
+        cases ctor with
+        | leaf =>
+            cases out_eq
+            have hchild : (fun q => nomatch q) = child := by
+              child_eta_empty
+            cases hchild
+            rfl
+        | branch =>
+            cases param with
+            | mk _i pivot =>
+              cases out_eq
+              have hchild : child = (fun
+                  | false => child false
+                  | true => child true) := by
+                child_eta_bool
+              rw [hchild]
+              rfl
+  right_inv := by
+    intro i t
+    cases t with
+    | leaf => rfl
+    | branch pivot lhs rhs => rfl
 
 theorem Sorted_layer_child_rank_lt :
     ∀ {i : SortedIx} (z : SortedSyntax i)
@@ -297,177 +295,268 @@ end SortedCarrier
 abbrev SortedFiniteLayerShape (lower upper : Nat) :=
   Fin 1 ⊕ (Fin (upper - lower + 1) × (Nat × Nat))
 
-def SortedFiniteLayerNatIso (lower upper : Nat) (h : lower ≤ upper) :
-    CodeLayer SortedPoly SortedInversion SortedCarrier (lower, some upper) ≃ᵢ Nat :=
-  Iso.trans
-    ({ toFun
-        | ⟨⟨.leaf, _param, hout⟩, _child⟩ => by
-            cases hout
-            exact Sum.inl ⟨0, by decide⟩
-        | ⟨⟨.branch, param, hout⟩, child⟩ => by
-            cases param with
-            | mk _i pivot =>
-                cases hout
-                exact Sum.inr
-                  ((BoundedPivotFiniteIso lower upper h).toFun pivot,
-                    (SortedCarrier.toNat (i := (lower, some pivot.1)) pivot.property.1
-                      (child false),
-                     SortedCarrier.toNat (i := (pivot.1, some upper)) pivot.property.2
-                      (child true)))
-       invFun
-        | Sum.inl _ => ⟨sortedLeafFiber (lower, some upper), fun q => nomatch q⟩
-        | Sum.inr payload =>
-            let pivot := (BoundedPivotFiniteIso lower upper h).invFun payload.1
-            ⟨sortedBranchFiber (lower, some upper) pivot, fun
-              | false => SortedCarrier.ofNat (i := (lower, some pivot.1)) pivot.property.1
-                  payload.2.1
-              | true => SortedCarrier.ofNat (i := (pivot.1, some upper)) pivot.property.2
-                  payload.2.2⟩
-       left_inv := by
-        intro layer
-        cases layer with
-        | mk code child =>
-          cases code with
-          | mk ctor param out_eq =>
-            cases ctor with
-            | leaf =>
-                cases out_eq
-                have hchild : (fun q => nomatch q) = child := by
-                  child_eta_empty
-                cases hchild
-                rfl
-            | branch =>
-                cases param with
-                | mk _i pivot =>
-                    cases out_eq
-                    dsimp [sortedBranchFiber]
-                    rw [(BoundedPivotFiniteIso lower upper h).left_inv pivot]
-                    have hchild :
-                        child =
-                        (fun
-                          | false => SortedCarrier.ofNat (i := (lower, some pivot.1))
-                              pivot.property.1
-                              (SortedCarrier.toNat (i := (lower, some pivot.1))
-                                pivot.property.1 (child false))
-                          | true => SortedCarrier.ofNat (i := (pivot.1, some upper))
-                              pivot.property.2
-                              (SortedCarrier.toNat (i := (pivot.1, some upper))
-                                pivot.property.2 (child true))) := by
-                      funext q
-                      cases q
-                      · exact (SortedCarrier.ofNat_toNat (i := (lower, some pivot.1))
-                          pivot.property.1 (child false)).symm
-                      · exact (SortedCarrier.ofNat_toNat (i := (pivot.1, some upper))
-                          pivot.property.2 (child true)).symm
-                    apply Sigma.ext
-                    · rfl
-                    · exact heq_of_eq hchild.symm
-       right_inv := by
-        intro shape
-        cases shape with
-        | inl tag =>
-            apply congrArg Sum.inl
-            apply Fin.ext
-            omega
-        | inr payload =>
-            cases payload with
-            | mk pivotCode pair =>
-              cases pair with
-              | mk lhs rhs =>
-                dsimp [sortedBranchFiber]
-                rw [(BoundedPivotFiniteIso lower upper h).right_inv pivotCode]
-                rw [SortedCarrier.toNat_ofNat, SortedCarrier.toNat_ofNat] } :
-      CodeLayer SortedPoly SortedInversion SortedCarrier (lower, some upper) ≃ᵢ
-        SortedFiniteLayerShape lower upper)
-    (CodeAlgebra.finPrefixNat 1
-      (CodeAlgebra.finProdProdNat (upper - lower + 1) (by omega)))
-
-abbrev SortedInfiniteLayerShape :=
+private abbrev SortedInfiniteLayerShape :=
   Fin 1 ⊕ (Nat × (Nat × Nat))
 
-def SortedInfiniteLayerNatIso (lower : Nat) :
-    CodeLayer SortedPoly SortedInversion SortedCarrier (lower, none) ≃ᵢ Nat :=
-  Iso.trans
-    ({ toFun
-        | ⟨⟨.leaf, _param, hout⟩, _child⟩ => by
+abbrev SortedLayerShape : SortedIx → Type :=
+  SortedCarrier
+
+private def SortedFiniteLayerTuple (lower upper : Nat) (h : lower ≤ upper) :
+    CodeLayer SortedPoly SortedInversion SortedCarrier (lower, some upper) ≃ᵢ
+      SortedFiniteLayerShape lower upper where
+  toFun
+    | ⟨⟨.leaf, _param, hout⟩, _child⟩ => by
+        cases hout
+        exact Sum.inl ⟨0, by decide⟩
+    | ⟨⟨.branch, param, hout⟩, child⟩ => by
+        cases param with
+        | mk _i pivot =>
             cases hout
-            exact Sum.inl ⟨0, by decide⟩
-        | ⟨⟨.branch, param, hout⟩, child⟩ => by
+            exact Sum.inr
+              ((BoundedPivotFiniteIso lower upper h).toFun pivot,
+                (SortedCarrier.toNat (i := (lower, some pivot.1)) pivot.property.1
+                  (child false),
+                 SortedCarrier.toNat (i := (pivot.1, some upper)) pivot.property.2
+                  (child true)))
+  invFun
+    | Sum.inl _ => ⟨sortedLeafFiber (lower, some upper), fun q => nomatch q⟩
+    | Sum.inr payload =>
+        let pivot := (BoundedPivotFiniteIso lower upper h).invFun payload.1
+        ⟨sortedBranchFiber (lower, some upper) pivot, fun
+          | false => SortedCarrier.ofNat (i := (lower, some pivot.1)) pivot.property.1
+              payload.2.1
+          | true => SortedCarrier.ofNat (i := (pivot.1, some upper)) pivot.property.2
+              payload.2.2⟩
+  left_inv := by
+    intro layer
+    cases layer with
+    | mk code child =>
+      cases code with
+      | mk ctor param out_eq =>
+        cases ctor with
+        | leaf =>
+            cases out_eq
+            have hchild : (fun q => nomatch q) = child := by
+              child_eta_empty
+            cases hchild
+            rfl
+        | branch =>
             cases param with
             | mk _i pivot =>
-                cases hout
-                exact Sum.inr
-                  ((BoundedPivotInfiniteIso lower).toFun pivot,
-                    (SortedCarrier.toNat (i := (lower, some pivot.1)) pivot.property.1
-                      (child false),
-                     SortedCarrier.toNat (i := (pivot.1, none)) pivot.property.2
-                      (child true)))
-       invFun
-        | Sum.inl _ => ⟨sortedLeafFiber (lower, none), fun q => nomatch q⟩
-        | Sum.inr payload =>
-            let pivot := (BoundedPivotInfiniteIso lower).invFun payload.1
-            ⟨sortedBranchFiber (lower, none) pivot, fun
-              | false => SortedCarrier.ofNat (i := (lower, some pivot.1)) pivot.property.1
-                  payload.2.1
-              | true => SortedCarrier.ofNat (i := (pivot.1, none)) pivot.property.2
-                  payload.2.2⟩
-       left_inv := by
-        intro layer
-        cases layer with
-        | mk code child =>
-          cases code with
-          | mk ctor param out_eq =>
-            cases ctor with
-            | leaf =>
                 cases out_eq
-                have hchild : (fun q => nomatch q) = child := by
-                  child_eta_empty
-                cases hchild
-                rfl
-            | branch =>
-                cases param with
-                | mk _i pivot =>
-                    cases out_eq
-                    dsimp [sortedBranchFiber]
-                    rw [(BoundedPivotInfiniteIso lower).left_inv pivot]
-                    have hchild :
-                        child =
-                        (fun
-                          | false => SortedCarrier.ofNat (i := (lower, some pivot.1))
-                              pivot.property.1
-                              (SortedCarrier.toNat (i := (lower, some pivot.1))
-                                pivot.property.1 (child false))
-                          | true => SortedCarrier.ofNat (i := (pivot.1, none))
-                              pivot.property.2
-                              (SortedCarrier.toNat (i := (pivot.1, none))
-                                pivot.property.2 (child true))) := by
-                      funext q
-                      cases q
-                      · exact (SortedCarrier.ofNat_toNat (i := (lower, some pivot.1))
-                          pivot.property.1 (child false)).symm
-                      · exact (SortedCarrier.ofNat_toNat (i := (pivot.1, none))
-                          pivot.property.2 (child true)).symm
-                    apply Sigma.ext
-                    · rfl
-                    · exact heq_of_eq hchild.symm
-       right_inv := by
-        intro shape
-        cases shape with
-        | inl tag =>
-            apply congrArg Sum.inl
-            apply Fin.ext
-            omega
-        | inr payload =>
-            cases payload with
-            | mk pivotCode pair =>
-              cases pair with
-              | mk lhs rhs =>
                 dsimp [sortedBranchFiber]
-                rw [(BoundedPivotInfiniteIso lower).right_inv pivotCode]
-                rw [SortedCarrier.toNat_ofNat, SortedCarrier.toNat_ofNat] } :
-      CodeLayer SortedPoly SortedInversion SortedCarrier (lower, none) ≃ᵢ
-        SortedInfiniteLayerShape)
+                rw [(BoundedPivotFiniteIso lower upper h).left_inv pivot]
+                have hchild :
+                    child =
+                    (fun
+                      | false => SortedCarrier.ofNat (i := (lower, some pivot.1))
+                          pivot.property.1
+                          (SortedCarrier.toNat (i := (lower, some pivot.1))
+                            pivot.property.1 (child false))
+                      | true => SortedCarrier.ofNat (i := (pivot.1, some upper))
+                          pivot.property.2
+                          (SortedCarrier.toNat (i := (pivot.1, some upper))
+                            pivot.property.2 (child true))) := by
+                  funext q
+                  cases q
+                  · exact (SortedCarrier.ofNat_toNat (i := (lower, some pivot.1))
+                      pivot.property.1 (child false)).symm
+                  · exact (SortedCarrier.ofNat_toNat (i := (pivot.1, some upper))
+                      pivot.property.2 (child true)).symm
+                apply Sigma.ext
+                · rfl
+                · exact heq_of_eq hchild.symm
+  right_inv := by
+    intro shape
+    cases shape with
+    | inl tag =>
+        apply congrArg Sum.inl
+        apply Fin.ext
+        omega
+    | inr payload =>
+        cases payload with
+        | mk pivotCode pair =>
+          cases pair with
+          | mk lhs rhs =>
+            dsimp [sortedBranchFiber]
+            rw [(BoundedPivotFiniteIso lower upper h).right_inv pivotCode]
+            rw [SortedCarrier.toNat_ofNat, SortedCarrier.toNat_ofNat]
+
+private def SortedInfiniteLayerTuple (lower : Nat) :
+    CodeLayer SortedPoly SortedInversion SortedCarrier (lower, none) ≃ᵢ
+      SortedInfiniteLayerShape where
+  toFun
+    | ⟨⟨.leaf, _param, hout⟩, _child⟩ => by
+        cases hout
+        exact Sum.inl ⟨0, by decide⟩
+    | ⟨⟨.branch, param, hout⟩, child⟩ => by
+        cases param with
+        | mk _i pivot =>
+            cases hout
+            exact Sum.inr
+              ((BoundedPivotInfiniteIso lower).toFun pivot,
+                (SortedCarrier.toNat (i := (lower, some pivot.1)) pivot.property.1
+                  (child false),
+                 SortedCarrier.toNat (i := (pivot.1, none)) pivot.property.2
+                  (child true)))
+  invFun
+    | Sum.inl _ => ⟨sortedLeafFiber (lower, none), fun q => nomatch q⟩
+    | Sum.inr payload =>
+        let pivot := (BoundedPivotInfiniteIso lower).invFun payload.1
+        ⟨sortedBranchFiber (lower, none) pivot, fun
+          | false => SortedCarrier.ofNat (i := (lower, some pivot.1)) pivot.property.1
+              payload.2.1
+          | true => SortedCarrier.ofNat (i := (pivot.1, none)) pivot.property.2
+              payload.2.2⟩
+  left_inv := by
+    intro layer
+    cases layer with
+    | mk code child =>
+      cases code with
+      | mk ctor param out_eq =>
+        cases ctor with
+        | leaf =>
+            cases out_eq
+            have hchild : (fun q => nomatch q) = child := by
+              child_eta_empty
+            cases hchild
+            rfl
+        | branch =>
+            cases param with
+            | mk _i pivot =>
+                cases out_eq
+                dsimp [sortedBranchFiber]
+                rw [(BoundedPivotInfiniteIso lower).left_inv pivot]
+                have hchild :
+                    child =
+                    (fun
+                      | false => SortedCarrier.ofNat (i := (lower, some pivot.1))
+                          pivot.property.1
+                          (SortedCarrier.toNat (i := (lower, some pivot.1))
+                            pivot.property.1 (child false))
+                      | true => SortedCarrier.ofNat (i := (pivot.1, none))
+                          pivot.property.2
+                          (SortedCarrier.toNat (i := (pivot.1, none))
+                            pivot.property.2 (child true))) := by
+                  funext q
+                  cases q
+                  · exact (SortedCarrier.ofNat_toNat (i := (lower, some pivot.1))
+                      pivot.property.1 (child false)).symm
+                  · exact (SortedCarrier.ofNat_toNat (i := (pivot.1, none))
+                      pivot.property.2 (child true)).symm
+                apply Sigma.ext
+                · rfl
+                · exact heq_of_eq hchild.symm
+  right_inv := by
+    intro shape
+    cases shape with
+    | inl tag =>
+        apply congrArg Sum.inl
+        apply Fin.ext
+        omega
+    | inr payload =>
+        cases payload with
+        | mk pivotCode pair =>
+          cases pair with
+          | mk lhs rhs =>
+            dsimp [sortedBranchFiber]
+            rw [(BoundedPivotInfiniteIso lower).right_inv pivotCode]
+            rw [SortedCarrier.toNat_ofNat, SortedCarrier.toNat_ofNat]
+
+private def SortedFiniteLayerCode (lower upper : Nat) (h : lower ≤ upper) :
+    CodeLayer SortedPoly SortedInversion SortedCarrier (lower, some upper) ≃ᵢ Nat :=
+  Iso.trans (SortedFiniteLayerTuple lower upper h)
+    (CodeAlgebra.finPrefixNat 1
+      (CodeAlgebra.finProdProdNat (upper - lower + 1)
+        (sortedFinitePayloadPositive lower upper h)))
+
+private def SortedInfiniteLayerCode (lower : Nat) :
+    CodeLayer SortedPoly SortedInversion SortedCarrier (lower, none) ≃ᵢ Nat :=
+  Iso.trans (SortedInfiniteLayerTuple lower)
     (CodeAlgebra.finPrefixNat 1 CodeAlgebra.natProdProdNat)
+
+private def SortedLayerCarrierPresentation :
+    CodeLayerPresentation SortedPoly SortedInversion SortedCarrier SortedCarrier where
+  toCarrier := fun
+    | (lower, none) => fun layer =>
+        SortedCarrier.ofNat (i := (lower, none)) trivial
+          ((SortedInfiniteLayerCode lower).toFun layer)
+    | (lower, some upper) => fun layer =>
+        if h : lower ≤ upper then
+          SortedCarrier.ofNat (i := (lower, some upper)) h
+            ((SortedFiniteLayerCode lower upper h).toFun layer)
+        else
+          match layer with
+          | ⟨⟨.leaf, _param, hout⟩, _child⟩ => by
+              cases hout
+              exact SortedCarrier.ofFinOne (i := (lower, some upper)) h ⟨0, by decide⟩
+          | ⟨⟨.branch, param, hout⟩, _child⟩ => by
+              cases param with
+              | mk _i pivot =>
+                  cases hout
+                  exact False.elim (h pivot.bound_le)
+  fromCarrier := fun
+    | (lower, none) => fun z =>
+        (SortedInfiniteLayerCode lower).invFun
+          (SortedCarrier.toNat (i := (lower, none)) trivial z)
+    | (lower, some upper) => fun z =>
+        if h : lower ≤ upper then
+          (SortedFiniteLayerCode lower upper h).invFun
+            (SortedCarrier.toNat (i := (lower, some upper)) h z)
+        else
+          ⟨sortedLeafFiber (lower, some upper), fun q => nomatch q⟩
+  left_inv := by
+    intro i layer
+    cases i with
+    | mk lower upper =>
+      cases upper with
+      | none =>
+          simp [SortedCarrier.toNat_ofNat]
+      | some upper =>
+          by_cases h : lower ≤ upper
+          · simp [h, SortedCarrier.toNat_ofNat]
+          · cases layer with
+            | mk code child =>
+              cases code with
+              | mk ctor param out_eq =>
+                cases ctor with
+                | leaf =>
+                    cases out_eq
+                    simp [h]
+                    have hchild : (fun q => nomatch q) = child := by
+                      child_eta_empty
+                    cases hchild
+                    rfl
+                | branch =>
+                    cases param with
+                    | mk _i pivot =>
+                        cases out_eq
+                        exact False.elim (h pivot.bound_le)
+  right_inv := by
+    intro i z
+    cases i with
+    | mk lower upper =>
+      cases upper with
+      | none =>
+          simp [SortedCarrier.ofNat_toNat]
+      | some upper =>
+          by_cases h : lower ≤ upper
+          · simp [h, SortedCarrier.ofNat_toNat]
+          · haveI : Subsingleton (SortedCarrier (lower, some upper)) := by
+              dsimp [SortedCarrier, SortedShape, Bound.le]
+              rw [if_neg h]
+              constructor
+              intro a b
+              apply Fin.ext
+              omega
+            exact Subsingleton.elim _ _
+
+def SortedLayerShapeRawPresentation :
+    CodeLayerPresentation SortedPoly SortedInversion SortedCarrier SortedLayerShape :=
+  SortedLayerCarrierPresentation
+
+def SortedLayerShapeCarrierIso (i : SortedIx) : SortedLayerShape i ≃ᵢ SortedCarrier i :=
+  Iso.refl (SortedCarrier i)
 
 def SortedCarrierRank (i : SortedIx) (z : SortedCarrier i) : Nat :=
   if h : Bound.le i.1 i.2 then
@@ -475,7 +564,7 @@ def SortedCarrierRank (i : SortedIx) (z : SortedCarrier i) : Nat :=
   else
     0
 
-theorem SortedFiniteLayerNat_layer_child_rank_lt (lower upper : Nat) (h : lower ≤ upper) :
+theorem SortedFiniteLayerShape_layer_child_rank_lt (lower upper : Nat) (h : lower ≤ upper) :
     ∀ (layer : CodeLayer SortedPoly SortedInversion SortedCarrier (lower, some upper))
       (q : SortedPoly.Pos
           (SortedInversion.decode (lower, some upper)
@@ -486,7 +575,10 @@ theorem SortedFiniteLayerNat_layer_child_rank_lt (lower upper : Nat) (h : lower 
           (SortedPoly.input
             (SortedInversion.decode (lower, some upper)
               layer.1).param q)
-          (layer.2 q) < (SortedFiniteLayerNatIso lower upper h).toFun layer := by
+          (layer.2 q) <
+        SortedCarrierRank (lower, some upper)
+          ((SortedLayerShapeCarrierIso (lower, some upper)).toFun
+            (SortedLayerShapeRawPresentation.toCarrier (lower, some upper) layer)) := by
   intro layer
   intro q
   cases layer with
@@ -506,7 +598,8 @@ theorem SortedFiniteLayerNat_layer_child_rank_lt (lower upper : Nat) (h : lower 
             let rhsCode :=
               SortedCarrier.toNat (i := (pivot.1, some upper)) pivot.property.2 (child true)
             let payloadCode :=
-              (CodeAlgebra.finProdProdNat (upper - lower + 1) (by omega)).toFun
+              (CodeAlgebra.finProdProdNat (upper - lower + 1)
+                (sortedFinitePayloadPositive lower upper h)).toFun
               ((BoundedPivotFiniteIso lower upper h).toFun pivot, (lhsCode, rhsCode))
             have hpivotUpper : pivot.1 ≤ upper := pivot.property.2
             cases q
@@ -516,40 +609,80 @@ theorem SortedFiniteLayerNat_layer_child_rank_lt (lower upper : Nat) (h : lower 
                     (upper - lower + 1) (by omega)
                     (((BoundedPivotFiniteIso lower upper h).toFun pivot), (lhsCode, rhsCode))
               have hlt :
-                  lhsCode <
-                    (SortedFiniteLayerNatIso lower upper h).toFun
-                      ⟨sortedBranchFiber (lower, some upper) pivot, child⟩ := by
+                  lhsCode < (CodeAlgebra.finPrefixNat 1
+                    (CodeAlgebra.finProdProdNat (upper - lower + 1)
+                      (sortedFinitePayloadPositive lower upper h))).toFun
+                      (Sum.inr (((BoundedPivotFiniteIso lower upper h).toFun pivot),
+                        (lhsCode, rhsCode))) := by
                 have hprefix := CodeAlgebra.finPrefixNat_toFun_inr_lt_of_le
                   1 (by decide)
-                  (CodeAlgebra.finProdProdNat (upper - lower + 1) (by omega))
+                  (CodeAlgebra.finProdProdNat (upper - lower + 1)
+                    (sortedFinitePayloadPositive lower upper h))
                   (a := ((BoundedPivotFiniteIso lower upper h).toFun pivot,
                     (lhsCode, rhsCode))) hchild_le_payload
-                simpa [payloadCode, lhsCode, rhsCode, SortedFiniteLayerNatIso,
-                  Iso.trans, sortedBranchFiber] using hprefix
+                simpa [payloadCode, lhsCode, rhsCode] using hprefix
+              have hcarrier :
+                  SortedCarrierRank (lower, some upper)
+                    ((SortedLayerShapeCarrierIso (lower, some upper)).toFun
+                      (SortedLayerShapeRawPresentation.toCarrier (lower, some upper)
+                        ⟨sortedBranchFiber (lower, some upper) pivot, child⟩)) =
+                    (CodeAlgebra.finPrefixNat 1
+                      (CodeAlgebra.finProdProdNat (upper - lower + 1)
+                        (sortedFinitePayloadPositive lower upper h))).toFun
+                        (Sum.inr (((BoundedPivotFiniteIso lower upper h).toFun pivot),
+                          (lhsCode, rhsCode))) := by
+                simp [SortedCarrierRank, SortedPoly, SortedInput, SortedInversion,
+                  OutputIndexInversion.canonical, sortedBranchFiber, Bound.le, lhsCode,
+                  rhsCode,
+                  SortedLayerShapeRawPresentation, SortedLayerShapeCarrierIso,
+                  SortedLayerCarrierPresentation, SortedLayerShape, SortedFiniteLayerTuple,
+                  SortedFiniteLayerCode, Iso.refl, Iso.trans,
+                  Function.comp, SortedCarrier.toNat,
+                  SortedCarrier.ofNat, SortedCarrier, SortedShape, h]
               simpa [SortedCarrierRank, SortedPoly, SortedInput, SortedInversion,
                 OutputIndexInversion.canonical, sortedBranchFiber, Bound.le, lhsCode,
-                pivot.property.1] using hlt
+                pivot.property.1] using (lt_of_lt_of_eq hlt hcarrier.symm)
             · have hchild_le_payload : rhsCode ≤ payloadCode := by
                 simpa [payloadCode, lhsCode, rhsCode] using
                   CodeAlgebra.finProdProdNat_toFun_snd_snd_le
                     (upper - lower + 1) (by omega)
                     (((BoundedPivotFiniteIso lower upper h).toFun pivot), (lhsCode, rhsCode))
               have hlt :
-                  rhsCode <
-                    (SortedFiniteLayerNatIso lower upper h).toFun
-                      ⟨sortedBranchFiber (lower, some upper) pivot, child⟩ := by
+                  rhsCode < (CodeAlgebra.finPrefixNat 1
+                    (CodeAlgebra.finProdProdNat (upper - lower + 1)
+                      (sortedFinitePayloadPositive lower upper h))).toFun
+                      (Sum.inr (((BoundedPivotFiniteIso lower upper h).toFun pivot),
+                        (lhsCode, rhsCode))) := by
                 have hprefix := CodeAlgebra.finPrefixNat_toFun_inr_lt_of_le
                   1 (by decide)
-                  (CodeAlgebra.finProdProdNat (upper - lower + 1) (by omega))
+                  (CodeAlgebra.finProdProdNat (upper - lower + 1)
+                    (sortedFinitePayloadPositive lower upper h))
                   (a := ((BoundedPivotFiniteIso lower upper h).toFun pivot,
                     (lhsCode, rhsCode))) hchild_le_payload
-                simpa [payloadCode, lhsCode, rhsCode, SortedFiniteLayerNatIso,
-                  Iso.trans, sortedBranchFiber] using hprefix
+                simpa [payloadCode, lhsCode, rhsCode] using hprefix
+              have hcarrier :
+                  SortedCarrierRank (lower, some upper)
+                    ((SortedLayerShapeCarrierIso (lower, some upper)).toFun
+                      (SortedLayerShapeRawPresentation.toCarrier (lower, some upper)
+                        ⟨sortedBranchFiber (lower, some upper) pivot, child⟩)) =
+                    (CodeAlgebra.finPrefixNat 1
+                      (CodeAlgebra.finProdProdNat (upper - lower + 1)
+                        (sortedFinitePayloadPositive lower upper h))).toFun
+                        (Sum.inr (((BoundedPivotFiniteIso lower upper h).toFun pivot),
+                          (lhsCode, rhsCode))) := by
+                simp [SortedCarrierRank, SortedPoly, SortedInput, SortedInversion,
+                  OutputIndexInversion.canonical, sortedBranchFiber, Bound.le, lhsCode,
+                  rhsCode,
+                  SortedLayerShapeRawPresentation, SortedLayerShapeCarrierIso,
+                  SortedLayerCarrierPresentation, SortedLayerShape, SortedFiniteLayerTuple,
+                  SortedFiniteLayerCode, Iso.refl, Iso.trans,
+                  Function.comp, SortedCarrier.toNat,
+                  SortedCarrier.ofNat, SortedCarrier, SortedShape, h]
               simpa [SortedCarrierRank, SortedPoly, SortedInput, SortedInversion,
                 OutputIndexInversion.canonical, sortedBranchFiber, Bound.le, rhsCode,
-                hpivotUpper] using hlt
+                hpivotUpper] using (lt_of_lt_of_eq hlt hcarrier.symm)
 
-theorem SortedInfiniteLayerNat_layer_child_rank_lt (lower : Nat) :
+theorem SortedInfiniteLayerShape_layer_child_rank_lt (lower : Nat) :
     ∀ (layer : CodeLayer SortedPoly SortedInversion SortedCarrier (lower, none))
       (q : SortedPoly.Pos
           (SortedInversion.decode (lower, none)
@@ -560,7 +693,10 @@ theorem SortedInfiniteLayerNat_layer_child_rank_lt (lower : Nat) :
           (SortedPoly.input
             (SortedInversion.decode (lower, none)
               layer.1).param q)
-          (layer.2 q) < (SortedInfiniteLayerNatIso lower).toFun layer := by
+          (layer.2 q) <
+        SortedCarrierRank (lower, none)
+          ((SortedLayerShapeCarrierIso (lower, none)).toFun
+            (SortedLayerShapeRawPresentation.toCarrier (lower, none) layer)) := by
   intro layer
   intro q
   cases layer with
@@ -587,108 +723,34 @@ theorem SortedInfiniteLayerNat_layer_child_rank_lt (lower : Nat) :
                   CodeAlgebra.natProdProdNat_toFun_snd_fst_le
                     (pivotCode, (lhsCode, rhsCode))
               have hlt :
-                  lhsCode < (SortedInfiniteLayerNatIso lower).toFun
-                    ⟨sortedBranchFiber (lower, none) pivot, child⟩ := by
+                  lhsCode < (CodeAlgebra.finPrefixNat 1 CodeAlgebra.natProdProdNat).toFun
+                    (Sum.inr (pivotCode, (lhsCode, rhsCode))) := by
                 have hprefix := CodeAlgebra.finPrefixNat_toFun_inr_lt_of_le
                   1 (by decide) CodeAlgebra.natProdProdNat
                   (a := (pivotCode, (lhsCode, rhsCode))) hchild_le_payload
-                simpa [payloadCode, pivotCode, lhsCode, rhsCode,
-                  SortedInfiniteLayerNatIso, Iso.trans, sortedBranchFiber] using hprefix
+                simpa [payloadCode, pivotCode, lhsCode, rhsCode] using hprefix
               simpa [SortedCarrierRank, SortedPoly, SortedInput, SortedInversion,
                 OutputIndexInversion.canonical, sortedBranchFiber, Bound.le, lhsCode,
-                pivot.property.1] using hlt
+                pivot.property.1, SortedLayerShapeRawPresentation, SortedLayerShapeCarrierIso] using hlt
             · have hchild_le_payload : rhsCode ≤ payloadCode := by
                 simpa [payloadCode, pivotCode, lhsCode, rhsCode] using
                   CodeAlgebra.natProdProdNat_toFun_snd_snd_le
                     (pivotCode, (lhsCode, rhsCode))
               have hlt :
-                  rhsCode < (SortedInfiniteLayerNatIso lower).toFun
-                    ⟨sortedBranchFiber (lower, none) pivot, child⟩ := by
+                  rhsCode < (CodeAlgebra.finPrefixNat 1 CodeAlgebra.natProdProdNat).toFun
+                    (Sum.inr (pivotCode, (lhsCode, rhsCode))) := by
                 have hprefix := CodeAlgebra.finPrefixNat_toFun_inr_lt_of_le
                   1 (by decide) CodeAlgebra.natProdProdNat
                   (a := (pivotCode, (lhsCode, rhsCode))) hchild_le_payload
-                simpa [payloadCode, pivotCode, lhsCode, rhsCode,
-                  SortedInfiniteLayerNatIso, Iso.trans, sortedBranchFiber] using hprefix
+                simpa [payloadCode, pivotCode, lhsCode, rhsCode] using hprefix
               simpa [SortedCarrierRank, SortedPoly, SortedInput, SortedInversion,
-                OutputIndexInversion.canonical, sortedBranchFiber, Bound.le, rhsCode] using hlt
+                OutputIndexInversion.canonical, sortedBranchFiber, Bound.le, rhsCode,
+                SortedLayerShapeRawPresentation, SortedLayerShapeCarrierIso] using hlt
 
-def SortedShapeLayerPresentation :
-    ShapeLayerPresentation SortedPoly SortedInversion where
-  shape := SortedShape
-  layer :=
-    { toCarrier := fun
-        | (lower, none) => fun layer =>
-            SortedCarrier.ofNat (i := (lower, none)) trivial
-              ((SortedInfiniteLayerNatIso lower).toFun layer)
-        | (lower, some upper) => fun layer =>
-            if h : lower ≤ upper then
-              SortedCarrier.ofNat (i := (lower, some upper)) h
-                ((SortedFiniteLayerNatIso lower upper h).toFun layer)
-            else
-              match layer with
-              | ⟨⟨.leaf, _param, hout⟩, _child⟩ => by
-                  cases hout
-                  exact SortedCarrier.ofFinOne (i := (lower, some upper)) h ⟨0, by decide⟩
-              | ⟨⟨.branch, param, hout⟩, _child⟩ => by
-                  cases param with
-                  | mk _i pivot =>
-                      cases hout
-                      exact False.elim (h pivot.bound_le)
-      fromCarrier := fun
-        | (lower, none) => fun z =>
-            (SortedInfiniteLayerNatIso lower).invFun
-              (SortedCarrier.toNat (i := (lower, none)) trivial z)
-        | (lower, some upper) => fun z =>
-            if h : lower ≤ upper then
-              (SortedFiniteLayerNatIso lower upper h).invFun
-                (SortedCarrier.toNat (i := (lower, some upper)) h z)
-            else
-              ⟨sortedLeafFiber (lower, some upper), fun q => nomatch q⟩
-      left_inv := by
-        intro i layer
-        cases i with
-        | mk lower upper =>
-          cases upper with
-          | none =>
-              simp [SortedCarrier.toNat_ofNat]
-          | some upper =>
-              by_cases h : lower ≤ upper
-              · simp [h, SortedCarrier.toNat_ofNat]
-              · cases layer with
-                | mk code child =>
-                  cases code with
-                  | mk ctor param out_eq =>
-                    cases ctor with
-                    | leaf =>
-                        cases out_eq
-                        simp [h]
-                        have hchild : (fun q => nomatch q) = child := by
-                          child_eta_empty
-                        cases hchild
-                        rfl
-                    | branch =>
-                        cases param with
-                        | mk _i pivot =>
-                            cases out_eq
-                            exact False.elim (h pivot.bound_le)
-      right_inv := by
-        intro i z
-        cases i with
-        | mk lower upper =>
-          cases upper with
-          | none =>
-              simp [SortedCarrier.ofNat_toNat]
-          | some upper =>
-              by_cases h : lower ≤ upper
-              · simp [h, SortedCarrier.ofNat_toNat]
-              · haveI : Subsingleton (SortedCarrier (lower, some upper)) := by
-                  dsimp [SortedCarrier, SortedShape, Bound.le]
-                  rw [if_neg h]
-                  constructor
-                  intro a b
-                  apply Fin.ext
-                  omega
-                exact Subsingleton.elim _ _ }
+def SortedLayerShapePresentation :
+    LayerShapePresentation SortedPoly SortedInversion SortedCarrier SortedLayerShape where
+  layerShape := SortedLayerShapeRawPresentation
+  carrier := SortedLayerShapeCarrierIso
   rank := SortedCarrierRank
   child_rank_lt := by
     intro i z q
@@ -696,26 +758,51 @@ def SortedShapeLayerPresentation :
     | mk lower upper =>
       cases upper with
       | none =>
-          have hlt := SortedInfiniteLayerNat_layer_child_rank_lt lower
-            ((SortedInfiniteLayerNatIso lower).invFun
-              (SortedCarrier.toNat (i := (lower, none)) trivial z)) q
-          simpa [CodeLayerPresentation.iso, SortedCarrierRank, Bound.le] using hlt
+          have hlt := SortedInfiniteLayerShape_layer_child_rank_lt lower
+            (SortedLayerShapeRawPresentation.fromCarrier (lower, none)
+              ((SortedLayerShapeCarrierIso (lower, none)).invFun z)) q
+          have hparent :
+              SortedCarrierRank (lower, none)
+                (SortedLayerCarrierPresentation.toCarrier (lower, none)
+                  (SortedLayerCarrierPresentation.fromCarrier (lower, none) z)) =
+              SortedCarrierRank (lower, none) z :=
+            congrArg (SortedCarrierRank (lower, none))
+              (SortedLayerCarrierPresentation.right_inv (lower, none) z)
+          simpa [CodeLayerPresentation.iso, CodeLayerPresentation.transCarrier,
+            SortedLayerShapeRawPresentation, SortedLayerShapeCarrierIso,
+            SortedLayerShape, Iso.refl, SortedCarrierRank, Bound.le] using
+            (lt_of_lt_of_eq hlt hparent)
       | some upper =>
           by_cases h : lower ≤ upper
           · revert q
-            dsimp [CodeLayerPresentation.iso]
-            rw [dif_pos h]
+            dsimp [CodeLayerPresentation.iso, CodeLayerPresentation.transCarrier]
             intro q
-            have hlt := SortedFiniteLayerNat_layer_child_rank_lt lower upper h
-              ((SortedFiniteLayerNatIso lower upper h).invFun
-                (SortedCarrier.toNat (i := (lower, some upper)) h z)) q
-            simpa [SortedCarrierRank, Bound.le, h] using hlt
+            have hlt := SortedFiniteLayerShape_layer_child_rank_lt lower upper h
+              (SortedLayerShapeRawPresentation.fromCarrier (lower, some upper)
+                ((SortedLayerShapeCarrierIso (lower, some upper)).invFun z)) q
+            have hparent :
+                SortedCarrierRank (lower, some upper)
+                  (SortedLayerCarrierPresentation.toCarrier (lower, some upper)
+                    (SortedLayerCarrierPresentation.fromCarrier (lower, some upper) z)) =
+                SortedCarrierRank (lower, some upper) z :=
+              congrArg (SortedCarrierRank (lower, some upper))
+                (SortedLayerCarrierPresentation.right_inv (lower, some upper) z)
+            simpa [SortedLayerShapeRawPresentation, SortedLayerShapeCarrierIso,
+              SortedLayerShape, Iso.refl, SortedCarrierRank, Bound.le, h] using
+              (lt_of_lt_of_eq hlt hparent)
           · revert q
-            dsimp [CodeLayerPresentation.iso]
-            rw [dif_neg h]
+            dsimp [CodeLayerPresentation.iso, CodeLayerPresentation.transCarrier,
+              SortedLayerShapeRawPresentation, SortedLayerShapeCarrierIso, SortedLayerShape,
+              SortedCarrierRank, Bound.le, h]
             intro q
+            dsimp [SortedLayerCarrierPresentation, Iso.refl] at q
+            rw [dif_neg h] at q
             change SortedPoly.Pos SortedCtor.leaf (lower, some upper) at q
             cases q
+
+def SortedShapeLayerPresentation :
+    ShapeLayerPresentation SortedPoly SortedInversion :=
+  SortedLayerShapePresentation.toShapeLayerPresentation SortedShape
 
 def SortedGeneratedShapeCode : GeneratedShapeCode SortedPoly :=
   SortedShapeLayerPresentation.generatedCode
