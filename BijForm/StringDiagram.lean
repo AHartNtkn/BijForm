@@ -6098,6 +6098,46 @@ theorem initial_frontierComplete (G : OpenPortHypergraph Sig boundary) :
       simp [toTraversalState, initial, seenNode] at hseen
 
 /--
+Correspondence between a renderer prefix and an executable search state over
+the final rendered graph.  Pending endpoints are exactly the renderer frontier,
+processed edges are exactly the rendered edge prefix, and seen constructors are
+exactly the rendered node prefix.
+-/
+structure RenderPrefixRelated
+    {frontier : List Sig.Port}
+    {final : RenderState Sig []}
+    (ev : RenderState.OpenPortHypergraphEvidence final boundary)
+    (rst : RenderState Sig frontier)
+    (sst : SearchState ev.toOpenPortHypergraph frontier) : Prop where
+  pending_vals :
+    sst.pending.map (fun endpoint => endpoint.val) = rst.frontierIds
+  processed_prefix :
+    ∀ edge : Fin ev.toOpenPortHypergraph.raw.edgeCount,
+      edge ∈ sst.processedEdges ↔ edge.val < rst.edges.length
+  seen_prefix :
+    ∀ node : Fin ev.toOpenPortHypergraph.raw.nodeCount,
+      node ∈ sst.seenNodes ↔ node.val < rst.nodes.length
+
+theorem RenderPrefixRelated.pending_cons_values
+    {activeLabel : Sig.Port} {frontier : List Sig.Port}
+    {final : RenderState Sig []}
+    {ev : RenderState.OpenPortHypergraphEvidence final boundary}
+    {rst : RenderState Sig (activeLabel :: frontier)}
+    {sst : SearchState ev.toOpenPortHypergraph (activeLabel :: frontier)}
+    (hrel : RenderPrefixRelated ev rst sst)
+    {active : Fin ev.toOpenPortHypergraph.raw.endpointCount}
+    {rest : List (Fin ev.toOpenPortHypergraph.raw.endpointCount)}
+    (hpending : sst.pending = active :: rest)
+    {activeId : Nat} {restIds : List Nat}
+    (hids : rst.frontierIds = activeId :: restIds) :
+    active.val = activeId ∧ rest.map (fun endpoint => endpoint.val) = restIds := by
+  have hvals :
+      (active :: rest).map (fun endpoint => endpoint.val) =
+        activeId :: restIds := by
+    rw [← hpending, hrel.pending_vals, hids]
+  simpa using hvals
+
+/--
 State correspondence for two first-pending traversals over isomorphic graph
 representatives.  The frontier labels are already the shared type index; this
 relation records the stronger endpoint/node/edge correspondence needed for
