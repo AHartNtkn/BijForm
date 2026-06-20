@@ -148,30 +148,24 @@ theorem PeanoLayer_left_inv (k : Nat) :
     cases code with
     | eq lhs rhs =>
         have hchild : (fun q => nomatch q) = child := by
-          funext q
-          cases q
+          child_eta_empty
         cases hchild
         rfl
     | not =>
         have hchild : (fun _ => child ()) = child := by
-          funext q
-          cases q
-          rfl
+          child_eta_unit
         cases hchild
         rfl
     | implies =>
         have hchild : child = (fun
             | false => child false
             | true => child true) := by
-          funext q
-          cases q <;> rfl
+          child_eta_bool
         rw [hchild]
         rfl
     | forallE =>
         have hchild : (fun _ => child ()) = child := by
-          funext q
-          cases q
-          rfl
+          child_eta_unit
         cases hchild
         rfl
 
@@ -259,45 +253,34 @@ theorem PeanoNatLayerShape_left_inv (k : Nat) :
           dsimp [PeanoNatLayerShapeTo, PeanoNatLayerShapeInv]
           rw [(NumNatIso k).left_inv lhs, (NumNatIso k).left_inv rhs]
           have hchild : (fun q => nomatch q) = child := by
-            funext q
-            cases q
+            child_eta_empty
           cases hchild
           refine Sigma.ext rfl ?_
           apply heq_of_eq
-          funext q
-          cases q
+          child_eta_empty
       | not =>
           dsimp [PeanoNatLayerShapeTo, PeanoNatLayerShapeInv]
           have hchild : (fun _ => child ()) = child := by
-            funext q
-            cases q
-            rfl
+            child_eta_unit
           cases hchild
           refine Sigma.ext rfl ?_
           apply heq_of_eq
-          funext q
-          cases q
-          rfl
+          child_eta_unit
       | implies =>
           dsimp [PeanoNatLayerShapeTo, PeanoNatLayerShapeInv]
           have hchild : child = (fun
               | false => child false
               | true => child true) := by
-            funext q
-            cases q <;> rfl
+            child_eta_bool
           rw [hchild]
       | forallE =>
           dsimp [PeanoNatLayerShapeTo, PeanoNatLayerShapeInv]
           have hchild : (fun _ => child ()) = child := by
-            funext q
-            cases q
-            rfl
+            child_eta_unit
           cases hchild
           refine Sigma.ext rfl ?_
           apply heq_of_eq
-          funext q
-          cases q
-          rfl
+          child_eta_unit
 
 theorem PeanoNatLayerShape_right_inv (k : Nat) :
     Function.RightInverse (PeanoNatLayerShapeInv k) (PeanoNatLayerShapeTo k) := by

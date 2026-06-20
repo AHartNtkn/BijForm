@@ -123,6 +123,24 @@ def CodeLayer (P : DepPoly ι) (H : OutputIndexInversion P)
     (q : P.Pos (H.decode i c).ctor (H.decode i c).param) →
       Code (P.input (H.decode i c).param q)
 
+/-- Prove child-function eta facts for constructors with no recursive positions. -/
+syntax "child_eta_empty" : tactic
+macro_rules
+  | `(tactic| child_eta_empty) =>
+      `(tactic| first | (funext q; cases q) | (symm; funext q; cases q))
+
+/-- Prove child-function eta facts for constructors with one recursive position. -/
+syntax "child_eta_unit" : tactic
+macro_rules
+  | `(tactic| child_eta_unit) =>
+      `(tactic| first | (funext q; cases q; rfl) | (symm; funext q; cases q; rfl))
+
+/-- Prove child-function eta facts for constructors with boolean recursive positions. -/
+syntax "child_eta_bool" : tactic
+macro_rules
+  | `(tactic| child_eta_bool) =>
+      `(tactic| first | (funext q; cases q <;> rfl) | (symm; funext q; cases q <;> rfl))
+
 def castFiberChild {P : DepPoly ι} {Code : ι → Type v} {i : ι}
     {f g : Fiber P i} (h : f = g)
     (child : (q : P.Pos f.ctor f.param) → Code (P.input f.param q)) :

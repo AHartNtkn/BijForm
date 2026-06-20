@@ -311,8 +311,7 @@ theorem layer_left_inv (i : Poly.Ix S) :
       cases code with
       | var v =>
           have hchild : (fun q => nomatch q) = child := by
-            funext q
-            cases q
+            child_eta_empty
           cases hchild
           rfl
       | op c h =>
@@ -421,8 +420,7 @@ theorem layerShape_left_inv (Γ : List Ty) (t : Ty) :
       cases code with
       | var v =>
           have hchild : (fun q => nomatch q) = child := by
-            funext q
-            cases q
+            child_eta_empty
           cases hchild
           rfl
       | op c h =>

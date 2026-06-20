@@ -164,37 +164,31 @@ theorem NumLayer_left_inv (k : Nat) :
     cases code with
       | var v =>
           have hchild : (fun q => nomatch q) = child := by
-            funext q
-            cases q
+            child_eta_empty
           cases hchild
           rfl
       | zero =>
           have hchild : (fun q => nomatch q) = child := by
-            funext q
-            cases q
+            child_eta_empty
           cases hchild
           rfl
       | succ =>
           have hchild : (fun _ => child ()) = child := by
-            funext q
-            cases q
-            rfl
+            child_eta_unit
           cases hchild
           rfl
       | plus =>
           have hchild : child = (fun
               | false => child false
               | true => child true) := by
-            funext q
-            cases q <;> rfl
+            child_eta_bool
           rw [hchild]
           rfl
       | times =>
           have hchild : child = (fun
               | false => child false
               | true => child true) := by
-            funext q
-            cases q <;> rfl
+            child_eta_bool
           rw [hchild]
           rfl
 
@@ -292,52 +286,42 @@ theorem NumNatLayerShape_left_inv (k : Nat) :
               dsimp [NumNatLayerShapeTo, NumNatLayerShapeInv]
               rw [dif_pos isLt]
               have hchild : (fun q => nomatch q) = child := by
-                funext q
-                cases q
+                child_eta_empty
               cases hchild
               refine Sigma.ext rfl ?_
               apply heq_of_eq
-              funext q
-              cases q
+              child_eta_empty
       | zero =>
           dsimp [NumNatLayerShapeTo, NumNatLayerShapeInv]
           have hnot : ¬k + 1 < k + 1 := by omega
           rw [dif_neg hnot]
           have hchild : (fun q => nomatch q) = child := by
-            funext q
-            cases q
+            child_eta_empty
           cases hchild
           refine Sigma.ext rfl ?_
           apply heq_of_eq
-          funext q
-          cases q
+          child_eta_empty
       | succ =>
           dsimp [NumNatLayerShapeTo, NumNatLayerShapeInv]
           have hchild : (fun _ => child ()) = child := by
-            funext q
-            cases q
-            rfl
+            child_eta_unit
           cases hchild
           refine Sigma.ext rfl ?_
           apply heq_of_eq
-          funext q
-          cases q
-          rfl
+          child_eta_unit
       | plus =>
           dsimp [NumNatLayerShapeTo, NumNatLayerShapeInv]
           have hchild : child = (fun
               | false => child false
               | true => child true) := by
-            funext q
-            cases q <;> rfl
+            child_eta_bool
           rw [hchild]
       | times =>
           dsimp [NumNatLayerShapeTo, NumNatLayerShapeInv]
           have hchild : child = (fun
               | false => child false
               | true => child true) := by
-            funext q
-            cases q <;> rfl
+            child_eta_bool
           rw [hchild]
 
 theorem NumNatLayerShape_right_inv (k : Nat) :

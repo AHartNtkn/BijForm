@@ -192,16 +192,14 @@ theorem SortedLayer_left_inv (i : SortedIx) :
     cases code with
     | leaf =>
         have hchild : (fun q => nomatch q) = child := by
-          funext q
-          cases q
+          child_eta_empty
         cases hchild
         rfl
     | branch pivot =>
         have hchild : child = (fun
             | false => child false
             | true => child true) := by
-          funext q
-          cases q <;> rfl
+          child_eta_bool
         rw [hchild]
         rfl
 
@@ -324,8 +322,7 @@ def SortedInvalidLayerIso (i : SortedIx) (h : ¬Bound.le i.1 i.2) :
           cases code with
           | leaf =>
               have hchild : (fun q => nomatch q) = child := by
-                funext q
-                cases q
+                child_eta_empty
               cases hchild
               rfl
           | branch pivot =>
@@ -363,8 +360,7 @@ def SortedFiniteLayerShapeIso (lower upper : Nat) (h : lower ≤ upper) :
       cases code with
       | leaf =>
           have hchild : (fun q => nomatch q) = child := by
-            funext q
-            cases q
+            child_eta_empty
           cases hchild
           rfl
       | branch pivot =>
@@ -436,8 +432,7 @@ def SortedInfiniteLayerShapeIso (lower : Nat) :
       cases code with
       | leaf =>
           have hchild : (fun q => nomatch q) = child := by
-            funext q
-            cases q
+            child_eta_empty
           cases hchild
           rfl
       | branch pivot =>

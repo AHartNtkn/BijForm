@@ -124,26 +124,22 @@ theorem LamLayer_left_inv (k : Nat) :
   | mk code child =>
     cases code with
     | var v =>
-        have hchild : (fun q => nomatch q) = child := by
-          funext q
-          cases q
-        cases hchild
-        rfl
+      have hchild : (fun q => nomatch q) = child := by
+        child_eta_empty
+      cases hchild
+      rfl
     | lam =>
-        have hchild : (fun _ => child ()) = child := by
-          funext q
-          cases q
-          rfl
-        cases hchild
-        rfl
+      have hchild : (fun _ => child ()) = child := by
+        child_eta_unit
+      cases hchild
+      rfl
     | app =>
-        have hchild : child = (fun
-            | false => child false
-            | true => child true) := by
-          funext q
-          cases q <;> rfl
-        rw [hchild]
-        rfl
+      have hchild : child = (fun
+          | false => child false
+          | true => child true) := by
+        child_eta_bool
+      rw [hchild]
+      rfl
 
 theorem LamLayer_right_inv (k : Nat) :
     Function.RightInverse (LamSyntaxToLayer k) (LamLayerToSyntax k) := by
@@ -213,26 +209,22 @@ theorem LamNatLayerShape_left_inv (k : Nat) :
   | mk code child =>
     cases code with
     | var v =>
-        have hchild : (fun q => nomatch q) = child := by
-          funext q
-          cases q
-        cases hchild
-        rfl
+      have hchild : (fun q => nomatch q) = child := by
+        child_eta_empty
+      cases hchild
+      rfl
     | lam =>
-        have hchild : (fun _ => child ()) = child := by
-          funext q
-          cases q
-          rfl
-        cases hchild
-        rfl
+      have hchild : (fun _ => child ()) = child := by
+        child_eta_unit
+      cases hchild
+      rfl
     | app =>
-        have hchild : child = (fun
-            | false => child false
-            | true => child true) := by
-          funext q
-          cases q <;> rfl
-        rw [hchild]
-        rfl
+      have hchild : child = (fun
+          | false => child false
+          | true => child true) := by
+        child_eta_bool
+      rw [hchild]
+      rfl
 
 theorem LamNatLayerShape_right_inv (k : Nat) :
     Function.RightInverse (LamNatLayerShapeInv k) (LamNatLayerShapeTo k) := by

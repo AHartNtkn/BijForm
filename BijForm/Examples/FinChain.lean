@@ -106,16 +106,13 @@ theorem FinChainLayer_left_inv (i : Nat) :
     cases code with
     | done =>
         have hchild : (fun q => nomatch q) = child := by
-          funext q
-          cases q
+          child_eta_empty
         cases hchild
         rfl
     | step n tag h =>
         cases h
         have hchild : (fun _ => child ()) = child := by
-          funext q
-          cases q
-          rfl
+          child_eta_unit
         cases hchild
         rfl
 
@@ -187,8 +184,7 @@ def FinChainZeroLayerIso :
       cases code with
       | done =>
           have hchild : (fun q => nomatch q) = child := by
-            funext q
-            cases q
+            child_eta_empty
           cases hchild
           rfl
       | step m tag h => cases h
@@ -222,16 +218,13 @@ def FinChainSuccLayerShapeIso (n : Nat) :
       cases code with
       | done =>
           have hchild : (fun q => nomatch q) = child := by
-            funext q
-            cases q
+            child_eta_empty
           cases hchild
           rfl
       | step m tag h =>
           cases h
           have hchild : (fun _ => child ()) = child := by
-            funext q
-            cases q
-            rfl
+            child_eta_unit
           cases hchild
           rfl
   right_inv := by

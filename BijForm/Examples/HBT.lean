@@ -132,8 +132,7 @@ theorem HBTLayer_left_inv (i : Nat) :
     cases code with
     | leaf label =>
         have hchild : (fun q => nomatch q) = child := by
-          funext q
-          cases q
+          child_eta_empty
         cases hchild
         rfl
     | branch m h =>
@@ -141,8 +140,7 @@ theorem HBTLayer_left_inv (i : Nat) :
         have hchild : child = (fun
             | false => child false
             | true => child true) := by
-          funext q
-          cases q <;> rfl
+          child_eta_bool
         rw [hchild]
         rfl
 
@@ -208,8 +206,7 @@ def HBTNatZeroLayerIso :
         cases code with
         | leaf label =>
             have hchild : (fun q => nomatch q) = child := by
-              funext q
-              cases q
+              child_eta_empty
             cases hchild
             rfl
         | branch m h => cases h
@@ -235,8 +232,7 @@ def HBTNatSuccLayerSumIso (m : Nat) :
         cases code with
         | leaf label =>
             have hchild : (fun q => nomatch q) = child := by
-              funext q
-              cases q
+              child_eta_empty
             cases hchild
             rfl
         | branch k h =>
@@ -244,8 +240,7 @@ def HBTNatSuccLayerSumIso (m : Nat) :
             have hchild : child = (fun
                 | false => child false
                 | true => child true) := by
-              funext q
-              cases q <;> rfl
+              child_eta_bool
             rw [hchild]
             rfl
   right_inv := by
