@@ -2058,6 +2058,262 @@ theorem connectStep_reachability {active : Sig.Port}
       ⟨slot, reach⟩
     exact ⟨slot, connectStep_rawReachesBoundary_of_old mate ok st reach⟩
 
+theorem budStep_edge_mem_old
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (st : RenderState Sig (active :: frontier))
+    {edge : RenderEdge Sig}
+    (hmem : edge ∈ st.edges) :
+    edge ∈ (budStep node entry ok st).edges := by
+  unfold budStep
+  split
+  · rename_i hids
+    exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  · simp [hmem]
+
+theorem budStep_node_mem_old
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (st : RenderState Sig (active :: frontier))
+    {renderNode : RenderNode Sig}
+    (hmem : renderNode ∈ st.nodes) :
+    renderNode ∈ (budStep node entry ok st).nodes := by
+  unfold budStep
+  split
+  · rename_i hids
+    exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  · simp [hmem]
+
+theorem budStep_rawReachesBoundary_of_old
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (st : RenderState Sig (active :: frontier))
+    {boundary : List Sig.Port} {id : Nat}
+    (reach : st.RawReachesBoundary boundary.length id) :
+    (budStep node entry ok st).RawReachesBoundary boundary.length id :=
+  RenderState.RawReachesBoundary.mono
+    (st := st)
+    (st' := budStep node entry ok st)
+    (boundaryLength := boundary.length)
+    (id := id)
+    (fun _edge hmem => budStep_edge_mem_old node entry ok st hmem)
+    (fun _node hmem => budStep_node_mem_old node entry ok st hmem)
+    reach
+
+theorem budStep_node_mem_old_or_new
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (st : RenderState Sig (active :: frontier))
+    {renderNode : RenderNode Sig}
+    (hmem : renderNode ∈ (budStep node entry ok st).nodes) :
+    renderNode ∈ st.nodes ∨
+      renderNode =
+        { label := node
+          incident := freshNodeEndpoints st.nextEndpoint (Sig.arity node) } := by
+  unfold budStep at hmem
+  split at hmem
+  · rename_i hids
+    exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  · simp [freshNodeEndpoints] at hmem
+    exact hmem
+
+theorem budStep_frontier_mem_old_or_new
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (st : RenderState Sig (active :: frontier))
+    {id : Nat}
+    (hmem : id ∈ (budStep node entry ok st).frontierIds) :
+    id ∈ st.frontierIds ∨
+      id ∈
+        eraseFin (freshNodeEndpoints st.nextEndpoint (Sig.arity node))
+          (Fin.cast (by simp [freshNodeEndpoints]) entry) := by
+  unfold budStep at hmem
+  split at hmem
+  · rename_i hids
+    exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  · rename_i activeId restIds hids
+    have hrest : restIds.length = frontier.length := by
+      have hlen := st.frontierIds_length
+      rw [hids] at hlen
+      simpa using Nat.succ.inj hlen
+    simp [freshNodeEndpoints] at hmem
+    rcases hmem with hold | hnew
+    · left
+      rw [hids]
+      simp [hold]
+    · right
+      simpa [freshNodeEndpoints] using hnew
+
+theorem budStep_new_edge_mem
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (st : RenderState Sig (active :: frontier))
+    {activeId : Nat} {restIds : List Nat}
+    (hids : st.frontierIds = activeId :: restIds) :
+    ({ label := Sig.portEdge active
+       leftLabel := active
+       rightLabel := Sig.port node entry
+       left := activeId
+       right :=
+        (freshNodeEndpoints st.nextEndpoint (Sig.arity node)).get
+          (Fin.cast (by simp [freshNodeEndpoints]) entry)
+       left_label := rfl
+       right_label := (Sig.compatible_edge ok).symm
+       compatible := ok } : RenderEdge Sig) ∈
+      (budStep node entry ok st).edges := by
+  unfold budStep
+  split
+  · rename_i hidsNil
+    exact False.elim (RenderState.frontierIds_ne_nil st hidsNil)
+  · rename_i activeId' restIds' hids'
+    rw [hids] at hids'
+    injection hids' with hactive hrest
+    subst activeId'
+    subst restIds'
+    simp [freshNodeEndpoints]
+
+theorem budStep_new_node_mem
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (st : RenderState Sig (active :: frontier)) :
+    ({ label := node
+       incident := freshNodeEndpoints st.nextEndpoint (Sig.arity node) } :
+        RenderNode Sig) ∈
+      (budStep node entry ok st).nodes := by
+  unfold budStep
+  split
+  · rename_i hidsNil
+    exact False.elim (RenderState.frontierIds_ne_nil st hidsNil)
+  · simp [freshNodeEndpoints]
+
+theorem budStep_entry_rawReachesBoundary
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (st : RenderState Sig (active :: frontier))
+    {boundary : List Sig.Port}
+    (hr : st.Reachability boundary)
+    {activeId : Nat} {restIds : List Nat}
+    (hids : st.frontierIds = activeId :: restIds) :
+    (budStep node entry ok st).RawReachesBoundary boundary.length
+      ((freshNodeEndpoints st.nextEndpoint (Sig.arity node)).get
+        (Fin.cast (by simp [freshNodeEndpoints]) entry)) := by
+  let entryIdx : Fin (freshNodeEndpoints st.nextEndpoint (Sig.arity node)).length :=
+    Fin.cast (by simp [freshNodeEndpoints]) entry
+  let entryId := (freshNodeEndpoints st.nextEndpoint (Sig.arity node)).get entryIdx
+  let newEdge : RenderEdge Sig :=
+    { label := Sig.portEdge active
+      leftLabel := active
+      rightLabel := Sig.port node entry
+      left := activeId
+      right := entryId
+      left_label := rfl
+      right_label := (Sig.compatible_edge ok).symm
+      compatible := ok }
+  have hactiveReach :
+      st.RawReachesBoundary boundary.length activeId :=
+    hr.frontier_reaches activeId (by
+      rw [hids]
+      simp)
+  have hactiveReachChild :
+      (budStep node entry ok st).RawReachesBoundary boundary.length activeId :=
+    budStep_rawReachesBoundary_of_old node entry ok st hactiveReach
+  change
+    (budStep node entry ok st).RawReachesBoundary boundary.length entryId
+  exact RenderState.RawReachesBoundary.throughEdgeLeft newEdge
+    (by
+      dsimp [newEdge, entryId, entryIdx]
+      exact budStep_new_edge_mem node entry ok st hids)
+    hactiveReachChild
+
+theorem budStep_fresh_rawReachesBoundary
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (st : RenderState Sig (active :: frontier))
+    {boundary : List Sig.Port}
+    (hr : st.Reachability boundary)
+    {activeId : Nat} {restIds : List Nat}
+    (hids : st.frontierIds = activeId :: restIds)
+    {id : Nat}
+    (hfresh :
+      id ∈ freshNodeEndpoints st.nextEndpoint (Sig.arity node)) :
+    (budStep node entry ok st).RawReachesBoundary boundary.length id := by
+  let nodeEndpoints := freshNodeEndpoints st.nextEndpoint (Sig.arity node)
+  let entryIdx : Fin nodeEndpoints.length :=
+    Fin.cast (by simp [nodeEndpoints, freshNodeEndpoints]) entry
+  rcases list_exists_get_of_mem nodeEndpoints hfresh with ⟨toSlot, hto⟩
+  let newNode : RenderNode Sig := { label := node, incident := nodeEndpoints }
+  have hentryReach :
+      (budStep node entry ok st).RawReachesBoundary boundary.length
+        (nodeEndpoints.get entryIdx) := by
+    dsimp [nodeEndpoints, entryIdx]
+    exact budStep_entry_rawReachesBoundary node entry ok st hr hids
+  have htoReach :
+      (budStep node entry ok st).RawReachesBoundary boundary.length
+        (newNode.incident.get toSlot) :=
+    RenderState.RawReachesBoundary.throughConstructor newNode
+      (by
+        dsimp [newNode, nodeEndpoints]
+        exact budStep_new_node_mem node entry ok st)
+      entryIdx toSlot hentryReach
+  exact hto ▸ htoReach
+
+theorem budStep_reachability {active : Sig.Port}
+    {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (st : RenderState Sig (active :: frontier))
+    {boundary : List Sig.Port}
+    (hr : st.Reachability boundary) :
+    (budStep node entry ok st).Reachability boundary := by
+  cases hids : st.frontierIds with
+  | nil =>
+      exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  | cons activeId restIds =>
+      refine
+        { frontier_reaches := ?_
+          node_reaches := ?_ }
+      · intro id hmem
+        rcases budStep_frontier_mem_old_or_new node entry ok st hmem with
+          hold | hnew
+        · exact budStep_rawReachesBoundary_of_old node entry ok st
+            (hr.frontier_reaches id hold)
+        · exact budStep_fresh_rawReachesBoundary node entry ok st hr hids
+            (mem_of_mem_eraseFin
+              (freshNodeEndpoints st.nextEndpoint (Sig.arity node))
+              (Fin.cast (by simp [freshNodeEndpoints]) entry)
+              hnew)
+      · intro renderNode hmem
+        rcases budStep_node_mem_old_or_new node entry ok st hmem with
+          hold | hnew
+        · rcases hr.node_reaches renderNode hold with ⟨slot, reach⟩
+          exact ⟨slot, budStep_rawReachesBoundary_of_old node entry ok st reach⟩
+        · subst renderNode
+          let nodeEndpoints := freshNodeEndpoints st.nextEndpoint (Sig.arity node)
+          let entryIdx : Fin nodeEndpoints.length :=
+            Fin.cast (by simp [nodeEndpoints, freshNodeEndpoints]) entry
+          refine ⟨entryIdx, ?_⟩
+          dsimp [nodeEndpoints, entryIdx]
+          exact budStep_entry_rawReachesBoundary node entry ok st hr hids
+
 theorem connectStep_validIds {active : Sig.Port} {frontier : List Sig.Port}
     (mate : Fin frontier.length)
     (ok : Sig.compatible active (frontier.get mate))
@@ -3023,6 +3279,39 @@ theorem renderTrace_ownerIdPartition :
         (budStep_validIds node entry ok st hv)
         (budStep_ownerIdPartition node entry ok st hv ho)
 
+theorem renderTrace_reachability :
+    ∀ {frontier : List Sig.Port} (d : Diag Sig frontier)
+      (st : RenderState Sig frontier) {boundary : List Sig.Port},
+      st.Reachability boundary → (renderTrace d st).Reachability boundary
+  | [], finish, st, _boundary, hr => by
+      dsimp [renderTrace]
+      refine
+        { frontier_reaches := ?_
+          node_reaches := ?_ }
+      · intro id hmem
+        cases hmem
+      · intro node hmem
+        rcases hr.node_reaches node hmem with ⟨slot, reach⟩
+        refine ⟨slot, ?_⟩
+        exact RenderState.RawReachesBoundary.mono
+          (st := st)
+          (st' :=
+            { nextEndpoint := st.nextEndpoint
+              endpoints := st.endpoints
+              edges := st.edges
+              nodes := st.nodes
+              frontierIds := []
+              frontierIds_length := rfl })
+          (fun _edge hmem => hmem)
+          (fun _node hmem => hmem)
+          reach
+  | _active :: _frontier, connect mate ok child, st, _boundary, hr =>
+      renderTrace_reachability child (connectStep mate ok st)
+        (connectStep_reachability mate ok st hr)
+  | _active :: _frontier, bud node entry ok child, st, _boundary, hr =>
+      renderTrace_reachability child (budStep node entry ok st)
+        (budStep_reachability node entry ok st hr)
+
 theorem renderTrace_connect
     {active : Sig.Port} {frontier : List Sig.Port}
     (mate : Fin frontier.length)
@@ -3219,6 +3508,12 @@ theorem renderTraceFromBoundary_ownerIdPartition
   renderTrace_ownerIdPartition d (RenderState.initial Sig boundary) boundary
     (RenderState.initial_validIds boundary)
     (RenderState.initial_ownerIdPartition boundary)
+
+theorem renderTraceFromBoundary_reachability
+    {boundary : List Sig.Port} (d : Diag Sig boundary) :
+    (renderTraceFromBoundary d).Reachability boundary :=
+  renderTrace_reachability d (RenderState.initial Sig boundary)
+    (RenderState.initial_reachability boundary)
 
 def renderTraceFromBoundary_endpointEdgeEvidence
     {boundary : List Sig.Port} (d : Diag Sig boundary) :
@@ -3862,6 +4157,168 @@ def toPortHypergraph {st : RenderState Sig []} {boundary : List Sig.Port}
 
 end PortHypergraphEvidence
 
+theorem rawReachesBoundary_to_portReachesBoundaryOfInvariants
+    {st : RenderState Sig []} {boundary : List Sig.Port}
+    (hv : st.ValidIds) (hp : st.EndpointPartition)
+    (hn : st.NodeIncidentNodup)
+    (pref : st.EndpointPrefix boundary)
+    (ho : st.OwnerIdPartition boundary)
+    {id : Nat} (hbound : id < st.endpoints.length)
+    (reach : st.RawReachesBoundary boundary.length id) :
+    PortHypergraph.PortReachesBoundary
+      (portHypergraphEvidenceOfInvariants hv hp hn pref ho).toPortHypergraph
+      ⟨id, hbound⟩ := by
+  let ev := portHypergraphEvidenceOfInvariants hv hp hn pref ho
+  let G := ev.toPortHypergraph
+  change PortHypergraph.PortReachesBoundary G ⟨id, hbound⟩
+  induction reach with
+  | boundary hboundary =>
+      let boundaryIndex : Fin boundary.length :=
+        ⟨_, List.mem_range.mp hboundary⟩
+      have hendpoint :
+          G.boundaryPort boundaryIndex = ⟨_, hbound⟩ := by
+        apply Fin.ext
+        rfl
+      simpa [hendpoint] using
+        (PortHypergraph.PortReachesBoundary.boundary
+          (G := G) boundaryIndex)
+  | throughEdgeLeft edge hmem _reach ih =>
+      rcases list_exists_get_of_mem st.edges hmem with ⟨edgeIndex, hedgeEq⟩
+      subst edge
+      have hedgeMem : st.edges.get edgeIndex ∈ st.edges :=
+        List.get_mem st.edges edgeIndex
+      have hleftBound :=
+        hv.edge_left_bound (st.edges.get edgeIndex) hedgeMem
+      have hrightBound :=
+        hv.edge_right_bound (st.edges.get edgeIndex) hedgeMem
+      have hleftEdge :
+          G.endpointEdge ⟨(st.edges.get edgeIndex).left, hleftBound⟩ =
+            edgeIndex := by
+        have h := endpointEdgeOfPartition_left hv hp edgeIndex
+        simpa [G, ev, PortHypergraphEvidence.toPortHypergraph,
+          portHypergraphEvidenceOfInvariants, edgeEvidenceOfPartition,
+          endpointEdgeEvidenceOfPartition] using h
+      have hrightEdge :
+          G.endpointEdge ⟨(st.edges.get edgeIndex).right, hrightBound⟩ =
+            edgeIndex := by
+        have h := endpointEdgeOfPartition_right hv hp edgeIndex
+        simpa [G, ev, PortHypergraphEvidence.toPortHypergraph,
+          portHypergraphEvidenceOfInvariants, edgeEvidenceOfPartition,
+          endpointEdgeEvidenceOfPartition] using h
+      have hsame :
+          G.endpointEdge ⟨(st.edges.get edgeIndex).left, hleftBound⟩ =
+            G.endpointEdge ⟨(st.edges.get edgeIndex).right, hrightBound⟩ :=
+        hleftEdge.trans hrightEdge.symm
+      have hdiff :
+          (⟨(st.edges.get edgeIndex).left, hleftBound⟩ :
+              Fin st.endpoints.length) ≠
+            ⟨(st.edges.get edgeIndex).right, hrightBound⟩ := by
+        intro heq
+        have hval := congrArg (fun endpoint : Fin st.endpoints.length => endpoint.val) heq
+        have hne := edge_left_ne_right_of_partition hp edgeIndex
+        exact hne hval
+      have hreachRight :
+          PortHypergraph.PortReachesBoundary G
+            ⟨(st.edges.get edgeIndex).right, hrightBound⟩ :=
+        PortHypergraph.PortReachesBoundary.throughEdge hsame hdiff
+          (ih hleftBound)
+      have htarget :
+          (⟨(st.edges.get edgeIndex).right, hrightBound⟩ :
+              Fin st.endpoints.length) =
+            ⟨(st.edges.get edgeIndex).right, hbound⟩ := by
+        apply Fin.ext
+        rfl
+      simpa [htarget] using hreachRight
+  | throughEdgeRight edge hmem _reach ih =>
+      rcases list_exists_get_of_mem st.edges hmem with ⟨edgeIndex, hedgeEq⟩
+      subst edge
+      have hedgeMem : st.edges.get edgeIndex ∈ st.edges :=
+        List.get_mem st.edges edgeIndex
+      have hleftBound :=
+        hv.edge_left_bound (st.edges.get edgeIndex) hedgeMem
+      have hrightBound :=
+        hv.edge_right_bound (st.edges.get edgeIndex) hedgeMem
+      have hleftEdge :
+          G.endpointEdge ⟨(st.edges.get edgeIndex).left, hleftBound⟩ =
+            edgeIndex := by
+        have h := endpointEdgeOfPartition_left hv hp edgeIndex
+        simpa [G, ev, PortHypergraphEvidence.toPortHypergraph,
+          portHypergraphEvidenceOfInvariants, edgeEvidenceOfPartition,
+          endpointEdgeEvidenceOfPartition] using h
+      have hrightEdge :
+          G.endpointEdge ⟨(st.edges.get edgeIndex).right, hrightBound⟩ =
+            edgeIndex := by
+        have h := endpointEdgeOfPartition_right hv hp edgeIndex
+        simpa [G, ev, PortHypergraphEvidence.toPortHypergraph,
+          portHypergraphEvidenceOfInvariants, edgeEvidenceOfPartition,
+          endpointEdgeEvidenceOfPartition] using h
+      have hsame :
+          G.endpointEdge ⟨(st.edges.get edgeIndex).right, hrightBound⟩ =
+            G.endpointEdge ⟨(st.edges.get edgeIndex).left, hleftBound⟩ :=
+        hrightEdge.trans hleftEdge.symm
+      have hdiff :
+          (⟨(st.edges.get edgeIndex).right, hrightBound⟩ :
+              Fin st.endpoints.length) ≠
+            ⟨(st.edges.get edgeIndex).left, hleftBound⟩ := by
+        intro heq
+        have hval := congrArg (fun endpoint : Fin st.endpoints.length => endpoint.val) heq
+        have hne := edge_left_ne_right_of_partition hp edgeIndex
+        exact hne hval.symm
+      have hreachLeft :
+          PortHypergraph.PortReachesBoundary G
+            ⟨(st.edges.get edgeIndex).left, hleftBound⟩ :=
+        PortHypergraph.PortReachesBoundary.throughEdge hsame hdiff
+          (ih hrightBound)
+      have htarget :
+          (⟨(st.edges.get edgeIndex).left, hleftBound⟩ :
+              Fin st.endpoints.length) =
+            ⟨(st.edges.get edgeIndex).left, hbound⟩ := by
+        apply Fin.ext
+        rfl
+      simpa [htarget] using hreachLeft
+  | throughConstructor node hmem fromSlot toSlot _reach ih =>
+      rcases list_exists_get_of_mem st.nodes hmem with ⟨nodeIndex, hnodeEq⟩
+      subst node
+      have hnodeMem : st.nodes.get nodeIndex ∈ st.nodes :=
+        List.get_mem st.nodes nodeIndex
+      let fromSlot' : Fin (incidentOfValidIds hv nodeIndex).length :=
+        Fin.cast (by simp [incidentOfValidIds]) fromSlot
+      let toSlot' : Fin (incidentOfValidIds hv nodeIndex).length :=
+        Fin.cast (by simp [incidentOfValidIds]) toSlot
+      have hfromBound :=
+        hv.node_incident_bound (st.nodes.get nodeIndex) hnodeMem fromSlot
+      have htoBound :=
+        hv.node_incident_bound (st.nodes.get nodeIndex) hnodeMem toSlot
+      have hfrom :
+          (G.incident nodeIndex).get fromSlot' =
+            (⟨(st.nodes.get nodeIndex).incident.get fromSlot, hfromBound⟩ :
+              Fin st.endpoints.length) := by
+        apply Fin.ext
+        simp [G, ev, PortHypergraphEvidence.toPortHypergraph,
+          portHypergraphEvidenceOfInvariants, incidenceEvidenceOfValidIds,
+          incidentOfValidIds, fromSlot']
+      have hto :
+          (G.incident nodeIndex).get toSlot' =
+            (⟨(st.nodes.get nodeIndex).incident.get toSlot, htoBound⟩ :
+              Fin st.endpoints.length) := by
+        apply Fin.ext
+        simp [G, ev, PortHypergraphEvidence.toPortHypergraph,
+          portHypergraphEvidenceOfInvariants, incidenceEvidenceOfValidIds,
+          incidentOfValidIds, toSlot']
+      have hreachTo :
+          PortHypergraph.PortReachesBoundary G
+            (⟨(st.nodes.get nodeIndex).incident.get toSlot, htoBound⟩ :
+              Fin st.endpoints.length) :=
+        PortHypergraph.PortReachesBoundary.throughConstructor
+          nodeIndex fromSlot' toSlot' hfrom hto (ih hfromBound)
+      have htarget :
+          (⟨(st.nodes.get nodeIndex).incident.get toSlot, htoBound⟩ :
+              Fin st.endpoints.length) =
+            ⟨(st.nodes.get nodeIndex).incident.get toSlot, hbound⟩ := by
+        apply Fin.ext
+        rfl
+      simpa [htarget] using hreachTo
+
 /-- Evidence that a completed render trace presents an open semantic graph. -/
 structure OpenPortHypergraphEvidence
     (st : RenderState Sig []) (boundary : List Sig.Port) where
@@ -3895,30 +4352,72 @@ def renderTraceFromBoundary_graphEvidence
     (renderTraceFromBoundary_endpointPrefix d)
     (renderTraceFromBoundary_ownerIdPartition d)
 
-/--
-UNFINISHED renderer validity: the trace produced from traversal syntax carries
-exactly the endpoint, edge, boundary, and ordered-constructor incidence
-evidence required to be an open `PortHypergraph`.
+theorem renderTraceFromBoundary_allConstructorsReachBoundary
+    {boundary : List Sig.Port} (d : Diag Sig boundary) :
+    PortHypergraph.AllConstructorsReachBoundary
+      (renderTraceFromBoundary_graphEvidence d).toPortHypergraph := by
+  let st := renderTraceFromBoundary d
+  let hv : st.ValidIds := renderTraceFromBoundary_validIds d
+  let hp : st.EndpointPartition := renderTraceFromBoundary_endpointPartition d
+  let hn : st.NodeIncidentNodup := renderTraceFromBoundary_nodeIncidentNodup d
+  let pref : st.EndpointPrefix boundary := renderTraceFromBoundary_endpointPrefix d
+  let ho : st.OwnerIdPartition boundary :=
+    renderTraceFromBoundary_ownerIdPartition d
+  let hr : st.Reachability boundary :=
+    renderTraceFromBoundary_reachability d
+  let ev : RenderState.PortHypergraphEvidence st boundary :=
+    RenderState.portHypergraphEvidenceOfInvariants hv hp hn pref ho
+  let G := ev.toPortHypergraph
+  change PortHypergraph.AllConstructorsReachBoundary G
+  intro node
+  have hnodeMem : st.nodes.get node ∈ st.nodes :=
+    List.get_mem st.nodes node
+  rcases hr.node_reaches (st.nodes.get node) hnodeMem with
+    ⟨rawSlot, rawReach⟩
+  let slot : Fin (G.incident node).length :=
+    Fin.cast
+      (by
+        simp [G, ev, RenderState.PortHypergraphEvidence.toPortHypergraph,
+          RenderState.portHypergraphEvidenceOfInvariants,
+          RenderState.incidenceEvidenceOfValidIds,
+          RenderState.incidentOfValidIds])
+      rawSlot
+  refine ⟨slot, ?_⟩
+  have hrawBound :
+      (st.nodes.get node).incident.get rawSlot < st.endpoints.length :=
+    hv.node_incident_bound (st.nodes.get node) hnodeMem rawSlot
+  have hrawReach :
+      PortHypergraph.PortReachesBoundary G
+        (⟨(st.nodes.get node).incident.get rawSlot, hrawBound⟩ :
+          Fin st.endpoints.length) :=
+    RenderState.rawReachesBoundary_to_portReachesBoundaryOfInvariants
+      hv hp hn pref ho hrawBound rawReach
+  have hendpoint :
+      (G.incident node).get slot =
+        (⟨(st.nodes.get node).incident.get rawSlot, hrawBound⟩ :
+          Fin st.endpoints.length) := by
+    apply Fin.ext
+    simp [G, ev, RenderState.PortHypergraphEvidence.toPortHypergraph,
+      RenderState.portHypergraphEvidenceOfInvariants,
+      RenderState.incidenceEvidenceOfValidIds,
+      RenderState.incidentOfValidIds, slot]
+  exact hendpoint.symm ▸ hrawReach
 
-The graph evidence, including endpoint ownership, is constructed by
-`renderTraceFromBoundary_graphEvidence` from renderer-derived invariants.  The
-remaining unfinished field is boundary reachability for every rendered
-constructor.
+/--
+Renderer validity: the trace produced from traversal syntax carries exactly
+the endpoint, edge, boundary, ordered-constructor incidence, endpoint-owner, and
+boundary-reachability evidence required to be an open `PortHypergraph`.
 -/
 def renderTraceFromBoundary_openEvidence
     {boundary : List Sig.Port} (d : Diag Sig boundary) :
     RenderState.OpenPortHypergraphEvidence
       (renderTraceFromBoundary d) boundary where
   graph := renderTraceFromBoundary_graphEvidence d
-  allConstructorsReachBoundary := by
-    sorry
+  allConstructorsReachBoundary :=
+    renderTraceFromBoundary_allConstructorsReachBoundary d
 
-/--
-UNFINISHED semantic renderer obtained from
-`renderTraceFromBoundary_openEvidence`.  This declaration records the intended
-renderer target and depends on the unfinished renderer-validity proof above.
--/
-def toOpenPortHypergraph_unfinished
+/-- Semantic renderer obtained from `renderTraceFromBoundary_openEvidence`. -/
+def toOpenPortHypergraph
     {boundary : List Sig.Port} (d : Diag Sig boundary) :
     OpenPortHypergraph Sig boundary :=
   (renderTraceFromBoundary_openEvidence d).toOpenPortHypergraph

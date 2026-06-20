@@ -138,6 +138,16 @@ lake exe bijform
   - `StringDiagram.Diag.budStep_endpointPartition`
   - `StringDiagram.Diag.budStep_nodeIncidentNodup`
   - `StringDiagram.Diag.budStep_ownerIdPartition`
+  - `StringDiagram.Diag.budStep_edge_mem_old`
+  - `StringDiagram.Diag.budStep_node_mem_old`
+  - `StringDiagram.Diag.budStep_rawReachesBoundary_of_old`
+  - `StringDiagram.Diag.budStep_node_mem_old_or_new`
+  - `StringDiagram.Diag.budStep_frontier_mem_old_or_new`
+  - `StringDiagram.Diag.budStep_new_edge_mem`
+  - `StringDiagram.Diag.budStep_new_node_mem`
+  - `StringDiagram.Diag.budStep_entry_rawReachesBoundary`
+  - `StringDiagram.Diag.budStep_fresh_rawReachesBoundary`
+  - `StringDiagram.Diag.budStep_reachability`
   - `StringDiagram.Diag.budStep_endpoints`
   - `StringDiagram.Diag.renderTraceFromBoundary`
   - `StringDiagram.Diag.renderTrace_endpointPrefix`
@@ -146,10 +156,12 @@ lake exe bijform
   - `StringDiagram.Diag.renderTrace_endpointPartition`
   - `StringDiagram.Diag.renderTrace_nodeIncidentNodup`
   - `StringDiagram.Diag.renderTrace_ownerIdPartition`
+  - `StringDiagram.Diag.renderTrace_reachability`
   - `StringDiagram.Diag.renderTraceFromBoundary_validIds`
   - `StringDiagram.Diag.renderTraceFromBoundary_endpointPartition`
   - `StringDiagram.Diag.renderTraceFromBoundary_nodeIncidentNodup`
   - `StringDiagram.Diag.renderTraceFromBoundary_ownerIdPartition`
+  - `StringDiagram.Diag.renderTraceFromBoundary_reachability`
   - `StringDiagram.Diag.renderTraceFromBoundary_endpointEdgeEvidence`
   - `StringDiagram.Diag.renderTraceFromBoundary_endpointEdge`
   - `StringDiagram.Diag.renderTraceFromBoundary_endpoint_edge_label`
@@ -221,9 +233,11 @@ lake exe bijform
   - `StringDiagram.RenderState.initial_reachability`
   - `StringDiagram.RenderState.PortHypergraphEvidence`
   - `StringDiagram.RenderState.portHypergraphEvidenceOfInvariants`
+  - `StringDiagram.RenderState.rawReachesBoundary_to_portReachesBoundaryOfInvariants`
   - `StringDiagram.RenderState.OpenPortHypergraphEvidence`
-  - `StringDiagram.Diag.renderTraceFromBoundary_openEvidence` (unfinished proof gap)
-  - `StringDiagram.Diag.toOpenPortHypergraph_unfinished` (depends on unfinished renderer validity)
+  - `StringDiagram.Diag.renderTraceFromBoundary_allConstructorsReachBoundary`
+  - `StringDiagram.Diag.renderTraceFromBoundary_openEvidence`
+  - `StringDiagram.Diag.toOpenPortHypergraph`
   - `StringDiagram.EndpointOwner`
   - `StringDiagram.PortHypergraph`
   - `StringDiagram.PortHypergraph.endpointOwnersOf`
