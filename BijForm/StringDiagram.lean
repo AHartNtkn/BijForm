@@ -25,6 +25,25 @@ theorem eraseFin_length {α : Type} :
       simp [eraseFin, ih]
       exact Nat.sub_add_cancel (Nat.succ_le_of_lt hpos)
 
+theorem list_exists_get_of_mem {α : Type} {x : α} :
+    ∀ (xs : List α), x ∈ xs → ∃ i : Fin xs.length, xs.get i = x
+  | [], h => by cases h
+  | y :: ys, h => by
+      simp at h
+      rcases h with h | h
+      · refine ⟨⟨0, by simp⟩, ?_⟩
+        simp [h]
+      · rcases list_exists_get_of_mem ys h with ⟨i, hi⟩
+        refine ⟨⟨i.val + 1, by simp [i.isLt]⟩, ?_⟩
+        exact hi
+
+theorem list_mem_tail_of_mem_cons_ne {α : Type} {head x : α} {tail : List α}
+    (hmem : x ∈ head :: tail) (hne : head ≠ x) : x ∈ tail := by
+  simp at hmem
+  rcases hmem with h | h
+  · exact False.elim (hne h.symm)
+  · exact h
+
 /--
 A typed ordered-port string-diagram signature.
 
@@ -1298,14 +1317,62 @@ def FirstPendingTraversalReady (G : OpenPortHypergraph Sig boundary) : Prop :=
       FirstPendingStepReady G st.seenNode active rest
 
 /--
-UNFINISHED traversal blocker: the current semantic bridge requires this theorem,
-plus initial/step preservation of `TraversalState.FrontierComplete`, to make
-the first-pending traversal total.
+Frontier completeness makes the first-pending traversal step locally total.
+Initial completeness and step preservation are the remaining state-invariant
+obligations for the owned graph-to-`Diag` traversal.
 -/
 theorem firstPendingTraversalReady_of_frontierComplete
     (G : OpenPortHypergraph Sig boundary) :
     FirstPendingTraversalReady G := by
-  sorry
+  intro activeLabel restLabels st active rest hcomplete hpending
+  rcases PortHypergraph.edgeMate_existsUnique G.raw active with
+    ⟨mate, hmate, _hmateUniq⟩
+  have hactiveMem : active ∈ st.pending := by
+    rw [hpending]
+    simp
+  have hactiveUnprocessed :
+      ¬ st.processedEdge (G.raw.endpointEdge active) :=
+    st.pending_unprocessed active hactiveMem
+  have hmateUnprocessed :
+      ¬ st.processedEdge (G.raw.endpointEdge mate) := by
+    intro hprocessed
+    exact hactiveUnprocessed (by simpa [hmate.2] using hprocessed)
+  have mate_pending_tail
+      (hmatePending : mate ∈ st.pending) : mate ∈ rest := by
+    rw [hpending] at hmatePending
+    exact list_mem_tail_of_mem_cons_ne hmatePending (by
+      intro hactiveMate
+      exact hmate.1 hactiveMate)
+  have connect_of_pending (hmatePending : mate ∈ st.pending) :
+      FirstPendingStepReady G st.seenNode active rest := by
+    have hrest : mate ∈ rest := mate_pending_tail hmatePending
+    rcases list_exists_get_of_mem rest hrest with ⟨mateIndex, hget⟩
+    refine Or.inl ⟨mateIndex, ?_⟩
+    rw [hget]
+    exact hmate
+  rcases G.raw.endpoint_owner mate with ⟨owner, howner, _huniq⟩
+  cases owner with
+  | boundary boundaryIndex =>
+      have hownerEndpoint :
+          PortHypergraph.endpointOwnerEndpoint G.raw
+              (.boundary boundaryIndex) = mate := by
+        simpa [PortHypergraph.endpointOwnerEndpoint] using howner
+      exact connect_of_pending
+        (hcomplete mate hmateUnprocessed (.boundary boundaryIndex)
+          hownerEndpoint)
+  | constructor node slot =>
+      have hownerEndpoint :
+          PortHypergraph.endpointOwnerEndpoint G.raw
+              (.constructor node slot) = mate := by
+        simpa [PortHypergraph.endpointOwnerEndpoint] using howner
+      by_cases hseen : st.seenNode node
+      · exact connect_of_pending
+          (hcomplete mate hmateUnprocessed (.constructor node slot)
+            hownerEndpoint hseen)
+      · refine Or.inr ⟨node, slot, ?_, hseen⟩
+        rw [show (G.raw.incident node).get slot = mate by
+          simpa [PortHypergraph.endpointOwnerEndpoint] using hownerEndpoint]
+        exact hmate
 
 def isoRel (G H : OpenPortHypergraph Sig boundary) : Prop :=
   Nonempty (PortHypergraphIso G.raw H.raw)
@@ -1341,9 +1408,9 @@ constructors lie in components connected to that ordered boundary, up to
 ordered boundary-preserving isomorphism.  The proof must instantiate a
 canonical search procedure whose unique traversal order supplies the canonical
 edge and node labels used for linear isomorphism testing.  The immediate
-blocker is proving and preserving
-`OpenPortHypergraph.TraversalState.FrontierComplete`, then discharging
-`OpenPortHypergraph.firstPendingTraversalReady_of_frontierComplete`.
+blockers are initial/step preservation of
+`OpenPortHypergraph.TraversalState.FrontierComplete`, renderer validity, and
+the renderer/traversal inverse laws.
 -/
 def diagOpenPortHypergraphIso (Sig : Signature) (boundary : List Sig.Port) :
     Diag Sig boundary ≃ᵢ OpenPortHypergraphUpToIso Sig boundary := by

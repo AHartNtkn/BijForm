@@ -132,11 +132,11 @@ lake exe bijform
   - `StringDiagram.PortHypergraph.PortReachesBoundary`
   - `StringDiagram.OpenPortHypergraph`
   - `StringDiagram.OpenPortHypergraph.TraversalState`
-  - `StringDiagram.OpenPortHypergraph.TraversalState.FrontierComplete` (unfinished blocker)
+  - `StringDiagram.OpenPortHypergraph.TraversalState.FrontierComplete`
   - `StringDiagram.PortHypergraphIso`
   - `StringDiagram.OpenPortHypergraphUpToIso`
-  - `StringDiagram.OpenPortHypergraph.FirstPendingTraversalReady` (unfinished blocker)
-  - `StringDiagram.OpenPortHypergraph.firstPendingTraversalReady_of_frontierComplete` (unfinished proof gap)
+  - `StringDiagram.OpenPortHypergraph.FirstPendingTraversalReady`
+  - `StringDiagram.OpenPortHypergraph.firstPendingTraversalReady_of_frontierComplete`
   - `StringDiagram.diagOpenPortHypergraphIso` (unfinished proof gap)
 
 - `BijForm.Examples`
