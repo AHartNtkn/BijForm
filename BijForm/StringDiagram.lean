@@ -1908,6 +1908,227 @@ def connectChild {G : OpenPortHypergraph Sig boundary}
       exact hunseen hseen
     · exact st.unseen_incident_unprocessed node hunseen slot hold
 
+def budChild {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
+    (st : SearchState G (activeLabel :: restLabels))
+    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest)
+    (node : Fin G.raw.nodeCount)
+    (slot : Fin (G.raw.incident node).length)
+    (hmate :
+      PortHypergraph.EdgeMate G.raw active ((G.raw.incident node).get slot))
+    (hunseen : node ∉ st.seenNodes) :
+    SearchState G
+      (restLabels ++
+        Sig.nodePortsExcept (G.raw.nodeLabel node) (budEntry node slot)) where
+  pending := rest ++ eraseFin (G.raw.incident node) slot
+  pending_labels := by
+    calc
+      (rest ++ eraseFin (G.raw.incident node) slot).map
+          G.raw.endpointLabel =
+          rest.map G.raw.endpointLabel ++
+            (eraseFin (G.raw.incident node) slot).map G.raw.endpointLabel := by
+        simp
+      _ = restLabels ++
+            Sig.nodePortsExcept (G.raw.nodeLabel node) (budEntry node slot) := by
+        rw [st.rest_labels_eq hpending,
+          G.raw.incident_labels_except node slot]
+        rfl
+  pending_nodup := by
+    apply nodup_append_of_nodup_disjoint
+    · exact st.rest_nodup hpending
+    · exact nodup_eraseFin (G.raw.incident node) slot
+        (G.raw.incident_nodup node)
+    · intro endpoint hrest hnew
+      have hstPending : endpoint ∈ st.pending := by
+        rw [hpending]
+        right
+        exact hrest
+      have hincident : endpoint ∈ G.raw.incident node :=
+        mem_of_mem_eraseFin (G.raw.incident node) slot hnew
+      rcases list_exists_get_of_mem (G.raw.incident node) hincident with
+        ⟨slot', hslot'⟩
+      have howner :
+          PortHypergraph.endpointOwnerEndpoint G.raw
+              (.constructor node slot') = endpoint := by
+        simpa [PortHypergraph.endpointOwnerEndpoint] using hslot'
+      have hseen : node ∈ st.seenNodes :=
+        st.constructor_seen_of_pending hstPending howner
+      exact hunseen hseen
+  seenNodes := node :: st.seenNodes
+  processedEdges := G.raw.endpointEdge active :: st.processedEdges
+  pending_unprocessed := by
+    intro endpoint hmem hprocessed
+    simp at hmem
+    simp at hprocessed
+    rcases hmem with hrest | hnewEndpoint
+    · have hstPending : endpoint ∈ st.pending := by
+        rw [hpending]
+        right
+        exact hrest
+      rcases hprocessed with hnewProcessed | hold
+      · have hactiveNe : active ≠ endpoint := by
+          intro hactiveEndpoint
+          exact st.active_not_mem_rest hpending (by
+            simpa [hactiveEndpoint] using hrest)
+        have hendpointMate :
+            endpoint = (G.raw.incident node).get slot := by
+          rcases PortHypergraph.edgeMate_existsUnique G.raw active with
+            ⟨uniqueMate, _huniqueMate, huniq⟩
+          have hmateEq : (G.raw.incident node).get slot = uniqueMate :=
+            huniq ((G.raw.incident node).get slot) hmate
+          have hendpointEq : endpoint = uniqueMate :=
+            huniq endpoint ⟨hactiveNe, hnewProcessed.symm⟩
+          exact hendpointEq.trans hmateEq.symm
+        have hseen : node ∈ st.seenNodes :=
+          st.constructor_seen_of_pending hstPending (by
+            change (G.raw.incident node).get slot = endpoint
+            exact hendpointMate.symm)
+        exact hunseen hseen
+      · exact st.pending_unprocessed endpoint hstPending hold
+    · have hincident : endpoint ∈ G.raw.incident node :=
+        mem_of_mem_eraseFin (G.raw.incident node) slot hnewEndpoint
+      rcases list_exists_get_of_mem (G.raw.incident node) hincident with
+        ⟨slot', hslot'⟩
+      rcases hprocessed with hnewProcessed | hold
+      · have hactiveNe : active ≠ endpoint := by
+          intro hactiveEndpoint
+          have hactivePending : active ∈ st.pending := by
+            rw [hpending]
+            simp
+          have hseen : node ∈ st.seenNodes :=
+            st.constructor_seen_of_pending hactivePending (by
+              change (G.raw.incident node).get slot' = active
+              exact hslot'.trans hactiveEndpoint.symm)
+          exact hunseen hseen
+        have hendpointEntry :
+            endpoint = (G.raw.incident node).get slot := by
+          rcases PortHypergraph.edgeMate_existsUnique G.raw active with
+            ⟨uniqueMate, _huniqueMate, huniq⟩
+          have hmateEq : (G.raw.incident node).get slot = uniqueMate :=
+            huniq ((G.raw.incident node).get slot) hmate
+          have hendpointEq : endpoint = uniqueMate :=
+            huniq endpoint ⟨hactiveNe, hnewProcessed.symm⟩
+          exact hendpointEq.trans hmateEq.symm
+        have hentryNotMem :
+            (G.raw.incident node).get slot ∉
+              eraseFin (G.raw.incident node) slot :=
+          get_not_mem_eraseFin_of_nodup (G.raw.incident node) slot
+            (G.raw.incident_nodup node)
+        exact hentryNotMem (by simpa [hendpointEntry] using hnewEndpoint)
+      · have holdSlot :
+            G.raw.endpointEdge ((G.raw.incident node).get slot') ∉
+              st.processedEdges :=
+          st.unseen_incident_unprocessed node hunseen slot'
+        exact holdSlot (by
+          rw [hslot']
+          exact hold)
+  pending_owner_seen := by
+    intro endpoint hmem owner howner
+    simp at hmem
+    rcases hmem with hrest | hnewEndpoint
+    · have hstPending : endpoint ∈ st.pending := by
+        rw [hpending]
+        right
+        exact hrest
+      cases owner with
+      | boundary _ =>
+          trivial
+      | constructor ownerNode ownerSlot =>
+          have hseen : ownerNode ∈ st.seenNodes :=
+            st.constructor_seen_of_pending hstPending howner
+          simp [hseen]
+    · have hincident : endpoint ∈ G.raw.incident node :=
+        mem_of_mem_eraseFin (G.raw.incident node) slot hnewEndpoint
+      rcases list_exists_get_of_mem (G.raw.incident node) hincident with
+        ⟨slot', hslot'⟩
+      cases owner with
+      | boundary _ =>
+          trivial
+      | constructor ownerNode ownerSlot =>
+          have hconstructorOwner :
+              PortHypergraph.endpointOwnerEndpoint G.raw
+                  (.constructor node slot') = endpoint := by
+            simpa [PortHypergraph.endpointOwnerEndpoint] using hslot'
+          rcases G.raw.endpoint_owner endpoint with ⟨owner₀, _howner₀, huniq⟩
+          have hnewEq :
+              (.constructor node slot' :
+                EndpointOwner boundary.length G.raw.nodeCount
+                  (fun node => (G.raw.incident node).length)) = owner₀ := by
+            apply huniq
+            simpa [PortHypergraph.endpointOwnerEndpoint] using hconstructorOwner
+          have hownerEq :
+              (.constructor ownerNode ownerSlot :
+                EndpointOwner boundary.length G.raw.nodeCount
+                  (fun node => (G.raw.incident node).length)) = owner₀ := by
+            apply huniq
+            simpa [PortHypergraph.endpointOwnerEndpoint] using howner
+          have hsame :
+              (.constructor ownerNode ownerSlot :
+                EndpointOwner boundary.length G.raw.nodeCount
+                  (fun node => (G.raw.incident node).length)) =
+                .constructor node slot' := hownerEq.trans hnewEq.symm
+          cases hsame
+          simp
+  unseen_incident_unprocessed := by
+    intro otherNode hotherUnseen otherSlot hprocessed
+    have hotherNotSeen : otherNode ∉ st.seenNodes := by
+      intro hseen
+      exact hotherUnseen (by simp [hseen])
+    simp at hprocessed
+    rcases hprocessed with hnewProcessed | hold
+    · let endpoint := (G.raw.incident otherNode).get otherSlot
+      have hactiveNe : active ≠ endpoint := by
+        intro hactiveEndpoint
+        have hactivePending : active ∈ st.pending := by
+          rw [hpending]
+          simp
+        have hseen : otherNode ∈ st.seenNodes :=
+          st.constructor_seen_of_pending hactivePending (by
+            change (G.raw.incident otherNode).get otherSlot = active
+            exact hactiveEndpoint.symm)
+        exact hotherNotSeen hseen
+      have hendpointEntry :
+          endpoint = (G.raw.incident node).get slot := by
+        rcases PortHypergraph.edgeMate_existsUnique G.raw active with
+          ⟨uniqueMate, _huniqueMate, huniq⟩
+        have hmateEq : (G.raw.incident node).get slot = uniqueMate :=
+          huniq ((G.raw.incident node).get slot) hmate
+        have hendpointEq : endpoint = uniqueMate :=
+          huniq endpoint ⟨hactiveNe, hnewProcessed.symm⟩
+        exact hendpointEq.trans hmateEq.symm
+      have hownerOther :
+          PortHypergraph.endpointOwnerEndpoint G.raw
+              (.constructor otherNode otherSlot) =
+            endpoint := rfl
+      have hownerNode :
+          PortHypergraph.endpointOwnerEndpoint G.raw
+              (.constructor node slot) =
+            endpoint := by
+        change (G.raw.incident node).get slot = endpoint
+        exact hendpointEntry.symm
+      rcases G.raw.endpoint_owner endpoint with ⟨owner₀, _howner₀, huniq⟩
+      have hotherEq :
+          (.constructor otherNode otherSlot :
+            EndpointOwner boundary.length G.raw.nodeCount
+              (fun node => (G.raw.incident node).length)) = owner₀ := by
+        apply huniq
+        simpa [PortHypergraph.endpointOwnerEndpoint] using hownerOther
+      have hnodeEq :
+          (.constructor node slot :
+            EndpointOwner boundary.length G.raw.nodeCount
+              (fun node => (G.raw.incident node).length)) = owner₀ := by
+        apply huniq
+        simpa [PortHypergraph.endpointOwnerEndpoint] using hownerNode
+      have hsame :
+          (.constructor otherNode otherSlot :
+            EndpointOwner boundary.length G.raw.nodeCount
+              (fun node => (G.raw.incident node).length)) =
+            .constructor node slot := hotherEq.trans hnodeEq.symm
+      cases hsame
+      exact hotherUnseen (by simp)
+    · exact st.unseen_incident_unprocessed otherNode hotherNotSeen otherSlot hold
+
 end SearchState
 
 /--
