@@ -118,6 +118,10 @@ lake exe bijform
   - `StringDiagram.RenderState`
   - `StringDiagram.Diag.connectStep`
   - `StringDiagram.Diag.budStep`
+  - `StringDiagram.Diag.freshNodeEndpoints_get`
+  - `StringDiagram.Diag.freshNodeEndpoints_mem_lt`
+  - `StringDiagram.Diag.freshNodeEndpoints_label_append`
+  - `StringDiagram.Diag.connectStep_validIds`
   - `StringDiagram.Diag.renderTraceFromBoundary`
   - `StringDiagram.RenderState.ValidIds`
   - `StringDiagram.RenderState.initial_validIds`

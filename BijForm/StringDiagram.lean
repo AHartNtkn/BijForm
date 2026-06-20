@@ -12,6 +12,17 @@ def eraseFin {α : Type} : (xs : List α) → Fin xs.length → List α
   | x :: xs, ⟨n + 1, h⟩ =>
       x :: eraseFin xs ⟨n, Nat.lt_of_succ_lt_succ h⟩
 
+theorem eraseFin_eq_eraseIdx {α : Type} :
+    ∀ (xs : List α) (i : Fin xs.length),
+      eraseFin xs i = xs.eraseIdx i.val
+  | [], i => nomatch i
+  | _ :: xs, ⟨0, _⟩ => by
+      simp [eraseFin]
+  | x :: xs, ⟨n + 1, h⟩ => by
+      have ih := eraseFin_eq_eraseIdx xs
+        ⟨n, Nat.lt_of_succ_lt_succ h⟩
+      simp [eraseFin, ih]
+
 @[simp]
 theorem eraseFin_length {α : Type} :
     ∀ (xs : List α) (i : Fin xs.length),
@@ -24,6 +35,127 @@ theorem eraseFin_length {α : Type} :
       have hpos : 0 < xs.length := Nat.lt_of_le_of_lt (Nat.zero_le n) htail
       simp [eraseFin, ih]
       exact Nat.sub_add_cancel (Nat.succ_le_of_lt hpos)
+
+theorem eraseFin_pointwise_relation {α β : Type} {R : α → β → Prop}
+    {xs : List α} {ys : List β}
+    (hlen : xs.length = ys.length)
+    (hrel :
+      ∀ (n : Nat) (hx : n < xs.length) (hy : n < ys.length),
+        R (xs.get ⟨n, hx⟩) (ys.get ⟨n, hy⟩))
+    (ix : Fin xs.length) (iy : Fin ys.length)
+    (hindex : ix.val = iy.val)
+    (n : Nat)
+    (hx : n < (eraseFin xs ix).length)
+    (hy : n < (eraseFin ys iy).length) :
+    R ((eraseFin xs ix).get ⟨n, hx⟩)
+      ((eraseFin ys iy).get ⟨n, hy⟩) := by
+  revert ys ix iy n
+  induction xs with
+  | nil =>
+      intro ys hlen hrel ix iy hindex n hx hy
+      cases ix with
+      | mk val isLt =>
+          exact False.elim (Nat.not_lt_zero val isLt)
+  | cons x xs ih =>
+      intro ys hlen hrel ix iy hindex n hx hy
+      cases ys with
+      | nil =>
+          simp at hlen
+      | cons y ys =>
+          have htailLen : xs.length = ys.length := Nat.succ.inj hlen
+          cases ix with
+          | mk ixVal ixLt =>
+              cases iy with
+              | mk iyVal iyLt =>
+                  cases ixVal with
+                  | zero =>
+                      cases iyVal with
+                      | zero =>
+                          simp
+                          apply hrel (n + 1)
+                          · simpa using Nat.succ_lt_succ hx
+                          · simpa using Nat.succ_lt_succ hy
+                      | succ iyVal =>
+                          have hbad := hindex
+                          simp at hbad
+                  | succ ixVal =>
+                      cases iyVal with
+                      | zero =>
+                          have hbad := hindex
+                          simp at hbad
+                      | succ iyVal =>
+                          cases n with
+                          | zero =>
+                              simp [eraseFin]
+                              apply hrel 0 <;> simp
+                          | succ n =>
+                              simp [eraseFin]
+                              apply ih htailLen
+                              · intro k hkx hky
+                                apply hrel (k + 1)
+                                · simpa using Nat.succ_lt_succ hkx
+                                · simpa using Nat.succ_lt_succ hky
+                              · exact Nat.succ.inj hindex
+
+theorem list_get_append_left {α : Type} (xs ys : List α)
+    {i : Nat} (hi : i < xs.length)
+    (happend : i < (xs ++ ys).length) :
+    (xs ++ ys).get ⟨i, happend⟩ = xs.get ⟨i, hi⟩ := by
+  change (xs ++ ys)[i] = xs[i]
+  exact List.getElem_append_left hi
+
+theorem list_get_append_right {α : Type} (xs ys : List α)
+    {i : Nat} (hi : xs.length ≤ i)
+    (happend : i < (xs ++ ys).length) :
+    (xs ++ ys).get ⟨i, happend⟩ =
+      ys.get ⟨i - xs.length, by
+        have hlen : (xs ++ ys).length = xs.length + ys.length := by
+          simp
+        omega⟩ := by
+  have hright : i - xs.length < ys.length := by
+    have hlen : (xs ++ ys).length = xs.length + ys.length := by
+      simp
+    omega
+  change (xs ++ ys)[i] = ys[i - xs.length]
+  exact List.getElem_append_right hi
+
+theorem append_pointwise_relation {α β : Type} {R : α → β → Prop}
+    {leftIds rightIds : List α} {leftLabels rightLabels : List β}
+    (hleftLen : leftIds.length = leftLabels.length)
+    (hrightLen : rightIds.length = rightLabels.length)
+    (hleft :
+      ∀ (n : Nat) (hid : n < leftIds.length)
+        (hlabel : n < leftLabels.length),
+        R (leftIds.get ⟨n, hid⟩) (leftLabels.get ⟨n, hlabel⟩))
+    (hright :
+      ∀ (n : Nat) (hid : n < rightIds.length)
+        (hlabel : n < rightLabels.length),
+        R (rightIds.get ⟨n, hid⟩) (rightLabels.get ⟨n, hlabel⟩))
+    (n : Nat)
+    (hid : n < (leftIds ++ rightIds).length)
+    (hlabel : n < (leftLabels ++ rightLabels).length) :
+    R ((leftIds ++ rightIds).get ⟨n, hid⟩)
+      ((leftLabels ++ rightLabels).get ⟨n, hlabel⟩) := by
+  by_cases hbefore : n < leftIds.length
+  · have hbeforeLabel : n < leftLabels.length := by omega
+    rw [list_get_append_left leftIds rightIds hbefore hid,
+      list_get_append_left leftLabels rightLabels hbeforeLabel hlabel]
+    exact hleft n hbefore hbeforeLabel
+  · have hafter : leftIds.length ≤ n := Nat.le_of_not_gt hbefore
+    have hafterLabel : leftLabels.length ≤ n := by omega
+    rw [list_get_append_right leftIds rightIds hafter hid,
+      list_get_append_right leftLabels rightLabels hafterLabel hlabel]
+    have hright' :=
+      hright (n - leftIds.length)
+        (by
+          have hlen : (leftIds ++ rightIds).length =
+              leftIds.length + rightIds.length := by simp
+          omega)
+        (by
+          have hlen : (leftLabels ++ rightLabels).length =
+              leftLabels.length + rightLabels.length := by simp
+          omega)
+    simpa [hleftLen] using hright'
 
 theorem map_eraseFin {α β : Type} (f : α → β) :
     ∀ (xs : List α) (i : Fin xs.length),
@@ -491,11 +623,13 @@ structure ValidIds {Sig : Signature} {frontier : List Sig.Port}
   frontier_bound :
     ∀ id : Nat, id ∈ st.frontierIds → id < st.endpoints.length
   frontier_label :
-    ∀ i : Fin st.frontierIds.length,
+    ∀ (n : Nat) (hid : n < st.frontierIds.length)
+      (hfrontier : n < frontier.length),
       st.endpoints.get
-        ⟨st.frontierIds.get i,
-          frontier_bound (st.frontierIds.get i) (List.get_mem st.frontierIds i)⟩ =
-      frontier.get (Fin.cast st.frontierIds_length i)
+        ⟨st.frontierIds.get ⟨n, hid⟩,
+          frontier_bound (st.frontierIds.get ⟨n, hid⟩)
+            (List.get_mem st.frontierIds ⟨n, hid⟩)⟩ =
+      frontier.get ⟨n, hfrontier⟩
   edge_left_bound :
     ∀ edge : RenderEdge Sig, edge ∈ st.edges → edge.left < st.endpoints.length
   edge_right_bound :
@@ -532,7 +666,7 @@ theorem initial_validIds {Sig : Signature} (boundary : List Sig.Port) :
     intro id hid
     simpa [initial] using hid
   frontier_label := by
-    intro i
+    intro n hid hfrontier
     simp [initial]
   edge_left_bound := by
     intro edge hmem
@@ -566,7 +700,7 @@ theorem ValidIds.frontier_head_label {Sig : Signature}
       ⟨activeId, hv.frontier_bound activeId (by rw [hids]; simp)⟩ =
       active := by
   have hlabel :=
-    hv.frontier_label ⟨0, by rw [hids]; simp⟩
+    hv.frontier_label 0 (by rw [hids]; simp) (by simp)
   simpa [hids] using hlabel
 
 theorem ValidIds.frontier_tail_label {Sig : Signature}
@@ -581,12 +715,14 @@ theorem ValidIds.frontier_tail_label {Sig : Signature}
       ⟨restIds.get i,
         hv.frontier_bound (restIds.get i) (by rw [hids]; simp)⟩ =
       frontier.get (Fin.cast hrest i) := by
-  let oldIndex : Fin st.frontierIds.length :=
-    ⟨i.val + 1, by
-      rw [hids]
-      simp [i.isLt]⟩
-  have hlabel := hv.frontier_label oldIndex
-  simpa [oldIndex, hids] using hlabel
+  have hlabel :=
+    hv.frontier_label (i.val + 1)
+      (by rw [hids]; simp [i.isLt])
+      (by
+        have hi : i.val < frontier.length := by
+          simp [← hrest, i.isLt]
+        simpa using Nat.succ_lt_succ hi)
+  simpa [hids] using hlabel
 
 end RenderState
 
@@ -601,6 +737,74 @@ def freshNodeEndpoints (start arity : Nat) : List Nat :=
 theorem freshNodeEndpoints_length (start arity : Nat) :
     (freshNodeEndpoints start arity).length = arity := by
   simp [freshNodeEndpoints]
+
+theorem freshNodeEndpoints_get (start arity : Nat)
+    (i : Fin (freshNodeEndpoints start arity).length) :
+    (freshNodeEndpoints start arity).get i = start + i.val := by
+  simp [freshNodeEndpoints]
+
+theorem freshNodeEndpoints_mem_lt {start arity id : Nat}
+    (hmem : id ∈ freshNodeEndpoints start arity) :
+    id < start + arity := by
+  rcases list_exists_get_of_mem (freshNodeEndpoints start arity) hmem with
+    ⟨i, hi⟩
+  rw [← hi, freshNodeEndpoints_get]
+  have hiLt : i.val < arity := by
+    simpa using i.isLt
+  omega
+
+theorem freshNodeEndpoints_label_append
+    {frontier : List Sig.Port} (st : RenderState Sig frontier)
+    (hv : st.ValidIds) (node : Sig.Node)
+    (i : Fin (freshNodeEndpoints st.nextEndpoint (Sig.arity node)).length)
+    (hbound :
+      (freshNodeEndpoints st.nextEndpoint (Sig.arity node)).get i <
+        (st.endpoints ++ Sig.nodePorts node).length) :
+    (st.endpoints ++ Sig.nodePorts node).get
+        ⟨(freshNodeEndpoints st.nextEndpoint (Sig.arity node)).get i,
+          hbound⟩ =
+      (Sig.nodePorts node).get
+        (Fin.cast (by simp [freshNodeEndpoints, Signature.nodePorts]) i) := by
+  have hget :=
+    freshNodeEndpoints_get st.nextEndpoint (Sig.arity node) i
+  have hbound' :
+      st.nextEndpoint + i.val <
+        (st.endpoints ++ Sig.nodePorts node).length := by
+    simpa [← hget] using hbound
+  have hright :
+      st.endpoints.length ≤ st.nextEndpoint + i.val := by
+    have hnext := hv.nextEndpoint_eq
+    omega
+  calc
+    (st.endpoints ++ Sig.nodePorts node).get
+        ⟨(freshNodeEndpoints st.nextEndpoint (Sig.arity node)).get i,
+          hbound⟩ =
+        (st.endpoints ++ Sig.nodePorts node).get
+          ⟨st.nextEndpoint + i.val, hbound'⟩ := by
+          apply congrArg (fun idx =>
+            (st.endpoints ++ Sig.nodePorts node).get idx)
+          apply Fin.ext
+          exact hget
+    _ =
+        (Sig.nodePorts node).get
+          ⟨st.nextEndpoint + i.val - st.endpoints.length, by
+            have hlen :
+                (st.endpoints ++ Sig.nodePorts node).length =
+                  st.endpoints.length + (Sig.nodePorts node).length := by
+              simp
+            omega⟩ := by
+          exact list_get_append_right st.endpoints (Sig.nodePorts node)
+            hright hbound'
+    _ =
+        (Sig.nodePorts node).get
+          (Fin.cast (by simp [freshNodeEndpoints, Signature.nodePorts]) i) := by
+          have hsub :
+              st.nextEndpoint + i.val - st.endpoints.length = i.val := by
+            have hnext := hv.nextEndpoint_eq
+            omega
+          apply congrArg (fun idx => (Sig.nodePorts node).get idx)
+          apply Fin.ext
+          simp [hsub]
 
 /--
 One `connect` rendering step.  The type records the frontier effect: the
@@ -686,6 +890,92 @@ def budStep {active : Sig.Port} {frontier : List Sig.Port}
           dsimp [childIds]
           simp [hrest, Signature.nodePortsExcept, Signature.nodePorts,
             nodeEndpoints, eraseFin_length] }
+
+theorem connectStep_validIds {active : Sig.Port} {frontier : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (st : RenderState Sig (active :: frontier))
+    (hv : st.ValidIds) :
+    (connectStep mate ok st).ValidIds := by
+  unfold connectStep
+  split
+  · rename_i hids
+    exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  · rename_i activeId restIds hids
+    have hrest : restIds.length = frontier.length := by
+      have hlen := st.frontierIds_length
+      rw [hids] at hlen
+      simpa using Nat.succ.inj hlen
+    dsimp
+    refine
+      { nextEndpoint_eq := hv.nextEndpoint_eq
+        frontier_bound := ?_
+        frontier_label := ?_
+        edge_left_bound := ?_
+        edge_right_bound := ?_
+        edge_left_label := ?_
+        edge_right_label := ?_
+        node_incident_length := hv.node_incident_length
+        node_incident_bound := hv.node_incident_bound
+        node_incident_label := hv.node_incident_label }
+    · intro id hid
+      exact hv.frontier_bound id (by
+        rw [hids]
+        right
+        exact mem_of_mem_eraseFin restIds
+          (Fin.cast hrest.symm mate) hid)
+    · intro n hid hfrontier
+      let idx : Fin restIds.length := Fin.cast hrest.symm mate
+      have hrel :
+          ∀ (n : Nat) (hx : n < restIds.length)
+            (hy : n < frontier.length),
+            ∃ hbound : restIds.get ⟨n, hx⟩ < st.endpoints.length,
+              st.endpoints.get ⟨restIds.get ⟨n, hx⟩, hbound⟩ =
+                frontier.get ⟨n, hy⟩ := by
+        intro n hx hy
+        have hlabel :=
+          hv.frontier_tail_label hids hrest ⟨n, hx⟩
+        refine ⟨hv.frontier_bound (restIds.get ⟨n, hx⟩) ?_, ?_⟩
+        · rw [hids]
+          right
+          exact List.get_mem restIds ⟨n, hx⟩
+        · simpa using hlabel
+      have haligned :=
+        eraseFin_pointwise_relation
+          (R := fun id label =>
+            ∃ hbound : id < st.endpoints.length,
+              st.endpoints.get ⟨id, hbound⟩ = label)
+          hrest hrel idx mate (by simp [idx]) n hid hfrontier
+      rcases haligned with ⟨hbound, hlabel⟩
+      simpa using hlabel
+    · intro edge hmem
+      simp at hmem
+      rcases hmem with hold | hnew
+      · exact hv.edge_left_bound edge hold
+      · cases hnew
+        exact hv.frontier_bound activeId (by rw [hids]; simp)
+    · intro edge hmem
+      simp at hmem
+      rcases hmem with hold | hnew
+      · exact hv.edge_right_bound edge hold
+      · cases hnew
+        exact hv.frontier_bound
+          (restIds.get (Fin.cast hrest.symm mate)) (by
+            rw [hids]
+            right
+            exact List.get_mem restIds (Fin.cast hrest.symm mate))
+    · intro edge hmem
+      simp at hmem
+      rcases hmem with hold | hnew
+      · exact hv.edge_left_label edge hold
+      · cases hnew
+        exact hv.frontier_head_label hids
+    · intro edge hmem
+      simp at hmem
+      rcases hmem with hold | hnew
+      · exact hv.edge_right_label edge hold
+      · cases hnew
+        exact hv.frontier_tail_label hids hrest (Fin.cast hrest.symm mate)
 
 /--
 Execute traversal syntax into a construction trace.
