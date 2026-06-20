@@ -658,6 +658,28 @@ structure ValidIds {Sig : Signature} {frontier : List Sig.Port}
         Sig.port node.label
           (Fin.cast (node_incident_length node hmem) slot)
 
+def edgeEndpointIds {Sig : Signature} {frontier : List Sig.Port}
+    (st : RenderState Sig frontier) : List Nat :=
+  st.edges.flatMap fun edge => [edge.left, edge.right]
+
+/--
+The endpoint-consumption invariant for renderer states.  Every endpoint ID is
+either pending in the ordered frontier or has already been consumed by exactly
+one rendered edge endpoint.  This is the invariant from which the semantic
+`endpointEdge` map is later derived when the frontier is empty.
+-/
+structure EndpointPartition {Sig : Signature} {frontier : List Sig.Port}
+    (st : RenderState Sig frontier) : Prop where
+  frontier_nodup : st.frontierIds.Nodup
+  consumed_nodup : st.edgeEndpointIds.Nodup
+  consumed_bound :
+    ∀ id : Nat, id ∈ st.edgeEndpointIds → id < st.endpoints.length
+  frontier_consumed_disjoint :
+    ∀ id : Nat, id ∈ st.frontierIds → id ∈ st.edgeEndpointIds → False
+  endpoint_covered :
+    ∀ id : Nat, id < st.endpoints.length →
+      id ∈ st.frontierIds ∨ id ∈ st.edgeEndpointIds
+
 theorem initial_validIds {Sig : Signature} (boundary : List Sig.Port) :
     (initial Sig boundary).ValidIds where
   nextEndpoint_eq := by
@@ -689,6 +711,40 @@ theorem initial_validIds {Sig : Signature} (boundary : List Sig.Port) :
   node_incident_label := by
     intro node hmem slot
     simp [initial] at hmem
+
+theorem initial_endpointPartition {Sig : Signature} (boundary : List Sig.Port) :
+    (initial Sig boundary).EndpointPartition where
+  frontier_nodup := by
+    simp [initial, List.nodup_range]
+  consumed_nodup := by
+    simp [edgeEndpointIds, initial]
+  consumed_bound := by
+    intro id hmem
+    simp [edgeEndpointIds, initial] at hmem
+  frontier_consumed_disjoint := by
+    intro id hfrontier hconsumed
+    simp [edgeEndpointIds, initial] at hconsumed
+  endpoint_covered := by
+    intro id hid
+    left
+    simpa [initial] using (List.mem_range.mpr hid)
+
+theorem EndpointPartition.endpoint_consumed_of_frontier_empty
+    {Sig : Signature} {st : RenderState Sig []}
+    (hp : st.EndpointPartition)
+    (endpoint : Fin st.endpoints.length) :
+    endpoint.val ∈ st.edgeEndpointIds := by
+  have hfrontierIds : st.frontierIds = [] := by
+    cases hids : st.frontierIds with
+    | nil => rfl
+    | cons head tail =>
+        have hlen := st.frontierIds_length
+        rw [hids] at hlen
+        simp at hlen
+  rcases hp.endpoint_covered endpoint.val endpoint.isLt with hfrontier | hconsumed
+  · rw [hfrontierIds] at hfrontier
+    cases hfrontier
+  · exact hconsumed
 
 theorem ValidIds.frontier_head_label {Sig : Signature}
     {active : Sig.Port} {frontier : List Sig.Port}
@@ -976,6 +1032,138 @@ theorem connectStep_validIds {active : Sig.Port} {frontier : List Sig.Port}
       · exact hv.edge_right_label edge hold
       · cases hnew
         exact hv.frontier_tail_label hids hrest (Fin.cast hrest.symm mate)
+
+theorem connectStep_endpointPartition {active : Sig.Port}
+    {frontier : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (st : RenderState Sig (active :: frontier))
+    (hv : st.ValidIds) (hp : st.EndpointPartition) :
+    (connectStep mate ok st).EndpointPartition := by
+  unfold connectStep
+  split
+  · rename_i hids
+    exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  · rename_i activeId restIds hids
+    have hrest : restIds.length = frontier.length := by
+      have hlen := st.frontierIds_length
+      rw [hids] at hlen
+      simpa using Nat.succ.inj hlen
+    let idx : Fin restIds.length := Fin.cast hrest.symm mate
+    have oldFrontierNodup : (activeId :: restIds).Nodup := by
+      simpa [hids] using hp.frontier_nodup
+    have active_not_rest : activeId ∉ restIds := by
+      have hsplit : activeId ∉ restIds ∧ restIds.Nodup := by
+        simpa using oldFrontierNodup
+      exact hsplit.1
+    have rest_nodup : restIds.Nodup := by
+      have hsplit : activeId ∉ restIds ∧ restIds.Nodup := by
+        simpa using oldFrontierNodup
+      exact hsplit.2
+    have active_ne_mate : activeId ≠ restIds.get idx := by
+      intro hsame
+      exact active_not_rest (by
+        rw [hsame]
+        exact List.get_mem restIds idx)
+    have active_old_frontier : activeId ∈ st.frontierIds := by
+      rw [hids]
+      simp
+    have mate_old_frontier : restIds.get idx ∈ st.frontierIds := by
+      rw [hids]
+      right
+      exact List.get_mem restIds idx
+    dsimp
+    let newEdge : RenderEdge Sig :=
+      { label := Sig.portEdge active
+        leftLabel := active
+        rightLabel := frontier.get mate
+        left := activeId
+        right := restIds.get idx
+        left_label := rfl
+        right_label := (Sig.compatible_edge ok).symm
+        compatible := ok }
+    let child : RenderState Sig (eraseFin frontier mate) :=
+      { nextEndpoint := st.nextEndpoint
+        endpoints := st.endpoints
+        edges := st.edges ++ [newEdge]
+        nodes := st.nodes
+        frontierIds := eraseFin restIds idx
+        frontierIds_length := by
+          dsimp [idx]
+          simp [eraseFin_length, hrest] }
+    change child.EndpointPartition
+    have childConsumed_eq :
+        child.edgeEndpointIds =
+          st.edgeEndpointIds ++ [activeId, restIds.get idx] := by
+      simp [child, newEdge, RenderState.edgeEndpointIds]
+    refine
+      { frontier_nodup := ?_
+        consumed_nodup := ?_
+        consumed_bound := ?_
+        frontier_consumed_disjoint := ?_
+        endpoint_covered := ?_ }
+    · exact nodup_eraseFin restIds idx rest_nodup
+    · have hnodup :
+          (st.edgeEndpointIds ++ [activeId, restIds.get idx]).Nodup := by
+        apply nodup_append_of_nodup_disjoint
+        · exact hp.consumed_nodup
+        · have hpair : ([activeId, restIds.get idx] : List Nat).Nodup := by
+            simp
+            exact active_ne_mate
+          exact hpair
+        · intro id hold hnew
+          simp at hnew
+          rcases hnew with hactive | hmate
+          · exact hp.frontier_consumed_disjoint id
+              (by simpa [hactive] using active_old_frontier) hold
+          · exact hp.frontier_consumed_disjoint id
+              (by simpa [hmate] using mate_old_frontier) hold
+      rw [childConsumed_eq]
+      exact hnodup
+    · intro id hmem
+      rw [childConsumed_eq] at hmem
+      simp at hmem
+      rcases hmem with hold | hnew
+      · exact hp.consumed_bound id hold
+      · rcases hnew with hactive | hmate
+        · have hbound := hv.frontier_bound activeId active_old_frontier
+          simpa [hactive] using hbound
+        · have hbound := hv.frontier_bound (restIds.get idx) mate_old_frontier
+          simpa [hmate] using hbound
+    · intro id hfrontier hconsumed
+      rw [childConsumed_eq] at hconsumed
+      simp at hconsumed
+      rcases hconsumed with hold | hnew
+      · have oldFrontier : id ∈ st.frontierIds := by
+          rw [hids]
+          right
+          exact mem_of_mem_eraseFin restIds idx hfrontier
+        exact hp.frontier_consumed_disjoint id oldFrontier hold
+      · rcases hnew with hactive | hmate
+        · have hrestMem : id ∈ restIds :=
+            mem_of_mem_eraseFin restIds idx hfrontier
+          exact active_not_rest (by simpa [hactive] using hrestMem)
+        · have hnotMate :
+            restIds.get idx ∉ eraseFin restIds idx :=
+            get_not_mem_eraseFin_of_nodup restIds idx rest_nodup
+          exact hnotMate (by simpa [hmate] using hfrontier)
+    · intro id hid
+      rcases hp.endpoint_covered id hid with holdFrontier | holdConsumed
+      · rw [hids] at holdFrontier
+        simp at holdFrontier
+        rcases holdFrontier with hactive | hrestMem
+        · right
+          rw [childConsumed_eq]
+          simp [hactive]
+        · by_cases hmate : id = restIds.get idx
+          · right
+            rw [childConsumed_eq]
+            simp [hmate]
+          · left
+            exact mem_eraseFin_of_mem_ne_get restIds idx hrestMem hmate
+      · right
+        rw [childConsumed_eq]
+        simp [holdConsumed]
 
 theorem budStep_validIds {active : Sig.Port} {frontier : List Sig.Port}
     (node : Sig.Node)
