@@ -44,6 +44,26 @@ theorem list_mem_tail_of_mem_cons_ne {α : Type} {head x : α} {tail : List α}
   · exact False.elim (hne h.symm)
   · exact h
 
+theorem list_nodup_ofFn_injective {α : Type} {n : Nat}
+    (f : Fin n → α) (hf : Function.Injective f) :
+    (List.ofFn f).Nodup := by
+  induction n with
+  | zero =>
+      simp
+  | succ n ih =>
+      rw [List.ofFn_succ]
+      constructor
+      · intro a hmem heq
+        rw [List.mem_ofFn] at hmem
+        rcases hmem with ⟨i, hi⟩
+        have hidx : i.succ = (0 : Fin (n + 1)) :=
+          hf (hi.trans heq.symm)
+        exact False.elim ((Fin.succ_ne_zero i) hidx)
+      · apply ih
+        intro i j hij
+        have hidx : i.succ = j.succ := hf hij
+        exact (Fin.succ_inj.mp hidx)
+
 /--
 A typed ordered-port string-diagram signature.
 
@@ -1323,6 +1343,7 @@ structure SearchState (G : OpenPortHypergraph Sig boundary)
     (frontier : List Sig.Port) where
   pending : List (Fin G.raw.endpointCount)
   pending_labels : pending.map G.raw.endpointLabel = frontier
+  pending_nodup : pending.Nodup
   seenNodes : List (Fin G.raw.nodeCount)
   processedEdges : List (Fin G.raw.edgeCount)
   pending_unprocessed :
@@ -1367,6 +1388,8 @@ def initial (G : OpenPortHypergraph Sig boundary) : SearchState G boundary where
       rw [List.getElem_map]
       rw [List.getElem_ofFn]
       exact G.raw.boundary_label ⟨i, hright⟩
+  pending_nodup :=
+    list_nodup_ofFn_injective G.raw.boundaryPort G.raw.boundary_injective
   seenNodes := []
   processedEdges := []
   pending_unprocessed := by
@@ -1389,6 +1412,36 @@ theorem initial_frontierComplete (G : OpenPortHypergraph Sig boundary) :
   | constructor node _slot =>
       intro hseen
       simp [toTraversalState, initial, seenNode] at hseen
+
+theorem pending_cons_nodup {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
+    (st : SearchState G (activeLabel :: restLabels))
+    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest) :
+    (active :: rest).Nodup := by
+  simpa [hpending] using st.pending_nodup
+
+theorem active_not_mem_rest {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
+    (st : SearchState G (activeLabel :: restLabels))
+    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest) :
+    active ∉ rest := by
+  have hnodup := st.pending_cons_nodup hpending
+  have hsplit : ¬ active ∈ rest ∧ rest.Nodup := by
+    simpa using hnodup
+  exact hsplit.1
+
+theorem rest_nodup {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
+    (st : SearchState G (activeLabel :: restLabels))
+    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest) :
+    rest.Nodup := by
+  have hnodup := st.pending_cons_nodup hpending
+  have hsplit : ¬ active ∈ rest ∧ rest.Nodup := by
+    simpa using hnodup
+  exact hsplit.2
 
 end SearchState
 
