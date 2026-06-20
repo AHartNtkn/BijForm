@@ -136,10 +136,18 @@ lake exe bijform
   - `StringDiagram.Diag.renderTraceFromBoundary_endpointEdgeEvidence`
   - `StringDiagram.Diag.renderTraceFromBoundary_endpointEdge`
   - `StringDiagram.Diag.renderTraceFromBoundary_endpoint_edge_label`
+  - `StringDiagram.Diag.renderTraceFromBoundary_edgeEvidence`
   - `StringDiagram.RenderState.ValidIds`
   - `StringDiagram.RenderState.edgeEndpointIds`
   - `StringDiagram.RenderState.edgeEndpointIdsOfEdges`
+  - `StringDiagram.RenderState.edgeEndpointIdsOfEdges_tail_nodup`
+  - `StringDiagram.RenderState.edgeEndpointIdsOfEdges_left_not_tail`
+  - `StringDiagram.RenderState.edgeEndpointIdsOfEdges_right_not_tail`
+  - `StringDiagram.RenderState.edgeEndpointIdsOfEdges_mem_left`
+  - `StringDiagram.RenderState.edgeEndpointIdsOfEdges_mem_right`
+  - `StringDiagram.RenderState.edgeEndpointIdsOfEdges_get_left_ne_right`
   - `StringDiagram.RenderState.edgeEndpointRefOfEndpointId`
+  - `StringDiagram.RenderState.edgeEndpointRefOfEndpointId_unique`
   - `StringDiagram.RenderState.EndpointPartition`
   - `StringDiagram.RenderState.initial_validIds`
   - `StringDiagram.RenderState.initial_endpointPartition`
@@ -147,8 +155,16 @@ lake exe bijform
   - `StringDiagram.RenderState.endpointEdgeOfPartition`
   - `StringDiagram.RenderState.endpointEdgeOfPartition_endpoint`
   - `StringDiagram.RenderState.endpointEdgeOfPartition_label`
+  - `StringDiagram.RenderState.endpointEdgeOfPartition_eq_of_endpoint_side`
+  - `StringDiagram.RenderState.endpointEdgeOfPartition_left`
+  - `StringDiagram.RenderState.endpointEdgeOfPartition_right`
+  - `StringDiagram.RenderState.edge_left_ne_right_of_partition`
+  - `StringDiagram.RenderState.edgeCompatibleOfPartition`
+  - `StringDiagram.RenderState.edgeTwoEndpointsOfPartition`
   - `StringDiagram.RenderState.EndpointEdgeEvidence`
   - `StringDiagram.RenderState.endpointEdgeEvidenceOfPartition`
+  - `StringDiagram.RenderState.EdgeEvidence`
+  - `StringDiagram.RenderState.edgeEvidenceOfPartition`
   - `StringDiagram.RenderState.ValidIds.frontier_head_label`
   - `StringDiagram.RenderState.ValidIds.frontier_tail_label`
   - `StringDiagram.RenderState.PortHypergraphEvidence`

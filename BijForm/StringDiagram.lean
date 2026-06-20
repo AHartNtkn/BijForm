@@ -750,6 +750,77 @@ def edgeEndpointIdsOfEdges {Sig : Signature}
     (edges : List (RenderEdge Sig)) : List Nat :=
   edges.flatMap fun edge => [edge.left, edge.right]
 
+theorem edgeEndpointIdsOfEdges_tail_nodup
+    {Sig : Signature}
+    (edge : RenderEdge Sig) (edges : List (RenderEdge Sig))
+    (hnodup : (edgeEndpointIdsOfEdges (edge :: edges)).Nodup) :
+    (edgeEndpointIdsOfEdges edges).Nodup := by
+  simp [edgeEndpointIdsOfEdges] at hnodup
+  exact hnodup.2.2
+
+theorem edgeEndpointIdsOfEdges_left_not_tail
+    {Sig : Signature}
+    (edge : RenderEdge Sig) (edges : List (RenderEdge Sig))
+    (hnodup : (edgeEndpointIdsOfEdges (edge :: edges)).Nodup) :
+    edge.left ∉ edgeEndpointIdsOfEdges edges := by
+  intro hmem
+  simp [edgeEndpointIdsOfEdges] at hnodup hmem
+  rcases hmem with ⟨edge', hmem, hleft | hright⟩
+  · exact (hnodup.1.2 edge' hmem).1 hleft
+  · exact (hnodup.1.2 edge' hmem).2 hright
+
+theorem edgeEndpointIdsOfEdges_right_not_tail
+    {Sig : Signature}
+    (edge : RenderEdge Sig) (edges : List (RenderEdge Sig))
+    (hnodup : (edgeEndpointIdsOfEdges (edge :: edges)).Nodup) :
+    edge.right ∉ edgeEndpointIdsOfEdges edges := by
+  intro hmem
+  simp [edgeEndpointIdsOfEdges] at hnodup hmem
+  rcases hmem with ⟨edge', hmem, hleft | hright⟩
+  · exact (hnodup.2.1 edge' hmem).1 hleft
+  · exact (hnodup.2.1 edge' hmem).2 hright
+
+theorem edgeEndpointIdsOfEdges_mem_left
+    {Sig : Signature}
+    (edges : List (RenderEdge Sig)) (edgeIndex : Fin edges.length) :
+    (edges.get edgeIndex).left ∈ edgeEndpointIdsOfEdges edges := by
+  simp [edgeEndpointIdsOfEdges]
+  exact ⟨edges.get edgeIndex, List.get_mem edges edgeIndex, Or.inl rfl⟩
+
+theorem edgeEndpointIdsOfEdges_mem_right
+    {Sig : Signature}
+    (edges : List (RenderEdge Sig)) (edgeIndex : Fin edges.length) :
+    (edges.get edgeIndex).right ∈ edgeEndpointIdsOfEdges edges := by
+  simp [edgeEndpointIdsOfEdges]
+  exact ⟨edges.get edgeIndex, List.get_mem edges edgeIndex, Or.inr rfl⟩
+
+theorem edgeEndpointIdsOfEdges_get_left_ne_right
+    {Sig : Signature} :
+    ∀ (edges : List (RenderEdge Sig)),
+      (edgeEndpointIdsOfEdges edges).Nodup →
+        ∀ edgeIndex : Fin edges.length,
+          (edges.get edgeIndex).left ≠ (edges.get edgeIndex).right
+  | [], _hnodup, edgeIndex => by
+      cases edgeIndex with
+      | mk val isLt => exact False.elim (Nat.not_lt_zero val isLt)
+  | edge :: edges, hnodup, edgeIndex => by
+      cases edgeIndex with
+      | mk idx idxLt =>
+          cases idx with
+          | zero =>
+              simp [edgeEndpointIdsOfEdges] at hnodup
+              exact hnodup.1.1
+          | succ idx =>
+              have tailIndex : Fin edges.length :=
+                ⟨idx, Nat.lt_of_succ_lt_succ idxLt⟩
+              have hget :
+                  (edge :: edges).get ⟨idx + 1, idxLt⟩ =
+                    edges.get ⟨idx, Nat.lt_of_succ_lt_succ idxLt⟩ := rfl
+              rw [hget]
+              exact edgeEndpointIdsOfEdges_get_left_ne_right edges
+                (edgeEndpointIdsOfEdges_tail_nodup edge edges hnodup)
+                ⟨idx, Nat.lt_of_succ_lt_succ idxLt⟩
+
 /--
 Find the rendered edge that consumed an endpoint ID.  The input membership is
 the consumed side of `EndpointPartition`, not a raw-ID guess.
@@ -780,6 +851,73 @@ def edgeEndpointRefOfEndpointId {Sig : Signature} :
             ⟨edgeIndex, hside⟩
           refine ⟨⟨edgeIndex.val + 1, by simp [edgeIndex.isLt]⟩, ?_⟩
           simpa using hside
+
+theorem edgeEndpointRefOfEndpointId_unique {Sig : Signature} :
+    ∀ (edges : List (RenderEdge Sig)) {id : Nat}
+      (hmem : id ∈ edgeEndpointIdsOfEdges edges)
+      (_hnodup : (edgeEndpointIdsOfEdges edges).Nodup)
+      (edgeIndex : Fin edges.length),
+      (id = (edges.get edgeIndex).left ∨
+        id = (edges.get edgeIndex).right) →
+        (edgeEndpointRefOfEndpointId edges hmem).1 = edgeIndex
+  | [], _id, _hmem, _hnodup, edgeIndex, _hside => by
+      cases edgeIndex with
+      | mk val isLt => exact False.elim (Nat.not_lt_zero val isLt)
+  | edge :: edges, id, hmem, hnodup, edgeIndex, hside => by
+      cases edgeIndex with
+      | mk idx idxLt =>
+          cases idx with
+          | zero =>
+              simp at hside
+              unfold edgeEndpointRefOfEndpointId
+              rcases hside with hleftSide | hrightSide
+              · simp [hleftSide]
+              · by_cases hsame : edge.right = edge.left
+                · simp [hrightSide, hsame]
+                · simp [hrightSide, hsame]
+          | succ idx =>
+              let tailIndex : Fin edges.length :=
+                ⟨idx, Nat.lt_of_succ_lt_succ idxLt⟩
+              have hsideTail :
+                  id = (edges.get tailIndex).left ∨
+                    id = (edges.get tailIndex).right := by
+                simpa [tailIndex] using hside
+              unfold edgeEndpointRefOfEndpointId
+              by_cases hleft : id = edge.left
+              · have htailMem : edge.left ∈ edgeEndpointIdsOfEdges edges := by
+                  rw [← hleft]
+                  rcases hsideTail with htailLeft | htailRight
+                  · rw [htailLeft]
+                    exact edgeEndpointIdsOfEdges_mem_left edges tailIndex
+                  · rw [htailRight]
+                    exact edgeEndpointIdsOfEdges_mem_right edges tailIndex
+                exact False.elim
+                  (edgeEndpointIdsOfEdges_left_not_tail edge edges hnodup
+                    htailMem)
+              · by_cases hright : id = edge.right
+                · have htailMem :
+                      edge.right ∈ edgeEndpointIdsOfEdges edges := by
+                    rw [← hright]
+                    rcases hsideTail with htailLeft | htailRight
+                    · rw [htailLeft]
+                      exact edgeEndpointIdsOfEdges_mem_left edges tailIndex
+                    · rw [htailRight]
+                      exact edgeEndpointIdsOfEdges_mem_right edges tailIndex
+                  exact False.elim
+                    (edgeEndpointIdsOfEdges_right_not_tail edge edges hnodup
+                      htailMem)
+                · simp [hleft, hright]
+                  have hmemTail : id ∈ edgeEndpointIdsOfEdges edges := by
+                    simp [edgeEndpointIdsOfEdges] at hmem
+                    rcases hmem with hleftMem | hrightMem | htail
+                    · exact False.elim (hleft hleftMem)
+                    · exact False.elim (hright hrightMem)
+                    · simpa [edgeEndpointIdsOfEdges] using htail
+                  have huniq :=
+                    edgeEndpointRefOfEndpointId_unique edges hmemTail
+                      (edgeEndpointIdsOfEdges_tail_nodup edge edges hnodup)
+                      tailIndex hsideTail
+                  simpa [tailIndex] using congrArg Fin.val huniq
 
 def endpointEdgeOfPartition {Sig : Signature} {st : RenderState Sig []}
     (hp : st.EndpointPartition)
@@ -843,6 +981,139 @@ theorem endpointEdgeOfPartition_label
         rw [hv.edge_right_label edge hedgeMem]
       _ = edge.label := edge.right_label
 
+theorem endpointEdgeOfPartition_eq_of_endpoint_side
+    {Sig : Signature} {st : RenderState Sig []}
+    (hp : st.EndpointPartition)
+    (endpoint : Fin st.endpoints.length)
+    (edgeIndex : Fin st.edges.length)
+    (hside : endpoint.val = (st.edges.get edgeIndex).left ∨
+      endpoint.val = (st.edges.get edgeIndex).right) :
+    endpointEdgeOfPartition hp endpoint = edgeIndex := by
+  unfold endpointEdgeOfPartition
+  apply edgeEndpointRefOfEndpointId_unique
+  · simpa [edgeEndpointIds, edgeEndpointIdsOfEdges] using hp.consumed_nodup
+  · exact hside
+
+theorem endpointEdgeOfPartition_left
+    {Sig : Signature} {st : RenderState Sig []}
+    (hv : st.ValidIds) (hp : st.EndpointPartition)
+    (edgeIndex : Fin st.edges.length) :
+    endpointEdgeOfPartition hp
+        ⟨(st.edges.get edgeIndex).left,
+          hv.edge_left_bound (st.edges.get edgeIndex)
+            (List.get_mem st.edges edgeIndex)⟩ = edgeIndex := by
+  apply endpointEdgeOfPartition_eq_of_endpoint_side
+  exact Or.inl rfl
+
+theorem endpointEdgeOfPartition_right
+    {Sig : Signature} {st : RenderState Sig []}
+    (hv : st.ValidIds) (hp : st.EndpointPartition)
+    (edgeIndex : Fin st.edges.length) :
+    endpointEdgeOfPartition hp
+        ⟨(st.edges.get edgeIndex).right,
+          hv.edge_right_bound (st.edges.get edgeIndex)
+            (List.get_mem st.edges edgeIndex)⟩ = edgeIndex := by
+  apply endpointEdgeOfPartition_eq_of_endpoint_side
+  exact Or.inr rfl
+
+theorem edge_left_ne_right_of_partition
+    {Sig : Signature} {st : RenderState Sig []}
+    (hp : st.EndpointPartition)
+    (edgeIndex : Fin st.edges.length) :
+    (st.edges.get edgeIndex).left ≠ (st.edges.get edgeIndex).right :=
+  edgeEndpointIdsOfEdges_get_left_ne_right st.edges
+    (by simpa [edgeEndpointIds, edgeEndpointIdsOfEdges] using hp.consumed_nodup)
+    edgeIndex
+
+theorem edgeCompatibleOfPartition
+    {Sig : Signature} {st : RenderState Sig []}
+    (hv : st.ValidIds) (hp : st.EndpointPartition)
+    (left right : Fin st.endpoints.length)
+    (hsame : endpointEdgeOfPartition hp left = endpointEdgeOfPartition hp right)
+    (hne : left ≠ right) :
+    Sig.compatible (st.endpoints.get left) (st.endpoints.get right) := by
+  let edgeIndex := endpointEdgeOfPartition hp left
+  let edge := st.edges.get edgeIndex
+  have hedgeMem : edge ∈ st.edges := List.get_mem st.edges edgeIndex
+  have hleftSide : left.val = edge.left ∨ left.val = edge.right := by
+    simpa [edgeIndex, edge] using endpointEdgeOfPartition_endpoint hp left
+  have hrightEdge : endpointEdgeOfPartition hp right = edgeIndex := by
+    exact hsame.symm
+  have hrightSide : right.val = edge.left ∨ right.val = edge.right := by
+    have hraw := endpointEdgeOfPartition_endpoint hp right
+    simpa [edgeIndex, edge, hrightEdge] using hraw
+  rcases hleftSide with hleftL | hleftR
+  · rcases hrightSide with hrightL | hrightR
+    · have hfin : left = right := by
+        apply Fin.ext
+        exact hleftL.trans hrightL.symm
+      exact False.elim (hne hfin)
+    · have hleftFin :
+          left = ⟨edge.left, hv.edge_left_bound edge hedgeMem⟩ := by
+        apply Fin.ext
+        exact hleftL
+      have hrightFin :
+          right = ⟨edge.right, hv.edge_right_bound edge hedgeMem⟩ := by
+        apply Fin.ext
+        exact hrightR
+      rw [hleftFin, hrightFin]
+      rw [hv.edge_left_label edge hedgeMem]
+      rw [hv.edge_right_label edge hedgeMem]
+      exact edge.compatible
+  · rcases hrightSide with hrightL | hrightR
+    · have hleftFin :
+          left = ⟨edge.right, hv.edge_right_bound edge hedgeMem⟩ := by
+        apply Fin.ext
+        exact hleftR
+      have hrightFin :
+          right = ⟨edge.left, hv.edge_left_bound edge hedgeMem⟩ := by
+        apply Fin.ext
+        exact hrightL
+      rw [hleftFin, hrightFin]
+      rw [hv.edge_right_label edge hedgeMem]
+      rw [hv.edge_left_label edge hedgeMem]
+      exact Sig.compatible_symm edge.compatible
+    · have hfin : left = right := by
+        apply Fin.ext
+        exact hleftR.trans hrightR.symm
+      exact False.elim (hne hfin)
+
+theorem edgeTwoEndpointsOfPartition
+    {Sig : Signature} {st : RenderState Sig []}
+    (hv : st.ValidIds) (hp : st.EndpointPartition)
+    (edgeIndex : Fin st.edges.length) :
+    ∃ left right : Fin st.endpoints.length,
+      left ≠ right ∧
+      endpointEdgeOfPartition hp left = edgeIndex ∧
+      endpointEdgeOfPartition hp right = edgeIndex ∧
+      ∀ endpoint : Fin st.endpoints.length,
+        endpointEdgeOfPartition hp endpoint = edgeIndex →
+          endpoint = left ∨ endpoint = right := by
+  let edge := st.edges.get edgeIndex
+  have hedgeMem : edge ∈ st.edges := List.get_mem st.edges edgeIndex
+  let leftEndpoint : Fin st.endpoints.length :=
+    ⟨edge.left, hv.edge_left_bound edge hedgeMem⟩
+  let rightEndpoint : Fin st.endpoints.length :=
+    ⟨edge.right, hv.edge_right_bound edge hedgeMem⟩
+  refine ⟨leftEndpoint, rightEndpoint, ?_, ?_, ?_, ?_⟩
+  · intro hsame
+    have hval : edge.left = edge.right := by
+      exact congrArg Fin.val hsame
+    exact edge_left_ne_right_of_partition hp edgeIndex hval
+  · exact endpointEdgeOfPartition_left hv hp edgeIndex
+  · exact endpointEdgeOfPartition_right hv hp edgeIndex
+  · intro endpoint hendpointEdge
+    have hsideRaw := endpointEdgeOfPartition_endpoint hp endpoint
+    have hside : endpoint.val = edge.left ∨ endpoint.val = edge.right := by
+      simpa [edge, hendpointEdge] using hsideRaw
+    rcases hside with hleft | hright
+    · left
+      apply Fin.ext
+      exact hleft
+    · right
+      apply Fin.ext
+      exact hright
+
 /--
 The semantic endpoint-to-edge slice of graph evidence derived from renderer
 invariants.  Full `PortHypergraphEvidence` additionally needs edge
@@ -863,6 +1134,42 @@ def endpointEdgeEvidenceOfPartition
     EndpointEdgeEvidence st where
   endpointEdge := endpointEdgeOfPartition hp
   endpoint_edge_label := endpointEdgeOfPartition_label hv hp
+
+/--
+Renderer-derived semantic edge evidence.  This packages the endpoint-to-edge
+assignment together with the compatibility and two-endpoint laws required by
+`PortHypergraph`.
+-/
+structure EdgeEvidence {Sig : Signature}
+    (st : RenderState Sig []) where
+  endpointEdgeEvidence : EndpointEdgeEvidence st
+  edge_compatible :
+    ∀ left right : Fin st.endpoints.length,
+      endpointEdgeEvidence.endpointEdge left =
+        endpointEdgeEvidence.endpointEdge right →
+      left ≠ right →
+        Sig.compatible (st.endpoints.get left) (st.endpoints.get right)
+  edge_two_endpoints :
+    ∀ edge : Fin st.edges.length,
+      ∃ left right : Fin st.endpoints.length,
+        left ≠ right ∧
+        endpointEdgeEvidence.endpointEdge left = edge ∧
+        endpointEdgeEvidence.endpointEdge right = edge ∧
+        ∀ endpoint : Fin st.endpoints.length,
+          endpointEdgeEvidence.endpointEdge endpoint = edge →
+            endpoint = left ∨ endpoint = right
+
+def edgeEvidenceOfPartition
+    {Sig : Signature} {st : RenderState Sig []}
+    (hv : st.ValidIds) (hp : st.EndpointPartition) :
+    EdgeEvidence st where
+  endpointEdgeEvidence := endpointEdgeEvidenceOfPartition hv hp
+  edge_compatible := by
+    intro left right hsame hne
+    exact edgeCompatibleOfPartition hv hp left right hsame hne
+  edge_two_endpoints := by
+    intro edge
+    exact edgeTwoEndpointsOfPartition hv hp edge
 
 theorem ValidIds.frontier_head_label {Sig : Signature}
     {active : Sig.Port} {frontier : List Sig.Port}
@@ -1983,6 +2290,13 @@ theorem renderTraceFromBoundary_endpoint_edge_label
         (renderTraceFromBoundary_endpointEdge d endpoint)).label :=
   (renderTraceFromBoundary_endpointEdgeEvidence d).endpoint_edge_label endpoint
 
+def renderTraceFromBoundary_edgeEvidence
+    {boundary : List Sig.Port} (d : Diag Sig boundary) :
+    RenderState.EdgeEvidence (renderTraceFromBoundary d) :=
+  RenderState.edgeEvidenceOfPartition
+    (renderTraceFromBoundary_validIds d)
+    (renderTraceFromBoundary_endpointPartition d)
+
 theorem renderTraceFromBoundary_frontier_empty
     {boundary : List Sig.Port} (d : Diag Sig boundary) :
     (renderTraceFromBoundary d).frontierIds = [] := by
@@ -2433,22 +2747,7 @@ the finite maps and proofs required by the semantic representative.
 -/
 structure PortHypergraphEvidence
     (st : RenderState Sig []) (boundary : List Sig.Port) where
-  endpointEdgeEvidence : EndpointEdgeEvidence st
-  edge_compatible :
-    ∀ left right : Fin st.endpoints.length,
-      endpointEdgeEvidence.endpointEdge left =
-        endpointEdgeEvidence.endpointEdge right →
-      left ≠ right →
-        Sig.compatible (st.endpoints.get left) (st.endpoints.get right)
-  edge_two_endpoints :
-    ∀ edge : Fin st.edges.length,
-      ∃ left right : Fin st.endpoints.length,
-        left ≠ right ∧
-        endpointEdgeEvidence.endpointEdge left = edge ∧
-        endpointEdgeEvidence.endpointEdge right = edge ∧
-        ∀ endpoint : Fin st.endpoints.length,
-          endpointEdgeEvidence.endpointEdge endpoint = edge →
-            endpoint = left ∨ endpoint = right
+  edgeEvidence : EdgeEvidence st
   boundaryPort : Fin boundary.length → Fin st.endpoints.length
   boundary_injective : Function.Injective boundaryPort
   boundary_label :
@@ -2490,10 +2789,10 @@ def toPortHypergraph {st : RenderState Sig []} {boundary : List Sig.Port}
   nodeCount := st.nodes.length
   endpointLabel := st.endpoints.get
   edgeLabel := fun edge => (st.edges.get edge).label
-  endpointEdge := ev.endpointEdgeEvidence.endpointEdge
-  endpoint_edge_label := ev.endpointEdgeEvidence.endpoint_edge_label
-  edge_compatible := ev.edge_compatible
-  edge_two_endpoints := ev.edge_two_endpoints
+  endpointEdge := ev.edgeEvidence.endpointEdgeEvidence.endpointEdge
+  endpoint_edge_label := ev.edgeEvidence.endpointEdgeEvidence.endpoint_edge_label
+  edge_compatible := ev.edgeEvidence.edge_compatible
+  edge_two_endpoints := ev.edgeEvidence.edge_two_endpoints
   boundaryPort := ev.boundaryPort
   boundary_injective := ev.boundary_injective
   boundary_label := ev.boundary_label
@@ -2556,10 +2855,11 @@ evidence required to be an open `PortHypergraph`.
 The endpoint-to-edge assignment slice is already constructed by
 `renderTraceFromBoundary_endpointEdgeEvidence` from
 `renderTraceFromBoundary_validIds` and
-`renderTraceFromBoundary_endpointPartition`.  The remaining unfinished fields
-are edge compatibility, two-endpoint edge laws, ordered boundary map,
-constructor incidence map, endpoint-owner uniqueness, and boundary
-reachability.
+`renderTraceFromBoundary_endpointPartition`, and edge compatibility plus
+two-endpoint edge laws are constructed by
+`renderTraceFromBoundary_edgeEvidence`.  The remaining unfinished fields are
+the ordered boundary map, constructor incidence map, endpoint-owner
+uniqueness, and boundary reachability.
 -/
 def renderTraceFromBoundary_openEvidence
     {boundary : List Sig.Port} (d : Diag Sig boundary) :
@@ -2570,6 +2870,11 @@ def renderTraceFromBoundary_openEvidence
     renderTraceFromBoundary_endpointEdgeEvidence d
   have endpointEdge := endpointEdgeEvidence.endpointEdge
   have endpoint_edge_label := endpointEdgeEvidence.endpoint_edge_label
+  let edgeEvidence :
+      RenderState.EdgeEvidence (renderTraceFromBoundary d) :=
+    renderTraceFromBoundary_edgeEvidence d
+  have edge_compatible := edgeEvidence.edge_compatible
+  have edge_two_endpoints := edgeEvidence.edge_two_endpoints
   sorry
 
 /--
