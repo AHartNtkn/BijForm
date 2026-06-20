@@ -53,6 +53,27 @@ theorem mem_of_mem_eraseFin {α : Type} :
           mem_of_mem_eraseFin ys ⟨n, Nat.lt_of_succ_lt_succ h⟩ htail
         simp [htailOrig]
 
+theorem mem_eraseFin_of_mem_ne_get {α : Type} :
+    ∀ (xs : List α) (i : Fin xs.length) {x : α},
+      x ∈ xs → x ≠ xs.get i → x ∈ eraseFin xs i
+  | [], i, _x, _hmem, _hne => nomatch i
+  | _ :: xs, ⟨0, _⟩, x, hmem, hne => by
+      simp at hmem
+      rcases hmem with hhead | htail
+      · exact False.elim (hne hhead)
+      · simpa [eraseFin] using htail
+  | y :: ys, ⟨n + 1, h⟩, x, hmem, hne => by
+      simp [eraseFin]
+      simp at hmem
+      rcases hmem with hhead | htail
+      · left
+        exact hhead
+      · right
+        apply mem_eraseFin_of_mem_ne_get ys
+          ⟨n, Nat.lt_of_succ_lt_succ h⟩ htail
+        intro hget
+        exact hne hget
+
 theorem get_not_mem_eraseFin_of_nodup {α : Type} :
     ∀ (xs : List α) (i : Fin xs.length),
       xs.Nodup → xs.get i ∉ eraseFin xs i
@@ -1939,6 +1960,59 @@ def connectChild {G : OpenPortHypergraph Sig boundary}
         st.constructor_seen_of_pending hmatePending hownerMate
       exact hunseen hseen
     · exact st.unseen_incident_unprocessed node hunseen slot hold
+
+theorem connectChild_frontierComplete {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
+    (st : SearchState G (activeLabel :: restLabels))
+    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest)
+    (mate : Fin rest.length)
+    (hmate : PortHypergraph.EdgeMate G.raw active (rest.get mate))
+    (hcomplete : st.FrontierComplete) :
+    (st.connectChild hpending mate hmate).FrontierComplete := by
+  intro endpoint hunprocessed owner howner
+  have hchildUnprocessed :
+      G.raw.endpointEdge endpoint ∉
+        G.raw.endpointEdge active :: st.processedEdges := by
+    simpa [FrontierComplete, toTraversalState, connectChild, processedEdge]
+      using hunprocessed
+  have hnotActiveEdge :
+      G.raw.endpointEdge endpoint ≠ G.raw.endpointEdge active := by
+    intro hedge
+    exact hchildUnprocessed (by simp [hedge])
+  have holdUnprocessed :
+      G.raw.endpointEdge endpoint ∉ st.processedEdges := by
+    intro hold
+    exact hchildUnprocessed (by simp [hold])
+  have old_pending_to_child
+      (holdPending : endpoint ∈ st.pending) :
+      endpoint ∈ eraseFin rest mate := by
+    have hrest : endpoint ∈ rest := by
+      rw [hpending] at holdPending
+      exact list_mem_tail_of_mem_cons_ne holdPending (by
+        intro hactiveEndpoint
+        exact hnotActiveEdge (by
+          rw [← hactiveEndpoint]))
+    have hnotMate : endpoint ≠ rest.get mate := by
+      intro hendpointMate
+      exact hnotActiveEdge (by
+        rw [hendpointMate]
+        exact hmate.2.symm)
+    exact mem_eraseFin_of_mem_ne_get rest mate hrest hnotMate
+  cases owner with
+  | boundary boundaryIndex =>
+      have holdPending :
+          endpoint ∈ st.pending :=
+        hcomplete endpoint holdUnprocessed (.boundary boundaryIndex) howner
+      simpa [FrontierComplete, toTraversalState, connectChild]
+        using old_pending_to_child holdPending
+  | constructor node slot =>
+      intro hseen
+      have holdPending :
+          endpoint ∈ st.pending :=
+        hcomplete endpoint holdUnprocessed (.constructor node slot) howner hseen
+      simpa [FrontierComplete, toTraversalState, connectChild, seenNode]
+        using old_pending_to_child holdPending
 
 def budChild {G : OpenPortHypergraph Sig boundary}
     {activeLabel : Sig.Port} {restLabels : List Sig.Port}
