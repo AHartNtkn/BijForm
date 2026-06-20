@@ -155,10 +155,20 @@ def FinChainShape (i : Nat) : CodeShape :=
 abbrev FinChainCarrier (i : Nat) : Type :=
   (FinChainShape i).Carrier
 
-def FinChainShapeLayerPresentation :
-    ShapeLayerPresentation FinChainPoly FinChainInversion where
-  shape := FinChainShape
-  layer := {
+def FinChainLayerShape : Nat → Type
+  | 0 => Fin 1
+  | n + 1 => Fin 1 ⊕ (Fin (n + 2) × FinChainCarrier n)
+
+def FinChainLayerCarrierIso : ∀ i, FinChainLayerShape i ≃ᵢ FinChainCarrier i
+  | 0 => Iso.refl (Fin 1)
+  | n + 1 =>
+      Iso.trans
+        (Iso.sum (Iso.refl (Fin 1))
+          (CodeAlgebra.finProdPos (n + 2) (FinChainSize n) (FinChainSize_pos n)))
+        (CodeAlgebra.finSum 1 ((n + 2) * FinChainSize n))
+
+def FinChainLayerShapeLayerPresentation :
+    CodeLayerPresentation FinChainPoly FinChainInversion FinChainCarrier FinChainLayerShape where
     toCarrier
       | 0, ⟨⟨.done, _n, h⟩, _child⟩ => by
           cases h
@@ -168,26 +178,19 @@ def FinChainShapeLayerPresentation :
           | mk _m _tag => cases h
       | n + 1, ⟨⟨.done, _m, h⟩, _child⟩ => by
           cases h
-          exact (CodeAlgebra.finSum 1 ((n + 2) * FinChainSize n)).toFun
-            (Sum.inl ⟨0, by decide⟩)
+          exact Sum.inl ⟨0, by decide⟩
       | n + 1, ⟨⟨.step, p, h⟩, child⟩ => by
           cases p with
           | mk m tag =>
               have hmn : m = n := Nat.succ.inj h
               cases hmn
-              exact (CodeAlgebra.finSum 1 ((n + 2) * FinChainSize n)).toFun
-                (Sum.inr
-                  ((CodeAlgebra.finProdPos (n + 2) (FinChainSize n) (FinChainSize_pos n)).toFun
-                    (tag, child ())))
+              exact Sum.inr (tag, child ())
     fromCarrier
       | 0, _ => ⟨⟨FinChainCtor.done, (0 : Nat), rfl⟩, fun q => nomatch q⟩
-      | n + 1, code =>
-          match (CodeAlgebra.finSum 1 ((n + 2) * FinChainSize n)).invFun code with
+      | n + 1, shape =>
+          match shape with
           | Sum.inl _ => ⟨⟨FinChainCtor.done, (n + 1 : Nat), rfl⟩, fun q => nomatch q⟩
-          | Sum.inr payload =>
-              let pair :=
-                (CodeAlgebra.finProdPos (n + 2) (FinChainSize n) (FinChainSize_pos n)).invFun
-                  payload
+          | Sum.inr pair =>
               ⟨⟨FinChainCtor.step, ⟨n, pair.1⟩, rfl⟩, fun _ => pair.2⟩
     left_inv := by
       intro i layer
@@ -215,17 +218,8 @@ def FinChainShapeLayerPresentation :
               cases ctor with
               | done =>
                   cases out_eq
-                  have hsum :
-                      (CodeAlgebra.finSum 1 ((n + 2) * FinChainSize n)).invFun
-                          ((CodeAlgebra.finSum 1 ((n + 2) * FinChainSize n)).toFun
-                            (Sum.inl (0 : Fin 1))) =
-                        Sum.inl (0 : Fin 1) :=
-                    (CodeAlgebra.finSum 1 ((n + 2) * FinChainSize n)).left_inv
-                      (Sum.inl (0 : Fin 1))
                   have hchild : (fun q => nomatch q) = child := by
                     child_eta_empty
-                  dsimp
-                  rw [hsum]
                   cases hchild
                   rfl
               | step =>
@@ -234,66 +228,36 @@ def FinChainShapeLayerPresentation :
                       have hmn : m = n := Nat.succ.inj out_eq
                       cases hmn
                       cases out_eq
-                      have hprod :
-                          (CodeAlgebra.finProdPos (n + 2) (FinChainSize n)
-                              (FinChainSize_pos n)).invFun
-                              ((CodeAlgebra.finProdPos (n + 2) (FinChainSize n)
-                                (FinChainSize_pos n)).toFun (tag, child ())) =
-                            (tag, child ()) :=
-                        (CodeAlgebra.finProdPos (n + 2) (FinChainSize n)
-                          (FinChainSize_pos n)).left_inv (tag, child ())
-                      have hsum :
-                          (CodeAlgebra.finSum 1 ((n + 2) * FinChainSize n)).invFun
-                              ((CodeAlgebra.finSum 1 ((n + 2) * FinChainSize n)).toFun
-                                (Sum.inr
-                                  ((CodeAlgebra.finProdPos (n + 2) (FinChainSize n)
-                                    (FinChainSize_pos n)).toFun (tag, child ())))) =
-                            Sum.inr
-                              ((CodeAlgebra.finProdPos (n + 2) (FinChainSize n)
-                                (FinChainSize_pos n)).toFun (tag, child ())) :=
-                        (CodeAlgebra.finSum 1 ((n + 2) * FinChainSize n)).left_inv
-                          (Sum.inr
-                            ((CodeAlgebra.finProdPos (n + 2) (FinChainSize n)
-                              (FinChainSize_pos n)).toFun (tag, child ())))
                       have hchild : (fun _ => child ()) = child := by
                         child_eta_unit
-                      dsimp
-                      rw [hsum]
-                      dsimp
-                      rw [hprod]
                       cases hchild
                       rfl
     right_inv := by
-      intro i code
+      intro i shape
       cases i with
       | zero =>
-          have hcode : code = ⟨0, by decide⟩ := by
+          have hcode : shape = ⟨0, by decide⟩ := by
             apply Fin.ext
-            have hlt : code.val < 1 := by
-              simpa only [FinChainCarrier, FinChainShape, FinChainSize] using code.isLt
+            have hlt : shape.val < 1 := by
+              exact shape.isLt
             exact Nat.lt_one_iff.mp hlt
           rw [hcode]
       | succ n =>
-          dsimp
-          generalize hsum :
-              (CodeAlgebra.finSum 1 ((n + 2) * FinChainSize n)).invFun code = shape at *
-          have hright := (CodeAlgebra.finSum 1 ((n + 2) * FinChainSize n)).right_inv code
-          rw [hsum] at hright
           cases shape with
           | inl tag =>
               have htag : tag = ⟨0, by decide⟩ := by
                 apply Fin.ext
                 omega
               cases htag
-              exact hright
-          | inr payload =>
-              have hprod :=
-                (CodeAlgebra.finProdPos (n + 2) (FinChainSize n) (FinChainSize_pos n)).right_inv
-                  payload
-              dsimp
-              rw [hprod]
-              exact hright
-  }
+              rfl
+          | inr pair =>
+              cases pair
+              rfl
+
+def FinChainLayerShapePresentation :
+    LayerShapePresentation FinChainPoly FinChainInversion FinChainCarrier FinChainLayerShape where
+  layerShape := FinChainLayerShapeLayerPresentation
+  carrier := FinChainLayerCarrierIso
   rank := fun i _ => i
   child_rank_lt := by
     intro i z q
@@ -302,14 +266,21 @@ def FinChainShapeLayerPresentation :
         dsimp [CodeLayerPresentation.iso] at q
         cases q
     | succ n =>
-        dsimp [CodeLayerPresentation.iso] at q ⊢
+        dsimp [LayerShapePresentation.layer, CodeLayerPresentation.iso,
+          CodeLayerPresentation.transCarrier, FinChainLayerShapeLayerPresentation,
+          FinChainLayerCarrierIso, Iso.trans, Iso.sum] at q ⊢
         generalize hshape :
             (CodeAlgebra.finSum 1 ((n + 2) * FinChainSize n)).invFun z = shape at q ⊢
+        simp [Iso.refl] at q ⊢
         cases shape with
         | inl _ => cases q
         | inr _ =>
             cases q
             exact Nat.lt_succ_self n
+
+def FinChainShapeLayerPresentation :
+    ShapeLayerPresentation FinChainPoly FinChainInversion :=
+  FinChainLayerShapePresentation.toShapeLayerPresentation FinChainShape
 
 theorem FinChainShape_child_rank_lt :
     ∀ {i : Nat} (z : FinChainCarrier i)
