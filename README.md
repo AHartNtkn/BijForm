@@ -269,7 +269,9 @@ lake exe bijform
   - `StringDiagram.OpenPortHypergraph.SearchState.IsoRelated.transport_contracts`
   - `StringDiagram.OpenPortHypergraph.SearchState.IsoRelated.restLabelIndex`
   - `StringDiagram.OpenPortHypergraph.SearchState.IsoRelated.connectChild`
+  - `StringDiagram.OpenPortHypergraph.SearchState.IsoRelated.connectChild_with`
   - `StringDiagram.OpenPortHypergraph.SearchState.IsoRelated.budChild`
+  - `StringDiagram.OpenPortHypergraph.SearchState.IsoRelated.budChild_with`
   - `StringDiagram.OpenPortHypergraph.SearchState.processedEdges_length_le`
   - `StringDiagram.OpenPortHypergraph.SearchState.remainingEdges`
   - `StringDiagram.OpenPortHypergraph.SearchState.processedEdges_length_lt_of_pending`
