@@ -20,7 +20,8 @@ open frontier endpoints.  Unoriented signatures usually take `Port` to be the
 same type as `Edge`.  Oriented signatures usually take `Port` to be a direction
 paired with an edge type.  `portEdge` forgets endpoint-only data,
 `compatible` states when two frontier endpoints may be joined, and
-`compatible_edge` ensures such a connection has one edge label.
+`compatible_edge` and `compatible_symm` ensure such a connection has one edge
+label and can be viewed from either endpoint.
 
 Each node label has a finite ordered list of ports, represented by `arity` and
 `port`.  The order is part of the formal data because the canonical traversal
@@ -36,6 +37,8 @@ structure Signature where
   compatible : Port → Port → Prop
   compatible_edge :
     ∀ {left right : Port}, compatible left right → portEdge left = portEdge right
+  compatible_symm :
+    ∀ {left right : Port}, compatible left right → compatible right left
 
 namespace Unoriented
 
@@ -55,6 +58,9 @@ def signature (Ty Node : Type)
   compatible_edge := by
     intro left right h
     exact h
+  compatible_symm := by
+    intro left right h
+    exact h.symm
 
 end Unoriented
 
@@ -101,6 +107,12 @@ def signature (Ty Node : Type)
   compatible_edge := by
     intro left right h
     exact h.1
+  compatible_symm := by
+    intro left right h
+    constructor
+    · exact h.1.symm
+    · rw [← h.2]
+      exact Direction.opposite_opposite left.direction
 
 end Oriented
 
@@ -119,6 +131,11 @@ theorem edge_eq_of_compatible {left right : Sig.Port}
     (ok : Sig.compatible left right) :
     Sig.portEdge left = Sig.portEdge right :=
   Sig.compatible_edge ok
+
+theorem compatible_comm {left right : Sig.Port}
+    (ok : Sig.compatible left right) :
+    Sig.compatible right left :=
+  Sig.compatible_symm ok
 
 def nodePorts (node : Sig.Node) : List Sig.Port :=
   List.ofFn fun slot : Fin (Sig.arity node) => Sig.port node slot
@@ -330,6 +347,15 @@ connect them: endpoints carry `Sig.Port`, edges carry `Sig.Edge`, and every
 endpoint is incident to exactly one edge.
 -/
 
+/-- The unique semantic role played by a graph endpoint. -/
+inductive EndpointOwner (boundaryLength nodeCount : Nat)
+    (incidentLength : Fin nodeCount → Nat) where
+  | boundary : Fin boundaryLength → EndpointOwner boundaryLength nodeCount incidentLength
+  | constructor :
+      (node : Fin nodeCount) →
+      Fin (incidentLength node) →
+      EndpointOwner boundaryLength nodeCount incidentLength
+
 /--
 A finite typed port-hypergraph representative with an ordered external
 boundary.  Endpoints carry endpoint labels, edges carry wire labels, nodes
@@ -375,12 +401,19 @@ structure PortHypergraph (Sig : Signature) (boundary : List Sig.Port) where
     ∀ (node : Fin nodeCount) (slot : Fin (incident node).length),
       endpointLabel ((incident node).get slot) =
         Sig.port (nodeLabel node) (Fin.cast (incident_length node) slot)
-  endpoint_covered :
+  endpoint_owner :
     ∀ endpoint : Fin endpointCount,
-      (∃ boundaryIndex : Fin boundary.length,
-        boundaryPort boundaryIndex = endpoint) ∨
-      ∃ (node : Fin nodeCount) (slot : Fin (incident node).length),
-        (incident node).get slot = endpoint
+      ∃ owner : EndpointOwner boundary.length nodeCount
+          (fun node => (incident node).length),
+        (match owner with
+          | .boundary boundaryIndex => boundaryPort boundaryIndex
+          | .constructor node slot => (incident node).get slot) = endpoint ∧
+        ∀ owner' : EndpointOwner boundary.length nodeCount
+            (fun node => (incident node).length),
+          (match owner' with
+            | .boundary boundaryIndex => boundaryPort boundaryIndex
+            | .constructor node slot => (incident node).get slot) = endpoint →
+          owner' = owner
 
 namespace PortHypergraph
 

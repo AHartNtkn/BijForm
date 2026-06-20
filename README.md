@@ -115,6 +115,7 @@ lake exe bijform
   - `StringDiagram.poly`
   - `StringDiagram.generatedCode`
   - `StringDiagram.syntaxIso`
+  - `StringDiagram.EndpointOwner`
   - `StringDiagram.PortHypergraph`
   - `StringDiagram.PortHypergraph.PortReachesBoundary`
   - `StringDiagram.OpenPortHypergraph`
