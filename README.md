@@ -168,6 +168,7 @@ lake exe bijform
   - `StringDiagram.Diag.connectStep_edgesPrefix`
   - `StringDiagram.Diag.budStep_edgesPrefix`
   - `StringDiagram.Diag.renderTrace_edgesPrefix`
+  - `StringDiagram.Diag.renderTrace_connect_new_edge_get`
   - `StringDiagram.Diag.connectStep_nodesPrefix`
   - `StringDiagram.Diag.budStep_nodesPrefix`
   - `StringDiagram.Diag.renderTrace_nodesPrefix`
@@ -182,6 +183,7 @@ lake exe bijform
   - `StringDiagram.Diag.renderTraceFromBoundary_boundaryEvidence`
   - `StringDiagram.Diag.renderTraceFromBoundary_incidenceEvidence`
   - `StringDiagram.Diag.renderTraceFromBoundary_graphEvidence`
+  - `StringDiagram.list_get_append_single_at_length`
   - `StringDiagram.listPrefixIndex`
   - `StringDiagram.listPrefixIndex_get`
   - `StringDiagram.listPrefixIndex_val`

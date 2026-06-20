@@ -119,6 +119,12 @@ theorem list_get_append_right {α : Type} (xs ys : List α)
   change (xs ++ ys)[i] = ys[i - xs.length]
   exact List.getElem_append_right hi
 
+theorem list_get_append_single_at_length {α : Type}
+    (xs ys : List α) (x : α) :
+    (xs ++ x :: ys).get ⟨xs.length, by simp⟩ = x := by
+  change (xs ++ x :: ys)[xs.length] = x
+  simp
+
 def listPrefixIndex {α : Type} {pref full suffix : List α}
     (hfull : full = pref ++ suffix) (i : Fin pref.length) :
     Fin full.length :=
@@ -3584,6 +3590,95 @@ theorem renderTrace_edgesPrefix :
         ⟨stepSuffix, hstep⟩
       refine ⟨stepSuffix ++ suffix, ?_⟩
       rw [renderTrace_bud, hsuffix, hstep, List.append_assoc]
+
+/--
+The edge introduced by a top-level rendered `connect` is at the first edge
+index after the render prefix.  This deterministic index fact is needed to
+relate renderer prefixes to traversal `processedEdges`.
+-/
+theorem renderTrace_connect_new_edge_get
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (child : Diag Sig (eraseFin frontier mate))
+    (st : RenderState Sig (active :: frontier))
+    {activeId : Nat} {restIds : List Nat}
+    (hids : st.frontierIds = activeId :: restIds) :
+    let final := renderTrace (Diag.connect mate ok child) st
+    let mateId :=
+      restIds.get (Fin.cast (by
+        have hlen := st.frontierIds_length
+        rw [hids] at hlen
+        exact (Nat.succ.inj hlen).symm) mate)
+    let edge : RenderEdge Sig :=
+      { label := Sig.portEdge active
+        leftLabel := active
+        rightLabel := frontier.get mate
+        left := activeId
+        right := mateId
+        left_label := rfl
+        right_label := (Sig.compatible_edge ok).symm
+        compatible := ok }
+    final.edges.get ⟨st.edges.length, by
+      dsimp [final]
+      rcases renderTrace_edgesPrefix child (connectStep mate ok st) with
+        ⟨suffix, hsuffix⟩
+      have hstep :
+          (connectStep mate ok st).edges = st.edges ++ [edge] := by
+        unfold connectStep
+        split
+        · rename_i hnil
+          exact False.elim (RenderState.frontierIds_ne_nil st hnil)
+        · rename_i activeId' restIds' hids'
+          rw [hids] at hids'
+          injection hids' with hactive hrest
+          subst activeId'
+          subst restIds'
+          simp [edge, mateId]
+      rw [renderTrace_connect, hsuffix, hstep]
+      simp⟩ = edge := by
+  intro final mateId edge
+  rcases renderTrace_edgesPrefix child (connectStep mate ok st) with
+    ⟨suffix, hsuffix⟩
+  have hstep :
+      (connectStep mate ok st).edges = st.edges ++ [edge] := by
+    unfold connectStep
+    split
+    · rename_i hnil
+      exact False.elim (RenderState.frontierIds_ne_nil st hnil)
+    · rename_i activeId' restIds' hids'
+      rw [hids] at hids'
+      injection hids' with hactive hrest
+      subst activeId'
+      subst restIds'
+      simp [edge, mateId]
+  have hfinal :
+      final.edges = st.edges ++ edge :: suffix := by
+    dsimp [final]
+    rw [renderTrace_connect, hsuffix, hstep]
+    simp
+  have hbound : st.edges.length < final.edges.length := by
+    rw [hfinal]
+    simp
+  have hidx :
+      (⟨st.edges.length, by
+        dsimp [final]
+        rw [renderTrace_connect, hsuffix, hstep]
+        simp⟩ : Fin final.edges.length) =
+      ⟨st.edges.length, hbound⟩ := by
+    apply Fin.ext
+    rfl
+  rw [hidx]
+  have hopt :
+      final.edges[st.edges.length]? = some edge := by
+    rw [hfinal]
+    simp
+  have hsome :
+      final.edges[st.edges.length]? =
+        some (final.edges.get ⟨st.edges.length, hbound⟩) :=
+    List.getElem?_eq_getElem hbound
+  rw [hsome] at hopt
+  injection hopt with hget
 
 theorem connectStep_nodesPrefix
     {active : Sig.Port} {frontier : List Sig.Port}
