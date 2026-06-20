@@ -103,14 +103,20 @@ lake exe bijform
   - `QuotientPresentation.DescendedCode`
 
 - `BijForm.StringDiagram`
-  Defines the single-typed rooted open string-diagram syntax, its dependent
-  polynomial presentation, the generated-code isomorphism, and the unfinished
-  semantic bridge to open port-hypergraphs up to isomorphism:
+  Defines typed ordered-port rooted open string-diagram syntax, unoriented and
+  oriented signature builders, its dependent polynomial presentation, the
+  generated-code isomorphism, and the unfinished semantic bridge to open
+  port-hypergraphs up to ordered-boundary-preserving isomorphism:
   - `StringDiagram.Signature`
+  - `StringDiagram.Unoriented.signature`
+  - `StringDiagram.Oriented.signature`
   - `StringDiagram.Diag`
   - `StringDiagram.poly`
   - `StringDiagram.generatedCode`
   - `StringDiagram.syntaxIso`
+  - `StringDiagram.PortHypergraph`
+  - `StringDiagram.PortHypergraphIso`
+  - `StringDiagram.CanonicalTraversal`
   - `StringDiagram.OpenPortHypergraphUpToIso`
   - `StringDiagram.diagOpenPortHypergraphIso` (unfinished proof gap)
 

@@ -5,132 +5,213 @@ namespace StringDiagram
 
 open DepPoly
 
-/--
-A single-typed string-diagram signature.
+/-- Remove the element at a proof-carrying index. -/
+def eraseFin {α : Type} : (xs : List α) → Fin xs.length → List α
+  | [], i => nomatch i
+  | _ :: xs, ⟨0, _⟩ => xs
+  | x :: xs, ⟨n + 1, h⟩ =>
+      x :: eraseFin xs ⟨n, Nat.lt_of_succ_lt_succ h⟩
 
-`portsMinusOne a = m` means constructor `a` has `m + 1` ports, so every
-constructor has at least one port.
+/--
+A typed ordered-port string-diagram signature.
+
+`Port` is the label carried by open frontier endpoints.  Unoriented signatures
+usually take `Port` to be a wire type.  Oriented signatures usually take `Port`
+to be a direction paired with a wire type.  `compatible` states when two
+frontier endpoints may be joined.
+
+Each node label has a finite ordered list of ports, represented by `arity` and
+`port`.  The order is part of the formal data because the canonical traversal
+and linear isomorphism test depend on it.
 -/
 structure Signature where
-  ctorCount : Nat
-  portsMinusOne : Fin ctorCount → Nat
+  Port : Type
+  Node : Type
+  arity : Node → Nat
+  port : (node : Node) → Fin (arity node) → Port
+  compatible : Port → Port → Prop
 
-/--
-Rooted open diagram syntax for a single-typed signature.
+namespace Unoriented
 
-`Diag Sig n` describes a diagram with `n` currently open frontier ports.  The
-constructors mirror the boundary-rooted traversal:
+/-- Build an unoriented signature: endpoint compatibility is equality of wire
+types, while every constructor still has an ordered list of typed ports. -/
+def signature (Ty Node : Type)
+    (arity : Node → Nat)
+    (portTy : (node : Node) → Fin (arity node) → Ty) :
+    Signature where
+  Port := Ty
+  Node := Node
+  arity := arity
+  port := portTy
+  compatible := Eq
 
-* `finish` closes the empty frontier;
-* `connect` connects two frontier ports and continues with two fewer ports;
-* `bud` enters one constructor port from the frontier and exposes the remaining
-  constructor ports on the frontier.
+end Unoriented
 
-This syntax is the local canonical presentation used for generated coding in
-this module.  The semantic theorem identifying it with concrete finite open
-port-hypergraphs up to boundary-preserving isomorphism is still an unfinished
-graph-model obligation; this module deliberately avoids replacing that theorem
-with an opaque graph quotient.
--/
-inductive Diag (Sig : Signature) : Nat → Type
-  | finish : Diag Sig 0
-  | connect {n : Nat} (frontier : 1 < n) :
-      Diag Sig (n - 2) → Fin (n - 1) → Diag Sig n
-  | bud {n : Nat} (a : Fin Sig.ctorCount) :
-      Fin (Sig.portsMinusOne a + 1) → 0 < n →
-        Diag Sig (n - 1 + Sig.portsMinusOne a) → Diag Sig n
+/-- Endpoint polarity for oriented string diagrams. -/
+inductive Direction where
+  | input
+  | output
+deriving DecidableEq, Repr
 
-namespace Diag
+namespace Direction
 
-variable {Sig : Signature}
+def opposite : Direction → Direction
+  | .input => .output
+  | .output => .input
 
-/-- Structural rank used for the generated syntax coding. -/
-def rank : ∀ {n : Nat}, Diag Sig n → Nat
-  | _, finish => 0
-  | _, connect _ child _ => rank child + 1
-  | _, bud _ _ _ child => rank child + 1
+@[simp]
+theorem opposite_opposite (d : Direction) : opposite (opposite d) = d := by
+  cases d <;> rfl
 
-end Diag
+end Direction
 
-/-- Polynomial constructors for the rooted open syntax. -/
+namespace Oriented
+
+/-- A typed oriented endpoint. -/
+structure Endpoint (Ty : Type) where
+  direction : Direction
+  ty : Ty
+deriving Repr
+
+/-- Build an oriented signature.  Two endpoints are compatible when their wire
+types agree and their directions are opposite. -/
+def signature (Ty Node : Type)
+    (arity : Node → Nat)
+    (portSpec : (node : Node) → Fin (arity node) → Endpoint Ty) :
+    Signature where
+  Port := Endpoint Ty
+  Node := Node
+  arity := arity
+  port := portSpec
+  compatible := fun p q =>
+    p.ty = q.ty ∧ Direction.opposite p.direction = q.direction
+
+end Oriented
+
+/-- Constructor tags for the traversal grammar. -/
 inductive Ctor where
   | finish
   | connect
   | bud
 deriving DecidableEq, Repr
 
-structure ConnectParam where
-  n : Nat
-  frontier : 1 < n
-  port : Fin (n - 1)
+namespace Signature
+
+variable (Sig : Signature)
+
+def nodePorts (node : Sig.Node) : List Sig.Port :=
+  List.ofFn fun slot : Fin (Sig.arity node) => Sig.port node slot
+
+def nodePortsExcept (node : Sig.Node) (entry : Fin (Sig.arity node)) :
+    List Sig.Port :=
+  eraseFin (Sig.nodePorts node) (Fin.cast (by simp [nodePorts]) entry)
+
+end Signature
+
+/--
+Canonical traversal syntax for typed open string diagrams.
+
+The index is the ordered frontier boundary.  `connect` always processes the
+first frontier port and connects it to one later frontier port.  `bud` processes
+the first frontier port by entering an ordered constructor port and appending
+the remaining constructor ports, in constructor order, to the frontier.
+-/
+inductive Diag (Sig : Signature) : List Sig.Port → Type
+  | finish : Diag Sig []
+  | connect {active : Sig.Port} {frontier : List Sig.Port}
+      (mate : Fin frontier.length)
+      (ok : Sig.compatible active (frontier.get mate))
+      (child : Diag Sig (eraseFin frontier mate)) :
+      Diag Sig (active :: frontier)
+  | bud {active : Sig.Port} {frontier : List Sig.Port}
+      (node : Sig.Node)
+      (entry : Fin (Sig.arity node))
+      (ok : Sig.compatible active (Sig.port node entry))
+      (child : Diag Sig (frontier ++ Sig.nodePortsExcept node entry)) :
+      Diag Sig (active :: frontier)
+
+namespace Diag
+
+variable {Sig : Signature}
+
+/-- Structural rank used for the generated syntax coding. -/
+def rank : ∀ {boundary : List Sig.Port}, Diag Sig boundary → Nat
+  | _, finish => 0
+  | _, connect _ _ child => rank child + 1
+  | _, bud _ _ _ child => rank child + 1
+
+end Diag
+
+structure ConnectParam (Sig : Signature) where
+  active : Sig.Port
+  frontier : List Sig.Port
+  mate : Fin frontier.length
+  ok : Sig.compatible active (frontier.get mate)
 
 structure BudParam (Sig : Signature) where
-  n : Nat
-  node : Fin Sig.ctorCount
-  entry : Fin (Sig.portsMinusOne node + 1)
-  frontier : 0 < n
+  active : Sig.Port
+  frontier : List Sig.Port
+  node : Sig.Node
+  entry : Fin (Sig.arity node)
+  ok : Sig.compatible active (Sig.port node entry)
 
 def Param (Sig : Signature) : Ctor → Type
   | .finish => Unit
-  | .connect => ConnectParam
+  | .connect => ConnectParam Sig
   | .bud => BudParam Sig
 
-def out (Sig : Signature) : (c : Ctor) → Param Sig c → Nat
-  | .finish, _ => 0
-  | .connect, p => p.n
-  | .bud, p => p.n
+def out (Sig : Signature) : (c : Ctor) → Param Sig c → List Sig.Port
+  | .finish, _ => []
+  | .connect, p => p.active :: p.frontier
+  | .bud, p => p.active :: p.frontier
 
-def Pos (Sig : Signature) : (c : Ctor) → Param Sig c → Type
+def Pos (_Sig : Signature) : (c : Ctor) → Param _Sig c → Type
   | .finish, _ => Empty
   | .connect, _ => Unit
   | .bud, _ => Unit
 
 def input (Sig : Signature) :
-    {c : Ctor} → (p : Param Sig c) → Pos Sig c p → Nat
+    {c : Ctor} → (p : Param Sig c) → Pos Sig c p → List Sig.Port
   | .finish, _, q => nomatch q
-  | .connect, p, _ => p.n - 2
-  | .bud, p, _ => p.n - 1 + Sig.portsMinusOne p.node
+  | .connect, p, _ => eraseFin p.frontier p.mate
+  | .bud, p, _ => p.frontier ++ Sig.nodePortsExcept p.node p.entry
 
-/-- Dependent polynomial for the rooted open string-diagram syntax. -/
-def poly (Sig : Signature) : DepPoly Nat where
+/-- Dependent polynomial for typed ordered-frontier traversal syntax. -/
+def poly (Sig : Signature) : DepPoly (List Sig.Port) where
   Ctor := Ctor
   Param := Param Sig
   out := out Sig
   Pos := Pos Sig
   input := input Sig
 
-/--
-The constructor output index is exposed directly as a same-fiber constructor
-parameter.  This keeps the constructor-fiber data visible to the generic
-generated-code layer.
--/
+/-- Same-fiber constructor data for typed string diagrams. -/
 def inversion (Sig : Signature) : OutputIndexInversion (poly Sig) :=
   OutputIndexInversion.canonical (poly Sig)
 
-def layerToSyntax (Sig : Signature) (n : Nat) :
-    CodeLayer (poly Sig) (inversion Sig) (Diag Sig) n → Diag Sig n
+def layerToSyntax (Sig : Signature) (boundary : List Sig.Port) :
+    CodeLayer (poly Sig) (inversion Sig) (Diag Sig) boundary → Diag Sig boundary
   | ⟨⟨.finish, (), h⟩, _child⟩ => by
       cases h
       exact .finish
   | ⟨⟨.connect, p, h⟩, child⟩ => by
       cases p with
-      | mk m hm port =>
+      | mk active frontier mate ok =>
           cases h
-          exact .connect hm (child ()) port
+          exact .connect mate ok (child ())
   | ⟨⟨.bud, p, h⟩, child⟩ => by
       cases p with
-      | mk m a entry hm =>
+      | mk active frontier node entry ok =>
           cases h
-          exact .bud a entry hm (child ())
+          exact .bud node entry ok (child ())
 
-def syntaxToLayer (Sig : Signature) (n : Nat) :
-    Diag Sig n → CodeLayer (poly Sig) (inversion Sig) (Diag Sig) n
+def syntaxToLayer (Sig : Signature) (boundary : List Sig.Port) :
+    Diag Sig boundary → CodeLayer (poly Sig) (inversion Sig) (Diag Sig) boundary
   | .finish =>
       ⟨⟨Ctor.finish, (), rfl⟩, fun q => nomatch q⟩
-  | @Diag.connect _ m hm child port =>
-      ⟨⟨Ctor.connect, ⟨m, hm, port⟩, rfl⟩, fun _ => child⟩
-  | @Diag.bud _ m a entry hm child =>
-      ⟨⟨Ctor.bud, ⟨m, a, entry, hm⟩, rfl⟩, fun _ => child⟩
+  | @Diag.connect _ active frontier mate ok child =>
+      ⟨⟨Ctor.connect, ⟨active, frontier, mate, ok⟩, rfl⟩, fun _ => child⟩
+  | @Diag.bud _ active frontier node entry ok child =>
+      ⟨⟨Ctor.bud, ⟨active, frontier, node, entry, ok⟩, rfl⟩, fun _ => child⟩
 
 def syntaxLayerPresentation (Sig : Signature) :
     CodeLayerPresentation (poly Sig) (inversion Sig) (Diag Sig) (Diag Sig) :=
@@ -138,7 +219,7 @@ def syntaxLayerPresentation (Sig : Signature) :
     (layerToSyntax Sig)
     (syntaxToLayer Sig)
     (by
-      intro n layer
+      intro boundary layer
       cases layer with
       | mk code child =>
         cases code with
@@ -153,7 +234,7 @@ def syntaxLayerPresentation (Sig : Signature) :
               rfl
           | connect =>
               cases param with
-              | mk m hm port =>
+              | mk active frontier mate ok =>
                 cases out_eq
                 have hchild : (fun _ => child ()) = child := by
                   child_eta_unit
@@ -161,44 +242,44 @@ def syntaxLayerPresentation (Sig : Signature) :
                 rfl
           | bud =>
               cases param with
-              | mk m a entry hm =>
+              | mk active frontier node entry ok =>
                 cases out_eq
                 have hchild : (fun _ => child ()) = child := by
                   child_eta_unit
                 cases hchild
                 rfl)
     (by
-      intro n t
+      intro boundary t
       cases t with
       | finish => rfl
-      | connect hm child port => rfl
-      | bud a entry hm child => rfl)
+      | connect mate ok child => rfl
+      | bud node entry ok child => rfl)
 
 theorem layer_child_rank_lt (Sig : Signature) :
-    ∀ {n : Nat} (z : Diag Sig n)
+    ∀ {boundary : List Sig.Port} (z : Diag Sig boundary)
       (q : (poly Sig).Pos
-          ((inversion Sig).decode n
-            (((syntaxLayerPresentation Sig).iso n).invFun z).1).ctor
-          ((inversion Sig).decode n
-            (((syntaxLayerPresentation Sig).iso n).invFun z).1).param),
-      Diag.rank ((((syntaxLayerPresentation Sig).iso n).invFun z).2 q) <
+          ((inversion Sig).decode boundary
+            (((syntaxLayerPresentation Sig).iso boundary).invFun z).1).ctor
+          ((inversion Sig).decode boundary
+            (((syntaxLayerPresentation Sig).iso boundary).invFun z).1).param),
+      Diag.rank ((((syntaxLayerPresentation Sig).iso boundary).invFun z).2 q) <
         Diag.rank z := by
-  intro n z q
+  intro boundary z q
   cases z with
   | finish =>
       cases q
-  | connect hm child port =>
+  | connect mate ok child =>
       cases q
       simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofMaps,
         syntaxLayerPresentation, syntaxToLayer, inversion,
         OutputIndexInversion.canonical, Diag.rank]
-  | bud a entry hm child =>
+  | bud node entry ok child =>
       cases q
       simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofMaps,
         syntaxLayerPresentation, syntaxToLayer, inversion,
         OutputIndexInversion.canonical, Diag.rank]
 
-/-- Presentation of rooted open diagram syntax as generated code data. -/
+/-- Presentation of typed rooted open diagram syntax as generated code data. -/
 def syntaxPresentation (Sig : Signature) :
     SyntaxPresentation (poly Sig) (inversion Sig) (Diag Sig) :=
   SyntaxPresentation.ofLayer
@@ -206,114 +287,228 @@ def syntaxPresentation (Sig : Signature) :
     (fun _ t => Diag.rank t)
     (layer_child_rank_lt Sig)
 
-/-- Generated coding data for the rooted open diagram syntax. -/
+/-- Generated coding data for typed rooted open diagram syntax. -/
 def generatedCode (Sig : Signature) : GeneratedCode (poly Sig) (Diag Sig) :=
   (syntaxPresentation Sig).generatedCode
 
 /--
-Rooted open diagrams are bijective with the initial algebra of their dependent
-polynomial presentation through the generic generated-code construction.
+Typed rooted open diagrams are bijective with the initial algebra of their
+dependent polynomial presentation through the generic generated-code
+construction.
 -/
-def syntaxIso (Sig : Signature) (n : Nat) : Mu (poly Sig) n ≃ᵢ Diag Sig n :=
-  (generatedCode Sig).iso n
+def syntaxIso (Sig : Signature) (boundary : List Sig.Port) :
+    Mu (poly Sig) boundary ≃ᵢ Diag Sig boundary :=
+  (generatedCode Sig).iso boundary
 
 /--
-A finite single-typed port-hypergraph representative with `boundary` ordered
-external ports.  Ports are the wire-like connection objects; each constructor
-port is incident to one such port, and boundary ports are distinguished ports
-of the same finite carrier.
+A finite typed port-hypergraph representative with an ordered external
+boundary.  The finite ports carry endpoint labels, nodes carry constructor
+labels, and every constructor incidence points to an ordered constructor port.
 -/
-structure PortHypergraph (Sig : Signature) (boundary : Nat) where
+structure PortHypergraph (Sig : Signature) (boundary : List Sig.Port) where
   portCount : Nat
   nodeCount : Nat
-  boundaryPort : Fin boundary → Fin portCount
+  portLabel : Fin portCount → Sig.Port
+  boundaryPort : Fin boundary.length → Fin portCount
   boundary_injective : Function.Injective boundaryPort
-  nodeLabel : Fin nodeCount → Fin Sig.ctorCount
+  boundary_label :
+    ∀ b : Fin boundary.length, portLabel (boundaryPort b) = boundary.get b
+  nodeLabel : Fin nodeCount → Sig.Node
   incident :
     (node : Fin nodeCount) →
-      Fin (Sig.portsMinusOne (nodeLabel node) + 1) → Fin portCount
+      Fin (Sig.arity (nodeLabel node)) → Fin portCount
+  incidence_compatible :
+    ∀ (node : Fin nodeCount) (slot : Fin (Sig.arity (nodeLabel node))),
+      Sig.compatible (portLabel (incident node slot)) (Sig.port (nodeLabel node) slot)
 
 namespace PortHypergraph
 
-variable {Sig : Signature} {boundary : Nat}
+variable {Sig : Signature} {boundary : List Sig.Port}
 
 /--
-A port has a path to the boundary when it is a boundary port or can be reached
-through constructor incidences from a port already known to reach the boundary.
+A port has a path to the ordered boundary when it is a boundary port or can be
+reached by moving across the ordered incidences of a constructor already in the
+same component.
 -/
 inductive PortReachesBoundary (G : PortHypergraph Sig boundary) :
     Fin G.portCount → Prop
-  | boundary (b : Fin boundary) :
+  | boundary (b : Fin boundary.length) :
       PortReachesBoundary G (G.boundaryPort b)
   | throughConstructor {p q : Fin G.portCount}
       (node : Fin G.nodeCount)
-      (fromSlot toSlot : Fin (Sig.portsMinusOne (G.nodeLabel node) + 1))
+      (fromSlot toSlot : Fin (Sig.arity (G.nodeLabel node)))
       (hp : G.incident node fromSlot = p)
       (hq : G.incident node toSlot = q)
       (reach : PortReachesBoundary G p) :
       PortReachesBoundary G q
 
-/-- Every constructor is in a boundary-reachable component. -/
+/-- Every constructor is in some component connected to the external boundary. -/
 def AllConstructorsReachBoundary (G : PortHypergraph Sig boundary) : Prop :=
   ∀ node : Fin G.nodeCount,
-    ∃ slot : Fin (Sig.portsMinusOne (G.nodeLabel node) + 1),
+    ∃ slot : Fin (Sig.arity (G.nodeLabel node)),
       PortReachesBoundary G (G.incident node slot)
 
 end PortHypergraph
 
 /--
-The semantic carrier for final encoded diagrams: finite representatives with
-an ordered external boundary whose constructors all lie in components connected
-to that boundary.  The empty-boundary case is allowed so `Diag Sig 0` can
-contain `finish`.
+The semantic representatives for final encoded diagrams: finite typed
+port-hypergraphs with ordered external boundary and no constructor in a
+component disconnected from that boundary.
 -/
-structure OpenPortHypergraph (Sig : Signature) (boundary : Nat) where
+structure OpenPortHypergraph (Sig : Signature) (boundary : List Sig.Port) where
   raw : PortHypergraph Sig boundary
   allConstructorsReachBoundary :
     PortHypergraph.AllConstructorsReachBoundary raw
 
 /--
-Boundary-preserving isomorphism of finite representatives.  It relabels ports
-and constructors, preserves the ordered boundary, preserves constructor labels,
-and preserves constructor-port incidence.
+Boundary-preserving isomorphism of typed finite representatives.  It relabels
+ports and nodes, preserves the ordered boundary pointwise, preserves port and
+node labels, and preserves every ordered constructor-port incidence.
 -/
-structure PortHypergraphIso {Sig : Signature} {boundary : Nat}
+structure PortHypergraphIso {Sig : Signature} {boundary : List Sig.Port}
     (G H : PortHypergraph Sig boundary) where
   portEquiv : Fin G.portCount ≃ᵢ Fin H.portCount
   nodeEquiv : Fin G.nodeCount ≃ᵢ Fin H.nodeCount
   boundary_preserved :
-    ∀ b : Fin boundary, portEquiv.toFun (G.boundaryPort b) = H.boundaryPort b
+    ∀ b : Fin boundary.length, portEquiv.toFun (G.boundaryPort b) = H.boundaryPort b
+  port_label_preserved :
+    ∀ p : Fin G.portCount, G.portLabel p = H.portLabel (portEquiv.toFun p)
   node_label_preserved :
     ∀ node : Fin G.nodeCount,
       G.nodeLabel node = H.nodeLabel (nodeEquiv.toFun node)
   incidence_preserved :
     ∀ node : Fin G.nodeCount,
-      ∀ slot : Fin (Sig.portsMinusOne (G.nodeLabel node) + 1),
+      ∀ slot : Fin (Sig.arity (G.nodeLabel node)),
         portEquiv.toFun (G.incident node slot) =
           H.incident (nodeEquiv.toFun node)
             (Fin.cast (by rw [node_label_preserved node]) slot)
 
-/-- Open boundary-connected port-hypergraphs quotiented by boundary-preserving
-isomorphism. -/
-def OpenPortHypergraphUpToIso (Sig : Signature) (boundary : Nat) : Type :=
-  Quot fun G H : OpenPortHypergraph Sig boundary =>
-    Nonempty (PortHypergraphIso G.raw H.raw)
+namespace PortHypergraphIso
+
+variable {Sig : Signature} {boundary : List Sig.Port}
+
+def refl (G : PortHypergraph Sig boundary) : PortHypergraphIso G G where
+  portEquiv := Iso.refl (Fin G.portCount)
+  nodeEquiv := Iso.refl (Fin G.nodeCount)
+  boundary_preserved := by
+    intro _
+    rfl
+  port_label_preserved := by
+    intro _
+    rfl
+  node_label_preserved := by
+    intro _
+    rfl
+  incidence_preserved := by
+    intro _ _
+    rfl
 
 /--
-UNFINISHED semantic bridge: rooted open diagrams should present exactly the
-finite open boundary-connected port-hypergraphs up to boundary-preserving
-isomorphism.  The syntax/polynomial/generated-code results above do not close
-this graph-isomorphism theorem.
+UNFINISHED: inverse finite relabelings should witness symmetry of typed
+boundary-preserving port-hypergraph isomorphism.
 -/
-def diagOpenPortHypergraphIso (Sig : Signature) (n : Nat) :
-    Diag Sig n ≃ᵢ OpenPortHypergraphUpToIso Sig n := by
-  /-
-  Proof gap: construct the traversal from `Diag` to finite representatives,
-  canonicalize boundary-rooted traversals back to `Diag`, and prove both
-  directions inverse modulo `PortHypergraphIso`.  This is the single-typed
-  analogue of the richer bounded-isomorphism/canonicalization boundary in the
-  sibling `../diagegraph` work.
-  -/
+def symm {G H : PortHypergraph Sig boundary}
+    (e : PortHypergraphIso G H) : PortHypergraphIso H G := by
+  sorry
+
+/--
+UNFINISHED: composed finite relabelings should witness transitivity of typed
+boundary-preserving port-hypergraph isomorphism.
+-/
+def trans {G H K : PortHypergraph Sig boundary}
+    (e₁ : PortHypergraphIso G H) (e₂ : PortHypergraphIso H K) :
+    PortHypergraphIso G K := by
+  sorry
+
+end PortHypergraphIso
+
+namespace OpenPortHypergraph
+
+variable {Sig : Signature} {boundary : List Sig.Port}
+
+def isoRel (G H : OpenPortHypergraph Sig boundary) : Prop :=
+  Nonempty (PortHypergraphIso G.raw H.raw)
+
+def isoSetoid (Sig : Signature) (boundary : List Sig.Port) :
+    Setoid (OpenPortHypergraph Sig boundary) where
+  r := isoRel
+  iseqv := by
+    constructor
+    · intro G
+      exact ⟨PortHypergraphIso.refl G.raw⟩
+    · intro G H h
+      rcases h with ⟨e⟩
+      exact ⟨PortHypergraphIso.symm e⟩
+    · intro G H K hGH hHK
+      rcases hGH with ⟨eGH⟩
+      rcases hHK with ⟨eHK⟩
+      exact ⟨PortHypergraphIso.trans eGH eHK⟩
+
+end OpenPortHypergraph
+
+/-- Typed open boundary-connected port-hypergraphs quotiented by ordered
+boundary-preserving isomorphism. -/
+def OpenPortHypergraphUpToIso (Sig : Signature) (boundary : List Sig.Port) :
+    Type :=
+  Quotient (OpenPortHypergraph.isoSetoid Sig boundary)
+
+/--
+The formal boundary for the canonical search procedure.  A completed procedure
+must choose the unique boundary-rooted traversal order for each open
+port-hypergraph and render syntax back to representatives, with inverse laws
+modulo ordered boundary-preserving isomorphism.
+-/
+structure CanonicalTraversal (Sig : Signature) where
+  toGraph :
+    ∀ {boundary : List Sig.Port}, Diag Sig boundary → OpenPortHypergraph Sig boundary
+  fromGraph :
+    ∀ {boundary : List Sig.Port}, OpenPortHypergraph Sig boundary → Diag Sig boundary
+  from_to :
+    ∀ {boundary : List Sig.Port} (d : Diag Sig boundary),
+      fromGraph (toGraph d) = d
+  to_from :
+    ∀ {boundary : List Sig.Port} (G : OpenPortHypergraph Sig boundary),
+      OpenPortHypergraph.isoRel (toGraph (fromGraph G)) G
+
+/--
+UNFINISHED: a canonical traversal procedure should induce the quotient semantic
+isomorphism.  The remaining obligation is that boundary-preserving isomorphic
+representatives decode to the same canonical traversal syntax.
+-/
+def CanonicalTraversal.iso (T : CanonicalTraversal Sig)
+    (boundary : List Sig.Port) :
+    Diag Sig boundary ≃ᵢ OpenPortHypergraphUpToIso Sig boundary where
+  toFun d := Quotient.mk (OpenPortHypergraph.isoSetoid Sig boundary) (T.toGraph d)
+  invFun q :=
+    Quotient.liftOn q
+      (fun G => T.fromGraph G)
+      (by
+        intro G H h
+        /-
+        UNFINISHED: canonical traversal uniqueness should prove that
+        isomorphic representatives decode to the same traversal syntax.
+        -/
+        sorry)
+  left_inv := by
+    intro d
+    exact T.from_to d
+  right_inv := by
+    intro q
+    refine Quotient.inductionOn q ?_
+    intro G
+    apply Quotient.sound
+    exact T.to_from G
+
+/--
+UNFINISHED semantic bridge: typed rooted open diagrams should present exactly
+the finite typed open port-hypergraphs whose constructors lie in components
+connected to the ordered external boundary, up to ordered boundary-preserving
+isomorphism.  The proof must instantiate a canonical search procedure whose
+unique traversal order supplies the canonical labels used for linear
+isomorphism testing.
+-/
+def diagOpenPortHypergraphIso (Sig : Signature) (boundary : List Sig.Port) :
+    Diag Sig boundary ≃ᵢ OpenPortHypergraphUpToIso Sig boundary := by
   sorry
 
 end StringDiagram
