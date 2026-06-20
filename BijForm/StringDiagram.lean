@@ -6137,6 +6137,31 @@ theorem RenderPrefixRelated.pending_cons_values
     rw [← hpending, hrel.pending_vals, hids]
   simpa using hvals
 
+theorem initial_renderPrefixRelated
+    {boundary : List Sig.Port} (d : Diag Sig boundary) :
+    RenderPrefixRelated
+      (Diag.renderTraceFromBoundary_openEvidence d)
+      (RenderState.initial Sig boundary)
+      (initial (Diag.toOpenPortHypergraph d)) where
+  pending_vals := by
+    apply List.ext_getElem
+    · simp [initial, RenderState.initial]
+    · intro i _hleft hright
+      dsimp [initial, RenderState.initial, Diag.toOpenPortHypergraph,
+        Diag.renderTraceFromBoundary_openEvidence,
+        Diag.renderTraceFromBoundary_graphEvidence,
+        RenderState.OpenPortHypergraphEvidence.toOpenPortHypergraph,
+        RenderState.PortHypergraphEvidence.toPortHypergraph,
+        RenderState.portHypergraphEvidenceOfInvariants,
+        RenderState.boundaryEvidenceOfPrefix]
+      simp
+  processed_prefix := by
+    intro edge
+    simp [initial, RenderState.initial]
+  seen_prefix := by
+    intro node
+    simp [initial, RenderState.initial]
+
 /--
 State correspondence for two first-pending traversals over isomorphic graph
 representatives.  The frontier labels are already the shared type index; this

@@ -290,6 +290,7 @@ lake exe bijform
   - `StringDiagram.OpenPortHypergraph.SearchState.initial_frontierComplete`
   - `StringDiagram.OpenPortHypergraph.SearchState.RenderPrefixRelated`
   - `StringDiagram.OpenPortHypergraph.SearchState.RenderPrefixRelated.pending_cons_values`
+  - `StringDiagram.OpenPortHypergraph.SearchState.initial_renderPrefixRelated`
   - `StringDiagram.OpenPortHypergraph.SearchState.RenderPrefixRelated.connectChild_of_new_edge`
   - `StringDiagram.OpenPortHypergraph.SearchState.RenderPrefixRelated.budChild_of_new_edge_node`
   - `StringDiagram.OpenPortHypergraph.SearchState.IsoRelated`
