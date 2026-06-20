@@ -18,8 +18,9 @@ A typed ordered-port string-diagram signature.
 `Edge` is the label carried by wires/edges.  `Port` is the label carried by
 open frontier endpoints.  Unoriented signatures usually take `Port` to be the
 same type as `Edge`.  Oriented signatures usually take `Port` to be a direction
-paired with an edge type.  `portEdge` forgets endpoint-only data and
-`compatible` states when two frontier endpoints may be joined.
+paired with an edge type.  `portEdge` forgets endpoint-only data,
+`compatible` states when two frontier endpoints may be joined, and
+`compatible_edge` ensures such a connection has one edge label.
 
 Each node label has a finite ordered list of ports, represented by `arity` and
 `port`.  The order is part of the formal data because the canonical traversal
@@ -33,6 +34,8 @@ structure Signature where
   arity : Node → Nat
   port : (node : Node) → Fin (arity node) → Port
   compatible : Port → Port → Prop
+  compatible_edge :
+    ∀ {left right : Port}, compatible left right → portEdge left = portEdge right
 
 namespace Unoriented
 
@@ -49,6 +52,9 @@ def signature (Ty Node : Type)
   arity := arity
   port := portTy
   compatible := Eq
+  compatible_edge := by
+    intro left right h
+    exact h
 
 end Unoriented
 
@@ -92,6 +98,9 @@ def signature (Ty Node : Type)
   port := portSpec
   compatible := fun p q =>
     p.ty = q.ty ∧ Direction.opposite p.direction = q.direction
+  compatible_edge := by
+    intro left right h
+    exact h.1
 
 end Oriented
 
@@ -105,6 +114,11 @@ deriving DecidableEq, Repr
 namespace Signature
 
 variable (Sig : Signature)
+
+theorem edge_eq_of_compatible {left right : Sig.Port}
+    (ok : Sig.compatible left right) :
+    Sig.portEdge left = Sig.portEdge right :=
+  Sig.compatible_edge ok
 
 def nodePorts (node : Sig.Node) : List Sig.Port :=
   List.ofFn fun slot : Fin (Sig.arity node) => Sig.port node slot
