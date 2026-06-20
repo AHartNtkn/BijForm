@@ -8756,6 +8756,201 @@ theorem renderTrace_connect_edgeMate_of_invariants
       RenderState.endpointEdgeEvidenceOfPartition] using hleft.trans hright.symm
 
 /--
+In a completed render trace whose current step is `connect`, the active
+frontier endpoint is assigned to the newly rendered edge index.
+-/
+theorem renderTrace_connect_active_endpointEdge_val
+    {active : Sig.Port} {frontier boundary : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (child : Diag Sig (eraseFin frontier mate))
+    (st : RenderState Sig (active :: frontier))
+    (hv : (renderTrace (Diag.connect mate ok child) st).ValidIds)
+    (hp : (renderTrace (Diag.connect mate ok child) st).EndpointPartition)
+    (hn : (renderTrace (Diag.connect mate ok child) st).NodeIncidentNodup)
+    (pref :
+      (renderTrace (Diag.connect mate ok child) st).EndpointPrefix boundary)
+    (ho :
+      (renderTrace (Diag.connect mate ok child) st).OwnerIdPartition boundary)
+    {activeId : Nat} {restIds : List Nat}
+    (hids : st.frontierIds = activeId :: restIds)
+    (hactive : activeId <
+      (renderTrace (Diag.connect mate ok child) st).endpoints.length) :
+    let G :=
+      (RenderState.portHypergraphEvidenceOfInvariants
+        hv hp hn pref ho).toPortHypergraph
+    (G.endpointEdge ⟨activeId, hactive⟩).val = st.edges.length := by
+  intro G
+  let final := renderTrace (Diag.connect mate ok child) st
+  let mateId :=
+    restIds.get (Fin.cast (by
+      have hlen := st.frontierIds_length
+      rw [hids] at hlen
+      exact (Nat.succ.inj hlen).symm) mate)
+  let edge : RenderEdge Sig :=
+    { label := Sig.portEdge active
+      leftLabel := active
+      rightLabel := frontier.get mate
+      left := activeId
+      right := mateId
+      left_label := rfl
+      right_label := (Sig.compatible_edge ok).symm
+      compatible := ok }
+  have hedgeGet :
+      final.edges.get ⟨st.edges.length, by
+        dsimp [final]
+        rcases renderTrace_edgesPrefix child (connectStep mate ok st) with
+          ⟨suffix, hsuffix⟩
+        have hstep :
+            (connectStep mate ok st).edges = st.edges ++ [edge] := by
+          unfold connectStep
+          split
+          · rename_i hnil
+            exact False.elim (RenderState.frontierIds_ne_nil st hnil)
+          · rename_i activeId' restIds' hids'
+            rw [hids] at hids'
+            injection hids' with hactiveEq hrestEq
+            subst activeId'
+            subst restIds'
+            simp [edge, mateId]
+        rw [renderTrace_connect, hsuffix, hstep]
+        simp⟩ = edge := by
+    simpa [final, mateId, edge] using
+      renderTrace_connect_new_edge_get mate ok child st hids
+  let edgeIndex : Fin final.edges.length :=
+    ⟨st.edges.length, by
+      dsimp [final]
+      rcases renderTrace_edgesPrefix child (connectStep mate ok st) with
+        ⟨suffix, hsuffix⟩
+      have hstep :
+          (connectStep mate ok st).edges = st.edges ++ [edge] := by
+        unfold connectStep
+        split
+        · rename_i hnil
+          exact False.elim (RenderState.frontierIds_ne_nil st hnil)
+        · rename_i activeId' restIds' hids'
+          rw [hids] at hids'
+          injection hids' with hactiveEq hrestEq
+          subst activeId'
+          subst restIds'
+          simp [edge, mateId]
+      rw [renderTrace_connect, hsuffix, hstep]
+      simp⟩
+  have hside :
+      (⟨activeId, hactive⟩ : Fin final.endpoints.length).val =
+        (final.edges.get edgeIndex).left := by
+    exact (congrArg RenderEdge.left hedgeGet).symm
+  have heq :=
+    RenderState.endpointEdgeOfPartition_eq_of_endpoint_side hp
+      (⟨activeId, hactive⟩ : Fin final.endpoints.length)
+      edgeIndex (Or.inl hside)
+  have hraw :
+      G.endpointEdge ⟨activeId, hactive⟩ =
+        edgeIndex := by
+    simpa [G, RenderState.PortHypergraphEvidence.toPortHypergraph,
+      RenderState.portHypergraphEvidenceOfInvariants,
+      RenderState.edgeEvidenceOfPartition,
+      RenderState.endpointEdgeEvidenceOfPartition] using heq
+  rw [hraw]
+
+/--
+In a completed render trace whose current step is `bud`, the active frontier
+endpoint is assigned to the newly rendered edge index.
+-/
+theorem renderTrace_bud_active_endpointEdge_val
+    {active : Sig.Port} {frontier boundary : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (child : Diag Sig (frontier ++ Sig.nodePortsExcept node entry))
+    (st : RenderState Sig (active :: frontier))
+    (hv : (renderTrace (Diag.bud node entry ok child) st).ValidIds)
+    (hp : (renderTrace (Diag.bud node entry ok child) st).EndpointPartition)
+    (hn : (renderTrace (Diag.bud node entry ok child) st).NodeIncidentNodup)
+    (pref :
+      (renderTrace (Diag.bud node entry ok child) st).EndpointPrefix boundary)
+    (ho :
+      (renderTrace (Diag.bud node entry ok child) st).OwnerIdPartition boundary)
+    {activeId : Nat} {restIds : List Nat}
+    (hids : st.frontierIds = activeId :: restIds)
+    (hactive : activeId <
+      (renderTrace (Diag.bud node entry ok child) st).endpoints.length) :
+    let G :=
+      (RenderState.portHypergraphEvidenceOfInvariants
+        hv hp hn pref ho).toPortHypergraph
+    (G.endpointEdge ⟨activeId, hactive⟩).val = st.edges.length := by
+  intro G
+  let final := renderTrace (Diag.bud node entry ok child) st
+  let nodeEndpoints := freshNodeEndpoints st.nextEndpoint (Sig.arity node)
+  let entryIdx : Fin nodeEndpoints.length :=
+    Fin.cast (by simp [nodeEndpoints]) entry
+  let edge : RenderEdge Sig :=
+    { label := Sig.portEdge active
+      leftLabel := active
+      rightLabel := Sig.port node entry
+      left := activeId
+      right := nodeEndpoints.get entryIdx
+      left_label := rfl
+      right_label := (Sig.compatible_edge ok).symm
+      compatible := ok }
+  have hedgeGet :
+      final.edges.get ⟨st.edges.length, by
+        dsimp [final]
+        rcases renderTrace_edgesPrefix child (budStep node entry ok st) with
+          ⟨suffix, hsuffix⟩
+        have hstep :
+            (budStep node entry ok st).edges = st.edges ++ [edge] := by
+          unfold budStep
+          split
+          · rename_i hnil
+            exact False.elim (RenderState.frontierIds_ne_nil st hnil)
+          · rename_i activeId' restIds' hids'
+            rw [hids] at hids'
+            injection hids' with hactiveEq hrestEq
+            subst activeId'
+            subst restIds'
+            simp [edge, nodeEndpoints, entryIdx]
+        rw [renderTrace_bud, hsuffix, hstep]
+        simp⟩ = edge := by
+    simpa [final, edge, nodeEndpoints, entryIdx] using
+      renderTrace_bud_new_edge_get node entry ok child st hids
+  let edgeIndex : Fin final.edges.length :=
+    ⟨st.edges.length, by
+      dsimp [final]
+      rcases renderTrace_edgesPrefix child (budStep node entry ok st) with
+        ⟨suffix, hsuffix⟩
+      have hstep :
+          (budStep node entry ok st).edges = st.edges ++ [edge] := by
+        unfold budStep
+        split
+        · rename_i hnil
+          exact False.elim (RenderState.frontierIds_ne_nil st hnil)
+        · rename_i activeId' restIds' hids'
+          rw [hids] at hids'
+          injection hids' with hactiveEq hrestEq
+          subst activeId'
+          subst restIds'
+          simp [edge, nodeEndpoints, entryIdx]
+      rw [renderTrace_bud, hsuffix, hstep]
+      simp⟩
+  have hside :
+      (⟨activeId, hactive⟩ : Fin final.endpoints.length).val =
+        (final.edges.get edgeIndex).left := by
+    exact (congrArg RenderEdge.left hedgeGet).symm
+  have heq :=
+    RenderState.endpointEdgeOfPartition_eq_of_endpoint_side hp
+      (⟨activeId, hactive⟩ : Fin final.endpoints.length)
+      edgeIndex (Or.inl hside)
+  have hraw :
+      G.endpointEdge ⟨activeId, hactive⟩ =
+        edgeIndex := by
+    simpa [G, RenderState.PortHypergraphEvidence.toPortHypergraph,
+      RenderState.portHypergraphEvidenceOfInvariants,
+      RenderState.edgeEvidenceOfPartition,
+      RenderState.endpointEdgeEvidenceOfPartition] using heq
+  rw [hraw]
+
+/--
 Arbitrary-prefix version of rendered `bud` recognition.  If a completed render
 trace is viewed through semantic graph evidence, the constructor introduced by
 the current top-level `bud` has the original label and entry position, and the
