@@ -7,4 +7,5 @@ import BijForm.TupleAction
 import BijForm.DependentPolynomial
 import BijForm.QuotientPolynomial
 import BijForm.TypedBinding
+import BijForm.StringDiagram
 import BijForm.Examples

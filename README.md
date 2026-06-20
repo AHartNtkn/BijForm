@@ -102,6 +102,15 @@ lake exe bijform
   - `QuotientPresentation.codeIso`
   - `QuotientPresentation.DescendedCode`
 
+- `BijForm.StringDiagram`
+  Defines the single-typed rooted open string-diagram syntax, its dependent
+  polynomial presentation, and the generated-code isomorphism:
+  - `StringDiagram.Signature`
+  - `StringDiagram.Diag`
+  - `StringDiagram.poly`
+  - `StringDiagram.generatedCode`
+  - `StringDiagram.syntaxIso`
+
 - `BijForm.Examples`
   Imports the worked example modules:
   - `BijForm.Examples.HBT`
