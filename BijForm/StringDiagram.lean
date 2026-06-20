@@ -6040,6 +6040,19 @@ theorem connectChild_remainingEdges_lt {G : OpenPortHypergraph Sig boundary}
   simp [remainingEdges, connectChild]
   omega
 
+theorem connectChild_proof_irrel {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
+    (st : SearchState G (activeLabel :: restLabels))
+    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest)
+    (mate : Fin rest.length)
+    (hmate₁ hmate₂ : PortHypergraph.EdgeMate G.raw active (rest.get mate)) :
+    st.connectChild hpending mate hmate₁ =
+      st.connectChild hpending mate hmate₂ := by
+  have hproof : hmate₁ = hmate₂ := Subsingleton.elim _ _
+  cases hproof
+  rfl
+
 theorem budChild_remainingEdges_lt {G : OpenPortHypergraph Sig boundary}
     {activeLabel : Sig.Port} {restLabels : List Sig.Port}
     (st : SearchState G (activeLabel :: restLabels))
@@ -6058,6 +6071,24 @@ theorem budChild_remainingEdges_lt {G : OpenPortHypergraph Sig boundary}
   have hlt := st.processedEdges_length_lt_of_pending hactive
   simp [remainingEdges, budChild]
   omega
+
+theorem budChild_proof_irrel {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
+    (st : SearchState G (activeLabel :: restLabels))
+    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest)
+    (node : Fin G.raw.nodeCount)
+    (slot : Fin (G.raw.incident node).length)
+    (hmate₁ hmate₂ :
+      PortHypergraph.EdgeMate G.raw active ((G.raw.incident node).get slot))
+    (hunseen₁ hunseen₂ : node ∉ st.seenNodes) :
+    st.budChild hpending node slot hmate₁ hunseen₁ =
+      st.budChild hpending node slot hmate₂ hunseen₂ := by
+  have hmateProof : hmate₁ = hmate₂ := Subsingleton.elim _ _
+  have hunseenProof : hunseen₁ = hunseen₂ := Subsingleton.elim _ _
+  cases hmateProof
+  cases hunseenProof
+  rfl
 
 theorem IsoRelated.connectChild
     {G H : OpenPortHypergraph Sig boundary}

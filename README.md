@@ -276,10 +276,12 @@ lake exe bijform
   - `StringDiagram.OpenPortHypergraph.SearchState.connectChild`
   - `StringDiagram.OpenPortHypergraph.SearchState.connectChild_frontierComplete`
   - `StringDiagram.OpenPortHypergraph.SearchState.connectChild_remainingEdges_lt`
+  - `StringDiagram.OpenPortHypergraph.SearchState.connectChild_proof_irrel`
   - `StringDiagram.OpenPortHypergraph.SearchState.budEntry_val_preserved`
   - `StringDiagram.OpenPortHypergraph.SearchState.budChild`
   - `StringDiagram.OpenPortHypergraph.SearchState.budChild_frontierComplete`
   - `StringDiagram.OpenPortHypergraph.SearchState.budChild_remainingEdges_lt`
+  - `StringDiagram.OpenPortHypergraph.SearchState.budChild_proof_irrel`
   - `StringDiagram.PortHypergraphIso`
   - `StringDiagram.PortHypergraphIso.edgeMate_preserved`
   - `StringDiagram.PortHypergraphIso.edgeMate_reflected`
