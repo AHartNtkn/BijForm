@@ -20,14 +20,6 @@ inductive NFSort where
   | appTerm
 deriving DecidableEq, Repr
 
-namespace NFSort
-
-def isAppTerm : NFSort → Bool
-  | .normalExp => false
-  | .appTerm => true
-
-end NFSort
-
 inductive NFCtor where
   | dum
   | lam
@@ -104,47 +96,17 @@ abbrev appTermCount (Γ : List NFSort) : Nat :=
 abbrev normalExpCount (Γ : List NFSort) : Nat :=
   Var.count NFSort.normalExp Γ
 
-abbrev appTermVarToFin {Γ : List NFSort} :
-    Var Γ .appTerm → Fin (appTermCount Γ) :=
-  Var.toFin
-
-abbrev appTermFinToVar {Γ : List NFSort} :
-    Fin (appTermCount Γ) → Var Γ .appTerm :=
-  Var.ofFin NFSort.appTerm
-
-theorem appTermFinToVar_toFin {Γ : List NFSort} (i : Fin (appTermCount Γ)) :
-    appTermVarToFin (appTermFinToVar i) = i :=
-  Var.ofFin_toFin NFSort.appTerm i
-
-theorem appTermVarToFin_toVar {Γ : List NFSort} (v : Var Γ .appTerm) :
-    appTermFinToVar (appTermVarToFin v) = v :=
-  Var.toFin_ofFin v
-
-abbrev normalExpVarToFin {Γ : List NFSort} :
-    Var Γ .normalExp → Fin (normalExpCount Γ) :=
-  Var.toFin
-
-abbrev normalExpFinToVar {Γ : List NFSort} :
-    Fin (normalExpCount Γ) → Var Γ .normalExp :=
-  Var.ofFin NFSort.normalExp
-
-theorem normalExpFinToVar_toFin {Γ : List NFSort} (i : Fin (normalExpCount Γ)) :
-    normalExpVarToFin (normalExpFinToVar i) = i :=
-  Var.ofFin_toFin NFSort.normalExp i
-
-theorem normalExpVarToFin_toVar {Γ : List NFSort} (v : Var Γ .normalExp) :
-    normalExpFinToVar (normalExpVarToFin v) = v :=
-  Var.toFin_ofFin v
-
 def NFCode : Poly.Ix NFSignature → Type
   | (_, .normalExp) => Nat
   | (Γ, .appTerm) => Fin (appTermCount Γ) × Nat
 
-abbrev NFNormalLayerShape (Γ : List NFSort) : Type :=
-  Fin (normalExpCount Γ) ⊕ (NFCode (Γ, .appTerm) ⊕ Nat)
+theorem NFCode_normalExp_carrier (Γ : List NFSort) :
+    NFCode (Γ, .normalExp) = Nat :=
+  rfl
 
-abbrev NFAppTermLayerShape (Γ : List NFSort) : Type :=
-  Fin (appTermCount Γ) ⊕ (NFCode (Γ, .appTerm) × Nat)
+theorem NFCode_appTerm_carrier (Γ : List NFSort) :
+    NFCode (Γ, .appTerm) = (Fin (appTermCount Γ) × Nat) :=
+  rfl
 
 def NFCodeRank : ∀ i, NFCode i → Nat
   | (Γ, .normalExp), n => by
@@ -152,323 +114,161 @@ def NFCodeRank : ∀ i, NFCode i → Nat
       exact if appTermCount Γ = 0 then 2 * n + 2 else 2 * n + 1
   | (_, .appTerm), p => 2 * p.2
 
-def NFNormalLayerToShape (Γ : List NFSort) :
-    CodeLayer NFPoly NFInversion NFCode (Γ, .normalExp) → NFNormalLayerShape Γ
-  | ⟨.var v, _child⟩ => Sum.inl (normalExpVarToFin v)
-  | ⟨.op .dum h, child⟩ => by
+abbrev NFNormalCtorCarrier (Γ : List NFSort) : Type :=
+  NFCode (Γ, .appTerm) ⊕ Nat
+
+abbrev NFAppCtorCarrier (Γ : List NFSort) : Type :=
+  NFCode (Γ, .appTerm) × Nat
+
+def NFNormalCtorToCarrier (Γ : List NFSort) :
+    CtorLayer NFSignature NFCode Γ .normalExp → NFNormalCtorCarrier Γ
+  | ⟨.dum, h, child⟩ => by
       cases h
-      exact Sum.inr (Sum.inl (child ⟨0, by decide⟩))
-  | ⟨.op .lam h, child⟩ => by
+      exact Sum.inl (child ⟨0, by decide⟩)
+  | ⟨.lam, h, child⟩ => by
       cases h
-      exact Sum.inr (Sum.inr (child ⟨0, by decide⟩))
-  | ⟨.op .app h, _child⟩ => by
+      exact Sum.inr (child ⟨0, by decide⟩)
+  | ⟨.app, h, _child⟩ => by
       cases h
 
-def NFNormalLayerOfShape (Γ : List NFSort) :
-    NFNormalLayerShape Γ → CodeLayer NFPoly NFInversion NFCode (Γ, .normalExp)
-  | Sum.inl v => ⟨.var (normalExpFinToVar v), fun q => nomatch q⟩
-  | Sum.inr (Sum.inl e) =>
-      ⟨.op NFCtor.dum rfl, fun
+def NFNormalCtorOfCarrier (Γ : List NFSort) :
+    NFNormalCtorCarrier Γ → CtorLayer NFSignature NFCode Γ .normalExp
+  | Sum.inl e =>
+      ⟨.dum, rfl, fun
         | ⟨0, _⟩ => e
         | ⟨n + 1, h⟩ => by
             simp [NFSignature, NFArgs] at h⟩
-  | Sum.inr (Sum.inr body) =>
-      ⟨.op NFCtor.lam rfl, fun
+  | Sum.inr body =>
+      ⟨.lam, rfl, fun
         | ⟨0, _⟩ => body
         | ⟨n + 1, h⟩ => by
             simp [NFSignature, NFArgs] at h⟩
 
-theorem NFNormalLayerShape_left_inv (Γ : List NFSort) :
-    Function.LeftInverse (NFNormalLayerOfShape Γ) (NFNormalLayerToShape Γ) := by
+theorem NFNormalCtor_left_inv (Γ : List NFSort) :
+    Function.LeftInverse (NFNormalCtorOfCarrier Γ) (NFNormalCtorToCarrier Γ) := by
   intro layer
   cases layer with
-  | mk code child =>
-      cases code with
-      | var v =>
-          have hchild : (fun q => nomatch q) = child := by
+  | mk c h child =>
+      cases c with
+      | dum =>
+          cases h
+          dsimp [NFNormalCtorToCarrier, NFNormalCtorOfCarrier]
+          rw [CtorLayer.mk.injEq]
+          constructor
+          · rfl
+          · apply heq_of_eq
             funext q
-            cases q
-          cases hchild
-          change NFNormalLayerOfShape Γ (Sum.inl (normalExpVarToFin v)) =
-            ⟨FiberCode.var v, (fun q => nomatch q)⟩
-          dsimp [NFNormalLayerOfShape]
-          rw [normalExpVarToFin_toVar v]
-          refine Sigma.ext rfl ?_
-          apply heq_of_eq
-          funext q
-          cases q
-      | op c h =>
-          cases c with
-          | dum =>
-              cases h
-              refine Sigma.ext rfl ?_
-              apply heq_of_eq
-              funext q
-              cases q using Fin.cases with
-              | zero => rfl
-              | succ q => exact False.elim (Nat.not_lt_zero q.val q.isLt)
-          | lam =>
-              cases h
-              refine Sigma.ext rfl ?_
-              apply heq_of_eq
-              funext q
-              cases q using Fin.cases with
-              | zero => rfl
-              | succ q => exact False.elim (Nat.not_lt_zero q.val q.isLt)
-          | app =>
-              cases h
+            cases q using Fin.cases with
+            | zero => rfl
+            | succ q => exact False.elim (Nat.not_lt_zero q.val q.isLt)
+      | lam =>
+          cases h
+          dsimp [NFNormalCtorToCarrier, NFNormalCtorOfCarrier]
+          rw [CtorLayer.mk.injEq]
+          constructor
+          · rfl
+          · apply heq_of_eq
+            funext q
+            cases q using Fin.cases with
+            | zero => rfl
+            | succ q => exact False.elim (Nat.not_lt_zero q.val q.isLt)
+      | app =>
+          cases h
 
-theorem NFNormalLayerShape_right_inv (Γ : List NFSort) :
-    Function.RightInverse (NFNormalLayerOfShape Γ) (NFNormalLayerToShape Γ) := by
-  intro shape
-  cases shape with
-  | inl v =>
-      simp [NFNormalLayerToShape, NFNormalLayerOfShape, normalExpFinToVar_toFin]
-  | inr rest =>
-      cases rest with
-      | inl e => rfl
-      | inr body => rfl
+theorem NFNormalCtor_right_inv (Γ : List NFSort) :
+    Function.RightInverse (NFNormalCtorOfCarrier Γ) (NFNormalCtorToCarrier Γ) := by
+  intro x
+  cases x with
+  | inl e => rfl
+  | inr body => rfl
 
-def NFNormalLayerShapeIso (Γ : List NFSort) :
-    CodeLayer NFPoly NFInversion NFCode (Γ, .normalExp) ≃ᵢ NFNormalLayerShape Γ where
-  toFun := NFNormalLayerToShape Γ
-  invFun := NFNormalLayerOfShape Γ
-  left_inv := NFNormalLayerShape_left_inv Γ
-  right_inv := NFNormalLayerShape_right_inv Γ
+def NFNormalCtorIso (Γ : List NFSort) :
+    CtorLayer NFSignature NFCode Γ .normalExp ≃ᵢ NFNormalCtorCarrier Γ where
+  toFun := NFNormalCtorToCarrier Γ
+  invFun := NFNormalCtorOfCarrier Γ
+  left_inv := NFNormalCtor_left_inv Γ
+  right_inv := NFNormalCtor_right_inv Γ
 
-def NFAppTermLayerToShape (Γ : List NFSort) :
-    CodeLayer NFPoly NFInversion NFCode (Γ, .appTerm) → NFAppTermLayerShape Γ
-  | ⟨.var v, _child⟩ => Sum.inl (appTermVarToFin v)
-  | ⟨.op .app h, child⟩ => by
+def NFAppCtorToCarrier (Γ : List NFSort) :
+    CtorLayer NFSignature NFCode Γ .appTerm → NFAppCtorCarrier Γ
+  | ⟨.app, h, child⟩ => by
       cases h
-      exact Sum.inr (child ⟨0, by decide⟩, child ⟨1, by decide⟩)
-  | ⟨.op .dum h, _child⟩ => by
+      exact (child ⟨0, by decide⟩, child ⟨1, by decide⟩)
+  | ⟨.dum, h, _child⟩ => by
       cases h
-  | ⟨.op .lam h, _child⟩ => by
+  | ⟨.lam, h, _child⟩ => by
       cases h
 
-def NFAppTermLayerOfShape (Γ : List NFSort) :
-    NFAppTermLayerShape Γ → CodeLayer NFPoly NFInversion NFCode (Γ, .appTerm)
-  | Sum.inl v => ⟨.var (appTermFinToVar v), fun q => nomatch q⟩
-  | Sum.inr pair =>
-      ⟨.op NFCtor.app rfl, fun
+def NFAppCtorOfCarrier (Γ : List NFSort) :
+    NFAppCtorCarrier Γ → CtorLayer NFSignature NFCode Γ .appTerm
+  | pair =>
+      ⟨.app, rfl, fun
         | ⟨0, _⟩ => pair.1
         | ⟨1, _⟩ => pair.2
         | ⟨n + 2, h⟩ => by
             simp [NFSignature, NFArgs] at h
             omega⟩
 
-theorem NFAppTermLayerShape_left_inv (Γ : List NFSort) :
-    Function.LeftInverse (NFAppTermLayerOfShape Γ) (NFAppTermLayerToShape Γ) := by
+theorem NFAppCtor_left_inv (Γ : List NFSort) :
+    Function.LeftInverse (NFAppCtorOfCarrier Γ) (NFAppCtorToCarrier Γ) := by
   intro layer
   cases layer with
-  | mk code child =>
-      cases code with
-      | var v =>
-          have hchild : (fun q => nomatch q) = child := by
+  | mk c h child =>
+      cases c with
+      | dum =>
+          cases h
+      | lam =>
+          cases h
+      | app =>
+          cases h
+          dsimp [NFAppCtorToCarrier, NFAppCtorOfCarrier]
+          rw [CtorLayer.mk.injEq]
+          constructor
+          · rfl
+          · apply heq_of_eq
             funext q
-            cases q
-          cases hchild
-          change NFAppTermLayerOfShape Γ (Sum.inl (appTermVarToFin v)) =
-            ⟨FiberCode.var v, (fun q => nomatch q)⟩
-          dsimp [NFAppTermLayerOfShape]
-          rw [appTermVarToFin_toVar v]
-          refine Sigma.ext rfl ?_
-          apply heq_of_eq
-          funext q
-          cases q
-      | op c h =>
-          cases c with
-          | dum =>
-              cases h
-          | lam =>
-              cases h
-          | app =>
-              cases h
-              refine Sigma.ext rfl ?_
-              apply heq_of_eq
-              funext q
-              cases q using Fin.cases with
-              | zero => rfl
-              | succ q =>
-                  cases q using Fin.cases with
-                  | zero => rfl
-                  | succ q => exact False.elim (Nat.not_lt_zero q.val q.isLt)
+            cases q using Fin.cases with
+            | zero => rfl
+            | succ q =>
+                cases q using Fin.cases with
+                | zero => rfl
+                | succ q => exact False.elim (Nat.not_lt_zero q.val q.isLt)
 
-theorem NFAppTermLayerShape_right_inv (Γ : List NFSort) :
-    Function.RightInverse (NFAppTermLayerOfShape Γ) (NFAppTermLayerToShape Γ) := by
-  intro shape
-  cases shape with
-  | inl v =>
-      simp [NFAppTermLayerToShape, NFAppTermLayerOfShape, appTermFinToVar_toFin]
-  | inr pair =>
-      cases pair
-      rfl
+theorem NFAppCtor_right_inv (Γ : List NFSort) :
+    Function.RightInverse (NFAppCtorOfCarrier Γ) (NFAppCtorToCarrier Γ) := by
+  intro pair
+  cases pair
+  rfl
 
-def NFAppTermLayerShapeIso (Γ : List NFSort) :
-    CodeLayer NFPoly NFInversion NFCode (Γ, .appTerm) ≃ᵢ NFAppTermLayerShape Γ where
-  toFun := NFAppTermLayerToShape Γ
-  invFun := NFAppTermLayerOfShape Γ
-  left_inv := NFAppTermLayerShape_left_inv Γ
-  right_inv := NFAppTermLayerShape_right_inv Γ
+def NFAppCtorIso (Γ : List NFSort) :
+    CtorLayer NFSignature NFCode Γ .appTerm ≃ᵢ NFAppCtorCarrier Γ where
+  toFun := NFAppCtorToCarrier Γ
+  invFun := NFAppCtorOfCarrier Γ
+  left_inv := NFAppCtor_left_inv Γ
+  right_inv := NFAppCtor_right_inv Γ
 
-def NFNormalTailToNat (Γ : List NFSort) :
-    NFCode (Γ, .appTerm) ⊕ Nat → Nat
-  | Sum.inl app =>
-      if h : 0 < appTermCount Γ then
-        2 * (CodeAlgebra.finProdNat (appTermCount Γ) h).toFun app
-      else
-        False.elim (Nat.not_lt_zero app.1.val (by
-          have hzero : appTermCount Γ = 0 := Nat.eq_zero_of_not_pos h
-          simpa [hzero] using app.1.isLt))
-  | Sum.inr body =>
-      if appTermCount Γ = 0 then body else 2 * body + 1
-
-def NFNormalTailOfNat (Γ : List NFSort) (n : Nat) :
-    NFCode (Γ, .appTerm) ⊕ Nat :=
-  if h : 0 < appTermCount Γ then
-    if _hp : n % 2 = 0 then
-      Sum.inl ((CodeAlgebra.finProdNat (appTermCount Γ) h).invFun (n / 2))
-    else
-      Sum.inr (n / 2)
-  else
-    Sum.inr n
-
-theorem NFNormalTail_left_inv (Γ : List NFSort) :
-    Function.LeftInverse (NFNormalTailOfNat Γ) (NFNormalTailToNat Γ) := by
-  intro x
-  cases x with
-  | inl app =>
-      dsimp [NFNormalTailToNat, NFNormalTailOfNat]
-      by_cases h : 0 < appTermCount Γ
-      · let code := (CodeAlgebra.finProdNat (appTermCount Γ) h).toFun app
-        have hmod : (2 * code) % 2 = 0 := Nat.mul_mod_right 2 code
-        have hdiv : (2 * code) / 2 = code :=
-          Nat.mul_div_right code (by decide : 0 < 2)
-        simp [h, hmod, hdiv, code]
-      · exact False.elim (Nat.not_lt_zero app.1.val (by
-          have hzero : appTermCount Γ = 0 := Nat.eq_zero_of_not_pos h
-          simpa [hzero] using app.1.isLt))
-  | inr body =>
-      dsimp [NFNormalTailToNat, NFNormalTailOfNat]
-      by_cases h : appTermCount Γ = 0
-      · simp [h, Nat.lt_irrefl]
-      · have hpos : 0 < appTermCount Γ := Nat.pos_of_ne_zero h
-        have hmod : (2 * body + 1) % 2 ≠ 0 := by
-          have hcalc : (2 * body + 1) % 2 = 1 := by
-            calc
-              (2 * body + 1) % 2 = (1 + 2 * body) % 2 := by rw [Nat.add_comm]
-              _ = 1 % 2 := Nat.add_mul_mod_self_left 1 2 body
-              _ = 1 := Nat.mod_eq_of_lt (by decide : 1 < 2)
-          omega
-        have hdiv : (2 * body + 1) / 2 = body := by
-          calc
-            (2 * body + 1) / 2 = (1 + body * 2) / 2 := by
-              rw [Nat.add_comm, Nat.mul_comm 2 body]
-            _ = 1 / 2 + body := Nat.add_mul_div_right 1 body (by decide : 0 < 2)
-            _ = body := by
-              rw [Nat.div_eq_of_lt (by decide : 1 < 2)]
-              exact Nat.zero_add body
-        simp [hpos, h, hdiv]
-
-theorem NFNormalTail_right_inv (Γ : List NFSort) :
-    Function.RightInverse (NFNormalTailOfNat Γ) (NFNormalTailToNat Γ) := by
-  intro n
-  dsimp [NFNormalTailToNat, NFNormalTailOfNat]
-  by_cases h : 0 < appTermCount Γ
-  · by_cases hp : n % 2 = 0
-    · simp [h, hp]
-      have hsplit := Nat.div_add_mod n 2
-      omega
-    · simp [h, hp]
-      have hne : ¬appTermCount Γ = 0 := Nat.ne_of_gt h
-      have hsplit := Nat.div_add_mod n 2
-      rcases Nat.mod_two_eq_zero_or_one n with h0 | h1
-      · exact False.elim (hp h0)
-      · simp [hne]
-        omega
-  · have hzero : appTermCount Γ = 0 := Nat.eq_zero_of_not_pos h
-    simp [hzero]
-
-def NFNormalTailIso (Γ : List NFSort) :
-    (NFCode (Γ, .appTerm) ⊕ Nat) ≃ᵢ Nat where
-  toFun := NFNormalTailToNat Γ
-  invFun := NFNormalTailOfNat Γ
-  left_inv := NFNormalTail_left_inv Γ
-  right_inv := NFNormalTail_right_inv Γ
-
-def NFNormalLayerIso (Γ : List NFSort) :
-    CodeLayer NFPoly NFInversion NFCode (Γ, .normalExp) ≃ᵢ Nat :=
-  Iso.trans (NFNormalLayerShapeIso Γ)
-    (Iso.trans (Iso.sum (Iso.refl (Fin (normalExpCount Γ))) (NFNormalTailIso Γ))
+def NFNormalGeneratedShapeIso (Γ : List NFSort) :
+    LayerShape NFSignature NFCode Γ .normalExp ≃ᵢ NFCode (Γ, .normalExp) :=
+  Iso.trans (Iso.sum (Var.finIso Γ .normalExp) (NFNormalCtorIso Γ))
+    (Iso.trans
+      (Iso.sum (Iso.refl (Fin (normalExpCount Γ)))
+        (CodeAlgebra.finProdNatOrNat (appTermCount Γ)))
       (CodeAlgebra.finPlusNat (normalExpCount Γ)))
 
-def NFAppTermShapeToCode (Γ : List NFSort) :
-    NFAppTermLayerShape Γ → NFCode (Γ, .appTerm)
-  | Sum.inl v => (v, 0)
-  | Sum.inr pair =>
-      (pair.1.1, CodeAlgebra.prodNat.toFun (pair.1.2, pair.2) + 1)
+def NFAppGeneratedShapeIso (Γ : List NFSort) :
+    LayerShape NFSignature NFCode Γ .appTerm ≃ᵢ NFCode (Γ, .appTerm) :=
+  Iso.trans (Iso.sum (Var.finIso Γ .appTerm) (NFAppCtorIso Γ))
+    (CodeAlgebra.finTaggedProdNat (appTermCount Γ))
 
-def NFAppTermCodeToShape (Γ : List NFSort) :
-    NFCode (Γ, .appTerm) → NFAppTermLayerShape Γ
-  | (tag, 0) => Sum.inl tag
-  | (tag, n + 1) =>
-      let p := CodeAlgebra.prodNat.invFun n
-      Sum.inr ((tag, p.1), p.2)
+def NFGeneratedShapeIso :
+    ∀ Γ t, LayerShape NFSignature NFCode Γ t ≃ᵢ NFCode (Γ, t)
+  | Γ, .normalExp => NFNormalGeneratedShapeIso Γ
+  | Γ, .appTerm => NFAppGeneratedShapeIso Γ
 
-theorem NFAppTermShape_left_inv (Γ : List NFSort) :
-    Function.LeftInverse (NFAppTermCodeToShape Γ) (NFAppTermShapeToCode Γ) := by
-  intro x
-  cases x with
-  | inl v => rfl
-  | inr pair =>
-      cases pair with
-      | mk fn arg =>
-        cases fn with
-        | mk tag payload =>
-          dsimp [NFAppTermShapeToCode, NFAppTermCodeToShape]
-          rw [CodeAlgebra.prodNat.left_inv (payload, arg)]
-
-theorem NFAppTermShape_right_inv (Γ : List NFSort) :
-    Function.RightInverse (NFAppTermCodeToShape Γ) (NFAppTermShapeToCode Γ) := by
-  intro code
-  cases code with
-  | mk tag n =>
-    cases n with
-    | zero => rfl
-    | succ n =>
-        dsimp [NFAppTermShapeToCode, NFAppTermCodeToShape]
-        rw [CodeAlgebra.prodNat.right_inv n]
-
-def NFAppTermShapeIso (Γ : List NFSort) :
-    NFAppTermLayerShape Γ ≃ᵢ NFCode (Γ, .appTerm) where
-  toFun := NFAppTermShapeToCode Γ
-  invFun := NFAppTermCodeToShape Γ
-  left_inv := NFAppTermShape_left_inv Γ
-  right_inv := NFAppTermShape_right_inv Γ
-
-def NFAppTermLayerIso (Γ : List NFSort) :
-    CodeLayer NFPoly NFInversion NFCode (Γ, .appTerm) ≃ᵢ NFCode (Γ, .appTerm) :=
-  Iso.trans (NFAppTermLayerShapeIso Γ) (NFAppTermShapeIso Γ)
-
-def NFCodeLayerIso :
-    ∀ i, CodeLayer NFPoly NFInversion NFCode i ≃ᵢ NFCode i
-  | (Γ, .normalExp) => NFNormalLayerIso Γ
-  | (Γ, .appTerm) => NFAppTermLayerIso Γ
-
-theorem NFCode_layer_child_rank_lt :
-    ∀ {i : Poly.Ix NFSignature}
-      (layer : CodeLayer NFPoly NFInversion NFCode i)
-      (q : NFPoly.Pos
-          (NFInversion.decode i layer.1).ctor
-          (NFInversion.decode i layer.1).param),
-      NFCodeRank
-          (NFPoly.input (NFInversion.decode i layer.1).param q)
-          (layer.2 q) < NFCodeRank i ((NFCodeLayerIso i).toFun layer) := by
-  intro i layer
-  cases i with
-  | mk Γ t =>
-    cases t with
+theorem NFGeneratedLayer_child_rank_lt :
+    LayerShapeRankProof NFSignature NFCode NFGeneratedShapeIso NFCodeRank := by
+  intro Γ t layer
+  cases t with
     | normalExp =>
         cases layer with
         | mk code child =>
@@ -487,26 +287,32 @@ theorem NFCode_layer_child_rank_lt :
                       have hcount : 0 < appTermCount Γ :=
                         Nat.lt_of_le_of_lt (Nat.zero_le app.1.val) app.1.isLt
                       have hcne : ¬appTermCount Γ = 0 := Nat.ne_of_gt hcount
-                      let payload :=
-                        (CodeAlgebra.finProdNat (appTermCount Γ) hcount).toFun app
+                      let tail :=
+                        (CodeAlgebra.finProdNatOrNat (appTermCount Γ)).toFun
+                          (Sum.inl app)
                       have hparent :
-                          (NFCodeLayerIso (Γ, NFSort.normalExp)).toFun
-                              ⟨FiberCode.op NFCtor.dum rfl, child⟩ =
-                            normalExpCount Γ + 2 * payload := by
-                        simp [app, payload, hcount, NFCodeLayerIso, NFNormalLayerIso,
-                          NFNormalLayerShapeIso, NFNormalLayerToShape,
-                          NFNormalTailIso, NFNormalTailToNat, Iso.trans, Iso.sum,
-                          CodeAlgebra.finPlusNat]
+                          (NFGeneratedShapeIso Γ NFSort.normalExp).toFun
+                              ((LayerShape.iso (S := NFSignature) (Code := NFCode)
+                                Γ NFSort.normalExp).toFun
+                                ⟨FiberCode.op NFCtor.dum rfl, child⟩) =
+                            normalExpCount Γ + tail := by
+                        simp [app, tail, hcount, NFGeneratedShapeIso,
+                          NFNormalGeneratedShapeIso, NFNormalCtorIso,
+                          NFNormalCtorToCarrier, LayerShape.iso,
+                          LayerShape.layerToShape, Iso.trans, Iso.sum,
+                          CodeAlgebra.finPlusNat, CodeAlgebra.finProdNatOrNat]
                       change NFCodeRank (Γ, NFSort.appTerm) app <
                         NFCodeRank (Γ, NFSort.normalExp)
-                          ((NFCodeLayerIso (Γ, NFSort.normalExp)).toFun
-                            ⟨FiberCode.op NFCtor.dum rfl, child⟩)
+                          ((NFGeneratedShapeIso Γ NFSort.normalExp).toFun
+                            ((LayerShape.iso (S := NFSignature) (Code := NFCode)
+                              Γ NFSort.normalExp).toFun
+                              ⟨FiberCode.op NFCtor.dum rfl, child⟩))
                       rw [hparent]
                       simp [NFCodeRank, hcne]
-                      have happ_le : app.2 ≤ payload := by
-                        simpa [payload] using
-                          CodeAlgebra.finProdNat_toFun_snd_le
-                            (appTermCount Γ) hcount app
+                      have happ_le : app.2 ≤ tail := by
+                        simpa [tail] using
+                          CodeAlgebra.finProdNatOrNat_inl_snd_le
+                            (appTermCount Γ) app
                       omega
                   | succ q => exact False.elim (Nat.not_lt_zero q.val q.isLt)
               | lam =>
@@ -515,35 +321,56 @@ theorem NFCode_layer_child_rank_lt :
                   cases q using Fin.cases with
                   | zero =>
                       let body : Nat := child ⟨0, by decide⟩
+                      let tail :=
+                        (CodeAlgebra.finProdNatOrNat (appTermCount Γ)).toFun
+                          (Sum.inr body)
+                      have hbody_le : body ≤ tail := by
+                        simpa [tail] using
+                          CodeAlgebra.finProdNatOrNat_inr_le
+                            (appTermCount Γ) body
                       by_cases hc : appTermCount Γ = 0
                       · have hparent :
-                            (NFCodeLayerIso (Γ, NFSort.normalExp)).toFun
-                                ⟨FiberCode.op NFCtor.lam rfl, child⟩ =
-                              normalExpCount Γ + body := by
-                          simp [body, hc, NFCodeLayerIso, NFNormalLayerIso,
-                            NFNormalLayerShapeIso, NFNormalLayerToShape,
-                            NFNormalTailIso, NFNormalTailToNat, Iso.trans, Iso.sum,
-                            CodeAlgebra.finPlusNat]
+                            (NFGeneratedShapeIso Γ NFSort.normalExp).toFun
+                                ((LayerShape.iso (S := NFSignature) (Code := NFCode)
+                                  Γ NFSort.normalExp).toFun
+                                  ⟨FiberCode.op NFCtor.lam rfl, child⟩) =
+                              normalExpCount Γ + tail := by
+                          simp [body, tail, hc, NFGeneratedShapeIso,
+                            NFNormalGeneratedShapeIso, NFNormalCtorIso,
+                            NFNormalCtorToCarrier, LayerShape.iso,
+                            LayerShape.layerToShape, Iso.trans, Iso.sum,
+                            CodeAlgebra.finPlusNat, CodeAlgebra.finProdNatOrNat]
                         change NFCodeRank (NFSort.appTerm :: Γ, NFSort.normalExp) body <
                           NFCodeRank (Γ, NFSort.normalExp)
-                            ((NFCodeLayerIso (Γ, NFSort.normalExp)).toFun
-                              ⟨FiberCode.op NFCtor.lam rfl, child⟩)
+                            ((NFGeneratedShapeIso Γ NFSort.normalExp).toFun
+                              ((LayerShape.iso (S := NFSignature) (Code := NFCode)
+                                Γ NFSort.normalExp).toFun
+                                ⟨FiberCode.op NFCtor.lam rfl, child⟩))
                         rw [hparent]
                         simp [NFCodeRank, appTermCount, Var.count, hc]
                         omega
                       · have hpos : 0 < appTermCount Γ := Nat.pos_of_ne_zero hc
+                        have hbody_lt : body < tail := by
+                          simpa [tail] using
+                            CodeAlgebra.finProdNatOrNat_inr_lt_of_pos
+                              (k := appTermCount Γ) (n := body) hpos
                         have hparent :
-                            (NFCodeLayerIso (Γ, NFSort.normalExp)).toFun
-                                ⟨FiberCode.op NFCtor.lam rfl, child⟩ =
-                              normalExpCount Γ + (2 * body + 1) := by
-                          simp [body, hpos, hc, NFCodeLayerIso, NFNormalLayerIso,
-                            NFNormalLayerShapeIso, NFNormalLayerToShape,
-                            NFNormalTailIso, NFNormalTailToNat, Iso.trans, Iso.sum,
-                            CodeAlgebra.finPlusNat]
+                            (NFGeneratedShapeIso Γ NFSort.normalExp).toFun
+                                ((LayerShape.iso (S := NFSignature) (Code := NFCode)
+                                  Γ NFSort.normalExp).toFun
+                                  ⟨FiberCode.op NFCtor.lam rfl, child⟩) =
+                              normalExpCount Γ + tail := by
+                          simp [body, tail, hpos, hc, NFGeneratedShapeIso,
+                            NFNormalGeneratedShapeIso, NFNormalCtorIso,
+                            NFNormalCtorToCarrier, LayerShape.iso,
+                            LayerShape.layerToShape, Iso.trans, Iso.sum,
+                            CodeAlgebra.finPlusNat, CodeAlgebra.finProdNatOrNat]
                         change NFCodeRank (NFSort.appTerm :: Γ, NFSort.normalExp) body <
                           NFCodeRank (Γ, NFSort.normalExp)
-                            ((NFCodeLayerIso (Γ, NFSort.normalExp)).toFun
-                              ⟨FiberCode.op NFCtor.lam rfl, child⟩)
+                            ((NFGeneratedShapeIso Γ NFSort.normalExp).toFun
+                              ((LayerShape.iso (S := NFSignature) (Code := NFCode)
+                                Γ NFSort.normalExp).toFun
+                                ⟨FiberCode.op NFCtor.lam rfl, child⟩))
                         rw [hparent]
                         simp [NFCodeRank, appTermCount, Var.count, hc]
                         omega
@@ -571,50 +398,66 @@ theorem NFCode_layer_child_rank_lt :
                   have hcount : 0 < appTermCount Γ :=
                     Nat.lt_of_le_of_lt (Nat.zero_le fn.1.val) fn.1.isLt
                   have hcne : ¬appTermCount Γ = 0 := Nat.ne_of_gt hcount
-                  let pairCode := CodeAlgebra.prodNat.toFun (fn.2, arg)
+                  let pair := (fn, arg)
                   have hparent :
-                      (NFCodeLayerIso (Γ, NFSort.appTerm)).toFun
-                          ⟨FiberCode.op NFCtor.app rfl, child⟩ =
-                        (fn.1, pairCode + 1) := by
-                    simp [fn, arg, pairCode, NFCodeLayerIso, NFAppTermLayerIso,
-                      NFAppTermLayerShapeIso, NFAppTermLayerToShape, NFAppTermShapeIso,
-                      NFAppTermShapeToCode, Iso.trans]
+                      (NFGeneratedShapeIso Γ NFSort.appTerm).toFun
+                          ((LayerShape.iso (S := NFSignature) (Code := NFCode)
+                            Γ NFSort.appTerm).toFun
+                            ⟨FiberCode.op NFCtor.app rfl, child⟩) =
+                        (CodeAlgebra.finTaggedProdNat (appTermCount Γ)).toFun
+                          (Sum.inr pair) := by
+                    simp [fn, arg, pair, NFGeneratedShapeIso,
+                      NFAppGeneratedShapeIso, NFAppCtorIso, NFAppCtorToCarrier,
+                      LayerShape.iso, LayerShape.layerToShape, Iso.trans, Iso.sum]
                   cases q using Fin.cases with
                   | zero =>
                       change NFCodeRank (Γ, NFSort.appTerm) fn <
                         NFCodeRank (Γ, NFSort.appTerm)
-                          ((NFCodeLayerIso (Γ, NFSort.appTerm)).toFun
-                            ⟨FiberCode.op NFCtor.app rfl, child⟩)
+                          ((NFGeneratedShapeIso Γ NFSort.appTerm).toFun
+                            ((LayerShape.iso (S := NFSignature) (Code := NFCode)
+                              Γ NFSort.appTerm).toFun
+                              ⟨FiberCode.op NFCtor.app rfl, child⟩))
                       rw [hparent]
                       simp [NFCodeRank]
-                      have hfn_le : fn.2 ≤ pairCode := by
-                        simpa [pairCode, CodeAlgebra.prodNat] using
-                          CodeAlgebra.prodNat_fst_le
-                            (CodeAlgebra.prodNat.toFun (fn.2, arg))
+                      have hfn_lt :
+                          fn.2 <
+                            ((CodeAlgebra.finTaggedProdNat
+                              (appTermCount Γ)).toFun (Sum.inr pair)).2 := by
+                        simpa [pair] using
+                          CodeAlgebra.finTaggedProdNat_inr_fst_payload_lt
+                            (appTermCount Γ) pair
                       omega
                   | succ q =>
                       cases q using Fin.cases with
                       | zero =>
                           change NFCodeRank (Γ, NFSort.normalExp) arg <
                             NFCodeRank (Γ, NFSort.appTerm)
-                              ((NFCodeLayerIso (Γ, NFSort.appTerm)).toFun
-                                ⟨FiberCode.op NFCtor.app rfl, child⟩)
+                              ((NFGeneratedShapeIso Γ NFSort.appTerm).toFun
+                                ((LayerShape.iso (S := NFSignature) (Code := NFCode)
+                                  Γ NFSort.appTerm).toFun
+                                  ⟨FiberCode.op NFCtor.app rfl, child⟩))
                           rw [hparent]
                           simp [NFCodeRank, hcne]
-                          have harg_le : arg ≤ pairCode := by
-                            simpa [pairCode, CodeAlgebra.prodNat] using
-                              CodeAlgebra.prodNat_snd_le
-                                (CodeAlgebra.prodNat.toFun (fn.2, arg))
+                          have harg_lt :
+                              arg <
+                                ((CodeAlgebra.finTaggedProdNat
+                                  (appTermCount Γ)).toFun (Sum.inr pair)).2 := by
+                            simpa [pair] using
+                              CodeAlgebra.finTaggedProdNat_inr_snd_lt
+                                (appTermCount Γ) pair
                           omega
                       | succ q => exact False.elim (Nat.not_lt_zero q.val q.isLt)
 
-def NFCodeCodingData : CodeCodingData NFSignature where
+def NFLayerShapeCodingData : LayerShapeCodingData NFSignature where
   Code := NFCode
-  layer := NFCodeLayerIso
+  layerShape := NFGeneratedShapeIso
   rank := NFCodeRank
-  layer_child_rank_lt := by
-    intro i layer q
-    exact NFCode_layer_child_rank_lt layer q
+  shape_child_rank_lt := by
+    intro Γ t layer q
+    exact NFGeneratedLayer_child_rank_lt layer q
+
+def NFCodeCodingData : CodeCodingData NFSignature :=
+  NFLayerShapeCodingData.toCodeCodingData
 
 def NFSyntaxCodeIso (Γ : List NFSort) (t : NFSort) :
     NFTerm Γ t ≃ᵢ NFCode (Γ, t) :=
@@ -629,6 +472,26 @@ def AppTermCodeIso (Γ : List NFSort) :
 
 def NFClosedNatIso : NFClosed ≃ᵢ Nat :=
   NormalExpNatIso []
+
+theorem NFCode_closedNormal_carrier : NFCode ([], .normalExp) = Nat :=
+  rfl
+
+theorem NFCode_closedApp_carrier :
+    NFCode ([], .appTerm) = (Fin 0 × Nat) :=
+  rfl
+
+def ClosedAppTermEmptyIso : AppTerm [] ≃ᵢ Empty where
+  toFun := fun x =>
+    let code := (AppTermCodeIso []).toFun x
+    False.elim (Nat.not_lt_zero code.1.val code.1.isLt)
+  invFun := fun e => nomatch e
+  left_inv := by
+    intro x
+    let code := (AppTermCodeIso []).toFun x
+    exact False.elim (Nat.not_lt_zero code.1.val code.1.isLt)
+  right_inv := by
+    intro e
+    cases e
 
 end TypedBinding
 end Examples

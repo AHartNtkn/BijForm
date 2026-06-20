@@ -309,6 +309,11 @@ Main results:
 - `TypedBinding.syntaxIso (S) (Γ) (t) : Iso (Mu (TypedBinding.PolyOf S) (Γ, t)) (TypedBinding.Term S Γ t)`
 - `TypedBinding.CodeCodingData` packages arbitrary index-dependent concrete
   carrier codings and layer-local rank proofs.
+- `TypedBinding.LayerShape` and `TypedBinding.CtorLayer` generate the
+  one-step variable/constructor layer shape from the signature.
+- `TypedBinding.LayerShapeCodingData` packages carrier codings from that
+  generated layer shape, so instances do not supply a raw `CodeLayer`
+  equivalence.
 - `TypedBinding.ShapeCodingData` packages the concrete one-step carrier coding
   and layer-local rank proof needed to obtain generated shape encodings.
 
@@ -329,6 +334,9 @@ Main results for this instance:
 - `TypedBinding.NormalExpNatIso (Γ) : Iso (TypedBinding.NormalExp Γ) Nat`
 - `TypedBinding.AppTermCodeIso (Γ) : Iso (TypedBinding.AppTerm Γ) (Fin (TypedBinding.appTermCount Γ) x Nat)`
 - `TypedBinding.NFClosedNatIso : Iso TypedBinding.NFClosed Nat`
+- `TypedBinding.NFCode_normalExp_carrier (Γ) : TypedBinding.NFCode (Γ, normalExp) = Nat`
+- `TypedBinding.NFCode_appTerm_carrier (Γ) : TypedBinding.NFCode (Γ, appTerm) = Fin (TypedBinding.appTermCount Γ) x Nat`
+- `TypedBinding.ClosedAppTermEmptyIso : Iso (TypedBinding.AppTerm []) Empty`
 
 ### Numeric Expressions
 

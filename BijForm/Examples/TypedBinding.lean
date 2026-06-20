@@ -372,6 +372,89 @@ def syntaxIso {Ty : Type} (S : Signature Ty) (Γ : List Ty) (t : Ty) :
     Mu (PolyOf S) (Γ, t) ≃ᵢ Term S Γ t :=
   (syntaxGeneratedCode S).iso (Γ, t)
 
+/-- The constructor part of a one-step binding layer for output `(Γ, t)`.
+It records a signature constructor whose return sort is `t`, together with the
+recursive child codes required by that constructor under the extended contexts
+specified by the signature. -/
+structure CtorLayer {Ty : Type} (S : Signature Ty) (Code : Poly.Ix S → Type)
+    (Γ : List Ty) (t : Ty) where
+  ctor : S.Ctor
+  ret_eq : S.ret ctor = t
+  child :
+    (q : S.ArgPos ctor) →
+      Code ((S.arg ctor q).binders ++ Γ, (S.arg ctor q).sort)
+
+/-- Generic one-step layer shape for typed-binding signatures: either a
+context variable of the requested type, or a same-return constructor layer. -/
+abbrev LayerShape {Ty : Type} (S : Signature Ty) (Code : Poly.Ix S → Type)
+    (Γ : List Ty) (t : Ty) : Type :=
+  Var Γ t ⊕ CtorLayer S Code Γ t
+
+namespace LayerShape
+
+variable {Ty : Type} {S : Signature Ty} {Code : Poly.Ix S → Type}
+
+def layerToShape (Γ : List Ty) (t : Ty) :
+    CodeLayer (PolyOf S) (inversion S) Code (Γ, t) →
+      LayerShape S Code Γ t
+  | ⟨.var v, _child⟩ => Sum.inl v
+  | ⟨.op c h, child⟩ => by
+      cases h
+      exact Sum.inr ⟨c, rfl, child⟩
+
+def shapeToLayer (Γ : List Ty) (t : Ty) :
+    LayerShape S Code Γ t →
+      CodeLayer (PolyOf S) (inversion S) Code (Γ, t)
+  | Sum.inl v => ⟨.var v, fun q => nomatch q⟩
+  | Sum.inr ctor => by
+      cases ctor with
+      | mk c h child =>
+        cases h
+        exact ⟨.op c rfl, child⟩
+
+theorem layerShape_left_inv (Γ : List Ty) (t : Ty) :
+    Function.LeftInverse (shapeToLayer (S := S) (Code := Code) Γ t)
+      (layerToShape (S := S) (Code := Code) Γ t) := by
+  intro layer
+  cases layer with
+  | mk code child =>
+      cases code with
+      | var v =>
+          have hchild : (fun q => nomatch q) = child := by
+            funext q
+            cases q
+          cases hchild
+          rfl
+      | op c h =>
+          cases h
+          dsimp [layerToShape, shapeToLayer]
+          refine Sigma.ext rfl ?_
+          apply heq_of_eq
+          funext q
+          rfl
+
+theorem layerShape_right_inv (Γ : List Ty) (t : Ty) :
+    Function.RightInverse (shapeToLayer (S := S) (Code := Code) Γ t)
+      (layerToShape (S := S) (Code := Code) Γ t) := by
+  intro shape
+  cases shape with
+  | inl v => rfl
+  | inr ctor =>
+      cases ctor with
+      | mk c h child =>
+        cases h
+        rfl
+
+def iso (Γ : List Ty) (t : Ty) :
+    CodeLayer (PolyOf S) (inversion S) Code (Γ, t) ≃ᵢ
+      LayerShape S Code Γ t where
+  toFun := layerToShape (S := S) (Code := Code) Γ t
+  invFun := shapeToLayer (S := S) (Code := Code) Γ t
+  left_inv := layerShape_left_inv (S := S) (Code := Code) Γ t
+  right_inv := layerShape_right_inv (S := S) (Code := Code) Γ t
+
+end LayerShape
+
 /-- Coding data for a binding signature with an arbitrary index-dependent
 carrier family.  The rank proof is stated on the decoded one-step layer; the
 generic dependent-polynomial framework turns it into the encoded-parent
@@ -408,6 +491,73 @@ def syntaxCodeIso (D : CodeCodingData S) (Γ : List Ty) (t : Ty) :
   Iso.trans (Iso.symm (syntaxIso S Γ t)) (D.iso Γ t)
 
 end CodeCodingData
+
+/-- Layer-local descent obligation for carrier codings built from the generated
+typed-binding layer shape.  The child comes from the decoded raw layer, but the
+parent code is computed by first passing that layer through the generated
+`LayerShape.iso` and then through the instance's shape-to-carrier isomorphism. -/
+abbrev LayerShapeRankProof {Ty : Type} (S : Signature Ty)
+    (Code : Poly.Ix S → Type)
+    (layerShape : ∀ Γ t, LayerShape S Code Γ t ≃ᵢ Code (Γ, t))
+    (rank : ∀ i, Code i → Nat) : Prop :=
+  ∀ {Γ : List Ty} {t : Ty}
+    (layer : CodeLayer (PolyOf S) (inversion S) Code (Γ, t))
+    (q : (PolyOf S).Pos
+        ((inversion S).decode (Γ, t) layer.1).ctor
+        ((inversion S).decode (Γ, t) layer.1).param),
+    rank
+        ((PolyOf S).input
+          ((inversion S).decode (Γ, t) layer.1).param q)
+        (layer.2 q) <
+      rank (Γ, t)
+        ((layerShape Γ t).toFun
+          ((LayerShape.iso (S := S) (Code := Code) Γ t).toFun layer))
+
+/-- Coding data whose one-step layer is generated from the typed-binding
+signature before being encoded into the concrete carrier.  Instances supply an
+isomorphism from the generated variable/constructor shape to their carrier,
+rather than an opaque raw `CodeLayer` isomorphism. -/
+structure LayerShapeCodingData {Ty : Type} (S : Signature Ty) where
+  Code : Poly.Ix S → Type
+  layerShape : ∀ Γ t, LayerShape S Code Γ t ≃ᵢ Code (Γ, t)
+  rank : ∀ i, Code i → Nat
+  shape_child_rank_lt : LayerShapeRankProof S Code layerShape rank
+
+namespace LayerShapeCodingData
+
+variable {Ty : Type} {S : Signature Ty}
+
+def layer (D : LayerShapeCodingData S) (i : Poly.Ix S) :
+    CodeLayer (PolyOf S) (inversion S) D.Code i ≃ᵢ D.Code i := by
+  cases i with
+  | mk Γ t =>
+      exact Iso.trans (LayerShape.iso (S := S) (Code := D.Code) Γ t)
+        (D.layerShape Γ t)
+
+def toCodeCodingData (D : LayerShapeCodingData S) :
+    CodeCodingData S where
+  Code := D.Code
+  layer := D.layer
+  rank := D.rank
+  layer_child_rank_lt := by
+    intro i layer q
+    cases i with
+    | mk Γ t =>
+        exact D.shape_child_rank_lt layer q
+
+def toGeneratedCode (D : LayerShapeCodingData S) :
+    GeneratedCode (PolyOf S) D.Code :=
+  D.toCodeCodingData.toGeneratedCode
+
+def iso (D : LayerShapeCodingData S) (Γ : List Ty) (t : Ty) :
+    Mu (PolyOf S) (Γ, t) ≃ᵢ D.Code (Γ, t) :=
+  D.toCodeCodingData.iso Γ t
+
+def syntaxCodeIso (D : LayerShapeCodingData S) (Γ : List Ty) (t : Ty) :
+    Term S Γ t ≃ᵢ D.Code (Γ, t) :=
+  D.toCodeCodingData.syntaxCodeIso Γ t
+
+end LayerShapeCodingData
 
 /-- Shape-coding data for a binding signature.  The generic binding module
 generates the polynomial and syntax route; a concrete signature supplies this
