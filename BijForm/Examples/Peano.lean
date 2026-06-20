@@ -326,21 +326,14 @@ def PeanoNatLayerIso (k : Nat) :
       (Iso.sum (Iso.refl Nat) (Iso.sum CodeAlgebra.prodNat (Iso.refl Nat))))
       CodeAlgebra.sum4Nat)
 
-theorem PeanoNat_child_lt :
-    ∀ {k : Nat} (n : Nat)
+theorem PeanoNat_layer_child_lt :
+    ∀ {k : Nat} (layer : CodeLayer PeanoPoly PeanoInversion (fun _ => Nat) k)
       (q : PeanoPoly.Pos
-          (PeanoInversion.decode k ((PeanoNatLayerIso k).invFun n).1).ctor
-          (PeanoInversion.decode k ((PeanoNatLayerIso k).invFun n).1).param),
-      (((PeanoNatLayerIso k).invFun n).2 q) < n := by
-  intro k n
-  generalize hz : (PeanoNatLayerIso k).invFun n = z
-  have hn : (PeanoNatLayerIso k).toFun z = n := by
-    rw [← hz]
-    exact (PeanoNatLayerIso k).right_inv n
-  change ∀ q : PeanoPoly.Pos (PeanoInversion.decode k z.1).ctor
-      (PeanoInversion.decode k z.1).param,
-    z.2 q < n
-  cases z with
+          (PeanoInversion.decode k layer.1).ctor
+          (PeanoInversion.decode k layer.1).param),
+      layer.2 q < (PeanoNatLayerIso k).toFun layer := by
+  intro k layer
+  cases layer with
   | mk code child =>
       cases code with
       | eq lhs rhs =>
@@ -350,25 +343,29 @@ theorem PeanoNat_child_lt :
           intro q
           cases q
           let c := child ()
-          have hn' : 2 * (2 * c) + 1 = n := by
-            simpa [c, PeanoNatLayerIso, PeanoNatLayerShapeIso, PeanoNatLayerShapeTo,
+          have hparent :
+              (PeanoNatLayerIso k).toFun ⟨PeanoCode.not, child⟩ =
+                2 * (2 * c) + 1 := by
+            simp [c, PeanoNatLayerIso, PeanoNatLayerShapeIso, PeanoNatLayerShapeTo,
               CodeAlgebra.sum4Nat, Iso.trans, Iso.sum, CodeAlgebra.sum3Nat,
-              CodeAlgebra.sumNat] using hn
-          change c < n
-          rw [← hn']
+              CodeAlgebra.sumNat, Iso.refl]
+          change c < (PeanoNatLayerIso k).toFun ⟨PeanoCode.not, child⟩
+          rw [hparent]
           exact Nat.lt_succ_of_le (by
             rw [Nat.two_mul, Nat.two_mul]
             simp [Nat.add_assoc])
       | implies =>
           intro q
           let pcode := CodeAlgebra.prodNat.toFun (child false, child true)
-          have hn' : 2 * (2 * (2 * pcode) + 1) + 1 = n := by
-            simpa [pcode, PeanoNatLayerIso, PeanoNatLayerShapeIso, PeanoNatLayerShapeTo,
+          have hparent :
+              (PeanoNatLayerIso k).toFun ⟨PeanoCode.implies, child⟩ =
+                2 * (2 * (2 * pcode) + 1) + 1 := by
+            simp [pcode, PeanoNatLayerIso, PeanoNatLayerShapeIso, PeanoNatLayerShapeTo,
               CodeAlgebra.sum4Nat, Iso.trans, Iso.sum, CodeAlgebra.sum3Nat,
-              CodeAlgebra.sumNat] using hn
+              CodeAlgebra.sumNat, Iso.refl]
           cases q
-          · change child false < n
-            rw [← hn']
+          · change child false < (PeanoNatLayerIso k).toFun ⟨PeanoCode.implies, child⟩
+            rw [hparent]
             have hchild_le : child false ≤ pcode := by
               simpa [pcode, CodeAlgebra.prodNat] using
                 CodeAlgebra.prodNat_fst_le (CodeAlgebra.prodNat.toFun (child false, child true))
@@ -377,8 +374,8 @@ theorem PeanoNat_child_lt :
                 rw [Nat.two_mul, Nat.two_mul, Nat.two_mul]
                 simp [Nat.add_assoc])
             exact Nat.lt_of_le_of_lt hchild_le hpair_lt
-          · change child true < n
-            rw [← hn']
+          · change child true < (PeanoNatLayerIso k).toFun ⟨PeanoCode.implies, child⟩
+            rw [hparent]
             have hchild_le : child true ≤ pcode := by
               simpa [pcode, CodeAlgebra.prodNat] using
                 CodeAlgebra.prodNat_snd_le (CodeAlgebra.prodNat.toFun (child false, child true))
@@ -391,20 +388,23 @@ theorem PeanoNat_child_lt :
           intro q
           cases q
           let c := child ()
-          have hn' : 2 * (2 * (2 * c + 1) + 1) + 1 = n := by
-            simpa [c, PeanoNatLayerIso, PeanoNatLayerShapeIso, PeanoNatLayerShapeTo,
+          have hparent :
+              (PeanoNatLayerIso k).toFun ⟨PeanoCode.forallE, child⟩ =
+                2 * (2 * (2 * c + 1) + 1) + 1 := by
+            simp [c, PeanoNatLayerIso, PeanoNatLayerShapeIso, PeanoNatLayerShapeTo,
               CodeAlgebra.sum4Nat, Iso.trans, Iso.sum, CodeAlgebra.sum3Nat,
-              CodeAlgebra.sumNat] using hn
-          change c < n
-          rw [← hn']
+              CodeAlgebra.sumNat, Iso.refl]
+          change c < (PeanoNatLayerIso k).toFun ⟨PeanoCode.forallE, child⟩
+          rw [hparent]
           exact Nat.lt_succ_of_le (by
             rw [Nat.two_mul, Nat.two_mul, Nat.two_mul]
             simp [Nat.add_assoc])
 
-def PeanoNatGeneratedCode : GeneratedNatCode PeanoPoly where
-  inversion := PeanoInversion
-  layer := PeanoNatLayerIso
-  child_lt := PeanoNat_child_lt
+def PeanoNatGeneratedCode : GeneratedNatCode PeanoPoly :=
+  GeneratedNatCode.ofLayerChildLt PeanoInversion PeanoNatLayerIso
+    (by
+      intro k layer q
+      exact PeanoNat_layer_child_lt layer q)
 
 def PeanoNatIso (k : Nat) : Mu PeanoPoly k ≃ᵢ Nat :=
   PeanoNatGeneratedCode.iso k

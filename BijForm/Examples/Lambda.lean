@@ -277,23 +277,15 @@ theorem LamNatLayer_zero_invFun_zero :
     (LamNatLayerIso 0).invFun 0 = ⟨LamCode.lam, fun _ => 0⟩ := by
   rfl
 
-theorem LamNat_child_rank_lt :
-    ∀ {k : Nat} (n : Nat)
+theorem LamNat_layer_child_rank_lt :
+    ∀ {k : Nat} (layer : CodeLayer LamPoly LamInversion (fun _ => Nat) k)
       (q : LamPoly.Pos
-          (LamInversion.decode k ((LamNatLayerIso k).invFun n).1).ctor
-          (LamInversion.decode k ((LamNatLayerIso k).invFun n).1).param),
+          (LamInversion.decode k layer.1).ctor
+          (LamInversion.decode k layer.1).param),
       LamNatRank
-          (LamPoly.input (LamInversion.decode k ((LamNatLayerIso k).invFun n).1).param q)
-          (((LamNatLayerIso k).invFun n).2 q) < LamNatRank k n := by
-  intro k n
-  generalize hz : (LamNatLayerIso k).invFun n = layer
-  have hn : (LamNatLayerIso k).toFun layer = n := by
-    rw [← hz]
-    exact (LamNatLayerIso k).right_inv n
-  change ∀ q : LamPoly.Pos (LamInversion.decode k layer.1).ctor
-      (LamInversion.decode k layer.1).param,
-    LamNatRank (LamPoly.input (LamInversion.decode k layer.1).param q) (layer.2 q) <
-      LamNatRank k n
+          (LamPoly.input (LamInversion.decode k layer.1).param q)
+          (layer.2 q) < LamNatRank k ((LamNatLayerIso k).toFun layer) := by
+  intro k layer
   cases layer with
   | mk code child =>
     cases code with
@@ -304,12 +296,14 @@ theorem LamNat_child_rank_lt :
         intro q
         cases q
         let bodyCode := child ()
-        have hn' : k + 2 * bodyCode = n := by
-          simpa [bodyCode, LamNatLayerIso, LamNatLayerShapeIso, LamNatLayerShapeTo,
+        have hparent :
+            (LamNatLayerIso k).toFun ⟨LamCode.lam, child⟩ = k + 2 * bodyCode := by
+          simp [bodyCode, LamNatLayerIso, LamNatLayerShapeIso, LamNatLayerShapeTo,
             LamNatTailIso, Iso.trans, Iso.sum, CodeAlgebra.finPlusNat,
-            CodeAlgebra.sumNat] using hn
-        change LamNatRank (k + 1) bodyCode < LamNatRank k n
-        rw [← hn']
+            CodeAlgebra.sumNat, Iso.refl]
+        change LamNatRank (k + 1) bodyCode <
+          LamNatRank k ((LamNatLayerIso k).toFun ⟨LamCode.lam, child⟩)
+        rw [hparent]
         dsimp [LamNatRank]
         by_cases hk : k = 0
         · subst k
@@ -321,13 +315,16 @@ theorem LamNat_child_rank_lt :
     | app =>
         intro q
         let pairCode := CodeAlgebra.prodNat.toFun (child false, child true)
-        have hn' : k + (2 * pairCode + 1) = n := by
-          simpa [pairCode, LamNatLayerIso, LamNatLayerShapeIso, LamNatLayerShapeTo,
+        have hparent :
+            (LamNatLayerIso k).toFun ⟨LamCode.app, child⟩ =
+              k + (2 * pairCode + 1) := by
+          simp [pairCode, LamNatLayerIso, LamNatLayerShapeIso, LamNatLayerShapeTo,
             LamNatTailIso, Iso.trans, Iso.sum, CodeAlgebra.finPlusNat,
-            CodeAlgebra.sumNat] using hn
+            CodeAlgebra.sumNat, Iso.refl]
         cases q
-        · change LamNatRank k (child false) < LamNatRank k n
-          rw [← hn']
+        · change LamNatRank k (child false) <
+            LamNatRank k ((LamNatLayerIso k).toFun ⟨LamCode.app, child⟩)
+          rw [hparent]
           have hchild_le : child false ≤ pairCode := by
             simpa [pairCode, CodeAlgebra.prodNat] using
               CodeAlgebra.prodNat_fst_le (CodeAlgebra.prodNat.toFun (child false, child true))
@@ -339,8 +336,9 @@ theorem LamNat_child_rank_lt :
           by_cases hk : k = 0
           · simpa [hk] using hchild_lt_parent
           · simpa [hk] using hchild_lt_parent
-        · change LamNatRank k (child true) < LamNatRank k n
-          rw [← hn']
+        · change LamNatRank k (child true) <
+            LamNatRank k ((LamNatLayerIso k).toFun ⟨LamCode.app, child⟩)
+          rw [hparent]
           have hchild_le : child true ≤ pairCode := by
             simpa [pairCode, CodeAlgebra.prodNat] using
               CodeAlgebra.prodNat_snd_le (CodeAlgebra.prodNat.toFun (child false, child true))
@@ -353,11 +351,11 @@ theorem LamNat_child_rank_lt :
           · simpa [hk] using hchild_lt_parent
           · simpa [hk] using hchild_lt_parent
 
-def LamNatGeneratedCode : GeneratedRankedNatCode LamPoly where
-  inversion := LamInversion
-  layer := LamNatLayerIso
-  rank := LamNatRank
-  child_rank_lt := LamNat_child_rank_lt
+def LamNatGeneratedCode : GeneratedRankedNatCode LamPoly :=
+  GeneratedRankedNatCode.ofLayerChildRank LamInversion LamNatLayerIso LamNatRank
+    (by
+      intro k layer q
+      exact LamNat_layer_child_rank_lt layer q)
 
 def LamNatIso (k : Nat) : Mu LamPoly k ≃ᵢ Nat :=
   LamNatGeneratedCode.iso k

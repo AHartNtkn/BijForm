@@ -357,6 +357,29 @@ namespace GeneratedShapeCode
 
 variable {P : DepPoly ι}
 
+/-- Layer-local constructor for shape-coded generated data. -/
+def ofLayerChildRank
+    (shape : ι → CodeShape)
+    (inversion : OutputIndexInversion P)
+    (layer : ∀ i,
+      CodeLayer P inversion (fun j => (shape j).Carrier) i ≃ᵢ
+        (shape i).Carrier)
+    (rank : ∀ i, (shape i).Carrier → Nat)
+    (layer_child_rank_lt :
+      ∀ {i : ι} (x : CodeLayer P inversion (fun j => (shape j).Carrier) i)
+        (q : P.Pos (inversion.decode i x.1).ctor
+            (inversion.decode i x.1).param),
+        rank (P.input (inversion.decode i x.1).param q) (x.2 q) <
+          rank i ((layer i).toFun x)) :
+    GeneratedShapeCode P where
+  shape := shape
+  inversion := inversion
+  layer := layer
+  rank := rank
+  child_rank_lt := by
+    intro i z q
+    simpa using layer_child_rank_lt ((layer i).invFun z) q
+
 def toGeneratedCode (C : GeneratedShapeCode P) :
     GeneratedCode P (fun i => (C.shape i).Carrier) where
   inversion := C.inversion
@@ -396,6 +419,25 @@ namespace GeneratedRankedNatCode
 
 variable {P : DepPoly ι}
 
+/-- Layer-local constructor for ranked Nat generated data. -/
+def ofLayerChildRank
+    (inversion : OutputIndexInversion P)
+    (layer : ∀ i, CodeLayer P inversion (fun _ => Nat) i ≃ᵢ Nat)
+    (rank : ι → Nat → Nat)
+    (layer_child_rank_lt :
+      ∀ {i : ι} (x : CodeLayer P inversion (fun _ => Nat) i)
+        (q : P.Pos (inversion.decode i x.1).ctor
+            (inversion.decode i x.1).param),
+        rank (P.input (inversion.decode i x.1).param q) (x.2 q) <
+          rank i ((layer i).toFun x)) :
+    GeneratedRankedNatCode P where
+  inversion := inversion
+  layer := layer
+  rank := rank
+  child_rank_lt := by
+    intro i n q
+    simpa using layer_child_rank_lt ((layer i).invFun n) q
+
 def toGeneratedCode (C : GeneratedRankedNatCode P) :
     GeneratedCode P (fun _ => Nat) where
   inversion := C.inversion
@@ -431,6 +473,22 @@ structure GeneratedNatCode (P : DepPoly ι) where
 namespace GeneratedNatCode
 
 variable {P : DepPoly ι}
+
+/-- Layer-local constructor for Nat generated data with identity rank. -/
+def ofLayerChildLt
+    (inversion : OutputIndexInversion P)
+    (layer : ∀ i, CodeLayer P inversion (fun _ => Nat) i ≃ᵢ Nat)
+    (layer_child_lt :
+      ∀ {i : ι} (x : CodeLayer P inversion (fun _ => Nat) i)
+        (q : P.Pos (inversion.decode i x.1).ctor
+            (inversion.decode i x.1).param),
+        x.2 q < (layer i).toFun x) :
+    GeneratedNatCode P where
+  inversion := inversion
+  layer := layer
+  child_lt := by
+    intro i n q
+    simpa using layer_child_lt ((layer i).invFun n) q
 
 def toGeneratedCode (C : GeneratedNatCode P) :
     GeneratedCode P (fun _ => Nat) where
