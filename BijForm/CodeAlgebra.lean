@@ -241,12 +241,6 @@ theorem toNatSum_inr_lt_of_lt {α : Type u} {β : Type v}
     m < (toNatSum left right).toFun (Sum.inr b) :=
   toNatSum_inr_lt_of_le left right (Nat.le_of_lt h)
 
-def sum3Nat : (Nat ⊕ (Nat ⊕ Nat)) ≃ᵢ Nat :=
-  toNatSum (Iso.refl Nat) sumNat
-
-def sum4Nat : (Nat ⊕ (Nat ⊕ (Nat ⊕ Nat))) ≃ᵢ Nat :=
-  toNatSum (Iso.refl Nat) sum3Nat
-
 /-- Product coding delegates to the proved simplified pairing function. -/
 def prodNat : (Nat × Nat) ≃ᵢ Nat :=
   Pairing.iso
@@ -429,18 +423,14 @@ theorem finiteRecursiveNat_payload_lt_of_prefix_or_tag
     (hslack : 0 < finite ∨ 0 < p.1.val) :
     p.2 < (finiteRecursiveNat finite recursive hrec).toFun (Sum.inr p) := by
   dsimp [finiteRecursiveNat, finPrefixNat, Iso.trans, Iso.sum, finPlusNat, finProdNat]
+  have hmul : p.2 ≤ recursive * p.2 := by
+    calc
+      p.2 = 1 * p.2 := by rw [Nat.one_mul]
+      _ ≤ recursive * p.2 := Nat.mul_le_mul_right p.2 hrec
   cases hslack with
   | inl hfinite =>
-      have hmul : p.2 ≤ recursive * p.2 := by
-        calc
-          p.2 = 1 * p.2 := by rw [Nat.one_mul]
-          _ ≤ recursive * p.2 := Nat.mul_le_mul_right p.2 hrec
       omega
   | inr htag =>
-      have hmul : p.2 ≤ recursive * p.2 := by
-        calc
-          p.2 = 1 * p.2 := by rw [Nat.one_mul]
-          _ ≤ recursive * p.2 := Nat.mul_le_mul_right p.2 hrec
       omega
 
 /-- Two finite recursive branch families encoded as one natural-number family. -/
@@ -582,23 +572,11 @@ def finTaggedProdNat (k : Nat) :
           dsimp
           rw [prodNat.right_inv n]
 
-theorem finTaggedProdNat_inr_fst_payload_le (k : Nat)
-    (p : (Fin k × Nat) × Nat) :
-    p.1.2 ≤ ((finTaggedProdNat k).toFun (Sum.inr p)).2 := by
-  dsimp [finTaggedProdNat]
-  exact Nat.le_trans (prodNat_toFun_fst_le (p.1.2, p.2)) (Nat.le_succ _)
-
 theorem finTaggedProdNat_inr_fst_payload_lt (k : Nat)
     (p : (Fin k × Nat) × Nat) :
     p.1.2 < ((finTaggedProdNat k).toFun (Sum.inr p)).2 := by
   dsimp [finTaggedProdNat]
   exact Nat.lt_succ_of_le (prodNat_toFun_fst_le (p.1.2, p.2))
-
-theorem finTaggedProdNat_inr_snd_le (k : Nat)
-    (p : (Fin k × Nat) × Nat) :
-    p.2 ≤ ((finTaggedProdNat k).toFun (Sum.inr p)).2 := by
-  dsimp [finTaggedProdNat]
-  exact Nat.le_trans (prodNat_toFun_snd_le (p.1.2, p.2)) (Nat.le_succ _)
 
 theorem finTaggedProdNat_inr_snd_lt (k : Nat)
     (p : (Fin k × Nat) × Nat) :
