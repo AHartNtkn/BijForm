@@ -39,18 +39,19 @@ abbrev Diag (boundary : List signature.Port) : Type :=
 abbrev poly : DepPoly (List signature.Port) :=
   BijForm.StringDiagram.poly signature
 
-/-- Initial-algebra code family for symmetric interaction-net diagrams. -/
-abbrev Code (boundary : List signature.Port) : Type :=
-  Mu poly boundary
-
 /-- Generated coding data for symmetric interaction-net diagrams. -/
-abbrev generatedCode : GeneratedCode poly Diag :=
+abbrev generatedCode : GeneratedCode poly
+    (fun boundary => StringDiagram.Diag signature boundary) :=
   BijForm.StringDiagram.generatedCode signature
 
 /-- Generated-code equivalence for symmetric interaction-net diagrams. -/
 abbrev syntaxIso (boundary : List signature.Port) :
-    Code boundary ≃ᵢ Diag boundary :=
+    Mu poly boundary ≃ᵢ Diag boundary :=
   BijForm.StringDiagram.syntaxIso signature boundary
+
+/-- Canonical traversal-code representation of symmetric interaction nets. -/
+abbrev CanonicalCode (boundary : List signature.Port) : Type :=
+  Diag boundary
 
 /-- Semantic open port-hypergraphs over the symmetric interaction-net signature. -/
 abbrev OpenGraph (boundary : List signature.Port) : Type :=
@@ -65,10 +66,20 @@ abbrev openGraphIso (boundary : List signature.Port) :
     Diag boundary ≃ᵢ OpenGraphCode boundary :=
   diagOpenPortHypergraphIso signature boundary
 
-/-- Generated-code encoding of symmetric interaction nets up to isomorphism. -/
-abbrev codeOpenGraphIso (boundary : List signature.Port) :
-    Code boundary ≃ᵢ OpenGraphCode boundary :=
-  Iso.trans (syntaxIso boundary) (openGraphIso boundary)
+/-- Canonical encoding of symmetric interaction nets up to isomorphism. -/
+abbrev encoding (boundary : List signature.Port) :
+    OpenGraphCode boundary ≃ᵢ CanonicalCode boundary :=
+  Iso.symm (openGraphIso boundary)
+
+/-- Encode a semantic symmetric interaction net as its canonical traversal code. -/
+abbrev encode {boundary : List signature.Port}
+    (G : OpenGraphCode boundary) : CanonicalCode boundary :=
+  (encoding boundary).toFun G
+
+/-- Decode a canonical traversal code to its semantic graph quotient. -/
+abbrev decode {boundary : List signature.Port}
+    (c : CanonicalCode boundary) : OpenGraphCode boundary :=
+  (encoding boundary).invFun c
 
 end SymmetricInteractionNet
 end StringDiagram

@@ -464,13 +464,15 @@ lake exe bijform
   - `StringDiagram.SymmetricInteractionNet.signature`
   - `StringDiagram.SymmetricInteractionNet.Diag`
   - `StringDiagram.SymmetricInteractionNet.poly`
-  - `StringDiagram.SymmetricInteractionNet.Code`
   - `StringDiagram.SymmetricInteractionNet.generatedCode`
   - `StringDiagram.SymmetricInteractionNet.syntaxIso`
+  - `StringDiagram.SymmetricInteractionNet.CanonicalCode`
   - `StringDiagram.SymmetricInteractionNet.OpenGraph`
   - `StringDiagram.SymmetricInteractionNet.OpenGraphCode`
   - `StringDiagram.SymmetricInteractionNet.openGraphIso`
-  - `StringDiagram.SymmetricInteractionNet.codeOpenGraphIso`
+  - `StringDiagram.SymmetricInteractionNet.encoding`
+  - `StringDiagram.SymmetricInteractionNet.encode`
+  - `StringDiagram.SymmetricInteractionNet.decode`
 
 - `BijForm.Examples`
   Imports the worked example modules:
