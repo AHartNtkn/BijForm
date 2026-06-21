@@ -47,6 +47,34 @@ theorem freshNodeEndpoints_mem_ge {start arity id : Nat}
   rw [← hi, freshNodeEndpoints_get]
   exact Nat.le_add_right start i.val
 
+theorem oldEndpoint_lt_budEndpoints
+    {frontier : List Sig.Port} (st : RenderState Sig frontier)
+    (node : Sig.Node) {id : Nat}
+    (hbound : id < st.endpoints.length) :
+    id < (st.endpoints ++ Sig.nodePorts node).length := by
+  simp [Signature.nodePorts]
+  omega
+
+theorem freshNodeEndpoint_lt_budEndpoints
+    {frontier : List Sig.Port} (st : RenderState Sig frontier)
+    (hv : st.ValidIds) (node : Sig.Node) {id : Nat}
+    (hmem : id ∈ freshNodeEndpoints st.nextEndpoint (Sig.arity node)) :
+    id < (st.endpoints ++ Sig.nodePorts node).length := by
+  have hlt := freshNodeEndpoints_mem_lt hmem
+  have hnext := hv.nextEndpoint_eq
+  simp [Signature.nodePorts] at hlt ⊢
+  omega
+
+theorem oldEndpoint_not_mem_freshNodeEndpoints
+    {frontier : List Sig.Port} (st : RenderState Sig frontier)
+    (hv : st.ValidIds) {arity id : Nat}
+    (hbound : id < st.endpoints.length)
+    (hfresh : id ∈ freshNodeEndpoints st.nextEndpoint arity) :
+    False := by
+  have hge := freshNodeEndpoints_mem_ge hfresh
+  have hnext := hv.nextEndpoint_eq
+  omega
+
 theorem freshNodeEndpoints_mem_of_bounds {start arity id : Nat}
     (hge : start ≤ id) (hlt : id < start + arity) :
     id ∈ freshNodeEndpoints start arity := by
@@ -1055,32 +1083,19 @@ theorem budStep_validIds {active : Sig.Port} {frontier : List Sig.Port}
       have hbound :
           nodeEndpoints.get ⟨n, hid⟩ <
             (st.endpoints ++ Sig.nodePorts node).length := by
-        have hlt := freshNodeEndpoints_mem_lt
-          (start := st.nextEndpoint) (arity := Sig.arity node)
-          (id := nodeEndpoints.get ⟨n, hid⟩)
-          (by
-            simp [nodeEndpoints])
-        have hnext := hv.nextEndpoint_eq
-        simp [Signature.nodePorts] at hlt ⊢
-        omega
+        exact freshNodeEndpoint_lt_budEndpoints st hv node
+          (by simp [nodeEndpoints])
       refine ⟨hbound, ?_⟩
       have hlabel' :=
         freshNodeEndpoints_label_append st hv node ⟨n, hid⟩ hbound
       simpa [nodeEndpoints] using hlabel'
     have old_bound_lift {id : Nat} (hbound : id < st.endpoints.length) :
         id < (st.endpoints ++ Sig.nodePorts node).length := by
-      have hle :
-          st.endpoints.length ≤
-            (st.endpoints ++ Sig.nodePorts node).length := by
-        simp
-      exact Nat.lt_of_lt_of_le hbound hle
+      exact oldEndpoint_lt_budEndpoints st node hbound
     have fresh_bound_of_mem {id : Nat} (hmem : id ∈ nodeEndpoints) :
         id < (st.endpoints ++ Sig.nodePorts node).length := by
-      have hlt := freshNodeEndpoints_mem_lt
+      exact freshNodeEndpoint_lt_budEndpoints st hv node
         (by simpa [nodeEndpoints] using hmem)
-      have hnext := hv.nextEndpoint_eq
-      simp [Signature.nodePorts] at hlt ⊢
-      omega
     refine
       { nextEndpoint_eq := ?_
         frontier_bound := ?_
@@ -1339,22 +1354,17 @@ theorem budStep_endpointPartition {active : Sig.Port}
       simp [child, newEdge, RenderState.edgeEndpointIds]
     have old_bound_lift {id : Nat} (hbound : id < st.endpoints.length) :
         id < child.endpoints.length := by
-      simp [child, Signature.nodePorts]
-      omega
+      simpa [child] using oldEndpoint_lt_budEndpoints st node hbound
     have fresh_bound_of_mem {id : Nat} (hmem : id ∈ nodeEndpoints) :
         id < child.endpoints.length := by
-      have hlt := freshNodeEndpoints_mem_lt
-        (by simpa [nodeEndpoints] using hmem)
-      have hnext := hv.nextEndpoint_eq
-      simp [child, Signature.nodePorts] at hlt ⊢
-      omega
+      simpa [child] using
+        freshNodeEndpoint_lt_budEndpoints st hv node
+          (by simpa [nodeEndpoints] using hmem)
     have old_fresh_disjoint
         {id : Nat} (hold : id < st.endpoints.length)
         (hfresh : id ∈ nodeEndpoints) : False := by
-      have hge := freshNodeEndpoints_mem_ge
+      exact oldEndpoint_not_mem_freshNodeEndpoints st hv hold
         (by simpa [nodeEndpoints] using hfresh)
-      have hnext := hv.nextEndpoint_eq
-      omega
     refine
       { frontier_nodup := ?_
         consumed_nodup := ?_
@@ -1547,24 +1557,18 @@ theorem budStep_ownerIdPartition {active : Sig.Port}
       simp [child, Signature.nodePorts]
     have old_bound_lift {id : Nat} (hbound : id < st.endpoints.length) :
         id < child.endpoints.length := by
-      rw [childEndpoints_len]
-      omega
+      simpa [child] using oldEndpoint_lt_budEndpoints st node hbound
     have fresh_bound {id : Nat} (hmem : id ∈ nodeEndpoints) :
         id < child.endpoints.length := by
-      have hlt := freshNodeEndpoints_mem_lt
-        (by simpa [nodeEndpoints] using hmem)
-      have hnext := hv.nextEndpoint_eq
-      rw [childEndpoints_len]
-      simp at hlt
-      omega
+      simpa [child] using
+        freshNodeEndpoint_lt_budEndpoints st hv node
+          (by simpa [nodeEndpoints] using hmem)
     have old_fresh_disjoint {id : Nat}
         (hold : id ∈ st.ownerEndpointIds boundary)
         (hfresh : id ∈ nodeEndpoints) : False := by
       have holdBound := ho.owner_bound id hold
-      have hge := freshNodeEndpoints_mem_ge
+      exact oldEndpoint_not_mem_freshNodeEndpoints st hv holdBound
         (by simpa [nodeEndpoints] using hfresh)
-      have hnext := hv.nextEndpoint_eq
-      omega
     refine
       { owner_nodup := ?_
         owner_bound := ?_
