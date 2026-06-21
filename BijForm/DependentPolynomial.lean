@@ -115,8 +115,12 @@ def canonical (P : DepPoly ι) : OutputIndexInversion P where
     intro _ _
     rfl
 
-/-- Build an output-index inversion from an explicit isomorphism between a
-chosen code family and the same-fiber constructor data. -/
+/--
+Low-level constructor for output-index inversion from caller-supplied fiber
+equivalences.  Examples should prefer concrete generated inversion data, such
+as `canonical` or reusable index-change constructors, so the construction of
+same-fiber data remains visible.
+-/
 def ofIso {P : DepPoly ι} (Code : ι → Type u)
     (e : ∀ i, Code i ≃ᵢ Fiber P i) : OutputIndexInversion P where
   Code := Code

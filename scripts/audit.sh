@@ -49,4 +49,8 @@ if git grep -n 'singleSortedFiniteSyntaxIso' -- BijForm; then
   fail "finite-coding syntax wrapper must not ignore finite coding data"
 fi
 
+if git grep -n 'OutputIndexInversion\.ofIso' -- BijForm/Examples; then
+  fail "examples must not use low-level opaque output-index inversion"
+fi
+
 printf 'audit: ok\n'
