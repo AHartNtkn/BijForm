@@ -113,8 +113,9 @@ lake exe bijform
   `BijForm.StringDiagram.Bridge`, and `BijForm.StringDiagram.FiniteCoding`,
   all re-exported by
   `BijForm.StringDiagram`. The syntax-to-graph-to-syntax and
-  graph-to-syntax-to-graph inverse-law statements are recorded at the bridge
-  boundary; remaining proof gaps are labeled in source:
+  graph-to-syntax-to-graph inverse laws are recorded at the bridge boundary.
+  The remaining string-diagram proof gaps are the finite-coding inverse/rank
+  proofs labeled in `BijForm.StringDiagram.FiniteCoding`:
   - `StringDiagram.Signature`
   - `StringDiagram.Signature.nodePortsExcept_eq_of_val`
   - `StringDiagram.Unoriented.signature`
@@ -124,7 +125,27 @@ lake exe bijform
   - `StringDiagram.generatedCode`
   - `StringDiagram.syntaxIso`
   - `StringDiagram.openFrontierShape`
+  - `StringDiagram.openFrontierEmptyCarrier`
+  - `StringDiagram.openFrontierNatCarrier`
+  - `StringDiagram.openFrontierCarrierNat`
+  - `StringDiagram.Signature.nodePortsExcept_length`
+  - `StringDiagram.Signature.nodePortsExcept_eq_nil_of_arity_one`
+  - `StringDiagram.Signature.nodePortsExcept_ne_nil_of_arity_ne_one`
+  - `StringDiagram.eraseFin_ne_nil_of_length_gt_one`
   - `StringDiagram.SingleSortedFiniteCodingData`
+  - `StringDiagram.SingleSortedFiniteCodingData.entryTag`
+  - `StringDiagram.SingleSortedFiniteCodingData.entryToTag`
+  - `StringDiagram.SingleSortedFiniteCodingData.tagToEntry`
+  - `StringDiagram.SingleSortedFiniteCodingData.unaryTagToEntry`
+  - `StringDiagram.SingleSortedFiniteCodingData.nonUnaryTagToEntry`
+  - `StringDiagram.singleSortedFiniteLayerShape`
+  - `StringDiagram.singleSortedFiniteLayerShapeCarrierIso`
+  - `StringDiagram.singleSortedFiniteRank`
+  - `StringDiagram.singleSortedFiniteLayerToShape`
+  - `StringDiagram.singleSortedFiniteLayerFromShape`
+  - `StringDiagram.singleSortedFiniteLayerPresentation`
+  - `StringDiagram.singleSortedFiniteCarrierLayer`
+  - `StringDiagram.singleSortedFiniteLayer_child_rank_lt`
   - `StringDiagram.singleSortedFiniteGeneratedShapeCode`
   - `StringDiagram.singleSortedFiniteSyntaxEmptyFinOneIso`
   - `StringDiagram.singleSortedFiniteSyntaxNonemptyNatIso`
@@ -637,10 +658,10 @@ Main results:
 - `SymmetricInteractionNetOpenGraphNonemptyNatIso (active frontier) : Iso (SymmetricInteractionNetOpenGraphQuotient (active :: frontier)) Nat`
 
 The generated shape-code layer is supplied by the generic finite single-sorted
-string-diagram coding boundary in `BijForm.StringDiagram.FiniteCoding`; its
-finite branch-table compiler proof remains explicitly unfinished there. The
-open-graph results also depend on the generic string-diagram semantic bridge,
-whose remaining inverse-law proof gaps are labeled at the bridge boundary.
+string-diagram coding boundary in `BijForm.StringDiagram.FiniteCoding`. Its
+branch-table compiler directions are generic and data-driven; the dependent
+inverse proofs and rank-descent proof remain explicitly unfinished there. The
+open-graph results compose with the generic string-diagram semantic bridge.
 
 ### Bounded Tagged Chains
 

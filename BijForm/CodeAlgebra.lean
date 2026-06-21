@@ -379,6 +379,13 @@ theorem finiteRecursiveNat_payload_lt_of_prefix_or_tag
           _ ≤ recursive * p.2 := Nat.mul_le_mul_right p.2 hrec
       omega
 
+/-- Two finite recursive branch families encoded as one natural-number family. -/
+def finSumProdNat (left right : Nat) (hleft : 0 < left) (hright : 0 < right) :
+    ((Fin left × Nat) ⊕ (Fin right × Nat)) ≃ᵢ Nat :=
+  Iso.trans
+    (Iso.sum (finProdNat left hleft) (finProdNat right hright))
+    sumNat
+
 def finProdProdNat (k : Nat) (hk : 0 < k) :
     (Fin k × (Nat × Nat)) ≃ᵢ Nat :=
   Iso.trans (Iso.prod (Iso.refl (Fin k)) prodNat) (finProdNat k hk)

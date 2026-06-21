@@ -38,16 +38,141 @@ def SymmetricInteractionNetSignature : Signature :=
     SymmetricInteractionNetPort
 
 @[simp] theorem SymmetricInteractionNetSignature_arity_dup :
-    SymmetricInteractionNetSignature.arity SymmetricInteractionNetNode.dup = 3 :=
-  rfl
-
+    SymmetricInteractionNetSignature.arity SymmetricInteractionNetNode.dup = 3 := rfl
 @[simp] theorem SymmetricInteractionNetSignature_arity_erase :
-    SymmetricInteractionNetSignature.arity SymmetricInteractionNetNode.erase = 1 :=
-  rfl
-
+    SymmetricInteractionNetSignature.arity SymmetricInteractionNetNode.erase = 1 := rfl
 @[simp] theorem SymmetricInteractionNetSignature_arity_cons :
-    SymmetricInteractionNetSignature.arity SymmetricInteractionNetNode.cons = 3 :=
-  rfl
+    SymmetricInteractionNetSignature.arity SymmetricInteractionNetNode.cons = 3 := rfl
+
+private abbrev SINUnaryEntry :=
+  SymmetricInteractionNetSignature.UnaryEntry
+
+private abbrev SINNonUnaryEntry :=
+  SymmetricInteractionNetSignature.NonUnaryEntry
+
+private def SINUnaryEntryIso : SINUnaryEntry ≃ᵢ Fin 1 where
+  toFun _ := ⟨0, by decide⟩
+  invFun _ :=
+    ⟨⟨SymmetricInteractionNetNode.erase, ⟨0, by decide⟩⟩, rfl⟩
+  left_inv := by
+    intro entry
+    cases entry with
+    | mk raw hraw =>
+        apply Subtype.ext
+        cases raw with
+        | mk node slot =>
+            cases node with
+            | dup =>
+                change SymmetricInteractionNetArity SymmetricInteractionNetNode.dup = 1 at hraw
+                simp [SymmetricInteractionNetArity] at hraw
+            | erase =>
+                cases slot with
+                | mk val hval =>
+                    have hval0 : val = 0 := by
+                      change val < SymmetricInteractionNetArity SymmetricInteractionNetNode.erase at hval
+                      simp [SymmetricInteractionNetArity] at hval
+                      omega
+                    subst val
+                    rfl
+            | cons =>
+                change SymmetricInteractionNetArity SymmetricInteractionNetNode.cons = 1 at hraw
+                simp [SymmetricInteractionNetArity] at hraw
+  right_inv := by
+    intro tag
+    apply Fin.ext
+    omega
+
+private def SINNonUnaryEntry.toFin6 : SINNonUnaryEntry → Fin 6
+  | ⟨⟨.dup, entry⟩, _⟩ => ⟨entry.val, by
+      have hentry : entry.val < 3 := by
+        simp
+      omega⟩
+  | ⟨⟨.erase, _entry⟩, hnon⟩ => False.elim (hnon rfl)
+  | ⟨⟨.cons, entry⟩, _⟩ => ⟨entry.val + 3, by
+      have hentry : entry.val < 3 := by
+        simp
+      omega⟩
+
+private def SINNonUnaryEntry.ofFin6 : Fin 6 → SINNonUnaryEntry
+  | ⟨0, _⟩ => ⟨⟨.dup, ⟨0, by decide⟩⟩, by decide⟩
+  | ⟨1, _⟩ => ⟨⟨.dup, ⟨1, by decide⟩⟩, by decide⟩
+  | ⟨2, _⟩ => ⟨⟨.dup, ⟨2, by decide⟩⟩, by decide⟩
+  | ⟨3, _⟩ => ⟨⟨.cons, ⟨0, by decide⟩⟩, by decide⟩
+  | ⟨4, _⟩ => ⟨⟨.cons, ⟨1, by decide⟩⟩, by decide⟩
+  | ⟨5, _⟩ => ⟨⟨.cons, ⟨2, by decide⟩⟩, by decide⟩
+  | ⟨n + 6, h⟩ => False.elim (by omega)
+
+private theorem SINNonUnaryEntry.toFin6_ofFin6 (tag : Fin 6) :
+    SINNonUnaryEntry.toFin6 (SINNonUnaryEntry.ofFin6 tag) = tag := by
+  cases tag with
+  | mk val hval =>
+      have hcases :
+          val = 0 ∨ val = 1 ∨ val = 2 ∨ val = 3 ∨ val = 4 ∨ val = 5 := by
+        omega
+      rcases hcases with h | h | h | h | h | h <;>
+        subst val <;>
+        simp [SINNonUnaryEntry.toFin6, SINNonUnaryEntry.ofFin6]
+
+private theorem SINNonUnaryEntry.toFin6_injective :
+    Function.Injective SINNonUnaryEntry.toFin6 := by
+  intro left right h
+  apply Subtype.ext
+  cases left with
+  | mk leftRaw leftNon =>
+      cases right with
+      | mk rightRaw rightNon =>
+          cases leftRaw with
+          | mk leftNode leftEntry =>
+              cases rightRaw with
+              | mk rightNode rightEntry =>
+                  cases leftNode with
+                  | dup =>
+                      cases rightNode with
+                      | dup =>
+                          refine Sigma.ext rfl ?_
+                          apply heq_of_eq
+                          apply Fin.ext
+                          have hval := congrArg Fin.val h
+                          simpa [SINNonUnaryEntry.toFin6] using hval
+                      | erase => exact False.elim (rightNon rfl)
+                      | cons =>
+                          exfalso
+                          have hval := congrArg Fin.val h
+                          have hleft : leftEntry.val < 3 := by
+                            simp
+                          have hright : rightEntry.val < 3 := by
+                            simp
+                          simp [SINNonUnaryEntry.toFin6] at hval
+                          omega
+                  | erase => exact False.elim (leftNon rfl)
+                  | cons =>
+                      cases rightNode with
+                      | dup =>
+                          exfalso
+                          have hval := congrArg Fin.val h
+                          have hleft : leftEntry.val < 3 := by
+                            simp
+                          have hright : rightEntry.val < 3 := by
+                            simp
+                          simp [SINNonUnaryEntry.toFin6] at hval
+                          omega
+                      | erase => exact False.elim (rightNon rfl)
+                      | cons =>
+                          refine Sigma.ext rfl ?_
+                          apply heq_of_eq
+                          apply Fin.ext
+                          have hval := congrArg Fin.val h
+                          simp [SINNonUnaryEntry.toFin6] at hval
+                          omega
+
+private def SINNonUnaryEntryIso : SINNonUnaryEntry ≃ᵢ Fin 6 where
+  toFun := SINNonUnaryEntry.toFin6
+  invFun := SINNonUnaryEntry.ofFin6
+  left_inv := by
+    intro entry
+    apply SINNonUnaryEntry.toFin6_injective
+    exact SINNonUnaryEntry.toFin6_ofFin6 (SINNonUnaryEntry.toFin6 entry)
+  right_inv := SINNonUnaryEntry.toFin6_ofFin6
 
 /-- Finite single-sorted coding data for the SIN signature. -/
 def SymmetricInteractionNetCodingData :
@@ -57,12 +182,20 @@ def SymmetricInteractionNetCodingData :
     cases left
     cases right
     rfl
-  nodeCount := 3
-  nodeCount_pos := by decide
-  entryCount := 7
-  entryCount_pos := by decide
-  recursiveEntryCount := 6
-  recursiveEntryCount_pos := by decide
+  arity_pos := by
+    intro node
+    cases node <;> decide
+  rankScale := 4
+  rankScale_pos := by decide
+  arity_lt_rankScale := by
+    intro node
+    cases node <;> decide
+  unaryCount := 1
+  unaryCount_pos := by decide
+  unaryIso := SINUnaryEntryIso
+  nonUnaryCount := 6
+  nonUnaryCount_pos := by decide
+  nonUnaryIso := SINNonUnaryEntryIso
 
 /-- Ordered-frontier symmetric interaction-net traversal syntax. -/
 abbrev SymmetricInteractionNetDiag
