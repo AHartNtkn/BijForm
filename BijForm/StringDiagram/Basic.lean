@@ -233,6 +233,18 @@ theorem list_get_map_eq_get {α β : Type} (f : α → β)
   cases hmap
   simp
 
+theorem list_get_map_eq_get_of_val_eq {α β : Type} (f : α → β)
+    {xs : List α} {ys : List β}
+    (hmap : xs.map f = ys) (i : Fin xs.length) (j : Fin ys.length)
+    (hval : i.val = j.val) :
+    f (xs.get i) = ys.get j := by
+  have hget := list_get_map_eq_get f hmap i
+  have hidx :
+      (Fin.cast (by rw [← hmap]; simp) i : Fin ys.length) = j := by
+    apply Fin.ext
+    exact hval
+  simpa [hidx] using hget
+
 theorem mem_of_mem_eraseFin {α : Type} :
     ∀ (xs : List α) (i : Fin xs.length) {x : α},
       x ∈ eraseFin xs i → x ∈ xs

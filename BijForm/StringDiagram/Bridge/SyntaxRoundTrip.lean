@@ -1100,19 +1100,11 @@ theorem toDiag_of_renderPrefixRelated :
                   (((RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph.raw.incident nodeIndex).get slot).val =
                     (freshNodeEndpoints rst.nextEndpoint (Sig.arity node)).get
                       (Fin.cast (by simp [freshNodeEndpoints]) entry) := by
-                have hget :=
-                  list_get_map_eq_get (fun endpoint =>
-                    (endpoint : Fin (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph.raw.endpointCount).val)
-                    hincidentVals slot
-                have hidx :
-                    (Fin.cast (by rw [← hincidentVals]; simp) slot :
-                        Fin (freshNodeEndpoints rst.nextEndpoint
-                          (Sig.arity node)).length) =
-                      Fin.cast (by simp [freshNodeEndpoints]) entry := by
-                  apply Fin.ext
-                  exact hslotVal
-                rw [hidx] at hget
-                exact hget
+                exact list_get_map_eq_get_of_val_eq (fun endpoint =>
+                  (endpoint : Fin (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph.raw.endpointCount).val)
+                  hincidentVals slot
+                  (Fin.cast (by simp [freshNodeEndpoints]) entry)
+                  hslotVal
               have hconnectNone :
                   OpenPortHypergraph.firstPendingConnectSearch? (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph
                     sst.seenNode activeEndpoint rest = none := by
