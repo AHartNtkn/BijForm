@@ -75,6 +75,34 @@ def sum {α : Type u} {β : Type v} {γ : Type w} {δ : Type x}
     intro x
     cases x <;> simp
 
+/-- Transport quotients across an isomorphism when both directions preserve
+the chosen setoid relations. -/
+def quotient {α : Type u} {β : Type v} (e : α ≃ᵢ β)
+    (Sα : Setoid α) (Sβ : Setoid β)
+    (map_rel : ∀ {a b : α}, Sα.r a b → Sβ.r (e.toFun a) (e.toFun b))
+    (inv_rel : ∀ {a b : β}, Sβ.r a b → Sα.r (e.invFun a) (e.invFun b)) :
+    Quotient Sα ≃ᵢ Quotient Sβ where
+  toFun :=
+    Quotient.lift (fun a => Quotient.mk Sβ (e.toFun a))
+      (by
+        intro a b hab
+        exact Quotient.sound (map_rel hab))
+  invFun :=
+    Quotient.lift (fun b => Quotient.mk Sα (e.invFun b))
+      (by
+        intro a b hab
+        exact Quotient.sound (inv_rel hab))
+  left_inv := by
+    intro q
+    exact Quotient.inductionOn q (fun a => by
+      change Quotient.mk Sα (e.invFun (e.toFun a)) = Quotient.mk Sα a
+      rw [e.left_inv a])
+  right_inv := by
+    intro q
+    exact Quotient.inductionOn q (fun b => by
+      change Quotient.mk Sβ (e.toFun (e.invFun b)) = Quotient.mk Sβ b
+      rw [e.right_inv b])
+
 theorem noNatIsoOfSubsingleton {α : Type u} [Subsingleton α] :
     (α ≃ᵢ Nat) → False := by
   intro e

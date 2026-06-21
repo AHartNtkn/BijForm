@@ -180,77 +180,20 @@ abbrev SyntaxCarrier (Q : QuotientPresentation P) {Syntax : ι → Type v}
 the quotient-polynomial carrier. -/
 def syntaxCarrierIso (Q : QuotientPresentation P) {Syntax : ι → Type v}
     (syntaxIso : ∀ i, Mu P i ≃ᵢ Syntax i) (i : ι) :
-    SyntaxCarrier Q syntaxIso i ≃ᵢ Carrier Q i where
-  toFun :=
-    Quotient.lift
-      (fun (x : Syntax i) => ofMu Q ((syntaxIso i).invFun x))
-      (by
-        intro x y hxy
-        exact sound Q hxy)
-  invFun :=
-    Quotient.lift
-      (fun (x : Mu P i) =>
-        Quotient.mk (syntaxSetoid Q syntaxIso i) ((syntaxIso i).toFun x))
-      (by
-        intro x y hxy
-        apply Quotient.sound
-        change Rel Q i
-          ((syntaxIso i).invFun ((syntaxIso i).toFun x))
-          ((syntaxIso i).invFun ((syntaxIso i).toFun y))
-        rw [(syntaxIso i).left_inv x, (syntaxIso i).left_inv y]
-        exact hxy)
-  left_inv := by
-    intro q
-    exact Quotient.ind (s := syntaxSetoid Q syntaxIso i)
-      (motive := fun q => Quotient.lift
-        (fun (x : Mu P i) =>
-          Quotient.mk (syntaxSetoid Q syntaxIso i) ((syntaxIso i).toFun x))
-        (by
-          intro x y hxy
-          apply Quotient.sound
-          change Rel Q i
-            ((syntaxIso i).invFun ((syntaxIso i).toFun x))
-            ((syntaxIso i).invFun ((syntaxIso i).toFun y))
-          rw [(syntaxIso i).left_inv x, (syntaxIso i).left_inv y]
-          exact hxy)
-        (Quotient.lift
-          (fun (x : Syntax i) => ofMu Q ((syntaxIso i).invFun x))
-          (by
-            intro x y hxy
-            exact sound Q hxy)
-          q) = q)
-      (fun x => by
-        simp
-        change Quotient.mk (syntaxSetoid Q syntaxIso i)
-            ((syntaxIso i).toFun ((syntaxIso i).invFun x))
-          = Quotient.mk (syntaxSetoid Q syntaxIso i) x
-        rw [(syntaxIso i).right_inv x])
-      q
-  right_inv := by
-    intro q
-    exact Quotient.ind (s := setoid Q i)
-      (motive := fun q => Quotient.lift
-        (fun (x : Syntax i) => ofMu Q ((syntaxIso i).invFun x))
-        (by
-          intro x y hxy
-          exact sound Q hxy)
-        (Quotient.lift
-          (fun (x : Mu P i) =>
-            Quotient.mk (syntaxSetoid Q syntaxIso i) ((syntaxIso i).toFun x))
-          (by
-            intro x y hxy
-            apply Quotient.sound
-            change Rel Q i
-              ((syntaxIso i).invFun ((syntaxIso i).toFun x))
-              ((syntaxIso i).invFun ((syntaxIso i).toFun y))
-            rw [(syntaxIso i).left_inv x, (syntaxIso i).left_inv y]
-            exact hxy)
-          q) = q)
-      (fun x => by
-        change ofMu Q ((syntaxIso i).invFun ((syntaxIso i).toFun x)) =
-          ofMu Q x
-        rw [(syntaxIso i).left_inv x])
-      q
+    SyntaxCarrier Q syntaxIso i ≃ᵢ Carrier Q i :=
+  Iso.quotient (Iso.symm (syntaxIso i))
+    (syntaxSetoid Q syntaxIso i)
+    (setoid Q i)
+    (by
+      intro x y hxy
+      exact hxy)
+    (by
+      intro x y hxy
+      change Rel Q i
+        ((syntaxIso i).invFun ((syntaxIso i).toFun x))
+        ((syntaxIso i).invFun ((syntaxIso i).toFun y))
+      rw [(syntaxIso i).left_inv x, (syntaxIso i).left_inv y]
+      exact hxy)
 
 /-- The code-side relation obtained by transporting a quotient relation across
 an existing well-founded coding of the prequotient initial algebra. -/
@@ -277,33 +220,6 @@ abbrev CodeCarrier (Q : QuotientPresentation P) {Code : ι → Type v}
     (C : WellFoundedCode P Code) (i : ι) : Type v :=
   Quotient (codeSetoid Q C i)
 
-/-- Encode a quotient datatype into the quotient of an existing generated code
-family. -/
-def encodeCodeCarrier (Q : QuotientPresentation P) {Code : ι → Type v}
-    (C : WellFoundedCode P Code) (i : ι) :
-    Carrier Q i → CodeCarrier Q C i :=
-  Quotient.lift
-    (fun x => Quotient.mk (codeSetoid Q C i) (C.encode i x))
-    (by
-      intro x y hxy
-      apply Quotient.sound
-      change Rel Q i (C.decode i (C.encode i x))
-        (C.decode i (C.encode i y))
-      rw [WellFoundedCode.decode_encode C i x,
-        WellFoundedCode.decode_encode C i y]
-      exact hxy)
-
-/-- Decode a quotient of an existing generated code family into the quotient
-datatype. -/
-def decodeCodeCarrier (Q : QuotientPresentation P) {Code : ι → Type v}
-    (C : WellFoundedCode P Code) (i : ι) :
-    CodeCarrier Q C i → Carrier Q i :=
-  Quotient.lift
-    (fun z => ofMu Q (C.decode i z))
-    (by
-      intro a b hab
-      exact sound Q hab)
-
 /--
 Any well-founded coding of the prequotient initial algebra induces a canonical
 bijection between the quotient datatype and the quotient of the generated code
@@ -311,27 +227,20 @@ family by the transported relation.
 -/
 def codeIso (Q : QuotientPresentation P) {Code : ι → Type v}
     (C : WellFoundedCode P Code) (i : ι) :
-    Carrier Q i ≃ᵢ CodeCarrier Q C i where
-  toFun := encodeCodeCarrier Q C i
-  invFun := decodeCodeCarrier Q C i
-  left_inv := by
-    intro q
-    exact Quotient.ind (s := setoid Q i)
-      (motive := fun q => decodeCodeCarrier Q C i (encodeCodeCarrier Q C i q) = q)
-      (fun x => by
-        change Quotient.mk (setoid Q i) (C.decode i (C.encode i x)) =
-          Quotient.mk (setoid Q i) x
-        rw [WellFoundedCode.decode_encode C i x])
-      q
-  right_inv := by
-    intro q
-    exact Quotient.ind (s := codeSetoid Q C i)
-      (motive := fun q => encodeCodeCarrier Q C i (decodeCodeCarrier Q C i q) = q)
-      (fun z => by
-        change Quotient.mk (codeSetoid Q C i) (C.encode i (C.decode i z)) =
-          Quotient.mk (codeSetoid Q C i) z
-        rw [WellFoundedCode.encode_decode C i z])
-      q
+    Carrier Q i ≃ᵢ CodeCarrier Q C i :=
+  Iso.quotient (C.iso i)
+    (setoid Q i)
+    (codeSetoid Q C i)
+    (by
+      intro x y hxy
+      change Rel Q i (C.decode i (C.encode i x))
+        (C.decode i (C.encode i y))
+      rw [WellFoundedCode.decode_encode C i x,
+        WellFoundedCode.decode_encode C i y]
+      exact hxy)
+    (by
+      intro x y hxy
+      exact hxy)
 
 /--
 Criterion for replacing the quotient of a generated code family by a concrete
