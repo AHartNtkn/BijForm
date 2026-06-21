@@ -70,9 +70,26 @@ def FinChainSyntaxToLayer (i : Nat) :
   | @FinChainSyntax.step n tag child =>
       ⟨⟨FinChainCtor.step, ⟨n, tag⟩, rfl⟩, fun _ => child⟩
 
-def FinChainSyntaxLayerPresentation :
-    CodeLayerPresentation FinChainPoly FinChainInversion FinChainSyntax FinChainSyntax :=
-  CodeLayerPresentation.ofMaps
+theorem FinChain_layer_child_rank_lt :
+    ∀ {i : Nat} (z : FinChainSyntax i)
+      (q : FinChainPoly.Pos
+          (FinChainInversion.decode i
+            (FinChainSyntaxToLayer i z).1).ctor
+          (FinChainInversion.decode i
+            (FinChainSyntaxToLayer i z).1).param),
+      FinChainSyntax.rank ((FinChainSyntaxToLayer i z).2 q) <
+        FinChainSyntax.rank z := by
+  intro i z q
+  cases z with
+  | done => cases q
+  | step tag child =>
+      cases q
+      simp [FinChainSyntaxToLayer, FinChainInversion,
+        OutputIndexInversion.canonical, FinChainSyntax.rank]
+
+def FinChainSyntaxPresentation :
+    SyntaxPresentation FinChainPoly FinChainInversion FinChainSyntax :=
+  SyntaxPresentation.ofLayerMaps
     FinChainLayerToSyntax
     FinChainSyntaxToLayer
     (by
@@ -101,30 +118,6 @@ def FinChainSyntaxLayerPresentation :
       cases t with
       | done => rfl
       | step tag child => rfl)
-
-theorem FinChain_layer_child_rank_lt :
-    ∀ {i : Nat} (z : FinChainSyntax i)
-      (q : FinChainPoly.Pos
-          (FinChainInversion.decode i
-            ((FinChainSyntaxLayerPresentation.iso i).invFun z).1).ctor
-          (FinChainInversion.decode i
-            ((FinChainSyntaxLayerPresentation.iso i).invFun z).1).param),
-      FinChainSyntax.rank (((FinChainSyntaxLayerPresentation.iso i).invFun z).2 q) <
-        FinChainSyntax.rank z := by
-  intro i z q
-  cases z with
-  | done => cases q
-  | step tag child =>
-      cases q
-      simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofMaps,
-        FinChainSyntaxLayerPresentation,
-        FinChainSyntaxToLayer, FinChainInversion,
-        OutputIndexInversion.canonical, FinChainSyntax.rank]
-
-def FinChainSyntaxPresentation :
-    SyntaxPresentation FinChainPoly FinChainInversion FinChainSyntax :=
-  SyntaxPresentation.ofLayer
-    FinChainSyntaxLayerPresentation
     (fun _ t => FinChainSyntax.rank t)
     FinChain_layer_child_rank_lt
 
