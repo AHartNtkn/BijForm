@@ -286,40 +286,31 @@ theorem initial_graphRenderRelated
     simpa using (G.raw.boundary_label endpoint).symm
   edge_label := by
     intro edge
-    cases edge with
-    | mk val isLt => exact False.elim (Nat.not_lt_zero val isLt)
+    nomatch edge
   edge_left_bound := by
     intro edge
-    cases edge with
-    | mk val isLt => exact False.elim (Nat.not_lt_zero val isLt)
+    nomatch edge
   edge_right_bound := by
     intro edge
-    cases edge with
-    | mk val isLt => exact False.elim (Nat.not_lt_zero val isLt)
+    nomatch edge
   edge_left := by
     intro edge
-    cases edge with
-    | mk val isLt => exact False.elim (Nat.not_lt_zero val isLt)
+    nomatch edge
   edge_right := by
     intro edge
-    cases edge with
-    | mk val isLt => exact False.elim (Nat.not_lt_zero val isLt)
+    nomatch edge
   node_label := by
     intro node
-    cases node with
-    | mk val isLt => exact False.elim (Nat.not_lt_zero val isLt)
+    nomatch node
   node_incident_length := by
     intro node
-    cases node with
-    | mk val isLt => exact False.elim (Nat.not_lt_zero val isLt)
+    nomatch node
   node_incident_bound := by
     intro node
-    cases node with
-    | mk val isLt => exact False.elim (Nat.not_lt_zero val isLt)
+    nomatch node
   node_incident := by
     intro node
-    cases node with
-    | mk val isLt => exact False.elim (Nat.not_lt_zero val isLt)
+    nomatch node
 
 theorem endpointOrder_connectChild
     {G : OpenPortHypergraph Sig boundary}
@@ -2969,15 +2960,11 @@ theorem GraphRenderRelated.finish
       node_incident_bound := hrel.node_incident_bound
       node_incident := hrel.node_incident }
   · intro id
-    cases id with
-    | mk val isLt =>
-        simp at isLt
+    nomatch id
   · rw [st.pending_eq_nil_of_empty_frontier]
     rfl
   · intro id
-    cases id with
-    | mk val isLt =>
-        simp at isLt
+    nomatch id
 
 theorem GraphRenderRelated.toDiag
     {G : OpenPortHypergraph Sig boundary} :
