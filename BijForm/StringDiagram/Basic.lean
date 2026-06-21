@@ -126,6 +126,14 @@ theorem list_get_append_right {α : Type} (xs ys : List α)
   change (xs ++ ys)[i] = ys[i - xs.length]
   exact List.getElem_append_right hi
 
+theorem list_get_of_eq_append_left {α : Type}
+    {full pref suffix : List α}
+    (hfull : full = pref ++ suffix)
+    (i : Fin full.length) (hi : i.val < pref.length) :
+    full.get i = pref.get ⟨i.val, hi⟩ := by
+  subst full
+  exact list_get_append_left pref suffix hi i.isLt
+
 theorem list_get_append_single_at_length {α : Type}
     (xs ys : List α) (x : α) :
     (xs ++ x :: ys).get ⟨xs.length, by simp⟩ = x := by

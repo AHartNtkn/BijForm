@@ -341,36 +341,8 @@ theorem connectStep_edges_get_old
     (hold : edge.val < st.edges.length) :
     (connectStep mate ok st).edges.get edge =
       st.edges.get ⟨edge.val, hold⟩ := by
-  let newEdge : RenderEdge Sig :=
-    { label := Sig.portEdge active
-      leftLabel := active
-      rightLabel := frontier.get mate
-      left := activeId
-      right :=
-        restIds.get (Fin.cast (by
-          exact (RenderState.frontierIds_cons_tail_length st hids).symm) mate)
-      left_label := rfl
-      right_label := (Sig.compatible_edge ok).symm
-      compatible := ok }
-  let i := edge.val
-  have hchildSome :
-      (connectStep mate ok st).edges[i]? =
-        some ((connectStep mate ok st).edges.get edge) :=
-    by simp [i]
-  have holdSome :
-      (connectStep mate ok st).edges[i]? =
-        some (st.edges.get ⟨i, by simpa [i] using hold⟩) := by
-    rw [connectStep_edges mate ok st hids]
-    have hleft :
-        (st.edges ++ [newEdge])[i]? = st.edges[i]? :=
-      List.getElem?_append_left (l₁ := st.edges) (l₂ := [newEdge])
-        (by simpa [i] using hold)
-    have hsome :
-        st.edges[i]? = some (st.edges.get ⟨i, by simpa [i] using hold⟩) :=
-      List.getElem?_eq_getElem (by simpa [i] using hold)
-    exact hleft.trans hsome
-  rw [hchildSome] at holdSome
-  injection holdSome with hget
+  exact list_get_of_eq_append_left
+    (connectStep_edges mate ok st hids) edge hold
 
 theorem connectStep_edges_get_new
     {active : Sig.Port} {frontier : List Sig.Port}

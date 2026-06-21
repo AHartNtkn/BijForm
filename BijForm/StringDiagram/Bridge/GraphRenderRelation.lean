@@ -368,27 +368,8 @@ theorem edgeOrder_connectChild_get_old
     (hold : edge.val < (edgeOrder st).length) :
     (edgeOrder (st.connectChild hpending mate hmate)).get edge =
       (edgeOrder st).get ⟨edge.val, hold⟩ := by
-  let i := edge.val
-  have hchildSome :
-      (edgeOrder (st.connectChild hpending mate hmate))[i]? =
-        some ((edgeOrder (st.connectChild hpending mate hmate)).get edge) :=
-    by simp [i]
-  have holdSome :
-      (edgeOrder (st.connectChild hpending mate hmate))[i]? =
-        some ((edgeOrder st).get ⟨i, by simpa [i] using hold⟩) := by
-    rw [edgeOrder_connectChild st hpending mate hmate]
-    have hleft :
-        (edgeOrder st ++ [G.raw.endpointEdge active])[i]? =
-          (edgeOrder st)[i]? :=
-      List.getElem?_append_left (l₁ := edgeOrder st)
-        (l₂ := [G.raw.endpointEdge active]) (by simpa [i] using hold)
-    have hsome :
-        (edgeOrder st)[i]? =
-          some ((edgeOrder st).get ⟨i, by simpa [i] using hold⟩) :=
-      List.getElem?_eq_getElem (by simpa [i] using hold)
-    exact hleft.trans hsome
-  rw [hchildSome] at holdSome
-  injection holdSome with hget
+  exact list_get_of_eq_append_left
+    (edgeOrder_connectChild st hpending mate hmate) edge hold
 
 theorem edgeOrder_connectChild_get_new
     {G : OpenPortHypergraph Sig boundary}
