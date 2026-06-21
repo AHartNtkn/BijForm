@@ -469,20 +469,13 @@ theorem NumNat_layer_child_lt :
 
 def NumNatLayerShapePresentation :
     LayerShapePresentation NumPoly NumInversion (fun _ => Nat) NumNatLayerShape :=
-  LayerShapePresentation.ofComponents
+  LayerShapePresentation.ofLayerChildRank
     NumNatLayerShapeLayerPresentation
     (fun k => CodeAlgebra.finPrefixNat (k + 2) CodeAlgebra.natOrProdOrProdNat)
     (fun _ n => n)
     (by
-    intro k n q
-    let layerIso :=
-      (NumNatLayerShapeLayerPresentation.transCarrier
-        (fun k => CodeAlgebra.finPrefixNat (k + 2)
-          CodeAlgebra.natOrProdOrProdNat)).iso k
-    have h := NumNat_layer_child_lt (layerIso.invFun n) q
-    change (layerIso.invFun n).2 q < layerIso.toFun (layerIso.invFun n) at h
-    rw [layerIso.right_inv n] at h
-    exact h)
+    intro k layer q
+    exact NumNat_layer_child_lt layer q)
 
 def NumNatLayerPresentation : NatLayerPresentation NumPoly NumInversion :=
   NumNatLayerShapePresentation.toNatLayerPresentationOfRankEq (by

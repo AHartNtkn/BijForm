@@ -889,6 +889,29 @@ def ofComponents
     exact child_rank_lt z q
 
 /--
+Build a layer-shape presentation from a layer-local descent proof. The caller
+proves rank descent for each raw layer, and the library transports that fact
+across the final carrier code.
+-/
+def ofLayerChildRank
+    (layerShape : CodeLayerPresentation P H Code Shape)
+    (carrier : ∀ i, Shape i ≃ᵢ Code i)
+    (rank : ∀ i, Code i → Nat)
+    (layer_child_rank_lt :
+      ∀ {i : ι} (x : CodeLayer P H Code i)
+        (q : P.Pos (H.decode i x.1).ctor (H.decode i x.1).param),
+        rank (P.input (H.decode i x.1).param q) (x.2 q) <
+          rank i (((layerShape.transCarrier carrier).iso i).toFun x)) :
+    LayerShapePresentation P H Code Shape where
+  layerShape := layerShape
+  carrier := carrier
+  rank := rank
+  child_rank_lt := by
+    intro i z q
+    simpa using
+      layer_child_rank_lt (((layerShape.transCarrier carrier).iso i).invFun z) q
+
+/--
 Build a layer-shape presentation when the generated shape is the carrier
 family itself.  Examples supply the domain-specific one-step isomorphism and
 rank proof; the library owns the presentation assembly.

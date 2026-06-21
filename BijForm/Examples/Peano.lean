@@ -371,19 +371,13 @@ theorem PeanoNat_layer_child_lt :
 def PeanoNatLayerShapePresentation :
     LayerShapePresentation PeanoPoly PeanoInversion (fun _ => Nat)
       (fun _ => PeanoNatLayerShape) :=
-  LayerShapePresentation.ofComponents
+  LayerShapePresentation.ofLayerChildRank
     PeanoNatLayerShapeLayerPresentation
     (fun _ => CodeAlgebra.prodOrNatOrProdOrNat)
     (fun _ n => n)
     (by
-    intro k n q
-    let layerIso :=
-      (PeanoNatLayerShapeLayerPresentation.transCarrier
-        (fun _ => CodeAlgebra.prodOrNatOrProdOrNat)).iso k
-    have h := PeanoNat_layer_child_lt (layerIso.invFun n) q
-    change (layerIso.invFun n).2 q < layerIso.toFun (layerIso.invFun n) at h
-    rw [layerIso.right_inv n] at h
-    exact h)
+    intro k layer q
+    exact PeanoNat_layer_child_lt layer q)
 
 def PeanoNatLayerPresentation : NatLayerPresentation PeanoPoly PeanoInversion :=
   PeanoNatLayerShapePresentation.toNatLayerPresentationOfRankEq (by

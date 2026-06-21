@@ -330,23 +330,13 @@ theorem LamNat_layer_child_rank_lt :
 
 def LamNatLayerShapePresentation :
     LayerShapePresentation LamPoly LamInversion (fun _ => Nat) LamNatLayerShape :=
-  LayerShapePresentation.ofComponents
+  LayerShapePresentation.ofLayerChildRank
     LamNatLayerShapeLayerPresentation
     (fun k => CodeAlgebra.finPrefixNat k CodeAlgebra.sumProdNat)
     LamNatRank
     (by
-    intro k n q
-    let layerIso :=
-      (LamNatLayerShapeLayerPresentation.transCarrier
-        (fun k => CodeAlgebra.finPrefixNat k CodeAlgebra.sumProdNat)).iso k
-    have h := LamNat_layer_child_rank_lt (layerIso.invFun n) q
-    change
-      LamNatRank
-          (LamPoly.input (LamInversion.decode k (layerIso.invFun n).1).param q)
-          ((layerIso.invFun n).2 q) <
-        LamNatRank k (layerIso.toFun (layerIso.invFun n)) at h
-    rw [layerIso.right_inv n] at h
-    exact h)
+    intro k layer q
+    exact LamNat_layer_child_rank_lt layer q)
 
 def LamNatLayerPresentation : RankedNatLayerPresentation LamPoly LamInversion :=
   LamNatLayerShapePresentation.toRankedNatLayerPresentationSelf
