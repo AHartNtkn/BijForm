@@ -1033,22 +1033,16 @@ theorem GraphRenderRelated.connectChild
               Fin (endpointOrder G st).length :=
             Fin.cast hrel.endpoint_length
               ⟨(rst.edges.get oldEdge).left, hrel.edge_left_bound oldEdge⟩
-          have hgetEndpoint :=
-            list_get_of_eq
-              (endpointOrder_connectChild st hpending mate hmate)
-              childEndpoint
-          have hidx : Fin.cast
-                (congrArg List.length
-                  (endpointOrder_connectChild st hpending mate hmate))
-                childEndpoint = oldEndpoint := by
-            apply Fin.ext
-            simpa [childEndpoint, oldEndpoint] using
-              congrArg RenderEdge.left hedgeEq
           have hendpoint :
               (endpointOrder G (st.connectChild hpending mate hmate)).get
                   childEndpoint =
                 (endpointOrder G st).get oldEndpoint := by
-            simpa [hidx] using hgetEndpoint
+            exact list_get_of_eq_of_val_eq
+              (endpointOrder_connectChild st hpending mate hmate)
+              childEndpoint oldEndpoint
+              (by
+                simpa [childEndpoint, oldEndpoint] using
+                  congrArg RenderEdge.left hedgeEq)
           calc
             G.raw.endpointEdge
                 ((endpointOrder G (st.connectChild hpending mate hmate)).get
@@ -1115,22 +1109,16 @@ theorem GraphRenderRelated.connectChild
                 have hbound := hrel.frontier_id_bound
                   (⟨0, by rw [hids]; simp⟩ : Fin rst.frontierIds.length)
                 simpa [hids] using hbound⟩
-          have hgetEndpoint :=
-            list_get_of_eq
-              (endpointOrder_connectChild st hpending mate hmate)
-              childEndpoint
-          have hidx : Fin.cast
-                (congrArg List.length
-                  (endpointOrder_connectChild st hpending mate hmate))
-                childEndpoint = oldEndpoint := by
-            apply Fin.ext
-            simpa [childEndpoint, oldEndpoint] using
-              congrArg RenderEdge.left hnewEdge
           have hendpoint :
               (endpointOrder G (st.connectChild hpending mate hmate)).get
                   childEndpoint =
                 (endpointOrder G st).get oldEndpoint := by
-            simpa [hidx] using hgetEndpoint
+            exact list_get_of_eq_of_val_eq
+              (endpointOrder_connectChild st hpending mate hmate)
+              childEndpoint oldEndpoint
+              (by
+                simpa [childEndpoint, oldEndpoint] using
+                  congrArg RenderEdge.left hnewEdge)
           calc
             G.raw.endpointEdge
                 ((endpointOrder G (st.connectChild hpending mate hmate)).get
@@ -1181,22 +1169,16 @@ theorem GraphRenderRelated.connectChild
               Fin (endpointOrder G st).length :=
             Fin.cast hrel.endpoint_length
               ⟨(rst.edges.get oldEdge).right, hrel.edge_right_bound oldEdge⟩
-          have hgetEndpoint :=
-            list_get_of_eq
-              (endpointOrder_connectChild st hpending mate hmate)
-              childEndpoint
-          have hidx : Fin.cast
-                (congrArg List.length
-                  (endpointOrder_connectChild st hpending mate hmate))
-                childEndpoint = oldEndpoint := by
-            apply Fin.ext
-            simpa [childEndpoint, oldEndpoint] using
-              congrArg RenderEdge.right hedgeEq
           have hendpoint :
               (endpointOrder G (st.connectChild hpending mate hmate)).get
                   childEndpoint =
                 (endpointOrder G st).get oldEndpoint := by
-            simpa [hidx] using hgetEndpoint
+            exact list_get_of_eq_of_val_eq
+              (endpointOrder_connectChild st hpending mate hmate)
+              childEndpoint oldEndpoint
+              (by
+                simpa [childEndpoint, oldEndpoint] using
+                  congrArg RenderEdge.right hedgeEq)
           calc
             G.raw.endpointEdge
                 ((endpointOrder G (st.connectChild hpending mate hmate)).get
@@ -1275,22 +1257,16 @@ theorem GraphRenderRelated.connectChild
                 rw [hids]
                 right
                 exact List.get_mem restIds idx)⟩
-          have hgetEndpoint :=
-            list_get_of_eq
-              (endpointOrder_connectChild st hpending mate hmate)
-              childEndpoint
-          have hidx : Fin.cast
-                (congrArg List.length
-                  (endpointOrder_connectChild st hpending mate hmate))
-                childEndpoint = oldEndpoint := by
-            apply Fin.ext
-            simpa [childEndpoint, oldEndpoint] using
-              congrArg RenderEdge.right hnewEdge
           have hendpoint :
               (endpointOrder G (st.connectChild hpending mate hmate)).get
                   childEndpoint =
                 (endpointOrder G st).get oldEndpoint := by
-            simpa [hidx] using hgetEndpoint
+            exact list_get_of_eq_of_val_eq
+              (endpointOrder_connectChild st hpending mate hmate)
+              childEndpoint oldEndpoint
+              (by
+                simpa [childEndpoint, oldEndpoint] using
+                  congrArg RenderEdge.right hnewEdge)
           calc
             G.raw.endpointEdge
                 ((endpointOrder G (st.connectChild hpending mate hmate)).get

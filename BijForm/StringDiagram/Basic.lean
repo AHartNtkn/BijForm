@@ -131,6 +131,17 @@ theorem list_get_of_eq {α : Type} {xs ys : List α}
   cases h
   rfl
 
+theorem list_get_of_eq_of_val_eq {α : Type} {xs ys : List α}
+    (h : xs = ys) (i : Fin xs.length) (j : Fin ys.length)
+    (hval : i.val = j.val) :
+    xs.get i = ys.get j := by
+  have hget := list_get_of_eq h i
+  have hidx :
+      Fin.cast (congrArg List.length h) i = j := by
+    apply Fin.ext
+    exact hval
+  simpa [hidx] using hget
+
 def listPrefixIndex {α : Type} {pref full suffix : List α}
     (hfull : full = pref ++ suffix) (i : Fin pref.length) :
     Fin full.length :=
