@@ -224,6 +224,26 @@ def toNatSum {α : Type u} {β : Type v}
     (left : α ≃ᵢ Nat) (right : β ≃ᵢ Nat) : (α ⊕ β) ≃ᵢ Nat :=
   Iso.trans (Iso.sum left right) sumNat
 
+theorem toNatSum_inl_le_of_le {α : Type u} {β : Type v}
+    (left : α ≃ᵢ Nat) (right : β ≃ᵢ Nat) {a : α} {m : Nat}
+    (h : m ≤ left.toFun a) :
+    m ≤ (toNatSum left right).toFun (Sum.inl a) := by
+  dsimp [toNatSum, Iso.trans, Iso.sum, sumNat]
+  omega
+
+theorem toNatSum_inr_lt_of_le {α : Type u} {β : Type v}
+    (left : α ≃ᵢ Nat) (right : β ≃ᵢ Nat) {b : β} {m : Nat}
+    (h : m ≤ right.toFun b) :
+    m < (toNatSum left right).toFun (Sum.inr b) := by
+  dsimp [toNatSum, Iso.trans, Iso.sum, sumNat]
+  omega
+
+theorem toNatSum_inr_lt_of_lt {α : Type u} {β : Type v}
+    (left : α ≃ᵢ Nat) (right : β ≃ᵢ Nat) {b : β} {m : Nat}
+    (h : m < right.toFun b) :
+    m < (toNatSum left right).toFun (Sum.inr b) :=
+  toNatSum_inr_lt_of_le left right (Nat.le_of_lt h)
+
 def sum3Nat : (Nat ⊕ (Nat ⊕ Nat)) ≃ᵢ Nat :=
   toNatSum (Iso.refl Nat) sumNat
 
@@ -269,15 +289,11 @@ def sumProdNat : (Nat ⊕ (Nat × Nat)) ≃ᵢ Nat :=
 
 theorem sumProdNat_toFun_inr_fst_lt (p : Nat × Nat) :
     p.1 < sumProdNat.toFun (Sum.inr p) := by
-  dsimp [sumProdNat, toNatSum, Iso.trans, Iso.sum, sumNat]
-  have hle := prodNat_toFun_fst_le p
-  omega
+  exact toNatSum_inr_lt_of_le (Iso.refl Nat) prodNat (prodNat_toFun_fst_le p)
 
 theorem sumProdNat_toFun_inr_snd_lt (p : Nat × Nat) :
     p.2 < sumProdNat.toFun (Sum.inr p) := by
-  dsimp [sumProdNat, toNatSum, Iso.trans, Iso.sum, sumNat]
-  have hle := prodNat_toFun_snd_le p
-  omega
+  exact toNatSum_inr_lt_of_le (Iso.refl Nat) prodNat (prodNat_toFun_snd_le p)
 
 theorem sumProdNat_invFun_inr_fst_lt {n a b : Nat}
     (h : sumProdNat.invFun n = Sum.inr (a, b)) : a < n := by
@@ -301,32 +317,35 @@ def natOrProdOrProdNat :
 
 theorem natOrProdOrProdNat_toFun_inl_le (n : Nat) :
     n ≤ natOrProdOrProdNat.toFun (Sum.inl n) := by
-  simp [natOrProdOrProdNat, toNatSum, Iso.trans, Iso.sum, sumNat, Iso.refl]
-  omega
+  exact toNatSum_inl_le_of_le (Iso.refl Nat) (toNatSum prodNat prodNat) (Nat.le_refl n)
 
 theorem natOrProdOrProdNat_toFun_inr_inl_fst_le (p : Nat × Nat) :
     p.1 ≤ natOrProdOrProdNat.toFun (Sum.inr (Sum.inl p)) := by
-  simp [natOrProdOrProdNat, toNatSum, Iso.trans, Iso.sum, sumNat, Iso.refl]
-  have hle := prodNat_toFun_fst_le p
-  omega
+  have hinner : p.1 ≤ (toNatSum prodNat prodNat).toFun (Sum.inl p) :=
+    toNatSum_inl_le_of_le prodNat prodNat (prodNat_toFun_fst_le p)
+  exact Nat.le_of_lt (toNatSum_inr_lt_of_le (Iso.refl Nat)
+    (toNatSum prodNat prodNat) hinner)
 
 theorem natOrProdOrProdNat_toFun_inr_inl_snd_le (p : Nat × Nat) :
     p.2 ≤ natOrProdOrProdNat.toFun (Sum.inr (Sum.inl p)) := by
-  simp [natOrProdOrProdNat, toNatSum, Iso.trans, Iso.sum, sumNat, Iso.refl]
-  have hle := prodNat_toFun_snd_le p
-  omega
+  have hinner : p.2 ≤ (toNatSum prodNat prodNat).toFun (Sum.inl p) :=
+    toNatSum_inl_le_of_le prodNat prodNat (prodNat_toFun_snd_le p)
+  exact Nat.le_of_lt (toNatSum_inr_lt_of_le (Iso.refl Nat)
+    (toNatSum prodNat prodNat) hinner)
 
 theorem natOrProdOrProdNat_toFun_inr_inr_fst_le (p : Nat × Nat) :
     p.1 ≤ natOrProdOrProdNat.toFun (Sum.inr (Sum.inr p)) := by
-  simp [natOrProdOrProdNat, toNatSum, Iso.trans, Iso.sum, sumNat, Iso.refl]
-  have hle := prodNat_toFun_fst_le p
-  omega
+  have hinner : p.1 < (toNatSum prodNat prodNat).toFun (Sum.inr p) :=
+    toNatSum_inr_lt_of_le prodNat prodNat (prodNat_toFun_fst_le p)
+  exact Nat.le_of_lt (toNatSum_inr_lt_of_lt (Iso.refl Nat)
+    (toNatSum prodNat prodNat) hinner)
 
 theorem natOrProdOrProdNat_toFun_inr_inr_snd_le (p : Nat × Nat) :
     p.2 ≤ natOrProdOrProdNat.toFun (Sum.inr (Sum.inr p)) := by
-  simp [natOrProdOrProdNat, toNatSum, Iso.trans, Iso.sum, sumNat, Iso.refl]
-  have hle := prodNat_toFun_snd_le p
-  omega
+  have hinner : p.2 < (toNatSum prodNat prodNat).toFun (Sum.inr p) :=
+    toNatSum_inr_lt_of_le prodNat prodNat (prodNat_toFun_snd_le p)
+  exact Nat.le_of_lt (toNatSum_inr_lt_of_lt (Iso.refl Nat)
+    (toNatSum prodNat prodNat) hinner)
 
 def prodOrNatOrProdOrNat :
     ((Nat × Nat) ⊕ (Nat ⊕ ((Nat × Nat) ⊕ Nat))) ≃ᵢ Nat :=
@@ -335,25 +354,40 @@ def prodOrNatOrProdOrNat :
 
 theorem prodOrNatOrProdOrNat_toFun_inr_inl_lt (n : Nat) :
     n < prodOrNatOrProdOrNat.toFun (Sum.inr (Sum.inl n)) := by
-  simp [prodOrNatOrProdOrNat, toNatSum, Iso.trans, Iso.sum, sumNat, Iso.refl]
-  omega
+  have hinner : n ≤
+      (toNatSum (Iso.refl Nat) (toNatSum prodNat (Iso.refl Nat))).toFun
+        (Sum.inl n) :=
+    toNatSum_inl_le_of_le (Iso.refl Nat) (toNatSum prodNat (Iso.refl Nat))
+      (Nat.le_refl n)
+  exact toNatSum_inr_lt_of_le prodNat
+    (toNatSum (Iso.refl Nat) (toNatSum prodNat (Iso.refl Nat))) hinner
 
 theorem prodOrNatOrProdOrNat_toFun_inr_inr_inl_fst_lt (p : Nat × Nat) :
     p.1 < prodOrNatOrProdOrNat.toFun (Sum.inr (Sum.inr (Sum.inl p))) := by
-  simp [prodOrNatOrProdOrNat, toNatSum, Iso.trans, Iso.sum, sumNat, Iso.refl]
-  have hle := prodNat_toFun_fst_le p
-  omega
+  have htail : p.1 < (toNatSum (Iso.refl Nat)
+      (toNatSum prodNat (Iso.refl Nat))).toFun (Sum.inr (Sum.inl p)) := by
+    exact toNatSum_inr_lt_of_le (Iso.refl Nat) (toNatSum prodNat (Iso.refl Nat))
+      (toNatSum_inl_le_of_le prodNat (Iso.refl Nat) (prodNat_toFun_fst_le p))
+  exact toNatSum_inr_lt_of_lt prodNat
+    (toNatSum (Iso.refl Nat) (toNatSum prodNat (Iso.refl Nat))) htail
 
 theorem prodOrNatOrProdOrNat_toFun_inr_inr_inl_snd_lt (p : Nat × Nat) :
     p.2 < prodOrNatOrProdOrNat.toFun (Sum.inr (Sum.inr (Sum.inl p))) := by
-  simp [prodOrNatOrProdOrNat, toNatSum, Iso.trans, Iso.sum, sumNat, Iso.refl]
-  have hle := prodNat_toFun_snd_le p
-  omega
+  have htail : p.2 < (toNatSum (Iso.refl Nat)
+      (toNatSum prodNat (Iso.refl Nat))).toFun (Sum.inr (Sum.inl p)) := by
+    exact toNatSum_inr_lt_of_le (Iso.refl Nat) (toNatSum prodNat (Iso.refl Nat))
+      (toNatSum_inl_le_of_le prodNat (Iso.refl Nat) (prodNat_toFun_snd_le p))
+  exact toNatSum_inr_lt_of_lt prodNat
+    (toNatSum (Iso.refl Nat) (toNatSum prodNat (Iso.refl Nat))) htail
 
 theorem prodOrNatOrProdOrNat_toFun_inr_inr_inr_lt (n : Nat) :
     n < prodOrNatOrProdOrNat.toFun (Sum.inr (Sum.inr (Sum.inr n))) := by
-  simp [prodOrNatOrProdOrNat, toNatSum, Iso.trans, Iso.sum, sumNat, Iso.refl]
-  omega
+  have htail : n < (toNatSum (Iso.refl Nat)
+      (toNatSum prodNat (Iso.refl Nat))).toFun (Sum.inr (Sum.inr n)) := by
+    exact toNatSum_inr_lt_of_lt (Iso.refl Nat) (toNatSum prodNat (Iso.refl Nat))
+      (toNatSum_inr_lt_of_le prodNat (Iso.refl Nat) (Nat.le_refl n))
+  exact toNatSum_inr_lt_of_lt prodNat
+    (toNatSum (Iso.refl Nat) (toNatSum prodNat (Iso.refl Nat))) htail
 
 def finPrefixNat {α : Type u} (k : Nat) (tail : α ≃ᵢ Nat) :
     (Fin k ⊕ α) ≃ᵢ Nat :=
