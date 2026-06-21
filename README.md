@@ -630,7 +630,7 @@ Branch-swap quotient example:
 - `HBTChildSwap_innRaw_branch_sound`
 - `TupleAction.BinarySwap.concreteCode`
 - `HBTChildSwapNatCodeIso (i) : Iso (HBTChildSwap i) (HBTChildSwapNatCode i)`
-- `HBTChildSwapDescendedNatCode : QuotientPresentation.DescendedCode HBTChildSwapQuotient HBTNatGeneratedCode.toWellFoundedCode (fun _ => Nat)`
+- `HBTChildSwapDescendedNatCode : QuotientPresentation.DescendedGeneratedCode HBTChildSwapQuotient HBTNatGeneratedCode.toGeneratedCode (fun _ => Nat)`
 - `HBTChildSwapNatIso (i) : Iso (HBTChildSwap i) Nat`
 - `HBTSyntaxChildSwapNatCodeIso (i) : Iso (HBTSyntaxChildSwap i) (HBTChildSwapNatCode i)`
 - `HBTSyntaxChildSwapNatIso (i) : Iso (HBTSyntaxChildSwap i) Nat`
