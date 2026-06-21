@@ -136,6 +136,9 @@ lake exe bijform
   - `StringDiagram.SingleSortedFiniteCodingData.entryTag`
   - `StringDiagram.SingleSortedFiniteCodingData.entryToTag`
   - `StringDiagram.SingleSortedFiniteCodingData.tagToEntry`
+  - `StringDiagram.SingleSortedFiniteCodingData.tagToEntry_entryToTag`
+  - `StringDiagram.SingleSortedFiniteCodingData.entryToTag_tagToEntry`
+  - `StringDiagram.SingleSortedFiniteCodingData.entryIso`
   - `StringDiagram.SingleSortedFiniteCodingData.unaryTagToEntry`
   - `StringDiagram.SingleSortedFiniteCodingData.nonUnaryTagToEntry`
   - `StringDiagram.singleSortedFiniteLayerShape`

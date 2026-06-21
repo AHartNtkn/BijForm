@@ -142,6 +142,60 @@ def nonUnaryTagArity (tag : Fin data.nonUnaryCount) :
     Sig.arity (data.nonUnaryTagToEntry tag).1 ≠ 1 :=
   (data.nonUnaryIso.invFun tag).property
 
+theorem tagToEntry_entryToTag (entry : Sig.Entry) :
+    data.tagToEntry (data.entryToTag entry) = entry := by
+  by_cases hentry : Sig.arity entry.1 = 1
+  · simp [entryToTag, tagToEntry, hentry]
+  · simp [entryToTag, tagToEntry, hentry]
+
+theorem entryToTag_tagToEntry (tag : data.entryTag) :
+    data.entryToTag (data.tagToEntry tag) = tag := by
+  cases htag :
+      (CodeAlgebra.finSum data.unaryCount data.nonUnaryCount).invFun tag with
+  | inl unary =>
+      have hright :
+          (CodeAlgebra.finSum data.unaryCount data.nonUnaryCount).toFun
+              (Sum.inl unary) = tag := by
+        simpa [htag] using
+          (CodeAlgebra.finSum data.unaryCount data.nonUnaryCount).right_inv tag
+      unfold entryToTag tagToEntry
+      rw [htag]
+      rw [dif_pos (data.unaryIso.invFun unary).property]
+      have hunary :
+          (⟨(data.unaryIso.invFun unary).val,
+            (data.unaryIso.invFun unary).property⟩ : Sig.UnaryEntry) =
+            data.unaryIso.invFun unary := by
+        apply Subtype.ext
+        rfl
+      rw [hunary]
+      rw [data.unaryIso.right_inv unary]
+      exact hright
+  | inr nonUnary =>
+      have hright :
+          (CodeAlgebra.finSum data.unaryCount data.nonUnaryCount).toFun
+              (Sum.inr nonUnary) = tag := by
+        simpa [htag] using
+          (CodeAlgebra.finSum data.unaryCount data.nonUnaryCount).right_inv tag
+      unfold entryToTag tagToEntry
+      rw [htag]
+      rw [dif_neg (data.nonUnaryIso.invFun nonUnary).property]
+      have hnonUnary :
+          (⟨(data.nonUnaryIso.invFun nonUnary).val,
+            (data.nonUnaryIso.invFun nonUnary).property⟩ :
+              Sig.NonUnaryEntry) =
+            data.nonUnaryIso.invFun nonUnary := by
+        apply Subtype.ext
+        rfl
+      rw [hnonUnary]
+      rw [data.nonUnaryIso.right_inv nonUnary]
+      exact hright
+
+def entryIso : Sig.Entry ≃ᵢ data.entryTag where
+  toFun := data.entryToTag
+  invFun := data.tagToEntry
+  left_inv := data.tagToEntry_entryToTag
+  right_inv := data.entryToTag_tagToEntry
+
 end SingleSortedFiniteCodingData
 
 /-- The one-step branch shape generated from finite single-sorted signature data. -/
