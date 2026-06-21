@@ -220,6 +220,17 @@ abbrev CodeCarrier (Q : QuotientPresentation P) {Code : ι → Type v}
     (C : WellFoundedCode P Code) (i : ι) : Type v :=
   Quotient (codeSetoid Q C i)
 
+/-- The code-side relation transported across generated coding data. -/
+def GeneratedCodeRel (Q : QuotientPresentation P) {Code : ι → Type v}
+    (C : GeneratedCode P Code) (i : ι) (a b : Code i) : Prop :=
+  CodeRel Q C.toWellFoundedCode i a b
+
+/-- The generated-code quotient carrier, keeping generated coding data visible
+at the quotient API boundary. -/
+abbrev GeneratedCodeCarrier (Q : QuotientPresentation P) {Code : ι → Type v}
+    (C : GeneratedCode P Code) (i : ι) : Type v :=
+  CodeCarrier Q C.toWellFoundedCode i
+
 /--
 Any well-founded coding of the prequotient initial algebra induces a canonical
 bijection between the quotient datatype and the quotient of the generated code
@@ -241,6 +252,12 @@ def codeIso (Q : QuotientPresentation P) {Code : ι → Type v}
     (by
       intro x y hxy
       exact hxy)
+
+/-- Generated-code-facing form of `codeIso`. -/
+def generatedCodeIso (Q : QuotientPresentation P) {Code : ι → Type v}
+    (C : GeneratedCode P Code) (i : ι) :
+    Carrier Q i ≃ᵢ GeneratedCodeCarrier Q C i :=
+  codeIso Q C.toWellFoundedCode i
 
 /--
 Criterion for replacing the quotient of a generated code family by a concrete
@@ -298,6 +315,27 @@ def carrierIso (D : DescendedCode Q C Out) (i : ι) :
   Iso.trans (codeIso Q C i) (codeCarrierIso D i)
 
 end DescendedCode
+
+/-- Generated-code-facing descent criterion. -/
+abbrev DescendedGeneratedCode
+    (Q : QuotientPresentation P) {Code : ι → Type v}
+    (C : GeneratedCode P Code) (Out : ι → Type w) : Type (max u v w) :=
+  DescendedCode Q C.toWellFoundedCode Out
+
+namespace DescendedGeneratedCode
+
+variable {Q : QuotientPresentation P} {Code : ι → Type v}
+variable {C : GeneratedCode P Code} {Out : ι → Type w}
+
+def codeCarrierIso (D : DescendedGeneratedCode Q C Out) (i : ι) :
+    GeneratedCodeCarrier Q C i ≃ᵢ Out i :=
+  DescendedCode.codeCarrierIso D i
+
+def carrierIso (D : DescendedGeneratedCode Q C Out) (i : ι) :
+    Carrier Q i ≃ᵢ Out i :=
+  Iso.trans (generatedCodeIso Q C i) (codeCarrierIso D i)
+
+end DescendedGeneratedCode
 
 end QuotientPresentation
 

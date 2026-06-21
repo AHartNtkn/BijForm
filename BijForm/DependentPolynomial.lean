@@ -457,6 +457,20 @@ def toWellFoundedCode (C : GeneratedCode P Code) :
 def iso (C : GeneratedCode P Code) (i : ι) : Mu P i ≃ᵢ Code i :=
   C.toWellFoundedCode.iso i
 
+def encode (C : GeneratedCode P Code) (i : ι) (x : Mu P i) : Code i :=
+  C.toWellFoundedCode.encode i x
+
+def decode (C : GeneratedCode P Code) (i : ι) (z : Code i) : Mu P i :=
+  C.toWellFoundedCode.decode i z
+
+theorem decode_encode (C : GeneratedCode P Code) (i : ι) (x : Mu P i) :
+    C.decode i (C.encode i x) = x :=
+  C.toWellFoundedCode.decode_encode i x
+
+theorem encode_decode (C : GeneratedCode P Code) (i : ι) (z : Code i) :
+    C.encode i (C.decode i z) = z :=
+  C.toWellFoundedCode.encode_decode i z
+
 end GeneratedCode
 
 inductive CodeShape where
@@ -665,6 +679,20 @@ def toWellFoundedCode (C : GeneratedNatCode P) :
 
 def iso (C : GeneratedNatCode P) (i : ι) : Mu P i ≃ᵢ Nat :=
   C.toGeneratedCode.iso i
+
+def encode (C : GeneratedNatCode P) (i : ι) (x : Mu P i) : Nat :=
+  C.toGeneratedCode.encode i x
+
+def decode (C : GeneratedNatCode P) (i : ι) (n : Nat) : Mu P i :=
+  C.toGeneratedCode.decode i n
+
+theorem decode_encode (C : GeneratedNatCode P) (i : ι) (x : Mu P i) :
+    C.decode i (C.encode i x) = x :=
+  C.toGeneratedCode.decode_encode i x
+
+theorem encode_decode (C : GeneratedNatCode P) (i : ι) (n : Nat) :
+    C.encode i (C.decode i n) = n :=
+  C.toGeneratedCode.encode_decode i n
 
 theorem noSubsingletonFiber (C : GeneratedNatCode P) (i : ι)
     [Subsingleton (Mu P i)] : False := by

@@ -79,19 +79,19 @@ theorem HBTChildSwap_innRaw_branch_sound {m : Nat} (lhs rhs : Mu HBTPoly m) :
 /-- The Nat-code relation induced by the branch-swap quotient and the existing
 generated Nat coding for height-bounded trees. -/
 abbrev HBTChildSwapNatCodeRel (i : Nat) (a b : Nat) : Prop :=
-  HBTChildSwapQuotient.CodeRel HBTNatGeneratedCode.toWellFoundedCode i a b
+  HBTChildSwapQuotient.GeneratedCodeRel HBTNatGeneratedCode.toGeneratedCode i a b
 
 /-- Canonical code carrier for branch-swap quotient trees: quotient the
 generated Nat code by the transported branch-swap relation. -/
 abbrev HBTChildSwapNatCode (i : Nat) : Type :=
-  HBTChildSwapQuotient.CodeCarrier HBTNatGeneratedCode.toWellFoundedCode i
+  HBTChildSwapQuotient.GeneratedCodeCarrier HBTNatGeneratedCode.toGeneratedCode i
 
 /-- The generic quotient-polynomial theorem specializes to a coding of
 height-bounded branch-swap quotient trees by a quotient of the generated Nat
 code. -/
 def HBTChildSwapNatCodeIso (i : Nat) :
     HBTChildSwap i ≃ᵢ HBTChildSwapNatCode i :=
-  HBTChildSwapQuotient.codeIso HBTNatGeneratedCode.toWellFoundedCode i
+  HBTChildSwapQuotient.generatedCodeIso HBTNatGeneratedCode.toGeneratedCode i
 
 def HBTQuotLeaf (i label : Nat) : Mu HBTPoly i :=
   Mu.sup (P := HBTPoly) .leaf (i, label) rfl (fun q => nomatch q)
@@ -288,25 +288,28 @@ theorem HBTChildSwap_norm_respects :
 /-- Concrete descent of the generated HBT Nat code through the branch-swap
 quotient relation. -/
 def HBTChildSwapDescendedNatCode :
-    QuotientPresentation.DescendedCode HBTChildSwapQuotient
-      HBTNatGeneratedCode.toWellFoundedCode (fun _ => Nat) where
+    QuotientPresentation.DescendedGeneratedCode HBTChildSwapQuotient
+      HBTNatGeneratedCode.toGeneratedCode (fun _ => Nat) where
   encode i n :=
     HBTChildSwapNorm i
-      (HBTNatGeneratedCode.toWellFoundedCode.decode i n)
+      (HBTNatGeneratedCode.decode i n)
   decode i n :=
-    HBTNatGeneratedCode.toWellFoundedCode.encode i
-      (HBTChildSwapDenorm i n)
+    HBTNatGeneratedCode.encode i (HBTChildSwapDenorm i n)
   encode_respects := by
     intro i a b hab
     exact HBTChildSwap_norm_respects hab
   decode_encode_rel := by
     intro i a
     dsimp [QuotientPresentation.CodeRel]
+    dsimp [GeneratedNatCode.encode, GeneratedNatCode.decode,
+      GeneratedCode.encode, GeneratedCode.decode]
     rw [WellFoundedCode.decode_encode]
     exact HBTChildSwap_denorm_norm_rel i
-      (HBTNatGeneratedCode.toWellFoundedCode.decode i a)
+      (HBTNatGeneratedCode.decode i a)
   encode_decode := by
     intro i n
+    dsimp [GeneratedNatCode.encode, GeneratedNatCode.decode,
+      GeneratedCode.encode, GeneratedCode.decode]
     rw [WellFoundedCode.decode_encode]
     exact HBTChildSwap_norm_denorm i n
 
@@ -314,7 +317,8 @@ def HBTChildSwapDescendedNatCode :
 `Nat`. The coding is obtained by descending the generated HBT Nat code through
 the quotient relation. -/
 def HBTChildSwapNatIso (i : Nat) : HBTChildSwap i ≃ᵢ Nat :=
-  HBTChildSwapDescendedNatCode.carrierIso i
+  QuotientPresentation.DescendedGeneratedCode.carrierIso
+    HBTChildSwapDescendedNatCode i
 
 /-- Readable height-bounded syntax transported to the generated branch-swap
 quotient relation through `HBTSyntaxIso`. -/
