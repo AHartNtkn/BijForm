@@ -1481,8 +1481,9 @@ theorem pending_mem_endpointOrder
 
 /--
 Constructive correspondence between a renderer prefix and traversal over an
-original graph.  It records the relabeling that sends rendered endpoint, edge,
-and node indices to the original graph indices in traversal order.
+original graph.  It records the identifier maps that align rendered endpoint,
+edge, and node indices with original graph indices in traversal order; semantic
+labels are tracked separately by the corresponding preservation fields.
 -/
 structure GraphRenderRelated (G : OpenPortHypergraph Sig boundary)
     {frontier : List Sig.Port}

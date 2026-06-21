@@ -1050,10 +1050,13 @@ theorem toOpenPortHypergraph_bud_boundary_entry_edgeMate
 end Diag
 
 /--
-Boundary-preserving isomorphism of typed finite representatives.  It relabels
-endpoints, edges, and nodes, preserves the ordered boundary pointwise,
-preserves endpoint/edge/node labels, preserves endpoint-to-edge incidence, and
-preserves every ordered constructor-port incidence.
+Boundary-preserving isomorphism of typed finite representatives.
+
+The equivalences rename only the finite identifiers used for endpoints, edges,
+and nodes.  The semantic data carried by those identifiers is preserved: the
+ordered boundary is fixed pointwise, endpoint/edge/node labels agree after
+transport, endpoint-to-edge incidence commutes with the edge transport, and
+each ordered constructor-port incidence list is transported pointwise.
 -/
 structure PortHypergraphIso {Sig : Signature} {boundary : List Sig.Port}
     (G H : PortHypergraph Sig boundary) where
