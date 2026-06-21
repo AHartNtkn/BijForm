@@ -105,10 +105,16 @@ lake exe bijform
 - `BijForm.StringDiagram`
   Defines typed ordered-port rooted open string-diagram syntax, unoriented and
   oriented signature builders, its dependent polynomial presentation, the
-  generated-code isomorphism, and the unfinished semantic bridge to open
-  endpoint/edge/node port-hypergraphs up to ordered-boundary-preserving
-  isomorphism:
+  generated-code isomorphism, and the semantic bridge to open endpoint/edge/node
+  port-hypergraphs up to ordered-boundary-preserving isomorphism.  The
+  implementation is split into `BijForm.StringDiagram.Basic`,
+  `BijForm.StringDiagram.Renderer`, `BijForm.StringDiagram.Polynomial`,
+  `BijForm.StringDiagram.Hypergraph`, `BijForm.StringDiagram.Traversal`, and
+  `BijForm.StringDiagram.Bridge`, all re-exported by `BijForm.StringDiagram`.
+  The syntax-to-graph-to-syntax inverse is proved; the graph-to-syntax-to-graph
+  inverse remains an explicitly unfinished proof gap:
   - `StringDiagram.Signature`
+  - `StringDiagram.Signature.nodePortsExcept_eq_of_val`
   - `StringDiagram.Unoriented.signature`
   - `StringDiagram.Oriented.signature`
   - `StringDiagram.Diag`
@@ -116,6 +122,9 @@ lake exe bijform
   - `StringDiagram.generatedCode`
   - `StringDiagram.syntaxIso`
   - `StringDiagram.RenderState`
+  - `StringDiagram.RenderState.cast_frontierIds`
+  - `StringDiagram.RenderState.cast_edges`
+  - `StringDiagram.RenderState.cast_nodes`
   - `StringDiagram.Diag.connectStep`
   - `StringDiagram.Diag.budStep`
   - `StringDiagram.Diag.freshNodeEndpoints_get`
@@ -193,6 +202,7 @@ lake exe bijform
   - `StringDiagram.listPrefixIndex`
   - `StringDiagram.listPrefixIndex_get`
   - `StringDiagram.listPrefixIndex_val`
+  - `StringDiagram.list_get_map_eq_get`
   - `StringDiagram.nodup_append_left`
   - `StringDiagram.nodup_append_right`
   - `StringDiagram.nodup_append_disjoint`
@@ -240,6 +250,7 @@ lake exe bijform
   - `StringDiagram.RenderState.EdgeEvidence`
   - `StringDiagram.RenderState.edgeEvidenceOfPartition`
   - `StringDiagram.RenderState.incidentOfValidIds`
+  - `StringDiagram.RenderState.incidentOfValidIds_map_val`
   - `StringDiagram.RenderState.incidentOfValidIds_val_mem_nodeIncidentIds`
   - `StringDiagram.RenderState.incidentOfValidIds_exists_of_mem_nodeIncidentIds`
   - `StringDiagram.RenderState.incidentOfValidIds_length`
@@ -260,6 +271,7 @@ lake exe bijform
   - `StringDiagram.RenderState.portHypergraphEvidenceOfInvariants`
   - `StringDiagram.RenderState.rawReachesBoundary_to_portReachesBoundaryOfInvariants`
   - `StringDiagram.RenderState.OpenPortHypergraphEvidence`
+  - `StringDiagram.RenderState.openEvidenceOfInvariants`
   - `StringDiagram.Diag.renderTraceFromBoundary_allConstructorsReachBoundary`
   - `StringDiagram.Diag.renderTraceFromBoundary_openEvidence`
   - `StringDiagram.Diag.toOpenPortHypergraph`
@@ -270,9 +282,11 @@ lake exe bijform
   - `StringDiagram.Diag.renderTrace_connect_edgeMate_of_invariants`
   - `StringDiagram.Diag.renderTrace_connect_active_endpointEdge_val`
   - `StringDiagram.Diag.connectStep_frontierIds`
+  - `StringDiagram.Diag.renderTrace_bud_entry_edgeMate_exact_of_invariants`
   - `StringDiagram.Diag.renderTrace_bud_entry_edgeMate_of_invariants`
   - `StringDiagram.Diag.renderTrace_bud_active_endpointEdge_val`
   - `StringDiagram.Diag.budStep_frontierIds`
+  - `StringDiagram.Diag.toDiag_of_renderPrefixRelated`
   - `StringDiagram.EndpointOwner`
   - `StringDiagram.PortHypergraph`
   - `StringDiagram.PortHypergraph.endpointOwnersOf`
@@ -293,10 +307,13 @@ lake exe bijform
   - `StringDiagram.OpenPortHypergraph.SearchState.initial`
   - `StringDiagram.OpenPortHypergraph.SearchState.initial_frontierComplete`
   - `StringDiagram.OpenPortHypergraph.SearchState.RenderPrefixRelated`
+  - `StringDiagram.OpenPortHypergraph.SearchState.RenderPrefixRelated.cast`
+  - `StringDiagram.OpenPortHypergraph.SearchState.RenderPrefixRelated.cast_cancel_left`
   - `StringDiagram.OpenPortHypergraph.SearchState.RenderPrefixRelated.pending_cons_values`
   - `StringDiagram.OpenPortHypergraph.SearchState.initial_renderPrefixRelated`
   - `StringDiagram.OpenPortHypergraph.SearchState.RenderPrefixRelated.connectChild_of_new_edge`
   - `StringDiagram.OpenPortHypergraph.SearchState.RenderPrefixRelated.connectChild_pending_vals`
+  - `StringDiagram.OpenPortHypergraph.SearchState.RenderPrefixRelated.budChild_pending_vals`
   - `StringDiagram.OpenPortHypergraph.SearchState.RenderPrefixRelated.budChild_of_new_edge_node`
   - `StringDiagram.OpenPortHypergraph.SearchState.IsoRelated`
   - `StringDiagram.OpenPortHypergraph.SearchState.initial_isoRelated`
@@ -382,9 +399,9 @@ lake exe bijform
   - `StringDiagram.OpenPortHypergraph.SearchState.graphExhausted_of_empty_frontier`
   - `StringDiagram.OpenPortHypergraph.firstPendingTraversalReady_of_frontierComplete`
   - `StringDiagram.OpenPortHypergraph.fromGraph_respects_iso`
-  - `StringDiagram.Diag.fromGraph_toOpenPortHypergraph` (unfinished inverse-law proof gap)
+  - `StringDiagram.Diag.fromGraph_toOpenPortHypergraph`
   - `StringDiagram.OpenPortHypergraph.toOpenPortHypergraph_fromGraph_iso` (unfinished inverse-law proof gap)
-  - `StringDiagram.diagOpenPortHypergraphIso` (depends on unfinished inverse-law declarations)
+  - `StringDiagram.diagOpenPortHypergraphIso` (depends on the unfinished graph inverse declaration)
 
 - `BijForm.Examples`
   Imports the worked example modules:
