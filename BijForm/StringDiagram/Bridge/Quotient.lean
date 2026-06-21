@@ -61,9 +61,7 @@ theorem Diag.fromGraph_toOpenPortHypergraph
       (RenderState.initial_validIds boundary)
       (RenderState.initial_endpointPartition boundary)
       (RenderState.initial_nodeIncidentNodup boundary)
-      ({ suffix := []
-         endpoints_eq := by simp [RenderState.initial] } :
-        (RenderState.initial Sig boundary).EndpointPrefix boundary)
+      (RenderState.initial_endpointPrefix boundary)
       (RenderState.initial_ownerIdPartition boundary)
       (RenderState.initial_reachability boundary)
       hv hp hn pref ho hall

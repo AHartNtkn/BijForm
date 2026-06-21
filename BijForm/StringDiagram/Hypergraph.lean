@@ -768,9 +768,7 @@ theorem renderTraceFromBoundary_allConstructorsReachBoundary
       (RenderState.initial_validIds boundary)
       (RenderState.initial_endpointPartition boundary)
       (RenderState.initial_nodeIncidentNodup boundary)
-      { suffix := []
-        endpoints_eq := by
-          simp [RenderState.initial] }
+      (RenderState.initial_endpointPrefix boundary)
       (RenderState.initial_ownerIdPartition boundary)
       (RenderState.initial_reachability boundary)
 

@@ -330,6 +330,12 @@ theorem initial_nodeIncidentNodup {Sig : Signature} (boundary : List Sig.Port) :
     intro node hmem
     simp [initial] at hmem
 
+def initial_endpointPrefix {Sig : Signature} (boundary : List Sig.Port) :
+    (initial Sig boundary).EndpointPrefix boundary where
+  suffix := []
+  endpoints_eq := by
+    simp [initial]
+
 theorem initial_ownerIdPartition {Sig : Signature} (boundary : List Sig.Port) :
     (initial Sig boundary).OwnerIdPartition boundary where
   owner_nodup := by
