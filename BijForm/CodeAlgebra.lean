@@ -324,6 +324,11 @@ def finPrefixNat {α : Type u} (k : Nat) (tail : α ≃ᵢ Nat) :
     (Fin k ⊕ α) ≃ᵢ Nat :=
   Iso.trans (Iso.sum (Iso.refl (Fin k)) tail) (finPlusNat k)
 
+/-- Finite constructor branches plus finitely tagged recursive `Nat` branches. -/
+def finiteRecursiveNat (finite recursive : Nat) (hrec : 0 < recursive) :
+    (Fin finite ⊕ (Fin recursive × Nat)) ≃ᵢ Nat :=
+  finPrefixNat finite (finProdNat recursive hrec)
+
 theorem finPrefixNat_toFun_inr_lt_of_lt {α : Type u}
     (k : Nat) (tail : α ≃ᵢ Nat) {a : α} {m : Nat}
     (h : m < tail.toFun a) :
@@ -337,6 +342,42 @@ theorem finPrefixNat_toFun_inr_lt_of_le {α : Type u}
     m < (finPrefixNat k tail).toFun (Sum.inr a) := by
   dsimp [finPrefixNat, Iso.trans, Iso.sum, finPlusNat]
   omega
+
+/-- Recursive payloads are bounded by their finite-recursive branch code. -/
+theorem finiteRecursiveNat_payload_le
+    (finite recursive : Nat) (hrec : 0 < recursive)
+    (p : Fin recursive × Nat) :
+    p.2 ≤ (finiteRecursiveNat finite recursive hrec).toFun (Sum.inr p) := by
+  dsimp [finiteRecursiveNat]
+  exact Nat.le_trans
+    (finProdNat_toFun_snd_le recursive hrec p)
+    (by
+      dsimp [finPrefixNat, Iso.trans, Iso.sum, finPlusNat]
+      omega)
+
+/--
+If either the finite prefix is nonempty or the recursive tag is nonzero, the
+recursive payload is strictly below its finite-recursive branch code.
+-/
+theorem finiteRecursiveNat_payload_lt_of_prefix_or_tag
+    (finite recursive : Nat) (hrec : 0 < recursive)
+    (p : Fin recursive × Nat)
+    (hslack : 0 < finite ∨ 0 < p.1.val) :
+    p.2 < (finiteRecursiveNat finite recursive hrec).toFun (Sum.inr p) := by
+  dsimp [finiteRecursiveNat, finPrefixNat, Iso.trans, Iso.sum, finPlusNat, finProdNat]
+  cases hslack with
+  | inl hfinite =>
+      have hmul : p.2 ≤ recursive * p.2 := by
+        calc
+          p.2 = 1 * p.2 := by rw [Nat.one_mul]
+          _ ≤ recursive * p.2 := Nat.mul_le_mul_right p.2 hrec
+      omega
+  | inr htag =>
+      have hmul : p.2 ≤ recursive * p.2 := by
+        calc
+          p.2 = 1 * p.2 := by rw [Nat.one_mul]
+          _ ≤ recursive * p.2 := Nat.mul_le_mul_right p.2 hrec
+      omega
 
 def finProdProdNat (k : Nat) (hk : 0 < k) :
     (Fin k × (Nat × Nat)) ≃ᵢ Nat :=

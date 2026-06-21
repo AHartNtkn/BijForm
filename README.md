@@ -109,12 +109,12 @@ lake exe bijform
   port-hypergraphs up to ordered-boundary-preserving isomorphism.  The
   implementation is split into `BijForm.StringDiagram.Basic`,
   `BijForm.StringDiagram.Renderer`, `BijForm.StringDiagram.Polynomial`,
-  `BijForm.StringDiagram.Hypergraph`, `BijForm.StringDiagram.Traversal`, and
-  `BijForm.StringDiagram.Bridge`, plus the
-  `BijForm.StringDiagram.SymmetricInteractionNet` specialization, all
-  re-exported by `BijForm.StringDiagram`.
-  The syntax-to-graph-to-syntax and graph-to-syntax-to-graph inverse laws are
-  proved:
+  `BijForm.StringDiagram.Hypergraph`, `BijForm.StringDiagram.Traversal`,
+  `BijForm.StringDiagram.Bridge`, and `BijForm.StringDiagram.FiniteCoding`,
+  all re-exported by
+  `BijForm.StringDiagram`. The syntax-to-graph-to-syntax and
+  graph-to-syntax-to-graph inverse-law statements are recorded at the bridge
+  boundary; remaining proof gaps are labeled in source:
   - `StringDiagram.Signature`
   - `StringDiagram.Signature.nodePortsExcept_eq_of_val`
   - `StringDiagram.Unoriented.signature`
@@ -123,6 +123,13 @@ lake exe bijform
   - `StringDiagram.poly`
   - `StringDiagram.generatedCode`
   - `StringDiagram.syntaxIso`
+  - `StringDiagram.openFrontierShape`
+  - `StringDiagram.SingleSortedFiniteCodingData`
+  - `StringDiagram.singleSortedFiniteGeneratedShapeCode`
+  - `StringDiagram.singleSortedFiniteSyntaxEmptyFinOneIso`
+  - `StringDiagram.singleSortedFiniteSyntaxNonemptyNatIso`
+  - `StringDiagram.singleSortedFiniteOpenGraphEmptyFinOneIso`
+  - `StringDiagram.singleSortedFiniteOpenGraphNonemptyNatIso`
   - `StringDiagram.RenderState`
   - `StringDiagram.RenderState.cast_frontierIds`
   - `StringDiagram.RenderState.cast_edges`
@@ -457,22 +464,6 @@ lake exe bijform
   - `StringDiagram.Diag.fromGraph_toOpenPortHypergraph`
   - `StringDiagram.OpenPortHypergraph.toOpenPortHypergraph_fromGraph_iso`
   - `StringDiagram.diagOpenPortHypergraphIso`
-  - `StringDiagram.SymmetricInteractionNet.Node`
-  - `StringDiagram.SymmetricInteractionNet.Wire`
-  - `StringDiagram.SymmetricInteractionNet.arity`
-  - `StringDiagram.SymmetricInteractionNet.port`
-  - `StringDiagram.SymmetricInteractionNet.signature`
-  - `StringDiagram.SymmetricInteractionNet.Diag`
-  - `StringDiagram.SymmetricInteractionNet.poly`
-  - `StringDiagram.SymmetricInteractionNet.generatedCode`
-  - `StringDiagram.SymmetricInteractionNet.syntaxIso`
-  - `StringDiagram.SymmetricInteractionNet.CanonicalCode`
-  - `StringDiagram.SymmetricInteractionNet.OpenGraph`
-  - `StringDiagram.SymmetricInteractionNet.OpenGraphCode`
-  - `StringDiagram.SymmetricInteractionNet.openGraphIso`
-  - `StringDiagram.SymmetricInteractionNet.encoding`
-  - `StringDiagram.SymmetricInteractionNet.encode`
-  - `StringDiagram.SymmetricInteractionNet.decode`
 
 - `BijForm.Examples`
   Imports the worked example modules:
@@ -484,6 +475,7 @@ lake exe bijform
   - `BijForm.Examples.TypedBinding.NF`
   - `BijForm.Examples.Num`
   - `BijForm.Examples.Peano`
+  - `BijForm.Examples.SymmetricInteractionNet`
 
 ## Generic Coding Framework
 
@@ -622,6 +614,33 @@ Main results:
 
 The sorted carrier family uses `Nat` for valid intervals and `Fin 1` for the
 empty invalid interval shown above.
+
+### Symmetric Interaction Nets
+
+Reference syntax:
+
+```lean
+SymmetricInteractionNetDiag : List SymmetricInteractionNetSignature.Port -> Type
+```
+
+This example instantiates the generic unoriented string-diagram signature with
+one erasure node, one duplication node, and one cons node. The erasure node has
+one ordered port; duplication and cons each have three ordered ports.
+
+Main results:
+
+- `SymmetricInteractionNetSyntaxIso (boundary) : Iso (Mu SymmetricInteractionNetPoly boundary) (SymmetricInteractionNetDiag boundary)`
+- `SymmetricInteractionNetGeneratedShapeCode : GeneratedShapeCode SymmetricInteractionNetPoly`
+- `SymmetricInteractionNetSyntaxEmptyFinOneIso : Iso (SymmetricInteractionNetDiag []) (Fin 1)`
+- `SymmetricInteractionNetSyntaxNonemptyNatIso (active frontier) : Iso (SymmetricInteractionNetDiag (active :: frontier)) Nat`
+- `SymmetricInteractionNetOpenGraphEmptyFinOneIso : Iso (SymmetricInteractionNetOpenGraphQuotient []) (Fin 1)`
+- `SymmetricInteractionNetOpenGraphNonemptyNatIso (active frontier) : Iso (SymmetricInteractionNetOpenGraphQuotient (active :: frontier)) Nat`
+
+The generated shape-code layer is supplied by the generic finite single-sorted
+string-diagram coding boundary in `BijForm.StringDiagram.FiniteCoding`; its
+finite branch-table compiler proof remains explicitly unfinished there. The
+open-graph results also depend on the generic string-diagram semantic bridge,
+whose remaining inverse-law proof gaps are labeled at the bridge boundary.
 
 ### Bounded Tagged Chains
 

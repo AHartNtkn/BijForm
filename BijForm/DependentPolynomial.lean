@@ -47,6 +47,26 @@ structure Fiber (P : DepPoly ι) (i : ι) where
   param : P.Param ctor
   out_eq : P.out ctor param = i
 
+namespace Fiber
+
+/--
+Two same-fiber constructor records with the same constructor are equal once
+their parameters are equal; the output-index proofs are proposition fields.
+-/
+theorem eq_mk_of_param_eq {P : DepPoly ι} {i : ι} {ctor : P.Ctor}
+    {param param' : P.Param ctor}
+    {out_eq : P.out ctor param = i} {out_eq' : P.out ctor param' = i}
+    (hparam : param = param') :
+    ({ ctor := ctor, param := param, out_eq := out_eq } : Fiber P i) =
+      { ctor := ctor, param := param', out_eq := out_eq' } := by
+  rw [Fiber.mk.injEq]
+  constructor
+  · rfl
+  · cases hparam
+    rfl
+
+end Fiber
+
 def FiberObj (P : DepPoly ι) (X : ι → Type v) (i : ι) : Type (max u v) :=
   Σ f : Fiber P i, (q : P.Pos f.ctor f.param) → X (P.input f.param q)
 
@@ -151,6 +171,40 @@ def CodeLayer (P : DepPoly ι) (H : OutputIndexInversion P)
     (q : P.Pos (H.decode i c).ctor (H.decode i c).param) →
       Code (P.input (H.decode i c).param q)
 
+namespace CodeLayer
+
+/--
+Extensionality for code layers over the canonical output-index inversion.
+This is useful for generated branch-table decoders: constructor parameter
+records may agree while carrying definitionally different output proofs.
+-/
+theorem canonical_ext {P : DepPoly ι} {Code : ι → Type v} {i : ι}
+    {f g : Fiber P i}
+    {childf : (q : P.Pos f.ctor f.param) → Code (P.input f.param q)}
+    {childg : (q : P.Pos g.ctor g.param) → Code (P.input g.param q)}
+    (hf : f = g) (hchild : childf ≍ childg) :
+    (⟨f, childf⟩ :
+      CodeLayer P (OutputIndexInversion.canonical P) Code i) =
+      ⟨g, childg⟩ := by
+  cases hf
+  cases hchild
+  rfl
+
+theorem canonical_ext_param {P : DepPoly ι} {Code : ι → Type v} {i : ι}
+    {ctor : P.Ctor} {param param' : P.Param ctor}
+    {out_eq : P.out ctor param = i} {out_eq' : P.out ctor param' = i}
+    {childf : (q : P.Pos ctor param) → Code (P.input param q)}
+    {childg : (q : P.Pos ctor param') → Code (P.input param' q)}
+    (hparam : param = param') (hchild : childf ≍ childg) :
+    (⟨{ ctor := ctor, param := param, out_eq := out_eq }, childf⟩ :
+      CodeLayer P (OutputIndexInversion.canonical P) Code i) =
+      ⟨{ ctor := ctor, param := param', out_eq := out_eq' }, childg⟩ := by
+  apply canonical_ext
+  · exact Fiber.eq_mk_of_param_eq hparam
+  · exact hchild
+
+end CodeLayer
+
 /-- Prove child-function eta facts for constructors with no recursive positions. -/
 syntax "child_eta_empty" : tactic
 macro_rules
@@ -181,6 +235,15 @@ theorem castFiberChild_heq {P : DepPoly ι} {Code : ι → Type v} {i : ι}
     (child : (q : P.Pos f.ctor f.param) → Code (P.input f.param q)) :
     castFiberChild h child ≍ child := by
   cases h
+  rfl
+
+theorem CodeLayer.canonical_ext_cast {P : DepPoly ι} {Code : ι → Type v} {i : ι}
+    {f g : Fiber P i} (hf : f = g)
+    (child : (q : P.Pos f.ctor f.param) → Code (P.input f.param q)) :
+    (⟨f, child⟩ :
+      CodeLayer P (OutputIndexInversion.canonical P) Code i) =
+      ⟨g, castFiberChild hf child⟩ := by
+  cases hf
   rfl
 
 def fiberObjCodeLayerTo {P : DepPoly ι} {Code : ι → Type v} {i : ι}

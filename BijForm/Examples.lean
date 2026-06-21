@@ -6,3 +6,4 @@ import BijForm.Examples.Lambda
 import BijForm.Examples.TypedBinding.NF
 import BijForm.Examples.Num
 import BijForm.Examples.Peano
+import BijForm.Examples.SymmetricInteractionNet

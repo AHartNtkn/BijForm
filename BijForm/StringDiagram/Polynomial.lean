@@ -11,12 +11,40 @@ structure ConnectParam (Sig : Signature) where
   mate : Fin frontier.length
   ok : Sig.compatible active (frontier.get mate)
 
+namespace ConnectParam
+
+theorem eq_of_ok {Sig : Signature}
+    {active : Sig.Port} {frontier : List Sig.Port}
+    {mate : Fin frontier.length}
+    {ok ok' : Sig.compatible active (frontier.get mate)} :
+    ({ active := active, frontier := frontier, mate := mate, ok := ok } :
+      ConnectParam Sig) =
+      { active := active, frontier := frontier, mate := mate, ok := ok' } := by
+  cases Subsingleton.elim ok ok'
+  rfl
+
+end ConnectParam
+
 structure BudParam (Sig : Signature) where
   active : Sig.Port
   frontier : List Sig.Port
   node : Sig.Node
   entry : Fin (Sig.arity node)
   ok : Sig.compatible active (Sig.port node entry)
+
+namespace BudParam
+
+theorem eq_of_ok {Sig : Signature}
+    {active : Sig.Port} {frontier : List Sig.Port}
+    {node : Sig.Node} {entry : Fin (Sig.arity node)}
+    {ok ok' : Sig.compatible active (Sig.port node entry)} :
+    ({ active := active, frontier := frontier, node := node, entry := entry, ok := ok } :
+      BudParam Sig) =
+      { active := active, frontier := frontier, node := node, entry := entry, ok := ok' } := by
+  cases Subsingleton.elim ok ok'
+  rfl
+
+end BudParam
 
 def Param (Sig : Signature) : Ctor → Type
   | .finish => Unit
