@@ -110,7 +110,9 @@ lake exe bijform
   implementation is split into `BijForm.StringDiagram.Basic`,
   `BijForm.StringDiagram.Renderer`, `BijForm.StringDiagram.Polynomial`,
   `BijForm.StringDiagram.Hypergraph`, `BijForm.StringDiagram.Traversal`, and
-  `BijForm.StringDiagram.Bridge`, all re-exported by `BijForm.StringDiagram`.
+  `BijForm.StringDiagram.Bridge`, plus the
+  `BijForm.StringDiagram.SymmetricInteractionNet` specialization, all
+  re-exported by `BijForm.StringDiagram`.
   The syntax-to-graph-to-syntax and graph-to-syntax-to-graph inverse laws are
   proved:
   - `StringDiagram.Signature`
@@ -455,6 +457,20 @@ lake exe bijform
   - `StringDiagram.Diag.fromGraph_toOpenPortHypergraph`
   - `StringDiagram.OpenPortHypergraph.toOpenPortHypergraph_fromGraph_iso`
   - `StringDiagram.diagOpenPortHypergraphIso`
+  - `StringDiagram.SymmetricInteractionNet.Node`
+  - `StringDiagram.SymmetricInteractionNet.Wire`
+  - `StringDiagram.SymmetricInteractionNet.arity`
+  - `StringDiagram.SymmetricInteractionNet.port`
+  - `StringDiagram.SymmetricInteractionNet.signature`
+  - `StringDiagram.SymmetricInteractionNet.Diag`
+  - `StringDiagram.SymmetricInteractionNet.poly`
+  - `StringDiagram.SymmetricInteractionNet.Code`
+  - `StringDiagram.SymmetricInteractionNet.generatedCode`
+  - `StringDiagram.SymmetricInteractionNet.syntaxIso`
+  - `StringDiagram.SymmetricInteractionNet.OpenGraph`
+  - `StringDiagram.SymmetricInteractionNet.OpenGraphCode`
+  - `StringDiagram.SymmetricInteractionNet.openGraphIso`
+  - `StringDiagram.SymmetricInteractionNet.codeOpenGraphIso`
 
 - `BijForm.Examples`
   Imports the worked example modules:
