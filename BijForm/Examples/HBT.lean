@@ -278,9 +278,9 @@ def HBTNatLayerShapePresentation :
               exact CodeAlgebra.sumProdNat_invFun_inr_snd_lt hsum)
 
 def HBTNatLayerPresentation : NatLayerPresentation HBTPoly HBTInversion :=
-  HBTNatLayerShapePresentation.toNatLayerPresentation (by
-    intro i n q
-    exact HBTNatLayerShapePresentation.child_rank_lt n q)
+  HBTNatLayerShapePresentation.toNatLayerPresentationOfRankEq (by
+    intro _ _
+    rfl)
 
 /-- Generated Nat coding data for height-bounded trees. The recursive encoder
 and decoder are produced by `GeneratedNatCode`, not by an example-specific

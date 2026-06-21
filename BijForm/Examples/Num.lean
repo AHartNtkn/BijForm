@@ -485,9 +485,9 @@ def NumNatLayerShapePresentation :
     exact h)
 
 def NumNatLayerPresentation : NatLayerPresentation NumPoly NumInversion :=
-  NumNatLayerShapePresentation.toNatLayerPresentation (by
-    intro k n q
-    exact NumNatLayerShapePresentation.child_rank_lt n q)
+  NumNatLayerShapePresentation.toNatLayerPresentationOfRankEq (by
+    intro _ _
+    rfl)
 
 def NumNatGeneratedCode : GeneratedNatCode NumPoly :=
   NumNatLayerPresentation.generatedCode

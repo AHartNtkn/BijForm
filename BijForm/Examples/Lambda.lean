@@ -349,9 +349,7 @@ def LamNatLayerShapePresentation :
     exact h)
 
 def LamNatLayerPresentation : RankedNatLayerPresentation LamPoly LamInversion :=
-  LamNatLayerShapePresentation.toRankedNatLayerPresentation LamNatRank (by
-    intro k n q
-    exact LamNatLayerShapePresentation.child_rank_lt n q)
+  LamNatLayerShapePresentation.toRankedNatLayerPresentationSelf
 
 def LamNatGeneratedCode : GeneratedRankedNatCode LamPoly :=
   LamNatLayerPresentation.generatedCode

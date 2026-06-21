@@ -386,9 +386,9 @@ def PeanoNatLayerShapePresentation :
     exact h)
 
 def PeanoNatLayerPresentation : NatLayerPresentation PeanoPoly PeanoInversion :=
-  PeanoNatLayerShapePresentation.toNatLayerPresentation (by
-    intro k n q
-    exact PeanoNatLayerShapePresentation.child_rank_lt n q)
+  PeanoNatLayerShapePresentation.toNatLayerPresentationOfRankEq (by
+    intro _ _
+    rfl)
 
 def PeanoNatGeneratedCode : GeneratedNatCode PeanoPoly :=
   PeanoNatLayerPresentation.generatedCode

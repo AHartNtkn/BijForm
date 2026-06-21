@@ -1094,6 +1094,15 @@ def toNatLayerPresentation
   layer := D.layer
   child_lt := child_lt
 
+def toNatLayerPresentationOfRankEq
+    (D : LayerShapePresentation P H (fun _ => Nat) Shape)
+    (rank_eq : ∀ i n, D.rank i n = n) :
+    NatLayerPresentation P H where
+  layer := D.layer
+  child_lt := by
+    intro i n q
+    simpa [rank_eq] using D.child_rank_lt n q
+
 def toRankedNatLayerPresentation
     (D : LayerShapePresentation P H (fun _ => Nat) Shape)
     (rank : ι → Nat → Nat)
@@ -1109,6 +1118,15 @@ def toRankedNatLayerPresentation
   layer := D.layer
   rank := rank
   child_rank_lt := child_rank_lt
+
+def toRankedNatLayerPresentationSelf
+    (D : LayerShapePresentation P H (fun _ => Nat) Shape) :
+    RankedNatLayerPresentation P H where
+  layer := D.layer
+  rank := D.rank
+  child_rank_lt := by
+    intro i n q
+    exact D.child_rank_lt n q
 
 def toShapeLayerPresentation
     (shape : ι → CodeShape)
