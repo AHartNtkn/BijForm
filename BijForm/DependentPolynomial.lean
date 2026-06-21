@@ -246,6 +246,35 @@ theorem CodeLayer.canonical_ext_cast {P : DepPoly ι} {Code : ι → Type v} {i 
   cases hf
   rfl
 
+theorem CodeLayer.canonical_ext_param_cast {P : DepPoly ι}
+    {Code : ι → Type v} {i : ι}
+    {ctor : P.Ctor} {param param' : P.Param ctor}
+    {out_eq : P.out ctor param = i} {out_eq' : P.out ctor param' = i}
+    (hparam : param = param')
+    (child : (q : P.Pos ctor param) → Code (P.input param q))
+    {child' : (q : P.Pos ctor param') → Code (P.input param' q)}
+    (hchild :
+      castFiberChild
+          (P := P) (Code := Code) (i := i)
+          (Fiber.eq_mk_of_param_eq
+            (P := P) (i := i) (ctor := ctor)
+            (out_eq := out_eq) (out_eq' := out_eq') hparam)
+          child =
+        child') :
+    (⟨{ ctor := ctor, param := param, out_eq := out_eq }, child⟩ :
+      CodeLayer P (OutputIndexInversion.canonical P) Code i) =
+      ⟨{ ctor := ctor, param := param', out_eq := out_eq' }, child'⟩ := by
+  refine Eq.trans
+    (CodeLayer.canonical_ext_cast
+      (P := P) (Code := Code)
+      (Fiber.eq_mk_of_param_eq
+        (P := P) (i := i) (ctor := ctor)
+        (out_eq := out_eq) (out_eq' := out_eq') hparam)
+      child) ?_
+  apply Sigma.ext
+  · rfl
+  · exact heq_of_eq hchild
+
 def fiberObjCodeLayerTo {P : DepPoly ι} {Code : ι → Type v} {i : ι}
     (H : OutputIndexInversion P) (x : FiberObj P Code i) :
     CodeLayer P H Code i := by

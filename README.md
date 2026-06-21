@@ -56,6 +56,9 @@ lake exe bijform
   finite products, finite-prefix sums into `Nat`, binary and nested `Nat`
   sums, unordered pairs of natural numbers, and products via the proved
   pairing function.
+  Recent finite-branch support lemmas include:
+  - `CodeAlgebra.finSumProdNat_toFun_inl_snd_le`
+  - `CodeAlgebra.finSumProdNat_toFun_inr_snd_lt`
 
 - `BijForm.TupleAction`
   Provides the explicit coding surface for quotienting finite action orbits:
@@ -84,6 +87,7 @@ lake exe bijform
   - `GeneratedShapeCode`
   - `GeneratedRankedNatCode`
   - `GeneratedNatCode`
+  - `DepPoly.CodeLayer.canonical_ext_param_cast`
   - `initialAlgebraCoding`
 
 - `BijForm.QuotientPolynomial`
@@ -114,8 +118,6 @@ lake exe bijform
   all re-exported by
   `BijForm.StringDiagram`. The syntax-to-graph-to-syntax and
   graph-to-syntax-to-graph inverse laws are recorded at the bridge boundary.
-  The remaining string-diagram proof gaps are the finite-coding inverse/rank
-  proofs labeled in `BijForm.StringDiagram.FiniteCoding`:
   - `StringDiagram.Signature`
   - `StringDiagram.Signature.nodePortsExcept_eq_of_val`
   - `StringDiagram.Unoriented.signature`
@@ -126,12 +128,17 @@ lake exe bijform
   - `StringDiagram.syntaxIso`
   - `StringDiagram.openFrontierShape`
   - `StringDiagram.openFrontierEmptyCarrier`
+  - `StringDiagram.openFrontierEmptyCarrier_unique`
   - `StringDiagram.openFrontierNatCarrier`
   - `StringDiagram.openFrontierCarrierNat`
+  - `StringDiagram.openFrontierNatCarrier_left_inv`
+  - `StringDiagram.openFrontierNatCarrier_right_inv`
   - `StringDiagram.Signature.nodePortsExcept_length`
   - `StringDiagram.Signature.nodePortsExcept_eq_nil_of_arity_one`
   - `StringDiagram.Signature.nodePortsExcept_ne_nil_of_arity_ne_one`
   - `StringDiagram.eraseFin_ne_nil_of_length_gt_one`
+  - `StringDiagram.ConnectParam.eq_of_mate`
+  - `StringDiagram.BudParam.eq_of_entry`
   - `StringDiagram.SingleSortedFiniteCodingData`
   - `StringDiagram.SingleSortedFiniteCodingData.entryTag`
   - `StringDiagram.SingleSortedFiniteCodingData.entryToTag`
@@ -140,7 +147,9 @@ lake exe bijform
   - `StringDiagram.SingleSortedFiniteCodingData.entryToTag_tagToEntry`
   - `StringDiagram.SingleSortedFiniteCodingData.entryIso`
   - `StringDiagram.SingleSortedFiniteCodingData.unaryTagToEntry`
+  - `StringDiagram.SingleSortedFiniteCodingData.unaryTagToEntry_entry`
   - `StringDiagram.SingleSortedFiniteCodingData.nonUnaryTagToEntry`
+  - `StringDiagram.SingleSortedFiniteCodingData.nonUnaryTagToEntry_entry`
   - `StringDiagram.singleSortedFiniteLayerShape`
   - `StringDiagram.singleSortedFiniteLayerShapeCarrierIso`
   - `StringDiagram.singleSortedFiniteRank`
@@ -662,9 +671,9 @@ Main results:
 
 The generated shape-code layer is supplied by the generic finite single-sorted
 string-diagram coding boundary in `BijForm.StringDiagram.FiniteCoding`. Its
-branch-table compiler directions are generic and data-driven; the dependent
-inverse proofs and rank-descent proof remain explicitly unfinished there. The
-open-graph results compose with the generic string-diagram semantic bridge.
+branch-table compiler directions, dependent inverse proofs, and rank-descent
+proof are generic and data-driven. The open-graph results compose with the
+generic string-diagram semantic bridge.
 
 ### Bounded Tagged Chains
 

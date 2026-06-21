@@ -386,6 +386,22 @@ def finSumProdNat (left right : Nat) (hleft : 0 < left) (hright : 0 < right) :
     (Iso.sum (finProdNat left hleft) (finProdNat right hright))
     sumNat
 
+theorem finSumProdNat_toFun_inl_snd_le
+    (left right : Nat) (hleft : 0 < left) (hright : 0 < right)
+    (p : Fin left × Nat) :
+    p.2 ≤ (finSumProdNat left right hleft hright).toFun (Sum.inl p) := by
+  have hpayload := finProdNat_toFun_snd_le left hleft p
+  dsimp [finSumProdNat, Iso.trans, Iso.sum, sumNat]
+  omega
+
+theorem finSumProdNat_toFun_inr_snd_lt
+    (left right : Nat) (hleft : 0 < left) (hright : 0 < right)
+    (p : Fin right × Nat) :
+    p.2 < (finSumProdNat left right hleft hright).toFun (Sum.inr p) := by
+  have hpayload := finProdNat_toFun_snd_le right hright p
+  dsimp [finSumProdNat, Iso.trans, Iso.sum, sumNat]
+  omega
+
 def finProdProdNat (k : Nat) (hk : 0 < k) :
     (Fin k × (Nat × Nat)) ≃ᵢ Nat :=
   Iso.trans (Iso.prod (Iso.refl (Fin k)) prodNat) (finProdNat k hk)
