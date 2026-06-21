@@ -135,6 +135,21 @@ theorem edgeOrder_nodup
     (edgeOrder st).Nodup := by
   simpa [edgeOrder] using list_nodup_reverse st.processedEdges_nodup
 
+theorem edgeOrder_append_active_nodup
+    {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port} (st : SearchState G frontier)
+    {active : Fin G.raw.endpointCount}
+    (hpending : active ∈ st.pending) :
+    (edgeOrder st ++ [G.raw.endpointEdge active]).Nodup := by
+  apply nodup_append_of_nodup_disjoint
+  · exact edgeOrder_nodup st
+  · simp
+  · intro edge hmem hnew
+    simp at hnew
+    subst edge
+    exact st.pending_unprocessed active hpending
+      (by simpa [edgeOrder] using hmem)
+
 theorem nodeOrder_nodup_of_seenNodes_nodup
     {G : OpenPortHypergraph Sig boundary}
     {frontier : List Sig.Port} {st : SearchState G frontier}
@@ -769,19 +784,7 @@ theorem GraphRenderRelated.connectChild
       · simpa [endpointOrder_connectChild st hpending mate hmate] using
           hrel.endpoint_nodup
       · rw [edgeOrder_connectChild st hpending mate hmate]
-        apply nodup_append_of_nodup_disjoint
-        · exact hrel.edge_nodup
-        · simp
-        · intro edge hmem hnew
-          simp at hnew
-          subst edge
-          have hnot :
-              G.raw.endpointEdge active ∉ st.processedEdges :=
-            st.pending_unprocessed active (by rw [hpending]; simp)
-          have hprocessed :
-              G.raw.endpointEdge active ∈ st.processedEdges := by
-            simpa [edgeOrder] using hmem
-          exact hnot hprocessed
+        exact edgeOrder_append_active_nodup st (by rw [hpending]; simp)
       · simpa [nodeOrder_connectChild st hpending mate hmate] using
           hrel.node_nodup
       · exact hchildEndpointLength
@@ -1859,19 +1862,7 @@ theorem GraphRenderRelated.budChild
           node_incident := ?_ }
       · exact endpointOrder_nodup_of_seenNodes_nodup hseenChildNodup
       · rw [edgeOrder_budChild st hpending node slot hmate hunseen]
-        apply nodup_append_of_nodup_disjoint
-        · exact hrel.edge_nodup
-        · simp
-        · intro edge hmem hnew
-          simp at hnew
-          subst edge
-          have hnot :
-              G.raw.endpointEdge active ∉ st.processedEdges :=
-            st.pending_unprocessed active (by rw [hpending]; simp)
-          have hprocessed :
-              G.raw.endpointEdge active ∈ st.processedEdges := by
-            simpa [edgeOrder] using hmem
-          exact hnot hprocessed
+        exact edgeOrder_append_active_nodup st (by rw [hpending]; simp)
       · exact nodeOrder_nodup_of_seenNodes_nodup hseenChildNodup
       · exact hchildEndpointLength
       · exact hchildEdgeLength
