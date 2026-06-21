@@ -239,9 +239,6 @@ def NumSyntaxPresentation : SyntaxPresentation NumPoly NumInversion NumSyntax :=
 def NumGeneratedCode : GeneratedCode NumPoly NumSyntax :=
   NumSyntaxPresentation.generatedCode
 
-def NumWellFoundedCode : WellFoundedCode NumPoly NumSyntax :=
-  NumGeneratedCode.toWellFoundedCode
-
 /-- Numeric expressions as the generic initial algebra are bijective with the
 readable recursive syntax family through generated layer coding. -/
 def NumSyntaxIso (k : Nat) : Mu NumPoly k ≃ᵢ NumSyntax k :=

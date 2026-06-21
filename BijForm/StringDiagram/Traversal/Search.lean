@@ -492,7 +492,7 @@ end SearchState
 
 /--
 The global traversal-readiness invariant for an open representative.  It is
-the missing totality statement for the owned graph-to-`Diag` search: every
+the totality statement for the owned graph-to-`Diag` search: every
 nonempty ordered pending state has the constructor choice required by the
 syntax.
 -/
@@ -506,7 +506,7 @@ def FirstPendingTraversalReady (G : OpenPortHypergraph Sig boundary) : Prop :=
 
 /--
 Frontier completeness makes the first-pending traversal step locally total.
-Initial completeness and step preservation are the remaining state-invariant
+Initial completeness and step preservation supply the state-invariant
 obligations for the owned graph-to-`Diag` traversal.
 -/
 theorem firstPendingTraversalReady_of_frontierComplete

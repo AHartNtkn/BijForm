@@ -26,9 +26,9 @@ structure TraversalState (G : OpenPortHypergraph Sig boundary)
 namespace TraversalState
 
 /--
-The completeness invariant missing from the current traversal proof.  Every
-unprocessed boundary endpoint, and every unprocessed endpoint of an already
-seen constructor, must occur in the ordered pending frontier.
+The completeness invariant for the current traversal proof.  Every unprocessed
+boundary endpoint, and every unprocessed endpoint of an already seen
+constructor, must occur in the ordered pending frontier.
 -/
 def FrontierComplete {G : OpenPortHypergraph Sig boundary}
     {frontier : List Sig.Port} (st : TraversalState G frontier) : Prop :=

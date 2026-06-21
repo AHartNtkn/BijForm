@@ -156,9 +156,6 @@ def HBTSyntaxPresentation : SyntaxPresentation HBTPoly HBTInversion HBTSyntax :=
 def HBTGeneratedCode : GeneratedCode HBTPoly HBTSyntax :=
   HBTSyntaxPresentation.generatedCode
 
-def HBTWellFoundedCode : WellFoundedCode HBTPoly HBTSyntax :=
-  HBTGeneratedCode.toWellFoundedCode
-
 /-- Height-bounded trees as the generic initial algebra are bijective with
 readable syntax through generated layer coding. -/
 def HBTSyntaxIso (i : Nat) : Mu HBTPoly i ≃ᵢ HBTSyntax i :=

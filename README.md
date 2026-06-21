@@ -103,8 +103,8 @@ lake exe bijform
   - `QuotientPresentation.Rel`
   - `QuotientPresentation.setoid`
   - `QuotientPresentation.Carrier`
-  - `QuotientPresentation.inn`
-  - `QuotientPresentation.inn_layer_sound`
+  - `QuotientPresentation.innRaw`
+  - `QuotientPresentation.innRaw_layer_sound`
   - `QuotientPresentation.recCarrier`
   - `QuotientPresentation.ind`
   - `QuotientPresentation.CodeRel`
@@ -560,7 +560,7 @@ closes that layer relation under recursive congruence, symmetry, and
 transitivity on `Mu P i`, and `QuotientPresentation.Carrier` is the resulting
 quotient datatype.
 
-`QuotientPresentation.inn` is the quotient-algebra constructor from a layer of
+`QuotientPresentation.innRaw` is the quotient-algebra constructor from a layer of
 already quotiented children. `QuotientPresentation.recCarrier` descends a fold
 out of `Mu P` when the fold respects the generated quotient relation, and
 `QuotientPresentation.ind` provides quotient induction.
@@ -621,7 +621,7 @@ Main results:
 Branch-swap quotient example:
 
 - `HBTChildSwapQuotient : QuotientPresentation HBTPoly`
-- `HBTChildSwap_inn_branch_sound`
+- `HBTChildSwap_innRaw_branch_sound`
 - `TupleAction.BinarySwap.concreteCode`
 - `HBTChildSwapNatCodeIso (i) : Iso (HBTChildSwap i) (HBTChildSwapNatCode i)`
 - `HBTChildSwapDescendedNatCode : QuotientPresentation.DescendedCode HBTChildSwapQuotient HBTNatGeneratedCode.toWellFoundedCode (fun _ => Nat)`

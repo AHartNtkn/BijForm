@@ -202,9 +202,6 @@ def PeanoSyntaxPresentation : SyntaxPresentation PeanoPoly PeanoInversion PeanoS
 def PeanoGeneratedCode : GeneratedCode PeanoPoly PeanoSyntax :=
   PeanoSyntaxPresentation.generatedCode
 
-def PeanoWellFoundedCode : WellFoundedCode PeanoPoly PeanoSyntax :=
-  PeanoGeneratedCode.toWellFoundedCode
-
 /-- Peano formulas as the generic initial algebra are bijective with readable
 syntax through generated layer coding, including the `forall` branch whose
 child is in context `k + 1`. -/

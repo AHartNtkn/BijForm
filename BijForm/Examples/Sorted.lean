@@ -230,9 +230,6 @@ def SortedSyntaxPresentation : SyntaxPresentation SortedPoly SortedInversion Sor
 def SortedGeneratedCode : GeneratedCode SortedPoly SortedSyntax :=
   SortedSyntaxPresentation.generatedCode
 
-def SortedWellFoundedCode : WellFoundedCode SortedPoly SortedSyntax :=
-  SortedGeneratedCode.toWellFoundedCode
-
 /-- Sorted trees as the generic initial algebra are bijective with readable
 syntax through generated layer coding. -/
 def SortedSyntaxIso (i : SortedIx) : Mu SortedPoly i ≃ᵢ SortedSyntax i :=
