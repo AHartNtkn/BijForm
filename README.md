@@ -138,6 +138,9 @@ lake exe bijform
   - `StringDiagram.Diag.connectStep_nodeIncidentNodup`
   - `StringDiagram.Diag.connectStep_ownerIdPartition`
   - `StringDiagram.Diag.connectStep_new_edge_mem`
+  - `StringDiagram.Diag.connectStep_edges`
+  - `StringDiagram.Diag.connectStep_edges_get_old`
+  - `StringDiagram.Diag.connectStep_edges_get_new`
   - `StringDiagram.Diag.connectStep_edge_mem_old`
   - `StringDiagram.Diag.connectStep_node_mem_old`
   - `StringDiagram.Diag.connectStep_node_mem_old_of_child`
@@ -158,6 +161,8 @@ lake exe bijform
   - `StringDiagram.Diag.budStep_entry_rawReachesBoundary`
   - `StringDiagram.Diag.budStep_fresh_rawReachesBoundary`
   - `StringDiagram.Diag.budStep_reachability`
+  - `StringDiagram.Diag.connectStep_endpoints_get`
+  - `StringDiagram.Diag.connectStep_nodes_get`
   - `StringDiagram.Diag.budStep_endpoints`
   - `StringDiagram.Diag.bud_transport`
   - `StringDiagram.Diag.renderTraceFromBoundary`
@@ -199,6 +204,7 @@ lake exe bijform
   - `StringDiagram.Diag.renderTraceFromBoundary_incidenceEvidence`
   - `StringDiagram.Diag.renderTraceFromBoundary_graphEvidence`
   - `StringDiagram.list_get_append_single_at_length`
+  - `StringDiagram.list_get_of_eq`
   - `StringDiagram.listPrefixIndex`
   - `StringDiagram.listPrefixIndex_get`
   - `StringDiagram.listPrefixIndex_val`
@@ -412,10 +418,15 @@ lake exe bijform
   - `StringDiagram.OpenPortHypergraph.SearchState.GraphRenderRelated`
   - `StringDiagram.OpenPortHypergraph.SearchState.initial_graphRenderRelated`
   - `StringDiagram.OpenPortHypergraph.SearchState.endpointOrder_connectChild`
+  - `StringDiagram.OpenPortHypergraph.SearchState.endpointOrder_connectChild_get`
   - `StringDiagram.OpenPortHypergraph.SearchState.edgeOrder_connectChild`
+  - `StringDiagram.OpenPortHypergraph.SearchState.edgeOrder_connectChild_get_old`
+  - `StringDiagram.OpenPortHypergraph.SearchState.edgeOrder_connectChild_get_new`
   - `StringDiagram.OpenPortHypergraph.SearchState.nodeOrder_connectChild`
+  - `StringDiagram.OpenPortHypergraph.SearchState.nodeOrder_connectChild_get`
   - `StringDiagram.OpenPortHypergraph.SearchState.GraphRenderRelated.seenNodes_nodup`
   - `StringDiagram.OpenPortHypergraph.SearchState.GraphRenderRelated.pending_cons_values`
+  - `StringDiagram.OpenPortHypergraph.SearchState.GraphRenderRelated.frontier_id_bound_of_mem`
   - `StringDiagram.OpenPortHypergraph.SearchState.endpoint_mem_endpointOrder_of_graphExhausted`
   - `StringDiagram.OpenPortHypergraph.SearchState.edge_mem_edgeOrder_of_graphExhausted`
   - `StringDiagram.OpenPortHypergraph.SearchState.node_mem_nodeOrder_of_graphExhausted`

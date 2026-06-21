@@ -125,6 +125,12 @@ theorem list_get_append_single_at_length {α : Type}
   change (xs ++ x :: ys)[xs.length] = x
   simp
 
+theorem list_get_of_eq {α : Type} {xs ys : List α}
+    (h : xs = ys) (i : Fin xs.length) :
+    xs.get i = ys.get (Fin.cast (congrArg List.length h) i) := by
+  cases h
+  rfl
+
 def listPrefixIndex {α : Type} {pref full suffix : List α}
     (hfull : full = pref ++ suffix) (i : Fin pref.length) :
     Fin full.length :=

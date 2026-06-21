@@ -1448,6 +1448,132 @@ theorem connectStep_new_edge_mem
     subst restIds'
     simp
 
+theorem connectStep_edges
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (st : RenderState Sig (active :: frontier))
+    {activeId : Nat} {restIds : List Nat}
+    (hids : st.frontierIds = activeId :: restIds) :
+    (connectStep mate ok st).edges =
+      st.edges ++
+        [{ label := Sig.portEdge active
+           leftLabel := active
+           rightLabel := frontier.get mate
+           left := activeId
+           right :=
+            restIds.get (Fin.cast (by
+              have hlen := st.frontierIds_length
+              rw [hids] at hlen
+              exact (Nat.succ.inj hlen).symm) mate)
+           left_label := rfl
+           right_label := (Sig.compatible_edge ok).symm
+           compatible := ok }] := by
+  unfold connectStep
+  split
+  · rename_i hidsNil
+    exact False.elim (RenderState.frontierIds_ne_nil st hidsNil)
+  · rename_i activeId' restIds' hids'
+    rw [hids] at hids'
+    injection hids' with hactive hrest
+    subst activeId'
+    subst restIds'
+    rfl
+
+theorem connectStep_edges_get_old
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (st : RenderState Sig (active :: frontier))
+    {activeId : Nat} {restIds : List Nat}
+    (hids : st.frontierIds = activeId :: restIds)
+    (edge : Fin (connectStep mate ok st).edges.length)
+    (hold : edge.val < st.edges.length) :
+    (connectStep mate ok st).edges.get edge =
+      st.edges.get ⟨edge.val, hold⟩ := by
+  let newEdge : RenderEdge Sig :=
+    { label := Sig.portEdge active
+      leftLabel := active
+      rightLabel := frontier.get mate
+      left := activeId
+      right :=
+        restIds.get (Fin.cast (by
+          have hlen := st.frontierIds_length
+          rw [hids] at hlen
+          exact (Nat.succ.inj hlen).symm) mate)
+      left_label := rfl
+      right_label := (Sig.compatible_edge ok).symm
+      compatible := ok }
+  let i := edge.val
+  have hchildSome :
+      (connectStep mate ok st).edges[i]? =
+        some ((connectStep mate ok st).edges.get edge) :=
+    by simp [i]
+  have holdSome :
+      (connectStep mate ok st).edges[i]? =
+        some (st.edges.get ⟨i, by simpa [i] using hold⟩) := by
+    rw [connectStep_edges mate ok st hids]
+    have hleft :
+        (st.edges ++ [newEdge])[i]? = st.edges[i]? :=
+      List.getElem?_append_left (l₁ := st.edges) (l₂ := [newEdge])
+        (by simpa [i] using hold)
+    have hsome :
+        st.edges[i]? = some (st.edges.get ⟨i, by simpa [i] using hold⟩) :=
+      List.getElem?_eq_getElem (by simpa [i] using hold)
+    exact hleft.trans hsome
+  rw [hchildSome] at holdSome
+  injection holdSome with hget
+
+theorem connectStep_edges_get_new
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (st : RenderState Sig (active :: frontier))
+    {activeId : Nat} {restIds : List Nat}
+    (hids : st.frontierIds = activeId :: restIds)
+    (edge : Fin (connectStep mate ok st).edges.length)
+    (hnew : edge.val = st.edges.length) :
+    (connectStep mate ok st).edges.get edge =
+      { label := Sig.portEdge active
+        leftLabel := active
+        rightLabel := frontier.get mate
+        left := activeId
+        right :=
+          restIds.get (Fin.cast (by
+            have hlen := st.frontierIds_length
+            rw [hids] at hlen
+            exact (Nat.succ.inj hlen).symm) mate)
+        left_label := rfl
+        right_label := (Sig.compatible_edge ok).symm
+        compatible := ok } := by
+  let newEdge : RenderEdge Sig :=
+    { label := Sig.portEdge active
+      leftLabel := active
+      rightLabel := frontier.get mate
+      left := activeId
+      right :=
+        restIds.get (Fin.cast (by
+          have hlen := st.frontierIds_length
+          rw [hids] at hlen
+          exact (Nat.succ.inj hlen).symm) mate)
+      left_label := rfl
+      right_label := (Sig.compatible_edge ok).symm
+      compatible := ok }
+  let i := edge.val
+  have hchildSome :
+      (connectStep mate ok st).edges[i]? =
+        some ((connectStep mate ok st).edges.get edge) :=
+    by simp [i]
+  have hnewSome :
+      (connectStep mate ok st).edges[i]? = some newEdge := by
+    rw [connectStep_edges mate ok st hids]
+    have hi : i = st.edges.length := by
+      simpa [i] using hnew
+    rw [hi]
+    simp [newEdge]
+  rw [hchildSome] at hnewSome
+  injection hnewSome with hget
+
 theorem connectStep_frontierIds
     {active : Sig.Port} {frontier : List Sig.Port}
     (mate : Fin frontier.length)
@@ -3321,6 +3447,60 @@ theorem connectStep_endpoints
   · rename_i hids
     exact False.elim (RenderState.frontierIds_ne_nil st hids)
   · rfl
+
+theorem connectStep_endpoints_get
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (st : RenderState Sig (active :: frontier))
+    (endpoint : Fin (connectStep mate ok st).endpoints.length) :
+    (connectStep mate ok st).endpoints.get endpoint =
+      st.endpoints.get
+        (Fin.cast
+          (congrArg List.length (connectStep_endpoints mate ok st))
+          endpoint) := by
+  let oldEndpoint :=
+    Fin.cast (congrArg List.length (connectStep_endpoints mate ok st))
+      endpoint
+  let i := endpoint.val
+  have hchildSome :
+      (connectStep mate ok st).endpoints[i]? =
+        some ((connectStep mate ok st).endpoints.get endpoint) :=
+    by simp [i]
+  have holdSome :
+      (connectStep mate ok st).endpoints[i]? =
+        some (st.endpoints.get oldEndpoint) := by
+    rw [connectStep_endpoints mate ok st]
+    exact List.getElem?_eq_getElem oldEndpoint.isLt
+  rw [hchildSome] at holdSome
+  injection holdSome with hget
+
+theorem connectStep_nodes_get
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (st : RenderState Sig (active :: frontier))
+    (node : Fin (connectStep mate ok st).nodes.length) :
+    (connectStep mate ok st).nodes.get node =
+      st.nodes.get
+        (Fin.cast
+          (congrArg List.length (connectStep_nodes mate ok st))
+          node) := by
+  let oldNode :=
+    Fin.cast (congrArg List.length (connectStep_nodes mate ok st))
+      node
+  let i := node.val
+  have hchildSome :
+      (connectStep mate ok st).nodes[i]? =
+        some ((connectStep mate ok st).nodes.get node) :=
+    by simp [i]
+  have holdSome :
+      (connectStep mate ok st).nodes[i]? =
+        some (st.nodes.get oldNode) := by
+    rw [connectStep_nodes mate ok st]
+    exact List.getElem?_eq_getElem oldNode.isLt
+  rw [hchildSome] at holdSome
+  injection holdSome with hget
 
 theorem budStep_endpoints
     {active : Sig.Port} {frontier : List Sig.Port}

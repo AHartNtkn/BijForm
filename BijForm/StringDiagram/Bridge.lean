@@ -1637,6 +1637,25 @@ theorem endpointOrder_connectChild
       endpointOrder G st := by
   simp [endpointOrder, connectChild]
 
+theorem endpointOrder_connectChild_get
+    {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {frontier : List Sig.Port}
+    (st : SearchState G (activeLabel :: frontier))
+    {active : Fin G.raw.endpointCount}
+    {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest)
+    (mate : Fin rest.length)
+    (hmate : PortHypergraph.EdgeMate G.raw active (rest.get mate))
+    (endpoint :
+      Fin (endpointOrder G (st.connectChild hpending mate hmate)).length) :
+    (endpointOrder G (st.connectChild hpending mate hmate)).get endpoint =
+      (endpointOrder G st).get
+        (Fin.cast
+          (congrArg List.length
+            (endpointOrder_connectChild st hpending mate hmate))
+          endpoint) :=
+  list_get_of_eq (endpointOrder_connectChild st hpending mate hmate) endpoint
+
 theorem edgeOrder_connectChild
     {G : OpenPortHypergraph Sig boundary}
     {activeLabel : Sig.Port} {frontier : List Sig.Port}
@@ -1650,6 +1669,72 @@ theorem edgeOrder_connectChild
       edgeOrder st ++ [G.raw.endpointEdge active] := by
   simp [edgeOrder, connectChild]
 
+theorem edgeOrder_connectChild_get_old
+    {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {frontier : List Sig.Port}
+    (st : SearchState G (activeLabel :: frontier))
+    {active : Fin G.raw.endpointCount}
+    {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest)
+    (mate : Fin rest.length)
+    (hmate : PortHypergraph.EdgeMate G.raw active (rest.get mate))
+    (edge :
+      Fin (edgeOrder (st.connectChild hpending mate hmate)).length)
+    (hold : edge.val < (edgeOrder st).length) :
+    (edgeOrder (st.connectChild hpending mate hmate)).get edge =
+      (edgeOrder st).get ⟨edge.val, hold⟩ := by
+  let i := edge.val
+  have hchildSome :
+      (edgeOrder (st.connectChild hpending mate hmate))[i]? =
+        some ((edgeOrder (st.connectChild hpending mate hmate)).get edge) :=
+    by simp [i]
+  have holdSome :
+      (edgeOrder (st.connectChild hpending mate hmate))[i]? =
+        some ((edgeOrder st).get ⟨i, by simpa [i] using hold⟩) := by
+    rw [edgeOrder_connectChild st hpending mate hmate]
+    have hleft :
+        (edgeOrder st ++ [G.raw.endpointEdge active])[i]? =
+          (edgeOrder st)[i]? :=
+      List.getElem?_append_left (l₁ := edgeOrder st)
+        (l₂ := [G.raw.endpointEdge active]) (by simpa [i] using hold)
+    have hsome :
+        (edgeOrder st)[i]? =
+          some ((edgeOrder st).get ⟨i, by simpa [i] using hold⟩) :=
+      List.getElem?_eq_getElem (by simpa [i] using hold)
+    exact hleft.trans hsome
+  rw [hchildSome] at holdSome
+  injection holdSome with hget
+
+theorem edgeOrder_connectChild_get_new
+    {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {frontier : List Sig.Port}
+    (st : SearchState G (activeLabel :: frontier))
+    {active : Fin G.raw.endpointCount}
+    {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest)
+    (mate : Fin rest.length)
+    (hmate : PortHypergraph.EdgeMate G.raw active (rest.get mate))
+    (edge :
+      Fin (edgeOrder (st.connectChild hpending mate hmate)).length)
+    (hnew : edge.val = (edgeOrder st).length) :
+    (edgeOrder (st.connectChild hpending mate hmate)).get edge =
+      G.raw.endpointEdge active := by
+  let i := edge.val
+  have hchildSome :
+      (edgeOrder (st.connectChild hpending mate hmate))[i]? =
+        some ((edgeOrder (st.connectChild hpending mate hmate)).get edge) :=
+    by simp [i]
+  have hnewSome :
+      (edgeOrder (st.connectChild hpending mate hmate))[i]? =
+        some (G.raw.endpointEdge active) := by
+    rw [edgeOrder_connectChild st hpending mate hmate]
+    have hi : i = (edgeOrder st).length := by
+      simpa [i] using hnew
+    rw [hi]
+    simp
+  rw [hchildSome] at hnewSome
+  injection hnewSome with hget
+
 theorem nodeOrder_connectChild
     {G : OpenPortHypergraph Sig boundary}
     {activeLabel : Sig.Port} {frontier : List Sig.Port}
@@ -1662,6 +1747,24 @@ theorem nodeOrder_connectChild
     nodeOrder (st.connectChild hpending mate hmate) =
       nodeOrder st := by
   simp [nodeOrder, connectChild]
+
+theorem nodeOrder_connectChild_get
+    {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {frontier : List Sig.Port}
+    (st : SearchState G (activeLabel :: frontier))
+    {active : Fin G.raw.endpointCount}
+    {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest)
+    (mate : Fin rest.length)
+    (hmate : PortHypergraph.EdgeMate G.raw active (rest.get mate))
+    (node : Fin (nodeOrder (st.connectChild hpending mate hmate)).length) :
+    (nodeOrder (st.connectChild hpending mate hmate)).get node =
+      (nodeOrder st).get
+        (Fin.cast
+          (congrArg List.length
+            (nodeOrder_connectChild st hpending mate hmate))
+          node) :=
+  list_get_of_eq (nodeOrder_connectChild st hpending mate hmate) node
 
 theorem GraphRenderRelated.seenNodes_nodup
     {G : OpenPortHypergraph Sig boundary}
@@ -1739,6 +1842,19 @@ theorem GraphRenderRelated.pending_cons_values
       apply Fin.ext
       rfl
     simpa [hids, hpending, hcast, htailCast] using h
+
+theorem GraphRenderRelated.frontier_id_bound_of_mem
+    {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port}
+    {rst : RenderState Sig frontier} {st : SearchState G frontier}
+    (hrel : GraphRenderRelated G rst st)
+    {id : Nat} (hmem : id ∈ rst.frontierIds) :
+    id < rst.endpoints.length := by
+  let idx := listIndexOfMem rst.frontierIds id hmem
+  have hbound := hrel.frontier_id_bound idx
+  have hget := listIndexOfMem_get rst.frontierIds id hmem
+  rw [hget] at hbound
+  exact hbound
 
 theorem endpoint_mem_endpointOrder_of_graphExhausted
     {G : OpenPortHypergraph Sig boundary}
