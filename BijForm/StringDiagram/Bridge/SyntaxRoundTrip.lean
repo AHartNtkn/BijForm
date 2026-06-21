@@ -102,26 +102,18 @@ theorem toOpenPortHypergraph_bud_initial_search
       G.raw.boundaryPort b ≠ (G.raw.incident nodeIndex).get slot := by
     intro hsame
     let endpoint := G.raw.boundaryPort b
-    rcases G.raw.endpoint_owner endpoint with ⟨owner₀, _howner₀, huniq⟩
-    have hboundaryEq :
-        (.boundary b :
-          EndpointOwner (active :: frontier).length G.raw.nodeCount
-            (fun node => (G.raw.incident node).length)) = owner₀ := by
-      apply huniq
-      rfl
-    have hconstructorEq :
-        (.constructor nodeIndex slot :
-          EndpointOwner (active :: frontier).length G.raw.nodeCount
-            (fun node => (G.raw.incident node).length)) = owner₀ := by
-      apply huniq
-      change (G.raw.incident nodeIndex).get slot = endpoint
-      exact hsame.symm
     have himpossible :
         (.boundary b :
           EndpointOwner (active :: frontier).length G.raw.nodeCount
             (fun node => (G.raw.incident node).length)) =
         .constructor nodeIndex slot :=
-      hboundaryEq.trans hconstructorEq.symm
+      PortHypergraph.endpointOwner_eq_of_endpoint G.raw
+        (owner₁ := .boundary b)
+        (owner₂ := .constructor nodeIndex slot)
+        rfl
+        (by
+          change (G.raw.incident nodeIndex).get slot = endpoint
+          exact hsame.symm)
     cases himpossible
   have hconnect :
       OpenPortHypergraph.firstPendingConnectSearch? G st.seenNode

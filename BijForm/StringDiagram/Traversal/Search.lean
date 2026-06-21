@@ -416,20 +416,9 @@ theorem firstPendingStepSearch?_some_bud_exact_of_witness
         EndpointOwner boundary.length G.raw.nodeCount
           (fun node => (G.raw.incident node).length)) := by
     let endpoint := (G.raw.incident node).get slot
-    rcases G.raw.endpoint_owner endpoint with ⟨owner₀, _howner₀, huniq⟩
-    have hleft :
-        (.constructor node' slot' :
-          EndpointOwner boundary.length G.raw.nodeCount
-            (fun node => (G.raw.incident node).length)) = owner₀ := by
-      apply huniq
-      exact hendpointEq
-    have hright :
-        (.constructor node slot :
-          EndpointOwner boundary.length G.raw.nodeCount
-            (fun node => (G.raw.incident node).length)) = owner₀ := by
-      apply huniq
-      rfl
-    exact hleft.trans hright.symm
+    exact PortHypergraph.endpointOwner_eq_of_endpoint G.raw
+      (owner₁ := .constructor node' slot') (owner₂ := .constructor node slot)
+      hendpointEq rfl
   cases hownerEq
   exact ⟨hmate', hunseen', hstep⟩
 

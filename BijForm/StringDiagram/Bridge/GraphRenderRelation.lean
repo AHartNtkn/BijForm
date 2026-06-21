@@ -40,25 +40,16 @@ theorem incident_mem_node_eq
     ⟨leftSlot, hleftSlot⟩
   rcases list_exists_get_of_mem (G.raw.incident rightNode) hright with
     ⟨rightSlot, hrightSlot⟩
-  rcases G.raw.endpoint_owner endpoint with ⟨owner, _howner, huniq⟩
-  have hleftOwner :
-      (.constructor leftNode leftSlot :
-        EndpointOwner boundary.length G.raw.nodeCount
-          (fun node => (G.raw.incident node).length)) = owner := by
-    apply huniq
-    simpa [PortHypergraph.endpointOwnerEndpoint] using hleftSlot
-  have hrightOwner :
-      (.constructor rightNode rightSlot :
-        EndpointOwner boundary.length G.raw.nodeCount
-          (fun node => (G.raw.incident node).length)) = owner := by
-    apply huniq
-    simpa [PortHypergraph.endpointOwnerEndpoint] using hrightSlot
   have hsame :
       (.constructor leftNode leftSlot :
         EndpointOwner boundary.length G.raw.nodeCount
           (fun node => (G.raw.incident node).length)) =
       .constructor rightNode rightSlot :=
-    hleftOwner.trans hrightOwner.symm
+    PortHypergraph.endpointOwner_eq_of_endpoint G.raw
+      (owner₁ := .constructor leftNode leftSlot)
+      (owner₂ := .constructor rightNode rightSlot)
+      (by simpa [PortHypergraph.endpointOwnerEndpoint] using hleftSlot)
+      (by simpa [PortHypergraph.endpointOwnerEndpoint] using hrightSlot)
   cases hsame
   rfl
 
@@ -72,25 +63,16 @@ theorem boundary_mem_not_incident_mem
   rcases (List.mem_ofFn.mp hboundary) with ⟨boundaryIndex, hboundaryEq⟩
   rcases list_exists_get_of_mem (G.raw.incident node) hincident with
     ⟨slot, hslot⟩
-  rcases G.raw.endpoint_owner endpoint with ⟨owner, _howner, huniq⟩
-  have hboundaryOwner :
-      (.boundary boundaryIndex :
-        EndpointOwner boundary.length G.raw.nodeCount
-          (fun node => (G.raw.incident node).length)) = owner := by
-    apply huniq
-    simpa [PortHypergraph.endpointOwnerEndpoint] using hboundaryEq
-  have hconstructorOwner :
-      (.constructor node slot :
-        EndpointOwner boundary.length G.raw.nodeCount
-          (fun node => (G.raw.incident node).length)) = owner := by
-    apply huniq
-    simpa [PortHypergraph.endpointOwnerEndpoint] using hslot
   have hsame :
       (.boundary boundaryIndex :
         EndpointOwner boundary.length G.raw.nodeCount
           (fun node => (G.raw.incident node).length)) =
       .constructor node slot :=
-    hboundaryOwner.trans hconstructorOwner.symm
+    PortHypergraph.endpointOwner_eq_of_endpoint G.raw
+      (owner₁ := .boundary boundaryIndex)
+      (owner₂ := .constructor node slot)
+      (by simpa [PortHypergraph.endpointOwnerEndpoint] using hboundaryEq)
+      (by simpa [PortHypergraph.endpointOwnerEndpoint] using hslot)
   cases hsame
 
 theorem incidentFlatMap_nodup_of_nodup

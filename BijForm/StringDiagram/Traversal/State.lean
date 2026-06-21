@@ -203,25 +203,15 @@ def initial (G : OpenPortHypergraph Sig boundary) : SearchState G boundary where
         have hconstructorOwner :
             PortHypergraph.endpointOwnerEndpoint G.raw
                 (.constructor node slot) = endpoint := howner
-        rcases G.raw.endpoint_owner endpoint with ⟨owner₀, _howner₀, huniq⟩
-        have hboundaryEq :
-            (.boundary boundaryIndex :
-              EndpointOwner boundary.length G.raw.nodeCount
-                (fun node => (G.raw.incident node).length)) = owner₀ := by
-          apply huniq
-          simpa [PortHypergraph.endpointOwnerEndpoint] using hboundaryOwner
-        have hconstructorEq :
-            (.constructor node slot :
-              EndpointOwner boundary.length G.raw.nodeCount
-                (fun node => (G.raw.incident node).length)) = owner₀ := by
-          apply huniq
-          simpa [PortHypergraph.endpointOwnerEndpoint] using hconstructorOwner
         have himpossible :
             (.constructor node slot :
               EndpointOwner boundary.length G.raw.nodeCount
                 (fun node => (G.raw.incident node).length)) =
               .boundary boundaryIndex := by
-          exact hconstructorEq.trans hboundaryEq.symm
+          exact PortHypergraph.endpointOwner_eq_of_endpoint G.raw
+            (owner₁ := .constructor node slot)
+            (owner₂ := .boundary boundaryIndex)
+            hconstructorOwner hboundaryOwner
         cases himpossible
   unseen_incident_unprocessed := by
     intro _node _hunseen _slot
@@ -1006,24 +996,15 @@ def budChild {G : OpenPortHypergraph Sig boundary}
               PortHypergraph.endpointOwnerEndpoint G.raw
                   (.constructor node slot') = endpoint := by
             simpa [PortHypergraph.endpointOwnerEndpoint] using hslot'
-          rcases G.raw.endpoint_owner endpoint with ⟨owner₀, _howner₀, huniq⟩
-          have hnewEq :
-              (.constructor node slot' :
-                EndpointOwner boundary.length G.raw.nodeCount
-                  (fun node => (G.raw.incident node).length)) = owner₀ := by
-            apply huniq
-            simpa [PortHypergraph.endpointOwnerEndpoint] using hconstructorOwner
-          have hownerEq :
-              (.constructor ownerNode ownerSlot :
-                EndpointOwner boundary.length G.raw.nodeCount
-                  (fun node => (G.raw.incident node).length)) = owner₀ := by
-            apply huniq
-            simpa [PortHypergraph.endpointOwnerEndpoint] using howner
           have hsame :
               (.constructor ownerNode ownerSlot :
                 EndpointOwner boundary.length G.raw.nodeCount
                   (fun node => (G.raw.incident node).length)) =
-                .constructor node slot' := hownerEq.trans hnewEq.symm
+                .constructor node slot' :=
+            PortHypergraph.endpointOwner_eq_of_endpoint G.raw
+              (owner₁ := .constructor ownerNode ownerSlot)
+              (owner₂ := .constructor node slot')
+              howner hconstructorOwner
           cases hsame
           simp
   unseen_incident_unprocessed := by
@@ -1058,24 +1039,15 @@ def budChild {G : OpenPortHypergraph Sig boundary}
             endpoint := by
         change (G.raw.incident node).get slot = endpoint
         exact hendpointEntry.symm
-      rcases G.raw.endpoint_owner endpoint with ⟨owner₀, _howner₀, huniq⟩
-      have hotherEq :
-          (.constructor otherNode otherSlot :
-            EndpointOwner boundary.length G.raw.nodeCount
-              (fun node => (G.raw.incident node).length)) = owner₀ := by
-        apply huniq
-        simpa [PortHypergraph.endpointOwnerEndpoint] using hownerOther
-      have hnodeEq :
-          (.constructor node slot :
-            EndpointOwner boundary.length G.raw.nodeCount
-              (fun node => (G.raw.incident node).length)) = owner₀ := by
-        apply huniq
-        simpa [PortHypergraph.endpointOwnerEndpoint] using hownerNode
       have hsame :
           (.constructor otherNode otherSlot :
             EndpointOwner boundary.length G.raw.nodeCount
               (fun node => (G.raw.incident node).length)) =
-            .constructor node slot := hotherEq.trans hnodeEq.symm
+            .constructor node slot :=
+        PortHypergraph.endpointOwner_eq_of_endpoint G.raw
+          (owner₁ := .constructor otherNode otherSlot)
+          (owner₂ := .constructor node slot)
+          hownerOther hownerNode
       cases hsame
       exact hotherUnseen (by simp)
     · exact st.unseen_incident_unprocessed otherNode hotherNotSeen otherSlot hold

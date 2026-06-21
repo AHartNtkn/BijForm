@@ -122,6 +122,23 @@ theorem endpointOwnersOf_existsUnique (G : PortHypergraph Sig boundary)
   revert howner'
   cases owner' <;> intro howner' <;> simpa [endpointOwnerEndpoint] using howner'
 
+theorem endpointOwner_eq_of_endpoint (G : PortHypergraph Sig boundary)
+    {endpoint : Fin G.endpointCount}
+    {owner₁ owner₂ :
+      EndpointOwner boundary.length G.nodeCount
+        (fun node => (G.incident node).length)}
+    (howner₁ : endpointOwnerEndpoint G owner₁ = endpoint)
+    (howner₂ : endpointOwnerEndpoint G owner₂ = endpoint) :
+    owner₁ = owner₂ := by
+  rcases G.endpoint_owner endpoint with ⟨owner, _howner, huniq⟩
+  have hleft : owner₁ = owner := by
+    apply huniq
+    cases owner₁ <;> simpa [endpointOwnerEndpoint] using howner₁
+  have hright : owner₂ = owner := by
+    apply huniq
+    cases owner₂ <;> simpa [endpointOwnerEndpoint] using howner₂
+  exact hleft.trans hright.symm
+
 /-- A mate of an endpoint is the other endpoint on the same edge. -/
 def EdgeMate (G : PortHypergraph Sig boundary)
     (endpoint mate : Fin G.endpointCount) : Prop :=
