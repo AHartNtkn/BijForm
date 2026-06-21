@@ -225,10 +225,7 @@ abbrev SymmetricInteractionNetSyntaxIso
     (boundary : List SymmetricInteractionNetSignature.Port) :
     Mu SymmetricInteractionNetPoly boundary ≃ᵢ
       SymmetricInteractionNetDiag boundary :=
-  singleSortedFiniteSyntaxIso
-    SymmetricInteractionNetSignature
-    SymmetricInteractionNetCodingData
-    boundary
+  BijForm.StringDiagram.syntaxIso SymmetricInteractionNetSignature boundary
 
 /-- Semantic open port-hypergraphs over the symmetric interaction-net signature. -/
 abbrev SymmetricInteractionNetOpenGraph

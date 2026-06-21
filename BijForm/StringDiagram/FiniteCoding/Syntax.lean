@@ -931,13 +931,6 @@ def singleSortedFiniteGeneratedShapeCode
       exact singleSortedFiniteLayer_child_rank_lt data z q)).toShapeLayerPresentation
         (openFrontierShape Sig)).generatedCode
 
-/-- Generated-code equivalence for finite single-sorted string-diagram syntax. -/
-def singleSortedFiniteSyntaxIso
-    (Sig : Signature) (_data : SingleSortedFiniteCodingData Sig)
-    (boundary : List Sig.Port) :
-    Mu (poly Sig) boundary ≃ᵢ Diag Sig boundary :=
-  syntaxIso Sig boundary
-
 /-- Empty-frontier syntax is generated as the singleton finite carrier. -/
 def singleSortedFiniteSyntaxEmptyFinOneIso
     (Sig : Signature) (data : SingleSortedFiniteCodingData Sig) :

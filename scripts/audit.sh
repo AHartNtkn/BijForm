@@ -45,4 +45,8 @@ if git grep -n -E '^def [A-Za-z0-9_]*WellFoundedCode[[:space:]]*:' -- BijForm/Ex
   fail "example exposes a pass-through WellFoundedCode alias"
 fi
 
+if git grep -n 'singleSortedFiniteSyntaxIso' -- BijForm; then
+  fail "finite-coding syntax wrapper must not ignore finite coding data"
+fi
+
 printf 'audit: ok\n'
