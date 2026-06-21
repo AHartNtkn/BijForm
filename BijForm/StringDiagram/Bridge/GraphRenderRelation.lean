@@ -2018,15 +2018,6 @@ theorem GraphRenderRelated.budChild
             rw [Diag.budStep_endpoints_length renderNode entry ok rst]
             simpa [nodeEndpoints, renderNode, rv.nextEndpoint_eq] using hfreshLt
           refine ⟨hchildBound, ?_⟩
-          have hfreshVal :
-              nodeEndpoints.get ⟨n, hid⟩ = rst.endpoints.length + n := by
-            calc
-              nodeEndpoints.get ⟨n, hid⟩ = rst.nextEndpoint + n := by
-                simpa [nodeEndpoints] using
-                  Diag.freshNodeEndpoints_get rst.nextEndpoint
-                    (Sig.arity renderNode) ⟨n, hid⟩
-              _ = rst.endpoints.length + n := by
-                rw [rv.nextEndpoint_eq]
           have horder :=
             endpointOrder_budChild st hpending node slot hmate hunseen
           have hchildGet :=
@@ -2045,12 +2036,16 @@ theorem GraphRenderRelated.budChild
             have hle :
                 (endpointOrder G st).length ≤
                   nodeEndpoints.get ⟨n, hid⟩ := by
-              omega
+              have hfreshGe := Diag.freshNodeEndpoints_mem_ge hfreshMem
+              rw [holdLen]
+              simpa [nodeEndpoints, rv.nextEndpoint_eq] using hfreshGe
             have happBound :
                 nodeEndpoints.get ⟨n, hid⟩ <
                   (endpointOrder G st ++ G.raw.incident node).length := by
-              rw [List.length_append]
-              omega
+              have hbound := hchildBound
+              rw [Diag.budStep_endpoints_length renderNode entry ok rst] at hbound
+              rw [List.length_append, holdLen, G.raw.incident_length node]
+              simpa [renderNode] using hbound
             have hright :=
               list_get_append_right (endpointOrder G st) (G.raw.incident node)
                 hle happBound
@@ -2066,8 +2061,13 @@ theorem GraphRenderRelated.budChild
               have hsub :
                   nodeEndpoints.get ⟨n, hid⟩ -
                       (endpointOrder G st).length = n := by
-                rw [hfreshVal, holdLen]
-                exact Nat.add_sub_cancel_left rst.endpoints.length n
+                rw [holdLen]
+                simpa [nodeEndpoints] using
+                  Diag.freshNodeEndpoints_get_sub_of_eq
+                    (start := rst.nextEndpoint)
+                    (base := rst.endpoints.length)
+                    (arity := Sig.arity renderNode)
+                    rv.nextEndpoint_eq ⟨n, hid⟩
               exact hsub
             exact hright.trans (by rw [hidx])
           exact hchildGet.trans happRight
@@ -2602,20 +2602,16 @@ theorem GraphRenderRelated.budChild
               ((Diag.budStep renderNode entry ok rst).edges.get edge).right -
                 rst.endpoints.length = slot.val
             rw [hrightRaw]
-            have hfreshVal :
-                nodeEndpoints.get entryIdx =
-                  rst.endpoints.length + entryIdx.val := by
-              calc
-                nodeEndpoints.get entryIdx =
-                    rst.nextEndpoint + entryIdx.val := by
-                  simpa [nodeEndpoints] using
-                    Diag.freshNodeEndpoints_get rst.nextEndpoint
-                      (Sig.arity renderNode) entryIdx
-                _ = rst.endpoints.length + entryIdx.val := by
-                  rw [rv.nextEndpoint_eq]
-            rw [hfreshVal]
-            rw [Nat.add_sub_cancel_left]
-            exact hentryIdxVal
+            have hsub :
+                nodeEndpoints.get entryIdx - rst.endpoints.length =
+                  entryIdx.val := by
+              simpa [nodeEndpoints] using
+                Diag.freshNodeEndpoints_get_sub_of_eq
+                  (start := rst.nextEndpoint)
+                  (base := rst.endpoints.length)
+                  (arity := Sig.arity renderNode)
+                  rv.nextEndpoint_eq entryIdx
+            exact hsub.trans hentryIdxVal
           have hendpoint :
               (endpointOrder G (st.budChild hpending node slot hmate hunseen)).get
                   childEndpoint =
@@ -2871,17 +2867,6 @@ theorem GraphRenderRelated.budChild
             simpa [childEndpoint] using
               endpointAt_new hrawGe
                 (hchildNodeIncidentBound renderIdx renderSlot)
-          have hfreshVal :
-              nodeEndpoints.get freshSlot =
-                rst.endpoints.length + freshSlot.val := by
-            calc
-              nodeEndpoints.get freshSlot =
-                  rst.nextEndpoint + freshSlot.val := by
-                simpa [nodeEndpoints] using
-                  Diag.freshNodeEndpoints_get rst.nextEndpoint
-                    (Sig.arity renderNode) freshSlot
-              _ = rst.endpoints.length + freshSlot.val := by
-                rw [rv.nextEndpoint_eq]
           let graphSlot : Fin (G.raw.incident node).length :=
             ⟨freshSlot.val, by
               have hslot : freshSlot.val < Sig.arity renderNode := by
@@ -2904,8 +2889,13 @@ theorem GraphRenderRelated.budChild
             change
               ((Diag.budStep renderNode entry ok rst).nodes.get renderIdx).incident.get
                   renderSlot - rst.endpoints.length = freshSlot.val
-            rw [hincidentGet, hfreshVal]
-            rw [Nat.add_sub_cancel_left]
+            rw [hincidentGet]
+            simpa [nodeEndpoints] using
+              Diag.freshNodeEndpoints_get_sub_of_eq
+                (start := rst.nextEndpoint)
+                (base := rst.endpoints.length)
+                (arity := Sig.arity renderNode)
+                rv.nextEndpoint_eq freshSlot
           have hendpoint :
               (endpointOrder G (st.budChild hpending node slot hmate hunseen)).get
                   childEndpoint =

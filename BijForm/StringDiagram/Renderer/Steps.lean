@@ -22,6 +22,13 @@ theorem freshNodeEndpoints_get (start arity : Nat)
     (freshNodeEndpoints start arity).get i = start + i.val := by
   simp [freshNodeEndpoints]
 
+theorem freshNodeEndpoints_get_sub_of_eq {start base arity : Nat}
+    (hstart : start = base)
+    (i : Fin (freshNodeEndpoints start arity).length) :
+    (freshNodeEndpoints start arity).get i - base = i.val := by
+  rw [← hstart, freshNodeEndpoints_get]
+  omega
+
 theorem freshNodeEndpoints_mem_lt {start arity id : Nat}
     (hmem : id ∈ freshNodeEndpoints start arity) :
     id < start + arity := by
