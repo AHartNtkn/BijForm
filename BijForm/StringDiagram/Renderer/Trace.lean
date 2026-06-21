@@ -794,6 +794,265 @@ theorem budStep_endpoints_length
     exact False.elim (RenderState.frontierIds_ne_nil st hids)
   · simp [Signature.nodePorts]
 
+theorem budStep_edges_get_old
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (rst : RenderState Sig (active :: frontier))
+    {activeId : Nat} {restIds : List Nat}
+    (hids : rst.frontierIds = activeId :: restIds)
+    (edge : Fin (budStep node entry ok rst).edges.length)
+    (hold : edge.val < rst.edges.length) :
+    (budStep node entry ok rst).edges.get edge =
+      rst.edges.get ⟨edge.val, hold⟩ := by
+  let nodeEndpoints := freshNodeEndpoints rst.nextEndpoint (Sig.arity node)
+  let entryIdx : Fin nodeEndpoints.length :=
+    Fin.cast (by simp [nodeEndpoints]) entry
+  let newEdge : RenderEdge Sig :=
+    { label := Sig.portEdge active
+      leftLabel := active
+      rightLabel := Sig.port node entry
+      left := activeId
+      right := nodeEndpoints.get entryIdx
+      left_label := rfl
+      right_label := (Sig.compatible_edge ok).symm
+      compatible := ok }
+  let i := edge.val
+  have hchildSome :
+      (budStep node entry ok rst).edges[i]? =
+        some ((budStep node entry ok rst).edges.get edge) :=
+    by simp [i]
+  have holdSome :
+      (budStep node entry ok rst).edges[i]? =
+        some (rst.edges.get ⟨i, by simpa [i] using hold⟩) := by
+    unfold budStep
+    split
+    · rename_i hnil
+      exact False.elim (RenderState.frontierIds_ne_nil rst hnil)
+    · rename_i activeId' restIds' hids'
+      rw [hids] at hids'
+      injection hids' with hactive hrest
+      subst activeId'
+      subst restIds'
+      have hleft :
+          (rst.edges ++ [newEdge])[i]? = rst.edges[i]? :=
+        List.getElem?_append_left (l₁ := rst.edges)
+          (l₂ := [newEdge]) (by simpa [i] using hold)
+      have hsome :
+          rst.edges[i]? =
+            some (rst.edges.get ⟨i, by simpa [i] using hold⟩) :=
+        List.getElem?_eq_getElem (by simpa [i] using hold)
+      simpa [newEdge, nodeEndpoints, entryIdx, i] using hleft.trans hsome
+  rw [hchildSome] at holdSome
+  injection holdSome with hget
+
+theorem budStep_edges_get_new
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (rst : RenderState Sig (active :: frontier))
+    {activeId : Nat} {restIds : List Nat}
+    (hids : rst.frontierIds = activeId :: restIds)
+    (edge : Fin (budStep node entry ok rst).edges.length)
+    (hnew : edge.val = rst.edges.length) :
+    (budStep node entry ok rst).edges.get edge =
+      { label := Sig.portEdge active
+        leftLabel := active
+        rightLabel := Sig.port node entry
+        left := activeId
+        right :=
+          (freshNodeEndpoints rst.nextEndpoint (Sig.arity node)).get
+            (Fin.cast (by simp [freshNodeEndpoints]) entry)
+        left_label := rfl
+        right_label := (Sig.compatible_edge ok).symm
+        compatible := ok } := by
+  let nodeEndpoints := freshNodeEndpoints rst.nextEndpoint (Sig.arity node)
+  let entryIdx : Fin nodeEndpoints.length :=
+    Fin.cast (by simp [nodeEndpoints]) entry
+  let newEdge : RenderEdge Sig :=
+    { label := Sig.portEdge active
+      leftLabel := active
+      rightLabel := Sig.port node entry
+      left := activeId
+      right := nodeEndpoints.get entryIdx
+      left_label := rfl
+      right_label := (Sig.compatible_edge ok).symm
+      compatible := ok }
+  let i := edge.val
+  have hchildSome :
+      (budStep node entry ok rst).edges[i]? =
+        some ((budStep node entry ok rst).edges.get edge) :=
+    by simp [i]
+  have hnewSome :
+      (budStep node entry ok rst).edges[i]? = some newEdge := by
+    unfold budStep
+    split
+    · rename_i hnil
+      exact False.elim (RenderState.frontierIds_ne_nil rst hnil)
+    · rename_i activeId' restIds' hids'
+      rw [hids] at hids'
+      injection hids' with hactive hrest
+      subst activeId'
+      subst restIds'
+      have hi : i = rst.edges.length := by
+        simpa [i] using hnew
+      rw [hi]
+      simp [newEdge, nodeEndpoints, entryIdx]
+  rw [hchildSome] at hnewSome
+  injection hnewSome with hget
+
+theorem budStep_nodes_get_old
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (rst : RenderState Sig (active :: frontier))
+    (renderNode : Fin (budStep node entry ok rst).nodes.length)
+    (hold : renderNode.val < rst.nodes.length) :
+    (budStep node entry ok rst).nodes.get renderNode =
+      rst.nodes.get ⟨renderNode.val, hold⟩ := by
+  let newNode : RenderNode Sig :=
+    { label := node
+      incident := freshNodeEndpoints rst.nextEndpoint (Sig.arity node) }
+  let i := renderNode.val
+  have hchildSome :
+      (budStep node entry ok rst).nodes[i]? =
+        some ((budStep node entry ok rst).nodes.get renderNode) :=
+    by simp [i]
+  have holdSome :
+      (budStep node entry ok rst).nodes[i]? =
+        some (rst.nodes.get ⟨i, by simpa [i] using hold⟩) := by
+    unfold budStep
+    split
+    · rename_i hnil
+      exact False.elim (RenderState.frontierIds_ne_nil rst hnil)
+    · have hleft :
+          (rst.nodes ++ [newNode])[i]? = rst.nodes[i]? :=
+        List.getElem?_append_left (l₁ := rst.nodes)
+          (l₂ := [newNode]) (by simpa [i] using hold)
+      have hsome :
+          rst.nodes[i]? =
+            some (rst.nodes.get ⟨i, by simpa [i] using hold⟩) :=
+        List.getElem?_eq_getElem (by simpa [i] using hold)
+      simpa [newNode, i] using hleft.trans hsome
+  rw [hchildSome] at holdSome
+  injection holdSome with hget
+
+theorem budStep_nodes_get_new
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (rst : RenderState Sig (active :: frontier))
+    (renderNode : Fin (budStep node entry ok rst).nodes.length)
+    (hnew : renderNode.val = rst.nodes.length) :
+    (budStep node entry ok rst).nodes.get renderNode =
+      { label := node
+        incident := freshNodeEndpoints rst.nextEndpoint (Sig.arity node) } := by
+  let newNode : RenderNode Sig :=
+    { label := node
+      incident := freshNodeEndpoints rst.nextEndpoint (Sig.arity node) }
+  let i := renderNode.val
+  have hchildSome :
+      (budStep node entry ok rst).nodes[i]? =
+        some ((budStep node entry ok rst).nodes.get renderNode) :=
+    by simp [i]
+  have hnewSome :
+      (budStep node entry ok rst).nodes[i]? = some newNode := by
+    unfold budStep
+    split
+    · rename_i hnil
+      exact False.elim (RenderState.frontierIds_ne_nil rst hnil)
+    · have hi : i = rst.nodes.length := by
+        simpa [i] using hnew
+      rw [hi]
+      simp [newNode]
+  rw [hchildSome] at hnewSome
+  injection hnewSome with hget
+
+theorem budStep_endpoints_get_old
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (rst : RenderState Sig (active :: frontier))
+    (endpoint : Fin (budStep node entry ok rst).endpoints.length)
+    (hold : endpoint.val < rst.endpoints.length) :
+    (budStep node entry ok rst).endpoints.get endpoint =
+      rst.endpoints.get ⟨endpoint.val, hold⟩ := by
+  let i := endpoint.val
+  have hchildSome :
+      (budStep node entry ok rst).endpoints[i]? =
+        some ((budStep node entry ok rst).endpoints.get endpoint) :=
+    by simp [i]
+  have holdSome :
+      (budStep node entry ok rst).endpoints[i]? =
+        some (rst.endpoints.get ⟨i, by simpa [i] using hold⟩) := by
+    rw [budStep_endpoints node entry ok rst]
+    have hleft :
+        (rst.endpoints ++ Sig.nodePorts node)[i]? = rst.endpoints[i]? :=
+      List.getElem?_append_left (l₁ := rst.endpoints)
+        (l₂ := Sig.nodePorts node) (by simpa [i] using hold)
+    have hsome :
+        rst.endpoints[i]? =
+          some (rst.endpoints.get ⟨i, by simpa [i] using hold⟩) :=
+      List.getElem?_eq_getElem (by simpa [i] using hold)
+    exact hleft.trans hsome
+  rw [hchildSome] at holdSome
+  injection holdSome with hget
+
+theorem budStep_endpoints_get_new
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (rst : RenderState Sig (active :: frontier))
+    (endpoint : Fin (budStep node entry ok rst).endpoints.length)
+    (hnew : rst.endpoints.length ≤ endpoint.val) :
+    (budStep node entry ok rst).endpoints.get endpoint =
+      (Sig.nodePorts node).get
+        ⟨endpoint.val - rst.endpoints.length, by
+          have hb :
+              endpoint.val < rst.endpoints.length + Sig.arity node := by
+            exact Nat.lt_of_lt_of_eq endpoint.isLt
+              (budStep_endpoints_length node entry ok rst)
+          simp [Signature.nodePorts]
+          omega⟩ := by
+  let i := endpoint.val
+  have hiBound : i < rst.endpoints.length + Sig.arity node := by
+    have hendpoint : i < (budStep node entry ok rst).endpoints.length := by
+      dsimp [i]
+      exact endpoint.isLt
+    exact Nat.lt_of_lt_of_eq hendpoint
+      (budStep_endpoints_length node entry ok rst)
+  have hslotBound : i - rst.endpoints.length < (Sig.nodePorts node).length := by
+    simpa [Signature.nodePorts] using
+      (by omega : i - rst.endpoints.length < Sig.arity node)
+  have hchildSome :
+      (budStep node entry ok rst).endpoints[i]? =
+        some ((budStep node entry ok rst).endpoints.get endpoint) :=
+    by simp [i]
+  have hnewSome :
+      (budStep node entry ok rst).endpoints[i]? =
+        some ((Sig.nodePorts node).get
+          ⟨i - rst.endpoints.length, hslotBound⟩) := by
+    rw [budStep_endpoints node entry ok rst]
+    have hright :
+        (rst.endpoints ++ Sig.nodePorts node)[i]? =
+          (Sig.nodePorts node)[i - rst.endpoints.length]? :=
+      List.getElem?_append_right (l₁ := rst.endpoints)
+        (l₂ := Sig.nodePorts node) (by simpa [i] using hnew)
+    have hsome :
+        (Sig.nodePorts node)[i - rst.endpoints.length]? =
+          some ((Sig.nodePorts node).get
+            ⟨i - rst.endpoints.length, hslotBound⟩) :=
+      List.getElem?_eq_getElem hslotBound
+    exact hright.trans hsome
+  rw [hchildSome] at hnewSome
+  injection hnewSome with hget
+
 def renderTrace_endpointPrefix :
     ∀ {frontier : List Sig.Port} (d : Diag Sig frontier)
       (st : RenderState Sig frontier),
