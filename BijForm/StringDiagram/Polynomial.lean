@@ -104,9 +104,32 @@ def syntaxToLayer (Sig : Signature) (boundary : List Sig.Port) :
   | @Diag.bud _ active frontier node entry ok child =>
       ⟨⟨Ctor.bud, ⟨active, frontier, node, entry, ok⟩, rfl⟩, fun _ => child⟩
 
-def syntaxLayerPresentation (Sig : Signature) :
-    CodeLayerPresentation (poly Sig) (inversion Sig) (Diag Sig) (Diag Sig) :=
-  CodeLayerPresentation.ofMaps
+theorem layer_child_rank_lt (Sig : Signature) :
+    ∀ {boundary : List Sig.Port} (z : Diag Sig boundary)
+      (q : (poly Sig).Pos
+          ((inversion Sig).decode boundary
+            (syntaxToLayer Sig boundary z).1).ctor
+          ((inversion Sig).decode boundary
+            (syntaxToLayer Sig boundary z).1).param),
+      Diag.rank ((syntaxToLayer Sig boundary z).2 q) <
+        Diag.rank z := by
+  intro boundary z q
+  cases z with
+  | finish =>
+      cases q
+  | connect mate ok child =>
+      cases q
+      simp [syntaxToLayer, inversion,
+        OutputIndexInversion.canonical, Diag.rank]
+  | bud node entry ok child =>
+      cases q
+      simp [syntaxToLayer, inversion,
+        OutputIndexInversion.canonical, Diag.rank]
+
+/-- Presentation of typed rooted open diagram syntax as generated code data. -/
+def syntaxPresentation (Sig : Signature) :
+    SyntaxPresentation (poly Sig) (inversion Sig) (Diag Sig) :=
+  SyntaxPresentation.ofLayerMaps
     (layerToSyntax Sig)
     (syntaxToLayer Sig)
     (by
@@ -145,36 +168,6 @@ def syntaxLayerPresentation (Sig : Signature) :
       | finish => rfl
       | connect mate ok child => rfl
       | bud node entry ok child => rfl)
-
-theorem layer_child_rank_lt (Sig : Signature) :
-    ∀ {boundary : List Sig.Port} (z : Diag Sig boundary)
-      (q : (poly Sig).Pos
-          ((inversion Sig).decode boundary
-            (((syntaxLayerPresentation Sig).iso boundary).invFun z).1).ctor
-          ((inversion Sig).decode boundary
-            (((syntaxLayerPresentation Sig).iso boundary).invFun z).1).param),
-      Diag.rank ((((syntaxLayerPresentation Sig).iso boundary).invFun z).2 q) <
-        Diag.rank z := by
-  intro boundary z q
-  cases z with
-  | finish =>
-      cases q
-  | connect mate ok child =>
-      cases q
-      simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofMaps,
-        syntaxLayerPresentation, syntaxToLayer, inversion,
-        OutputIndexInversion.canonical, Diag.rank]
-  | bud node entry ok child =>
-      cases q
-      simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofMaps,
-        syntaxLayerPresentation, syntaxToLayer, inversion,
-        OutputIndexInversion.canonical, Diag.rank]
-
-/-- Presentation of typed rooted open diagram syntax as generated code data. -/
-def syntaxPresentation (Sig : Signature) :
-    SyntaxPresentation (poly Sig) (inversion Sig) (Diag Sig) :=
-  SyntaxPresentation.ofLayer
-    (syntaxLayerPresentation Sig)
     (fun _ t => Diag.rank t)
     (layer_child_rank_lt Sig)
 
