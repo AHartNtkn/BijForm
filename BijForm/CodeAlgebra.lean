@@ -85,6 +85,12 @@ def toNatFinProd {α : Type u} (k : Nat) (hk : 0 < k)
     (payload : α ≃ᵢ Nat) : (Fin k × α) ≃ᵢ Nat :=
   Iso.trans (Iso.prod (Iso.refl (Fin k)) payload) (finProdNat k hk)
 
+theorem toNatFinProd_payloadCode_le {α : Type u}
+    (k : Nat) (hk : 0 < k) (payload : α ≃ᵢ Nat) (p : Fin k × α) :
+    payload.toFun p.2 ≤ (toNatFinProd k hk payload).toFun p := by
+  dsimp [toNatFinProd, Iso.trans, Iso.prod]
+  exact finProdNat_toFun_snd_le k hk (p.1, payload.toFun p.2)
+
 /-- Finite sums are finite. -/
 def finSum (a b : Nat) : (Fin a ⊕ Fin b) ≃ᵢ Fin (a + b) where
   toFun
@@ -245,6 +251,18 @@ using the standard pairing codec. -/
 def toNatProd {α : Type u} {β : Type v}
     (left : α ≃ᵢ Nat) (right : β ≃ᵢ Nat) : (α × β) ≃ᵢ Nat :=
   Iso.trans (Iso.prod left right) prodNat
+
+theorem toNatProd_leftCode_le {α : Type u} {β : Type v}
+    (left : α ≃ᵢ Nat) (right : β ≃ᵢ Nat) (p : α × β) :
+    left.toFun p.1 ≤ (toNatProd left right).toFun p := by
+  dsimp [toNatProd, Iso.trans, Iso.prod]
+  exact prodNat_toFun_fst_le (left.toFun p.1, right.toFun p.2)
+
+theorem toNatProd_rightCode_le {α : Type u} {β : Type v}
+    (left : α ≃ᵢ Nat) (right : β ≃ᵢ Nat) (p : α × β) :
+    right.toFun p.2 ≤ (toNatProd left right).toFun p := by
+  dsimp [toNatProd, Iso.trans, Iso.prod]
+  exact prodNat_toFun_snd_le (left.toFun p.1, right.toFun p.2)
 
 def sumProdNat : (Nat ⊕ (Nat × Nat)) ≃ᵢ Nat :=
   toNatSum (Iso.refl Nat) prodNat
@@ -426,31 +444,27 @@ def finProdProdNat (k : Nat) (hk : 0 < k) :
 theorem finProdProdNat_toFun_snd_fst_le (k : Nat) (hk : 0 < k)
     (p : Fin k × (Nat × Nat)) :
     p.2.1 ≤ (finProdProdNat k hk).toFun p := by
-  dsimp [finProdProdNat, toNatFinProd, Iso.trans, Iso.prod]
   exact Nat.le_trans (prodNat_toFun_fst_le p.2)
-    (finProdNat_toFun_snd_le k hk (p.1, prodNat.toFun p.2))
+    (toNatFinProd_payloadCode_le k hk prodNat p)
 
 theorem finProdProdNat_toFun_snd_snd_le (k : Nat) (hk : 0 < k)
     (p : Fin k × (Nat × Nat)) :
     p.2.2 ≤ (finProdProdNat k hk).toFun p := by
-  dsimp [finProdProdNat, toNatFinProd, Iso.trans, Iso.prod]
   exact Nat.le_trans (prodNat_toFun_snd_le p.2)
-    (finProdNat_toFun_snd_le k hk (p.1, prodNat.toFun p.2))
+    (toNatFinProd_payloadCode_le k hk prodNat p)
 
 def natProdProdNat : (Nat × (Nat × Nat)) ≃ᵢ Nat :=
   toNatProd (Iso.refl Nat) prodNat
 
 theorem natProdProdNat_toFun_snd_fst_le (p : Nat × (Nat × Nat)) :
     p.2.1 ≤ natProdProdNat.toFun p := by
-  dsimp [natProdProdNat, toNatProd, Iso.trans, Iso.prod]
   exact Nat.le_trans (prodNat_toFun_fst_le p.2)
-    (prodNat_toFun_snd_le (p.1, prodNat.toFun p.2))
+    (toNatProd_rightCode_le (Iso.refl Nat) prodNat p)
 
 theorem natProdProdNat_toFun_snd_snd_le (p : Nat × (Nat × Nat)) :
     p.2.2 ≤ natProdProdNat.toFun p := by
-  dsimp [natProdProdNat, toNatProd, Iso.trans, Iso.prod]
   exact Nat.le_trans (prodNat_toFun_snd_le p.2)
-    (prodNat_toFun_snd_le (p.1, prodNat.toFun p.2))
+    (toNatProd_rightCode_le (Iso.refl Nat) prodNat p)
 
 /--
 Code a possibly empty finite-tagged product together with a plain `Nat` tail.
