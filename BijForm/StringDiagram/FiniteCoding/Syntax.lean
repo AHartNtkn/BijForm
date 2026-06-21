@@ -893,42 +893,18 @@ private theorem singleSortedFiniteLayer_shape_child_rank_lt
                               (Sum.inr (entry, payload)))
                         (by rw [hlenExcept]; omega) hz
 
-/-- Rank descent for the generic finite single-sorted layer compiler. -/
-theorem singleSortedFiniteLayer_child_rank_lt
-    {Sig : Signature} (data : SingleSortedFiniteCodingData Sig) :
-    ∀ {boundary : List Sig.Port}
-      (z : (openFrontierShape Sig boundary).Carrier)
-      (q : (poly Sig).Pos
-          ((inversion Sig).decode boundary
-            (((singleSortedFiniteCarrierLayer data).iso boundary).invFun z).1).ctor
-          ((inversion Sig).decode boundary
-            (((singleSortedFiniteCarrierLayer data).iso boundary).invFun z).1).param),
-      singleSortedFiniteRank data
-          ((poly Sig).input
-            ((inversion Sig).decode boundary
-              (((singleSortedFiniteCarrierLayer data).iso boundary).invFun z).1).param q)
-          ((((singleSortedFiniteCarrierLayer data).iso boundary).invFun z).2 q) <
-        singleSortedFiniteRank data boundary z := by
-  intro boundary z q
-  let shape := (singleSortedFiniteLayerShapeCarrierIso data boundary).invFun z
-  have h :=
-    singleSortedFiniteLayer_shape_child_rank_lt
-      (data := data) (boundary := boundary) shape q
-  simpa [shape, singleSortedFiniteCarrierLayer, CodeLayerPresentation.iso,
-    CodeLayerPresentation.transCarrier, CodeLayerPresentation.ofMaps,
-    singleSortedFiniteLayerPresentation] using h
-
 /-- Generic generated shape-code data for finite single-sorted string diagrams. -/
 def singleSortedFiniteGeneratedShapeCode
     (Sig : Signature) (data : SingleSortedFiniteCodingData Sig) :
     GeneratedShapeCode (poly Sig) :=
-  ((LayerShapePresentation.ofComponents
+  ((LayerShapePresentation.ofShapeChildRank
     (singleSortedFiniteLayerPresentation data)
     (singleSortedFiniteLayerShapeCarrierIso data)
     (singleSortedFiniteRank data)
     (by
-      intro boundary z q
-      exact singleSortedFiniteLayer_child_rank_lt data z q)).toShapeLayerPresentation
+      intro boundary shape q
+      exact singleSortedFiniteLayer_shape_child_rank_lt
+        (data := data) (boundary := boundary) shape q)).toShapeLayerPresentation
         (openFrontierShape Sig)).generatedCode
 
 /-- Empty-frontier syntax is generated as the singleton finite carrier. -/

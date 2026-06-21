@@ -912,6 +912,30 @@ def ofLayerChildRank
       layer_child_rank_lt (((layerShape.transCarrier carrier).iso i).invFun z) q
 
 /--
+Build a layer-shape presentation from a descent proof over the intermediate
+shape carrier.
+-/
+def ofShapeChildRank
+    (layerShape : CodeLayerPresentation P H Code Shape)
+    (carrier : ∀ i, Shape i ≃ᵢ Code i)
+    (rank : ∀ i, Code i → Nat)
+    (shape_child_rank_lt :
+      ∀ {i : ι} (shape : Shape i)
+        (q : P.Pos (H.decode i ((layerShape.fromCarrier i shape).1)).ctor
+            (H.decode i ((layerShape.fromCarrier i shape).1)).param),
+        rank (P.input (H.decode i ((layerShape.fromCarrier i shape).1)).param q)
+            ((layerShape.fromCarrier i shape).2 q) <
+          rank i ((carrier i).toFun shape)) :
+    LayerShapePresentation P H Code Shape where
+  layerShape := layerShape
+  carrier := carrier
+  rank := rank
+  child_rank_lt := by
+    intro i z q
+    simpa [CodeLayerPresentation.iso, CodeLayerPresentation.transCarrier] using
+      shape_child_rank_lt ((carrier i).invFun z) q
+
+/--
 Build a layer-shape presentation when the generated shape is the carrier
 family itself.  Examples supply the domain-specific one-step isomorphism and
 rank proof; the library owns the presentation assembly.
