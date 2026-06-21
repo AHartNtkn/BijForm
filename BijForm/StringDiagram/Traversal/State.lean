@@ -326,6 +326,9 @@ theorem initial_renderPrefixRelated
         RenderState.portHypergraphEvidenceOfInvariants,
         RenderState.boundaryEvidenceOfPrefix]
       simp
+      simpa using listPrefixIndex_val
+        (Diag.renderTraceFromBoundary_endpointPrefix d).endpoints_eq
+        ⟨i, by simpa [RenderState.initial] using hright⟩
   processed_prefix := by
     intro edge
     simp [initial, RenderState.initial]

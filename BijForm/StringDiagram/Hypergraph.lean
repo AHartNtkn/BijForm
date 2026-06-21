@@ -839,6 +839,9 @@ theorem toOpenPortHypergraph_connect_boundary_edgeMate
       RenderState.portHypergraphEvidenceOfInvariants,
       RenderState.boundaryEvidenceOfPrefix, edge] at *
     rw [hedgeIndex]
+    simpa [edge] using
+      RenderState.boundaryEvidenceOfPrefix_boundaryPort_val
+        (renderTraceFromBoundary_endpointPrefix d) ⟨0, by simp⟩
   have hmateVal :
       (G.raw.boundaryPort ⟨mate.val + 1, by
         simp⟩).val =
@@ -850,6 +853,12 @@ theorem toOpenPortHypergraph_connect_boundary_edgeMate
       RenderState.portHypergraphEvidenceOfInvariants,
       RenderState.boundaryEvidenceOfPrefix, edge] at *
     rw [hedgeIndex]
+    have hboundaryVal :
+        (listPrefixIndex (renderTraceFromBoundary_endpointPrefix d).endpoints_eq
+            ⟨mate.val + 1, by simp⟩).val = mate.val + 1 :=
+      listPrefixIndex_val (renderTraceFromBoundary_endpointPrefix d).endpoints_eq
+        ⟨mate.val + 1, by simp⟩
+    rw [hboundaryVal]
     simp [restIds]
   constructor
   · intro hsame
@@ -962,6 +971,9 @@ theorem toOpenPortHypergraph_bud_boundary_entry_edgeMate
         RenderState.portHypergraphEvidenceOfInvariants,
         RenderState.boundaryEvidenceOfPrefix, edge] at *
       rw [hedgeIndex]
+      simpa [edge] using
+        RenderState.boundaryEvidenceOfPrefix_boundaryPort_val
+          (renderTraceFromBoundary_endpointPrefix d) ⟨0, by simp⟩
     have hincidentVal :
         ((G.raw.incident nodeIndex).get slot).val =
           (st.edges.get edgeIndex).right := by

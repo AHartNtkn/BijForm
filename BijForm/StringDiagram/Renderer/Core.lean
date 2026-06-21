@@ -237,11 +237,7 @@ def boundaryEvidenceOfPrefix {Sig : Signature} {st : RenderState Sig []}
     {boundary : List Sig.Port}
     (pref : EndpointPrefix st boundary) :
     BoundaryEvidence st boundary where
-  boundaryPort := fun b =>
-    ⟨b.val, by
-      rw [pref.endpoints_eq]
-      simp
-      omega⟩
+  boundaryPort := fun b => listPrefixIndex pref.endpoints_eq b
   boundary_injective := by
     intro left right h
     apply Fin.ext
@@ -249,29 +245,13 @@ def boundaryEvidenceOfPrefix {Sig : Signature} {st : RenderState Sig []}
     exact congrArg (fun x : Fin st.endpoints.length => x.val) h
   boundary_label := by
     intro b
-    have hbound : b.val < st.endpoints.length := by
-      rw [pref.endpoints_eq]
-      simp
-      omega
-    change st.endpoints[b.val]'hbound = boundary[b.val]
-    have hopt : st.endpoints[b.val]? = boundary[b.val]? := by
-      rw [pref.endpoints_eq]
-      exact List.getElem?_append_left (l₁ := boundary)
-        (l₂ := pref.suffix) b.isLt
-    have hstSome :
-        st.endpoints[b.val]? = some (st.endpoints[b.val]'hbound) :=
-      List.getElem?_eq_getElem hbound
-    have hboundarySome :
-        boundary[b.val]? = some boundary[b.val] :=
-      List.getElem?_eq_getElem b.isLt
-    rw [hstSome, hboundarySome] at hopt
-    simpa using hopt
+    exact listPrefixIndex_get pref.endpoints_eq b
 
 theorem boundaryEvidenceOfPrefix_boundaryPort_val {Sig : Signature}
     {st : RenderState Sig []} {boundary : List Sig.Port}
     (pref : EndpointPrefix st boundary) (b : Fin boundary.length) :
     ((boundaryEvidenceOfPrefix pref).boundaryPort b).val = b.val :=
-  rfl
+  listPrefixIndex_val pref.endpoints_eq b
 
 theorem boundaryEvidenceOfPrefix_exists_of_boundary_id {Sig : Signature}
     {st : RenderState Sig []} {boundary : List Sig.Port}
