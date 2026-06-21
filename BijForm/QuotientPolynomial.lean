@@ -102,33 +102,6 @@ theorem exact (Q : QuotientPresentation P) {i : ι} {x y : Mu P i}
     (h : ofMu Q x = ofMu Q y) : Rel Q i x y :=
   Quotient.exact h
 
-namespace Mu
-
-/-- Fold out of the polynomial initial algebra into any indexed algebra. -/
-def fold {P : DepPoly ι} {A : ι → Type v}
-    (alg : ∀ i, Obj P A i → A i) : ∀ i, Mu P i → A i
-  | i, Mu.sup c p h child =>
-      alg i
-        { ctor := c
-          param := p
-          out_eq := h
-          child := fun q => fold alg (P.input p q) (child q) }
-
-@[simp]
-theorem fold_sup {P : DepPoly ι} {A : ι → Type v}
-    (alg : ∀ i, Obj P A i → A i)
-    {i : ι} (c : P.Ctor) (p : P.Param c) (h : P.out c p = i)
-    (child : (q : P.Pos c p) → Mu P (P.input p q)) :
-    fold alg i (Mu.sup c p h child) =
-      alg i
-        { ctor := c
-          param := p
-          out_eq := h
-          child := fun q => fold alg (P.input p q) (child q) } :=
-  rfl
-
-end Mu
-
 /-- Introduce a raw polynomial constructor layer into the quotient carrier. -/
 def innRaw (Q : QuotientPresentation P) {i : ι}
     (x : Obj P (Mu P) i) : Carrier Q i :=

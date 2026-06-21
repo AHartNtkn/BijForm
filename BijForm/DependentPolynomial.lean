@@ -162,6 +162,33 @@ theorem Mu_inn_out {P : DepPoly ι} {i : ι} (x : Mu P i) :
   cases x
   rfl
 
+namespace Mu
+
+/-- Fold out of the polynomial initial algebra into any indexed algebra. -/
+def fold {P : DepPoly ι} {A : ι → Type v}
+    (alg : ∀ i, Obj P A i → A i) : ∀ i, Mu P i → A i
+  | i, Mu.sup c p h child =>
+      alg i
+        { ctor := c
+          param := p
+          out_eq := h
+          child := fun q => fold alg (P.input p q) (child q) }
+
+@[simp]
+theorem fold_sup {P : DepPoly ι} {A : ι → Type v}
+    (alg : ∀ i, Obj P A i → A i)
+    {i : ι} (c : P.Ctor) (p : P.Param c) (h : P.out c p = i)
+    (child : (q : P.Pos c p) → Mu P (P.input p q)) :
+    fold alg i (Mu.sup c p h child) =
+      alg i
+        { ctor := c
+          param := p
+          out_eq := h
+          child := fun q => fold alg (P.input p q) (child q) } :=
+  rfl
+
+end Mu
+
 def Layer (P : DepPoly ι) (Code : ι → Type v) (i : ι) : Type (max u v) :=
   Σ f : Fiber P i, (q : P.Pos f.ctor f.param) → Code (P.input f.param q)
 
