@@ -501,104 +501,55 @@ Code a possibly empty finite-tagged product together with a plain `Nat` tail.
 When the finite side is empty, the tail is coded by the identity; otherwise the
 finite product occupies the even numbers and the tail occupies the odd numbers.
 -/
-def finProdNatOrNat (k : Nat) : ((Fin k × Nat) ⊕ Nat) ≃ᵢ Nat where
-  toFun
-    | Sum.inl p =>
-        if h : 0 < k then
-          2 * (finProdNat k h).toFun p
-        else
-          False.elim (Nat.not_lt_zero p.1.val (by
-            have hzero : k = 0 := Nat.eq_zero_of_not_pos h
-            simpa [hzero] using p.1.isLt))
-    | Sum.inr n =>
-        if k = 0 then n else 2 * n + 1
-  invFun n :=
-    if h : 0 < k then
-      if hp : n % 2 = 0 then
-        Sum.inl ((finProdNat k h).invFun (n / 2))
-      else
-        Sum.inr (n / 2)
-    else
-      Sum.inr n
-  left_inv := by
-    intro x
-    cases x with
-    | inl p =>
-        dsimp
-        by_cases h : 0 < k
-        · let code := (finProdNat k h).toFun p
-          have hmod : (2 * code) % 2 = 0 := Nat.mul_mod_right 2 code
-          have hdiv : (2 * code) / 2 = code :=
-            Nat.mul_div_right code (by decide : 0 < 2)
-          simp [h, hmod, hdiv, code]
-        · exact False.elim (Nat.not_lt_zero p.1.val (by
-            have hzero : k = 0 := Nat.eq_zero_of_not_pos h
-            simpa [hzero] using p.1.isLt))
-    | inr n =>
-        dsimp
-        by_cases hk0 : k = 0
-        · simp [hk0, Nat.lt_irrefl]
-        · have hpos : 0 < k := Nat.pos_of_ne_zero hk0
-          have hmod : (2 * n + 1) % 2 ≠ 0 := by
-            have hcalc : (2 * n + 1) % 2 = 1 := by
-              calc
-                (2 * n + 1) % 2 = (1 + 2 * n) % 2 := by rw [Nat.add_comm]
-                _ = 1 % 2 := Nat.add_mul_mod_self_left 1 2 n
-                _ = 1 := Nat.mod_eq_of_lt (by decide : 1 < 2)
-            omega
-          have hdiv : (2 * n + 1) / 2 = n := by
-            calc
-              (2 * n + 1) / 2 = (1 + n * 2) / 2 := by
-                rw [Nat.add_comm, Nat.mul_comm 2 n]
-              _ = 1 / 2 + n := Nat.add_mul_div_right 1 n (by decide : 0 < 2)
-              _ = n := by
-                rw [Nat.div_eq_of_lt (by decide : 1 < 2)]
-                exact Nat.zero_add n
-          simp [hpos, hk0, hdiv]
-  right_inv := by
-    intro n
-    dsimp
-    by_cases h : 0 < k
-    · by_cases hp : n % 2 = 0
-      · simp [h, hp]
-        have hsplit := Nat.div_add_mod n 2
-        omega
-      · simp [h, hp]
-        have hne : ¬k = 0 := Nat.ne_of_gt h
-        have hsplit := Nat.div_add_mod n 2
-        rcases Nat.mod_two_eq_zero_or_one n with h0 | h1
-        · exact False.elim (hp h0)
-        · simp [hne]
-          omega
-    · have hzero : k = 0 := Nat.eq_zero_of_not_pos h
-      simp [hzero]
+def finProdNatOrNat (k : Nat) : ((Fin k × Nat) ⊕ Nat) ≃ᵢ Nat := by
+  if h : 0 < k then
+    exact toNatSum (finProdNat k h) (Iso.refl Nat)
+  else
+    exact
+      { toFun
+          | Sum.inl p => False.elim (Nat.not_lt_zero p.1.val (by
+              have hzero : k = 0 := Nat.eq_zero_of_not_pos h
+              simpa [hzero] using p.1.isLt))
+          | Sum.inr n => n
+        invFun := Sum.inr
+        left_inv := by
+          intro x
+          cases x with
+          | inl p =>
+              exact False.elim (Nat.not_lt_zero p.1.val (by
+                have hzero : k = 0 := Nat.eq_zero_of_not_pos h
+                simpa [hzero] using p.1.isLt))
+          | inr n => rfl
+        right_inv := by
+          intro n
+          rfl }
+
+theorem finProdNatOrNat_eq_toNatSum_of_pos {k : Nat} (h : 0 < k) :
+    finProdNatOrNat k = toNatSum (finProdNat k h) (Iso.refl Nat) := by
+  simp [finProdNatOrNat, h]
 
 theorem finProdNatOrNat_inl_snd_le (k : Nat) (p : Fin k × Nat) :
     p.2 ≤ (finProdNatOrNat k).toFun (Sum.inl p) := by
-  dsimp [finProdNatOrNat]
   by_cases h : 0 < k
-  · have hpayload : p.2 ≤ (finProdNat k h).toFun p :=
-      finProdNat_toFun_snd_le k h p
-    simp [h]
-    omega
+  · rw [finProdNatOrNat_eq_toNatSum_of_pos h]
+    exact toNatSum_inl_le_of_le (finProdNat k h) (Iso.refl Nat)
+      (finProdNat_toFun_snd_le k h p)
   · exact False.elim (Nat.not_lt_zero p.1.val (by
       have hzero : k = 0 := Nat.eq_zero_of_not_pos h
       simpa [hzero] using p.1.isLt))
 
 theorem finProdNatOrNat_inr_le (k n : Nat) :
     n ≤ (finProdNatOrNat k).toFun (Sum.inr n) := by
-  dsimp [finProdNatOrNat]
-  by_cases h : k = 0
-  · simp [h]
-  · simp [h]
-    omega
+  by_cases h : 0 < k
+  · rw [finProdNatOrNat_eq_toNatSum_of_pos h]
+    exact Nat.le_of_lt
+      (toNatSum_inr_lt_of_le (finProdNat k h) (Iso.refl Nat) (Nat.le_refl n))
+  · simp [finProdNatOrNat, h]
 
 theorem finProdNatOrNat_inr_lt_of_pos {k n : Nat} (hk : 0 < k) :
     n < (finProdNatOrNat k).toFun (Sum.inr n) := by
-  have hk0 : ¬k = 0 := Nat.ne_of_gt hk
-  dsimp [finProdNatOrNat]
-  simp [hk0]
-  omega
+  rw [finProdNatOrNat_eq_toNatSum_of_pos hk]
+  exact toNatSum_inr_lt_of_le (finProdNat k hk) (Iso.refl Nat) (Nat.le_refl n)
 
 /--
 Code either a bare finite tag or a recursive product with the same tag into a

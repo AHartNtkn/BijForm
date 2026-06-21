@@ -328,7 +328,7 @@ theorem NFGeneratedLayer_child_rank_lt :
                                   Γ NFSort.normalExp).toFun
                                   ⟨FiberCode.op NFCtor.lam rfl, child⟩) =
                               normalExpCount Γ + tail := by
-                          simp [body, tail, hpos, hc, NFGeneratedShapeIso,
+                          simp [body, tail, hpos, NFGeneratedShapeIso,
                             NFNormalGeneratedShapeIso, NFNormalFamilyCarrierIso,
                             NFNormalFamilyToCarrier, LayerShape.iso,
                             LayerShape.layerToShape, LayerShape.familyIso,
