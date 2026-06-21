@@ -236,23 +236,32 @@ theorem canonical_ext_param {P : DepPoly ι} {Code : ι → Type v} {i : ι}
 
 end CodeLayer
 
+/-- Prove child-function eta facts by splitting the child-position type. -/
+syntax "child_eta_cases" : tactic
+macro_rules
+  | `(tactic| child_eta_cases) =>
+      `(tactic|
+        first
+        | (funext q; cases q <;> rfl)
+        | (symm; funext q; cases q <;> rfl))
+
 /-- Prove child-function eta facts for constructors with no recursive positions. -/
 syntax "child_eta_empty" : tactic
 macro_rules
   | `(tactic| child_eta_empty) =>
-      `(tactic| first | (funext q; cases q) | (symm; funext q; cases q))
+      `(tactic| child_eta_cases)
 
 /-- Prove child-function eta facts for constructors with one recursive position. -/
 syntax "child_eta_unit" : tactic
 macro_rules
   | `(tactic| child_eta_unit) =>
-      `(tactic| first | (funext q; cases q; rfl) | (symm; funext q; cases q; rfl))
+      `(tactic| child_eta_cases)
 
 /-- Prove child-function eta facts for constructors with boolean recursive positions. -/
 syntax "child_eta_bool" : tactic
 macro_rules
   | `(tactic| child_eta_bool) =>
-      `(tactic| first | (funext q; cases q <;> rfl) | (symm; funext q; cases q <;> rfl))
+      `(tactic| child_eta_cases)
 
 def castFiberChild {P : DepPoly ι} {Code : ι → Type v} {i : ι}
     {f g : Fiber P i} (h : f = g)
