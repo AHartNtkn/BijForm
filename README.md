@@ -111,8 +111,8 @@ lake exe bijform
   `BijForm.StringDiagram.Renderer`, `BijForm.StringDiagram.Polynomial`,
   `BijForm.StringDiagram.Hypergraph`, `BijForm.StringDiagram.Traversal`, and
   `BijForm.StringDiagram.Bridge`, all re-exported by `BijForm.StringDiagram`.
-  The syntax-to-graph-to-syntax inverse is proved; the graph-to-syntax-to-graph
-  inverse remains an explicitly unfinished proof gap:
+  The syntax-to-graph-to-syntax and graph-to-syntax-to-graph inverse laws are
+  proved:
   - `StringDiagram.Signature`
   - `StringDiagram.Signature.nodePortsExcept_eq_of_val`
   - `StringDiagram.Unoriented.signature`
@@ -427,6 +427,19 @@ lake exe bijform
   - `StringDiagram.OpenPortHypergraph.SearchState.GraphRenderRelated.seenNodes_nodup`
   - `StringDiagram.OpenPortHypergraph.SearchState.GraphRenderRelated.pending_cons_values`
   - `StringDiagram.OpenPortHypergraph.SearchState.GraphRenderRelated.frontier_id_bound_of_mem`
+  - `StringDiagram.OpenPortHypergraph.SearchState.GraphRenderRelated.connectChild`
+  - `StringDiagram.OpenPortHypergraph.SearchState.endpointOrder_budChild`
+  - `StringDiagram.OpenPortHypergraph.SearchState.edgeOrder_budChild`
+  - `StringDiagram.OpenPortHypergraph.SearchState.nodeOrder_budChild`
+  - `StringDiagram.OpenPortHypergraph.SearchState.budStep_edges_get_old`
+  - `StringDiagram.OpenPortHypergraph.SearchState.budStep_edges_get_new`
+  - `StringDiagram.OpenPortHypergraph.SearchState.budStep_nodes_get_old`
+  - `StringDiagram.OpenPortHypergraph.SearchState.budStep_nodes_get_new`
+  - `StringDiagram.OpenPortHypergraph.SearchState.budStep_endpoints_get_old`
+  - `StringDiagram.OpenPortHypergraph.SearchState.budStep_endpoints_get_new`
+  - `StringDiagram.OpenPortHypergraph.SearchState.GraphRenderRelated.budChild`
+  - `StringDiagram.OpenPortHypergraph.SearchState.GraphRenderRelated.finish`
+  - `StringDiagram.OpenPortHypergraph.SearchState.GraphRenderRelated.toDiag`
   - `StringDiagram.OpenPortHypergraph.SearchState.endpoint_mem_endpointOrder_of_graphExhausted`
   - `StringDiagram.OpenPortHypergraph.SearchState.edge_mem_edgeOrder_of_graphExhausted`
   - `StringDiagram.OpenPortHypergraph.SearchState.node_mem_nodeOrder_of_graphExhausted`
@@ -440,8 +453,8 @@ lake exe bijform
   - `StringDiagram.OpenPortHypergraph.firstPendingTraversalReady_of_frontierComplete`
   - `StringDiagram.OpenPortHypergraph.fromGraph_respects_iso`
   - `StringDiagram.Diag.fromGraph_toOpenPortHypergraph`
-  - `StringDiagram.OpenPortHypergraph.toOpenPortHypergraph_fromGraph_iso` (unfinished inverse-law proof gap)
-  - `StringDiagram.diagOpenPortHypergraphIso` (depends on the unfinished graph inverse declaration)
+  - `StringDiagram.OpenPortHypergraph.toOpenPortHypergraph_fromGraph_iso`
+  - `StringDiagram.diagOpenPortHypergraphIso`
 
 - `BijForm.Examples`
   Imports the worked example modules:
