@@ -99,9 +99,39 @@ def PeanoSyntaxToLayer (k : Nat) :
       | true => rhs⟩
   | .forallE e => ⟨⟨PeanoCtor.forallE, (k : Nat), rfl⟩, fun _ => e⟩
 
-def PeanoSyntaxLayerPresentation :
-    CodeLayerPresentation PeanoPoly PeanoInversion PeanoSyntax PeanoSyntax :=
-  CodeLayerPresentation.ofMaps
+theorem Peano_layer_child_rank_lt :
+    ∀ {k : Nat} (z : PeanoSyntax k)
+      (q : PeanoPoly.Pos
+          (PeanoInversion.decode k (PeanoSyntaxToLayer k z).1).ctor
+          (PeanoInversion.decode k (PeanoSyntaxToLayer k z).1).param),
+      PeanoSyntax.rank ((PeanoSyntaxToLayer k z).2 q) <
+        PeanoSyntax.rank z := by
+  intro k z q
+  cases z with
+  | eq lhs rhs => cases q
+  | not e =>
+      cases q
+      simp [PeanoSyntaxToLayer, PeanoInversion,
+        OutputIndexInversion.canonical,
+        PeanoSyntax.rank]
+  | implies lhs rhs =>
+      cases q
+      · simpa [PeanoSyntaxToLayer, PeanoInversion,
+          OutputIndexInversion.canonical,
+          PeanoSyntax.rank] using
+          Nat.lt_succ_of_le (Nat.le_max_left (PeanoSyntax.rank lhs) (PeanoSyntax.rank rhs))
+      · simpa [PeanoSyntaxToLayer, PeanoInversion,
+          OutputIndexInversion.canonical,
+          PeanoSyntax.rank] using
+          Nat.lt_succ_of_le (Nat.le_max_right (PeanoSyntax.rank lhs) (PeanoSyntax.rank rhs))
+  | forallE e =>
+      cases q
+      simp [PeanoSyntaxToLayer, PeanoInversion,
+        OutputIndexInversion.canonical,
+        PeanoSyntax.rank]
+
+def PeanoSyntaxPresentation : SyntaxPresentation PeanoPoly PeanoInversion PeanoSyntax :=
+  SyntaxPresentation.ofLayerMaps
     PeanoLayerToSyntax
     PeanoSyntaxToLayer
     (by
@@ -151,51 +181,6 @@ def PeanoSyntaxLayerPresentation :
     (by
       intro k e
       cases e <;> simp [PeanoLayerToSyntax, PeanoSyntaxToLayer])
-
-theorem Peano_layer_child_rank_lt :
-    ∀ {k : Nat} (z : PeanoSyntax k)
-      (q : PeanoPoly.Pos
-          (PeanoInversion.decode k
-            ((PeanoSyntaxLayerPresentation.iso k).invFun z).1).ctor
-          (PeanoInversion.decode k
-            ((PeanoSyntaxLayerPresentation.iso k).invFun z).1).param),
-      PeanoSyntax.rank (((PeanoSyntaxLayerPresentation.iso k).invFun z).2 q) <
-        PeanoSyntax.rank z := by
-  intro k z q
-  cases z with
-  | eq lhs rhs => cases q
-  | not e =>
-      cases q
-      simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofMaps,
-        PeanoSyntaxLayerPresentation, PeanoSyntaxToLayer,
-        PeanoInversion,
-        OutputIndexInversion.canonical,
-        PeanoSyntax.rank]
-  | implies lhs rhs =>
-      cases q
-      · simpa [CodeLayerPresentation.iso, CodeLayerPresentation.ofMaps,
-          PeanoSyntaxLayerPresentation,
-          PeanoSyntaxToLayer, PeanoInversion,
-          OutputIndexInversion.canonical,
-          PeanoSyntax.rank] using
-          Nat.lt_succ_of_le (Nat.le_max_left (PeanoSyntax.rank lhs) (PeanoSyntax.rank rhs))
-      · simpa [CodeLayerPresentation.iso, CodeLayerPresentation.ofMaps,
-          PeanoSyntaxLayerPresentation,
-          PeanoSyntaxToLayer, PeanoInversion,
-          OutputIndexInversion.canonical,
-          PeanoSyntax.rank] using
-          Nat.lt_succ_of_le (Nat.le_max_right (PeanoSyntax.rank lhs) (PeanoSyntax.rank rhs))
-  | forallE e =>
-      cases q
-      simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofMaps,
-        PeanoSyntaxLayerPresentation, PeanoSyntaxToLayer,
-        PeanoInversion,
-        OutputIndexInversion.canonical,
-        PeanoSyntax.rank]
-
-def PeanoSyntaxPresentation : SyntaxPresentation PeanoPoly PeanoInversion PeanoSyntax :=
-  SyntaxPresentation.ofLayer
-    PeanoSyntaxLayerPresentation
     (fun _ e => PeanoSyntax.rank e)
     Peano_layer_child_rank_lt
 
