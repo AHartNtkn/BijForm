@@ -1285,9 +1285,7 @@ theorem RenderPrefixRelated.connectChild_pending_vals
       have hids : rst.frontierIds = activeId :: restIds := hidsCase
       have hvals := hrel.pending_cons_values hpending hids
       have hrestLen : restIds.length = frontier.length := by
-        have hlen := rst.frontierIds_length
-        rw [hids] at hlen
-        exact Nat.succ.inj hlen
+        exact RenderState.frontierIds_cons_tail_length rst hids
       rw [Diag.connectStep_frontierIds rendererMate ok rst hids]
       simp [connectChild]
       have hmap :
