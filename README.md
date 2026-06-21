@@ -41,8 +41,14 @@ lake exe bijform
 
 - `BijForm.Coding`
   Defines the project-local `Iso` structure and basic iso combinators for
-  reflexivity, symmetry, transitivity, products, and sums.
-  - `Iso.ofRightInverseInjective`
+  reflexivity, symmetry, transitivity, products, and sums, plus reusable finite
+  subtype tables.
+  - `FiniteSubtypeTable`
+  - `FiniteSubtypeTable.toFin`
+  - `FiniteSubtypeTable.ofFin`
+  - `FiniteSubtypeTable.ofFin_toFin`
+  - `FiniteSubtypeTable.toFin_ofFin`
+  - `FiniteSubtypeTable.iso`
 
 - `BijForm.Pairing`
   Defines and proves the shell-based pairing function on `Nat x Nat`.
