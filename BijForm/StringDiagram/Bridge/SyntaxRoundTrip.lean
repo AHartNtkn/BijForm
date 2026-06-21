@@ -623,42 +623,8 @@ theorem renderTrace_bud_entry_edgeMate_exact_of_invariants
     have hget :
         ((G.incident nodeIndex).get slot).val =
           nodeEndpoints.get entryIdx := by
-      have hopt := congrArg (fun xs : List Nat => xs[entry.val]?) hincidentVals
-      have hleftBound : entry.val < (G.incident nodeIndex).length := by
-        have hlen := G.incident_length nodeIndex
-        rw [hnodeLabel] at hlen
-        simp [hlen]
-      have hrightBound : entry.val < nodeEndpoints.length := by
-        simp [nodeEndpoints]
-      have hleftSome :
-          ((G.incident nodeIndex).map
-              (fun endpoint => endpoint.val))[entry.val]? =
-            some (((G.incident nodeIndex).map
-              (fun endpoint => endpoint.val)).get
-                ⟨entry.val, by simpa using hleftBound⟩) :=
-        List.getElem?_eq_getElem (by simpa using hleftBound)
-      have hrightSome :
-          nodeEndpoints[entry.val]? =
-            some (nodeEndpoints.get ⟨entry.val, hrightBound⟩) :=
-        List.getElem?_eq_getElem hrightBound
-      change
-        ((G.incident nodeIndex).map
-            (fun endpoint => endpoint.val))[entry.val]? =
-          nodeEndpoints[entry.val]? at hopt
-      rw [hleftSome, hrightSome] at hopt
-      injection hopt with hval
-      have hval' :
-          ((G.incident nodeIndex).get ⟨entry.val, hleftBound⟩).val =
-            nodeEndpoints.get ⟨entry.val, hrightBound⟩ := by
-        simpa using hval
-      have hslotEq : slot = ⟨entry.val, hleftBound⟩ := by
-        apply Fin.ext
-        exact hslotVal
-      have hentryIdxEq : entryIdx = ⟨entry.val, hrightBound⟩ := by
-        apply Fin.ext
-        rfl
-      rw [hslotEq, hentryIdxEq]
-      exact hval'
+      exact list_get_map_eq_get_of_val_eq (fun endpoint => endpoint.val)
+        hincidentVals slot entryIdx (by simpa [entryIdx] using hslotVal)
     exact hget.trans hrightEq.symm
   refine ⟨hactiveBound, nodeIndex, slot, rfl, hnodeLabel, hslotVal,
     hincidentVals, ?_⟩
@@ -788,43 +754,12 @@ theorem renderTrace_bud_entry_edgeMate_of_invariants
                 rw [hincidentList]
                 simp [nodeEndpoints]) entry) =
             nodeEndpoints.get entryIdx := by
-        have hleftBound :
-            entry.val < (final.nodes.get nodeIndex).incident.length := by
-          rw [hincidentList]
-          simp [nodeEndpoints]
-        have hrightBound : entry.val < nodeEndpoints.length := by
-          simp [nodeEndpoints]
-        have hleftIdx :
-            (Fin.cast (by
-              rw [hincidentList]
-              simp [nodeEndpoints]) entry :
-                Fin (final.nodes.get nodeIndex).incident.length) =
-              ⟨entry.val, hleftBound⟩ := by
-          apply Fin.ext
-          rfl
-        have hrightIdx : entryIdx = ⟨entry.val, hrightBound⟩ := by
-          apply Fin.ext
-          rfl
-        have hopt :
-            (final.nodes.get nodeIndex).incident[entry.val]? =
-              nodeEndpoints[entry.val]? := by
-          rw [hincidentList]
-        have hleftSome :
-            (final.nodes.get nodeIndex).incident[entry.val]? =
-              some ((final.nodes.get nodeIndex).incident.get
-                ⟨entry.val, hleftBound⟩) :=
-          List.getElem?_eq_getElem hleftBound
-        have hrightSome :
-            nodeEndpoints[entry.val]? =
-              some (nodeEndpoints.get ⟨entry.val, hrightBound⟩) :=
-          List.getElem?_eq_getElem hrightBound
-        have hget :
-            (final.nodes.get nodeIndex).incident.get ⟨entry.val, hleftBound⟩ =
-              nodeEndpoints.get ⟨entry.val, hrightBound⟩ := by
-          rw [hleftSome, hrightSome] at hopt
-          injection hopt with hget
-        rw [hleftIdx, hrightIdx]
-        exact hget
+        exact list_get_of_eq_of_val_eq hincidentList
+          (Fin.cast (by
+            rw [hincidentList]
+            simp [nodeEndpoints]) entry)
+          entryIdx
+          (by simp [entryIdx])
       dsimp [G, RenderState.PortHypergraphEvidence.toPortHypergraph,
         RenderState.portHypergraphEvidenceOfInvariants,
         RenderState.incidenceEvidenceOfValidIds,

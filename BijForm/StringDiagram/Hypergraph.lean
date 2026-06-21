@@ -1011,43 +1011,12 @@ theorem toOpenPortHypergraph_bud_boundary_entry_edgeMate
                 rw [hincidentList]
                 simp [nodeEndpoints]) entry) =
             nodeEndpoints.get entryIdx := by
-        have hleftBound :
-            entry.val < (st.nodes.get nodeIndex).incident.length := by
-          rw [hincidentList]
-          simp [nodeEndpoints]
-        have hrightBound : entry.val < nodeEndpoints.length := by
-          simp [nodeEndpoints]
-        have hleftIdx :
-            (Fin.cast (by
-              rw [hincidentList]
-              simp [nodeEndpoints]) entry :
-                Fin (st.nodes.get nodeIndex).incident.length) =
-              ⟨entry.val, hleftBound⟩ := by
-          apply Fin.ext
-          rfl
-        have hrightIdx : entryIdx = ⟨entry.val, hrightBound⟩ := by
-          apply Fin.ext
-          rfl
-        have hopt :
-            (st.nodes.get nodeIndex).incident[entry.val]? =
-              nodeEndpoints[entry.val]? := by
-          rw [hincidentList]
-        have hleftSome :
-            (st.nodes.get nodeIndex).incident[entry.val]? =
-              some ((st.nodes.get nodeIndex).incident.get
-                ⟨entry.val, hleftBound⟩) :=
-          List.getElem?_eq_getElem hleftBound
-        have hrightSome :
-            nodeEndpoints[entry.val]? =
-              some (nodeEndpoints.get ⟨entry.val, hrightBound⟩) :=
-          List.getElem?_eq_getElem hrightBound
-        have hget :
-            (st.nodes.get nodeIndex).incident.get ⟨entry.val, hleftBound⟩ =
-              nodeEndpoints.get ⟨entry.val, hrightBound⟩ := by
-          rw [hleftSome, hrightSome] at hopt
-          injection hopt with hget
-        rw [hleftIdx, hrightIdx]
-        exact hget
+        exact list_get_of_eq_of_val_eq hincidentList
+          (Fin.cast (by
+            rw [hincidentList]
+            simp [nodeEndpoints]) entry)
+          entryIdx
+          (by simp [entryIdx])
       dsimp [G, Diag.toOpenPortHypergraph,
         RenderState.OpenPortHypergraphEvidence.toOpenPortHypergraph,
         renderTraceFromBoundary_openEvidence, renderTraceFromBoundary_graphEvidence,
