@@ -920,13 +920,12 @@ def ofLayerMaps
     exact child_rank_lt z q
 
 def generatedCode (D : SyntaxPresentation P H Syntax) :
-    GeneratedCode P Syntax where
-  inversion := H
-  layer := D.layer.iso
-  rank := D.rank
-  child_rank_lt := by
-    intro i z q
-    exact D.child_rank_lt z q
+    GeneratedCode P Syntax :=
+  GeneratedCode.ofLayerChildRank H D.layer.iso D.rank (by
+    intro i x
+    rw [← (D.layer.iso i).left_inv x]
+    intro q
+    simpa using D.child_rank_lt ((D.layer.iso i).toFun x) q)
 
 def iso (D : SyntaxPresentation P H Syntax) (i : ι) : Mu P i ≃ᵢ Syntax i :=
   D.generatedCode.iso i
@@ -948,12 +947,12 @@ namespace NatLayerPresentation
 
 variable {P : DepPoly ι} {H : OutputIndexInversion P}
 
-def generatedCode (D : NatLayerPresentation P H) : GeneratedNatCode P where
-  inversion := H
-  layer := D.layer.iso
-  child_lt := by
-    intro i n q
-    exact D.child_lt n q
+def generatedCode (D : NatLayerPresentation P H) : GeneratedNatCode P :=
+  GeneratedNatCode.ofLayerChildLt H D.layer.iso (by
+    intro i x
+    rw [← (D.layer.iso i).left_inv x]
+    intro q
+    simpa using D.child_lt ((D.layer.iso i).toFun x) q)
 
 def iso (D : NatLayerPresentation P H) (i : ι) : Mu P i ≃ᵢ Nat :=
   D.generatedCode.iso i
@@ -978,13 +977,12 @@ namespace RankedNatLayerPresentation
 variable {P : DepPoly ι} {H : OutputIndexInversion P}
 
 def generatedCode (D : RankedNatLayerPresentation P H) :
-    GeneratedRankedNatCode P where
-  inversion := H
-  layer := D.layer.iso
-  rank := D.rank
-  child_rank_lt := by
-    intro i n q
-    exact D.child_rank_lt n q
+    GeneratedRankedNatCode P :=
+  GeneratedRankedNatCode.ofLayerChildRank H D.layer.iso D.rank (by
+    intro i x
+    rw [← (D.layer.iso i).left_inv x]
+    intro q
+    simpa using D.child_rank_lt ((D.layer.iso i).toFun x) q)
 
 def iso (D : RankedNatLayerPresentation P H) (i : ι) : Mu P i ≃ᵢ Nat :=
   D.generatedCode.iso i
@@ -1010,14 +1008,12 @@ namespace ShapeLayerPresentation
 
 variable {P : DepPoly ι} {H : OutputIndexInversion P}
 
-def generatedCode (D : ShapeLayerPresentation P H) : GeneratedShapeCode P where
-  shape := D.shape
-  inversion := H
-  layer := D.layer.iso
-  rank := D.rank
-  child_rank_lt := by
-    intro i z q
-    exact D.child_rank_lt z q
+def generatedCode (D : ShapeLayerPresentation P H) : GeneratedShapeCode P :=
+  GeneratedShapeCode.ofLayerChildRank D.shape H D.layer.iso D.rank (by
+    intro i x
+    rw [← (D.layer.iso i).left_inv x]
+    intro q
+    simpa using D.child_rank_lt ((D.layer.iso i).toFun x) q)
 
 def iso (D : ShapeLayerPresentation P H) (i : ι) :
     Mu P i ≃ᵢ (D.shape i).Carrier :=
