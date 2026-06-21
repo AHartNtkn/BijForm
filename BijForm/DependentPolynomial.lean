@@ -508,6 +508,16 @@ def finiteIso {s : CodeShape} {k : Nat} (h : s = finite k) :
   cases h
   exact Iso.refl (Fin k)
 
+/-- Indexed-family form of `infiniteIso`. -/
+def carrierNatIso {ι : Type u} (shape : ι → CodeShape) (i : ι)
+    (h : shape i = infinite) : Carrier (shape i) ≃ᵢ Nat :=
+  infiniteIso h
+
+/-- Indexed-family form of `finiteIso`. -/
+def carrierFinIso {ι : Type u} (shape : ι → CodeShape) (i : ι)
+    {k : Nat} (h : shape i = finite k) : Carrier (shape i) ≃ᵢ Fin k :=
+  finiteIso h
+
 end CodeShape
 
 /--

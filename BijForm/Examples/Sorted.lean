@@ -280,16 +280,24 @@ theorem ofFinOne_toFinOne {i : SortedIx} (h : ¬Bound.le i.1 i.2) (z : SortedCar
   simp [toFinOne, ofFinOne, SortedCarrier, SortedShape, h]
 
 def natIso {i : SortedIx} (h : Bound.le i.1 i.2) : SortedCarrier i ≃ᵢ Nat where
-  toFun := toNat h
-  invFun := ofNat h
-  left_inv := ofNat_toNat h
-  right_inv := toNat_ofNat h
+  toFun := (CodeShape.carrierNatIso SortedShape i (by
+    simp [SortedShape, h])).toFun
+  invFun := (CodeShape.carrierNatIso SortedShape i (by
+    simp [SortedShape, h])).invFun
+  left_inv := (CodeShape.carrierNatIso SortedShape i (by
+    simp [SortedShape, h])).left_inv
+  right_inv := (CodeShape.carrierNatIso SortedShape i (by
+    simp [SortedShape, h])).right_inv
 
 def finOneIso {i : SortedIx} (h : ¬Bound.le i.1 i.2) : SortedCarrier i ≃ᵢ Fin 1 where
-  toFun := toFinOne h
-  invFun := ofFinOne h
-  left_inv := ofFinOne_toFinOne h
-  right_inv := toFinOne_ofFinOne h
+  toFun := (CodeShape.carrierFinIso SortedShape i (by
+    simp [SortedShape, h])).toFun
+  invFun := (CodeShape.carrierFinIso SortedShape i (by
+    simp [SortedShape, h])).invFun
+  left_inv := (CodeShape.carrierFinIso SortedShape i (by
+    simp [SortedShape, h])).left_inv
+  right_inv := (CodeShape.carrierFinIso SortedShape i (by
+    simp [SortedShape, h])).right_inv
 
 end SortedCarrier
 
