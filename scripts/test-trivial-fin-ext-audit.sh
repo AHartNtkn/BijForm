@@ -40,6 +40,8 @@ expect_accepts() {
 expect_rejects adjacent $'theorem bad : True := by\n  apply Fin.ext\n  rfl'
 expect_rejects blank_line $'theorem bad : True := by\n  apply Fin.ext\n\n  rfl'
 expect_rejects comment_between $'theorem bad : True := by\n  apply Fin.ext\n  -- value equality is reflexive\n  rfl'
+expect_rejects block_comment_between $'theorem bad : True := by\n  apply Fin.ext\n  /- value equality is reflexive -/\n  rfl'
+expect_rejects multiline_block_comment_between $'theorem bad : True := by\n  apply Fin.ext\n  /-\n  value equality is reflexive\n  -/\n  exact rfl'
 expect_rejects bullet_same_line $'theorem bad : True := by\n  apply Fin.ext\n  · rfl'
 expect_rejects bullet_next_line $'theorem bad : True := by\n  apply Fin.ext\n  ·\n    exact rfl'
 expect_rejects same_line_tactic $'theorem bad : True := by\n  apply Fin.ext; rfl'

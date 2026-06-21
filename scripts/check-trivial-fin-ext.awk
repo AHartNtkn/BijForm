@@ -4,9 +4,41 @@ function trim(s) {
   return s
 }
 
-function strip_line_comment(s) {
-  sub(/[[:space:]]*--.*/, "", s)
-  return s
+function strip_comments(s,   out, i, rest, linePos, openPos, closePos) {
+  out = ""
+  i = 1
+  while (i <= length(s)) {
+    rest = substr(s, i)
+    if (blockDepth > 0) {
+      openPos = index(rest, "/-")
+      closePos = index(rest, "-/")
+      if (openPos == 0 && closePos == 0) {
+        return out
+      }
+      if (closePos == 0 || (openPos != 0 && openPos < closePos)) {
+        blockDepth++
+        i += openPos + 1
+      } else {
+        blockDepth--
+        i += closePos + 1
+      }
+    } else {
+      linePos = index(rest, "--")
+      openPos = index(rest, "/-")
+      if (linePos == 0 && openPos == 0) {
+        out = out rest
+        break
+      }
+      if (linePos != 0 && (openPos == 0 || linePos < openPos)) {
+        out = out substr(rest, 1, linePos - 1)
+        break
+      }
+      out = out substr(rest, 1, openPos - 1)
+      blockDepth++
+      i += openPos + 1
+    }
+  }
+  return out
 }
 
 function strip_bullets(s) {
@@ -19,7 +51,7 @@ function strip_bullets(s) {
 }
 
 function normalized(s) {
-  return strip_bullets(trim(strip_line_comment(s)))
+  return strip_bullets(trim(strip_comments(s)))
 }
 
 function report(startFile, startLine, startText, endLine, endText) {
