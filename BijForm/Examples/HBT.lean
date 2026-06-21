@@ -145,7 +145,7 @@ theorem HBT_layer_child_rank_lt :
 /--
 Generated coding data for height-bounded trees. The example supplies only
 the local layer coding over `HBTInversion`; the full object-layer step is
-produced by `GeneratedCode.toWellFoundedCode`.
+produced by the generated-code construction.
 -/
 def HBTSyntaxPresentation : SyntaxPresentation HBTPoly HBTInversion HBTSyntax :=
   SyntaxPresentation.ofLayer

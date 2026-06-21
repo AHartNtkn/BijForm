@@ -53,4 +53,8 @@ if git grep -n 'OutputIndexInversion\.ofIso' -- BijForm/Examples; then
   fail "examples must not use low-level opaque output-index inversion"
 fi
 
+if git grep -n '\.toWellFoundedCode' -- BijForm/Examples; then
+  fail "examples must expose generated-code APIs instead of WellFoundedCode backend conversion"
+fi
+
 printf 'audit: ok\n'
