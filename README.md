@@ -25,6 +25,12 @@ This project uses Lean 4 through Lake.
 lake build
 ```
 
+Repository policy checks are bundled with the build in the audit executable:
+
+```sh
+lake exe audit
+```
+
 The Lean toolchain is pinned in `lean-toolchain`:
 
 ```text
