@@ -162,9 +162,29 @@ def SortedSyntaxToLayer (i : SortedIx) :
         | false => lhs
         | true => rhs⟩
 
-def SortedSyntaxLayerPresentation :
-    CodeLayerPresentation SortedPoly SortedInversion SortedSyntax SortedSyntax :=
-  CodeLayerPresentation.ofMaps
+theorem Sorted_layer_child_rank_lt :
+    ∀ {i : SortedIx} (z : SortedSyntax i)
+      (q : SortedPoly.Pos
+          (SortedInversion.decode i
+            (SortedSyntaxToLayer i z).1).ctor
+          (SortedInversion.decode i
+            (SortedSyntaxToLayer i z).1).param),
+      SortedSyntax.rank ((SortedSyntaxToLayer i z).2 q) <
+        SortedSyntax.rank z := by
+  intro i z q
+  cases z with
+  | leaf => cases q
+  | branch pivot lhs rhs =>
+      cases q
+      · simpa [SortedSyntaxToLayer, SortedInversion,
+          OutputIndexInversion.canonical, sortedBranchFiber, SortedSyntax.rank] using
+          Nat.lt_succ_of_le (Nat.le_max_left (SortedSyntax.rank lhs) (SortedSyntax.rank rhs))
+      · simpa [SortedSyntaxToLayer, SortedInversion,
+          OutputIndexInversion.canonical, sortedBranchFiber, SortedSyntax.rank] using
+          Nat.lt_succ_of_le (Nat.le_max_right (SortedSyntax.rank lhs) (SortedSyntax.rank rhs))
+
+def SortedSyntaxPresentation : SyntaxPresentation SortedPoly SortedInversion SortedSyntax :=
+  SyntaxPresentation.ofLayerMaps
     SortedLayerToSyntax
     SortedSyntaxToLayer
     (by
@@ -195,35 +215,6 @@ def SortedSyntaxLayerPresentation :
       cases t with
       | leaf => rfl
       | branch pivot lhs rhs => rfl)
-
-theorem Sorted_layer_child_rank_lt :
-    ∀ {i : SortedIx} (z : SortedSyntax i)
-      (q : SortedPoly.Pos
-          (SortedInversion.decode i
-            ((SortedSyntaxLayerPresentation.iso i).invFun z).1).ctor
-          (SortedInversion.decode i
-            ((SortedSyntaxLayerPresentation.iso i).invFun z).1).param),
-      SortedSyntax.rank (((SortedSyntaxLayerPresentation.iso i).invFun z).2 q) <
-        SortedSyntax.rank z := by
-  intro i z q
-  cases z with
-  | leaf => cases q
-  | branch pivot lhs rhs =>
-      cases q
-      · simpa [CodeLayerPresentation.iso, CodeLayerPresentation.ofMaps,
-          SortedSyntaxLayerPresentation,
-          SortedSyntaxToLayer, SortedInversion,
-          OutputIndexInversion.canonical, sortedBranchFiber, SortedSyntax.rank] using
-          Nat.lt_succ_of_le (Nat.le_max_left (SortedSyntax.rank lhs) (SortedSyntax.rank rhs))
-      · simpa [CodeLayerPresentation.iso, CodeLayerPresentation.ofMaps,
-          SortedSyntaxLayerPresentation,
-          SortedSyntaxToLayer, SortedInversion,
-          OutputIndexInversion.canonical, sortedBranchFiber, SortedSyntax.rank] using
-          Nat.lt_succ_of_le (Nat.le_max_right (SortedSyntax.rank lhs) (SortedSyntax.rank rhs))
-
-def SortedSyntaxPresentation : SyntaxPresentation SortedPoly SortedInversion SortedSyntax :=
-  SyntaxPresentation.ofLayer
-    SortedSyntaxLayerPresentation
     (fun _ t => SortedSyntax.rank t)
     Sorted_layer_child_rank_lt
 
