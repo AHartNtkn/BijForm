@@ -24,6 +24,12 @@ theorem right {α : Sort u} {β : Sort v} (e : α ≃ᵢ β) (b : β) :
     e.toFun (e.invFun b) = b :=
   e.right_inv b
 
+theorem toFun_eq_of_invFun_eq {α : Sort u} {β : Sort v}
+    (e : α ≃ᵢ β) {b : β} {a : α} (h : e.invFun b = a) :
+    e.toFun a = b := by
+  rw [← h]
+  exact e.right b
+
 def refl (α : Sort u) : α ≃ᵢ α where
   toFun := id
   invFun := id

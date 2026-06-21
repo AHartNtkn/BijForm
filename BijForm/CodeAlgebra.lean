@@ -33,8 +33,7 @@ def finPlusNat (k : Nat) : (Fin k ⊕ Nat) ≃ᵢ Nat where
 
 theorem finPlusNat_inr_lt {k n tail : Nat} (hk : 0 < k)
     (h : (finPlusNat k).invFun n = Sum.inr tail) : tail < n := by
-  have hright := (finPlusNat k).right_inv n
-  rw [h] at hright
+  have hright := Iso.toFun_eq_of_invFun_eq (finPlusNat k) h
   simp [finPlusNat] at hright
   omega
 
@@ -206,15 +205,13 @@ def sumNat : (Nat ⊕ Nat) ≃ᵢ Nat where
 
 theorem sumNat_inl_le {n a : Nat}
     (h : sumNat.invFun n = Sum.inl a) : a ≤ n := by
-  have hright := sumNat.right_inv n
-  rw [h] at hright
+  have hright := Iso.toFun_eq_of_invFun_eq sumNat h
   simp [sumNat] at hright
   omega
 
 theorem sumNat_inr_le {n a : Nat}
     (h : sumNat.invFun n = Sum.inr a) : a ≤ n := by
-  have hright := sumNat.right_inv n
-  rw [h] at hright
+  have hright := Iso.toFun_eq_of_invFun_eq sumNat h
   simp [sumNat] at hright
   omega
 
@@ -297,16 +294,14 @@ theorem sumProdNat_toFun_inr_snd_lt (p : Nat × Nat) :
 
 theorem sumProdNat_invFun_inr_fst_lt {n a b : Nat}
     (h : sumProdNat.invFun n = Sum.inr (a, b)) : a < n := by
-  have hright := sumProdNat.right_inv n
-  rw [h] at hright
+  have hright := Iso.toFun_eq_of_invFun_eq sumProdNat h
   have hlt := sumProdNat_toFun_inr_fst_lt (a, b)
   rw [hright] at hlt
   exact hlt
 
 theorem sumProdNat_invFun_inr_snd_lt {n a b : Nat}
     (h : sumProdNat.invFun n = Sum.inr (a, b)) : b < n := by
-  have hright := sumProdNat.right_inv n
-  rw [h] at hright
+  have hright := Iso.toFun_eq_of_invFun_eq sumProdNat h
   have hlt := sumProdNat_toFun_inr_snd_lt (a, b)
   rw [hright] at hlt
   exact hlt
