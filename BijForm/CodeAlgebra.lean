@@ -451,25 +451,21 @@ theorem finiteRecursiveNat_payload_lt_of_prefix_or_tag
 /-- Two finite recursive branch families encoded as one natural-number family. -/
 def finSumProdNat (left right : Nat) (hleft : 0 < left) (hright : 0 < right) :
     ((Fin left × Nat) ⊕ (Fin right × Nat)) ≃ᵢ Nat :=
-  Iso.trans
-    (Iso.sum (finProdNat left hleft) (finProdNat right hright))
-    sumNat
+  toNatSum (finProdNat left hleft) (finProdNat right hright)
 
 theorem finSumProdNat_toFun_inl_snd_le
     (left right : Nat) (hleft : 0 < left) (hright : 0 < right)
     (p : Fin left × Nat) :
     p.2 ≤ (finSumProdNat left right hleft hright).toFun (Sum.inl p) := by
-  have hpayload := finProdNat_toFun_snd_le left hleft p
-  dsimp [finSumProdNat, Iso.trans, Iso.sum, sumNat]
-  omega
+  exact toNatSum_inl_le_of_le (finProdNat left hleft) (finProdNat right hright)
+    (finProdNat_toFun_snd_le left hleft p)
 
 theorem finSumProdNat_toFun_inr_snd_lt
     (left right : Nat) (hleft : 0 < left) (hright : 0 < right)
     (p : Fin right × Nat) :
     p.2 < (finSumProdNat left right hleft hright).toFun (Sum.inr p) := by
-  have hpayload := finProdNat_toFun_snd_le right hright p
-  dsimp [finSumProdNat, Iso.trans, Iso.sum, sumNat]
-  omega
+  exact toNatSum_inr_lt_of_le (finProdNat left hleft) (finProdNat right hright)
+    (finProdNat_toFun_snd_le right hright p)
 
 def finProdProdNat (k : Nat) (hk : 0 < k) :
     (Fin k × (Nat × Nat)) ≃ᵢ Nat :=
