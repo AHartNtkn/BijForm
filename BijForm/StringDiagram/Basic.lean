@@ -467,6 +467,11 @@ theorem fin_mk_val_eq {n : Nat} (i : Fin n) (h : i.val < n) :
   apply Fin.ext
   rfl
 
+theorem fin_eq_of_val_eq {n : Nat} {i j : Fin n} (h : i.val = j.val) :
+    i = j := by
+  apply Fin.ext
+  exact h
+
 def listFinIso {n : Nat} (xs : List (Fin n))
     (hnodup : xs.Nodup)
     (hcover : ∀ x : Fin n, x ∈ xs) :

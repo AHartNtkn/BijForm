@@ -508,8 +508,7 @@ theorem GraphRenderRelated.pending_cons_values
             (⟨0, by rw [hids]; simp⟩ : Fin rst.frontierIds.length) :
           Fin st.pending.length) =
         ⟨0, by rw [hpending]; simp⟩ := by
-      apply Fin.ext
-      rfl
+      exact fin_eq_of_val_eq rfl
     simpa [hids, hpending, hcast] using h
   · intro id
     have h := hrel.pending_id
@@ -530,14 +529,12 @@ theorem GraphRenderRelated.pending_cons_values
           simp
           rw [← htailLen]
           exact id.isLt⟩ := by
-      apply Fin.ext
-      rfl
+      exact fin_eq_of_val_eq rfl
     have htailCast :
         (⟨id.val, by simpa [htailLen] using id.isLt⟩ :
           Fin rest.length) =
         Fin.cast htailLen id := by
-      apply Fin.ext
-      rfl
+      exact fin_eq_of_val_eq rfl
     simpa [hids, hpending, hcast, htailCast] using h
 
 theorem GraphRenderRelated.frontier_id_bound_of_mem
@@ -718,8 +715,7 @@ theorem GraphRenderRelated.connectChild
                 (congrArg List.length
                   (nodeOrder_connectChild st hpending mate hmate))
                 childNode = oldOrderNode := by
-          apply Fin.ext
-          rfl
+          exact fin_eq_of_val_eq rfl
         have hnodeOrder :
             (nodeOrder (st.connectChild hpending mate hmate)).get childNode =
               (nodeOrder st).get oldOrderNode := by
@@ -880,8 +876,7 @@ theorem GraphRenderRelated.connectChild
             · have hidx :
                   (⟨n, hrest⟩ : Fin rest.length) =
                     Fin.cast htailLen ⟨n, hid⟩ := by
-                apply Fin.ext
-                rfl
+                exact fin_eq_of_val_eq rfl
               rw [hidx]
               exact hpendingVals.2 ⟨n, hid⟩
           have herased :=
@@ -904,8 +899,7 @@ theorem GraphRenderRelated.connectChild
                 hbound⟩ : Fin rst.endpoints.length) =
               ⟨(Diag.connectStep rendererMate ok rst).frontierIds.get id,
                 hboundChild⟩ := by
-          apply Fin.ext
-          rfl
+          exact fin_eq_of_val_eq rfl
         have hendpointOrder :
             endpointOrder G (st.connectChild hpending mate hmate) =
               endpointOrder G st :=
@@ -1328,8 +1322,7 @@ theorem GraphRenderRelated.connectChild
                 (congrArg List.length
                   (nodeOrder_connectChild st hpending mate hmate))
                 childNode = oldOrderNode := by
-          apply Fin.ext
-          rfl
+          exact fin_eq_of_val_eq rfl
         have hnodeOrder :
             (nodeOrder (st.connectChild hpending mate hmate)).get childNode =
               (nodeOrder st).get oldOrderNode := by
@@ -1374,8 +1367,7 @@ theorem GraphRenderRelated.connectChild
                 (congrArg List.length
                   (nodeOrder_connectChild st hpending mate hmate))
                 childNode = oldOrderNode := by
-          apply Fin.ext
-          rfl
+          exact fin_eq_of_val_eq rfl
         have hnodeOrder :
             (nodeOrder (st.connectChild hpending mate hmate)).get childNode =
               (nodeOrder st).get oldOrderNode := by
@@ -1419,8 +1411,7 @@ theorem GraphRenderRelated.connectChild
                 (congrArg (fun graphNode => (G.raw.incident graphNode).length)
                   hnodeOrder)
                 childGraphSlot = oldGraphSlot := by
-          apply Fin.ext
-          rfl
+          exact fin_eq_of_val_eq rfl
         have hgraphGet :=
           list_get_of_eq
             (congrArg G.raw.incident hnodeOrder)
@@ -2264,8 +2255,7 @@ theorem GraphRenderRelated.budChild
             have hidx :
                 (⟨n, hrest⟩ : Fin rest.length) =
                   Fin.cast htailLen ⟨n, hid⟩ := by
-              apply Fin.ext
-              rfl
+              exact fin_eq_of_val_eq rfl
             rw [hidx]
             exact hpendingVals.2 ⟨n, hid⟩
           have horder :=
@@ -2298,8 +2288,7 @@ theorem GraphRenderRelated.budChild
             have hidx :
                 (⟨appendEndpoint.val, hbefore⟩ :
                   Fin (endpointOrder G st).length) = oldEndpoint := by
-              apply Fin.ext
-              rfl
+              exact fin_eq_of_val_eq rfl
             simpa [hidx] using hleft
           exact hchildGet.trans (happLeft.trans hold)
         have hrightRel :
@@ -2404,8 +2393,7 @@ theorem GraphRenderRelated.budChild
           have hgetIds := list_get_of_eq hchildIds id
           have hcast :
               Fin.cast (congrArg List.length hchildIds) id = appendIndex := by
-            apply Fin.ext
-            rfl
+            exact fin_eq_of_val_eq rfl
           simpa [appendIndex, hcast] using hgetIds.symm
         have htargetBound :
             (Diag.budStep renderNode entry ok rst).frontierIds.get id <
@@ -3088,8 +3076,7 @@ theorem GraphRenderRelated.budChild
                   (congrArg (fun graphNode =>
                     (G.raw.incident graphNode).length) hnodeOrder)
                   childGraphSlot = oldGraphSlot := by
-            apply Fin.ext
-            rfl
+            exact fin_eq_of_val_eq rfl
           have hgraphGet :=
             list_get_of_eq (congrArg G.raw.incident hnodeOrder)
               childGraphSlot
@@ -3233,8 +3220,7 @@ theorem GraphRenderRelated.budChild
                   (congrArg (fun graphNode =>
                     (G.raw.incident graphNode).length) hnodeOrder)
                   childGraphSlot = graphSlot := by
-            apply Fin.ext
-            rfl
+            exact fin_eq_of_val_eq rfl
           have hgraphGet :=
             list_get_of_eq (congrArg G.raw.incident hnodeOrder)
               childGraphSlot
