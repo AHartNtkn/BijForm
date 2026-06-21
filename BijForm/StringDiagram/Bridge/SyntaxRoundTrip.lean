@@ -173,9 +173,7 @@ theorem renderTrace_connect_edgeMate_of_invariants
         hv hp hn pref ho).toPortHypergraph
     let mateId :=
       restIds.get (Fin.cast (by
-        have hlen := st.frontierIds_length
-        rw [hids] at hlen
-        exact (Nat.succ.inj hlen).symm) mate)
+        exact (RenderState.frontierIds_cons_tail_length st hids).symm) mate)
     ∃ (hactive : activeId < final.endpoints.length)
       (hmateBound : mateId < final.endpoints.length),
       PortHypergraph.EdgeMate G
@@ -283,9 +281,7 @@ theorem renderTrace_connect_active_endpointEdge_val
   let final := renderTrace (Diag.connect mate ok child) st
   let mateId :=
     restIds.get (Fin.cast (by
-      have hlen := st.frontierIds_length
-      rw [hids] at hlen
-      exact (Nat.succ.inj hlen).symm) mate)
+      exact (RenderState.frontierIds_cons_tail_length st hids).symm) mate)
   let edge : RenderEdge Sig :=
     { label := Sig.portEdge active
       leftLabel := active
@@ -912,9 +908,7 @@ theorem toDiag_of_renderPrefixRelated :
               have hids : rst.frontierIds = activeId :: restIds := hidsCase
               have hvals := hrel.pending_cons_values hpending hids
               have hrestIdsLen : restIds.length = frontier.length := by
-                have hlen := rst.frontierIds_length
-                rw [hids] at hlen
-                exact Nat.succ.inj hlen
+                exact RenderState.frontierIds_cons_tail_length rst hids
               have hrestLenVals : rest.length = restIds.length := by
                 have hlen := congrArg List.length hvals.2
                 simpa using hlen
@@ -1055,9 +1049,7 @@ theorem toDiag_of_renderPrefixRelated :
               have hids : rst.frontierIds = activeId :: restIds := hidsCase
               have hvals := hrel.pending_cons_values hpending hids
               have hrestIdsLen : restIds.length = frontier.length := by
-                have hlen := rst.frontierIds_length
-                rw [hids] at hlen
-                exact Nat.succ.inj hlen
+                exact RenderState.frontierIds_cons_tail_length rst hids
               have hrestLenVals : rest.length = restIds.length := by
                 have hlen := congrArg List.length hvals.2
                 simpa using hlen

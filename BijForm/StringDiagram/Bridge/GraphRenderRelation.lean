@@ -560,9 +560,7 @@ theorem GraphRenderRelated.connectChild
       exact False.elim (RenderState.frontierIds_ne_nil rst hids)
   | cons activeId restIds =>
       have hrestIdsLen : restIds.length = frontier.length := by
-        have hlen := rst.frontierIds_length
-        rw [hids] at hlen
-        exact Nat.succ.inj hlen
+        exact RenderState.frontierIds_cons_tail_length rst hids
       have htailLen : restIds.length = rest.length := by
         have hlen := hrel.pending_length
         rw [hids, hpending] at hlen
@@ -1464,9 +1462,7 @@ theorem GraphRenderRelated.budChild
       exact False.elim (RenderState.frontierIds_ne_nil rst hids)
   | cons activeId restIds =>
       have hrestIdsLen : restIds.length = frontier.length := by
-        have hlen := rst.frontierIds_length
-        rw [hids] at hlen
-        exact Nat.succ.inj hlen
+        exact RenderState.frontierIds_cons_tail_length rst hids
       have htailLen : restIds.length = rest.length := by
         have hlen := hrel.pending_length
         rw [hids, hpending] at hlen

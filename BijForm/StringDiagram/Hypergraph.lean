@@ -839,10 +839,8 @@ theorem toOpenPortHypergraph_connect_boundary_edgeMate
                 0 :: restIds := by
             simp [RenderState.initial, restIds]
             exact List.range_succ_eq_map
-          have hlen :=
-            (RenderState.initial Sig (active :: frontier)).frontierIds_length
-          rw [hids] at hlen
-          exact (Nat.succ.inj hlen).symm) mate)
+          exact (RenderState.frontierIds_cons_tail_length
+            (RenderState.initial Sig (active :: frontier)) hids).symm) mate)
       left_label := rfl
       right_label := (Sig.compatible_edge ok).symm
       compatible := ok }

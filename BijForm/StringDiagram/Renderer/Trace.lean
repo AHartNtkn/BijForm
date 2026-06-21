@@ -241,9 +241,7 @@ theorem renderTrace_connect_edge_mem
        left := activeId
        right :=
         restIds.get (Fin.cast (by
-          have hlen := st.frontierIds_length
-          rw [hids] at hlen
-          exact (Nat.succ.inj hlen).symm) mate)
+          exact (RenderState.frontierIds_cons_tail_length st hids).symm) mate)
        left_label := rfl
        right_label := (Sig.compatible_edge ok).symm
        compatible := ok } : RenderEdge Sig) ∈
@@ -366,9 +364,7 @@ theorem renderTrace_connect_new_edge_get
     let final := renderTrace (Diag.connect mate ok child) st
     let mateId :=
       restIds.get (Fin.cast (by
-        have hlen := st.frontierIds_length
-        rw [hids] at hlen
-        exact (Nat.succ.inj hlen).symm) mate)
+        exact (RenderState.frontierIds_cons_tail_length st hids).symm) mate)
     let edge : RenderEdge Sig :=
       { label := Sig.portEdge active
         leftLabel := active
