@@ -1860,8 +1860,7 @@ theorem GraphRenderRelated.budChild
           have hidx :
               (⟨appendEndpoint.val, hbefore⟩ :
                 Fin (endpointOrder G st).length) = oldEndpoint := by
-            apply Fin.ext
-            rfl
+            exact fin_mk_val_eq oldEndpoint hbefore
           simpa [hidx] using hleft
         exact hget.trans happ
       have endpointAt_new :
@@ -1959,8 +1958,7 @@ theorem GraphRenderRelated.budChild
           have hidx :
               (⟨appendEdge.val, hbefore⟩ :
                 Fin (edgeOrder st).length) = oldEdge := by
-            apply Fin.ext
-            rfl
+            exact fin_mk_val_eq oldEdge hbefore
           simpa [hidx] using hleft
         exact hget.trans happ
       have edgeAt_new :
@@ -2026,8 +2024,7 @@ theorem GraphRenderRelated.budChild
           have hidx :
               (⟨appendNode.val, hbefore⟩ :
                 Fin (nodeOrder st).length) = oldNode := by
-            apply Fin.ext
-            rfl
+            exact fin_mk_val_eq oldNode hbefore
           simpa [hidx] using hleft
         exact hget.trans happ
       have nodeAt_new :

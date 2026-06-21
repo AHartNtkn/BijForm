@@ -462,6 +462,11 @@ def finCastIso {m n : Nat} (h : m = n) : Fin m ≃ᵢ Fin n where
     cases h
     rfl
 
+theorem fin_mk_val_eq {n : Nat} (i : Fin n) (h : i.val < n) :
+    (⟨i.val, h⟩ : Fin n) = i := by
+  apply Fin.ext
+  rfl
+
 def listFinIso {n : Nat} (xs : List (Fin n))
     (hnodup : xs.Nodup)
     (hcover : ∀ x : Fin n, x ∈ xs) :
