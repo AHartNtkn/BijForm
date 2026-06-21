@@ -291,9 +291,8 @@ theorem LamNat_layer_child_rank_lt :
                   ⟨⟨LamCtor.lam, (param : Nat), rfl⟩, child⟩) =
               param + 2 * bodyCode := by
           simp [bodyCode, LamNatLayerShapeTo,
-            CodeAlgebra.finPrefixNat, CodeAlgebra.sumProdNat, Iso.trans, Iso.sum,
-            CodeAlgebra.finPlusNat,
-            CodeAlgebra.sumNat, Iso.refl]
+            CodeAlgebra.finPrefixNat, CodeAlgebra.sumProdNat, CodeAlgebra.toNatSum,
+            Iso.trans, Iso.sum, CodeAlgebra.finPlusNat, CodeAlgebra.sumNat, Iso.refl]
         change LamNatRank (param + 1) bodyCode <
           LamNatRank param
             ((CodeAlgebra.finPrefixNat param CodeAlgebra.sumProdNat).toFun
