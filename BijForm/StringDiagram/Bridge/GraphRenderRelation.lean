@@ -797,8 +797,7 @@ theorem GraphRenderRelated.connectChild
       · have hchildIds :=
           Diag.connectStep_frontierIds rendererMate ok rst hids
         rw [hchildIds]
-        change (eraseFin restIds idx).length = (eraseFin rest mate).length
-        simp [eraseFin_length, htailLen]
+        exact eraseFin_length_eq_of_length_eq htailLen idx mate
       · intro id
         have hchildIds :=
           Diag.connectStep_frontierIds rendererMate ok rst hids
@@ -806,8 +805,7 @@ theorem GraphRenderRelated.connectChild
             (Diag.connectStep rendererMate ok rst).frontierIds.length =
               (st.connectChild hpending mate hmate).pending.length := by
           rw [hchildIds]
-          change (eraseFin restIds idx).length = (eraseFin rest mate).length
-          simp [eraseFin_length, htailLen]
+          exact eraseFin_length_eq_of_length_eq htailLen idx mate
         have hmemChild :
             (Diag.connectStep rendererMate ok rst).frontierIds.get id ∈
               eraseFin restIds idx := by
@@ -2051,7 +2049,7 @@ theorem GraphRenderRelated.budChild
           append_pointwise_relation
             (R := R)
             htailLen
-            (by simp [eraseFin_length, hnodeEndpointsLen])
+            (eraseFin_length_eq_of_length_eq hnodeEndpointsLen entryIdx slot)
             hleftRel
             herasedRight
             id.val

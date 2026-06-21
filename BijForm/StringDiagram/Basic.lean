@@ -36,6 +36,13 @@ theorem eraseFin_length {α : Type} :
       simp [eraseFin, ih]
       exact Nat.sub_add_cancel (Nat.succ_le_of_lt hpos)
 
+theorem eraseFin_length_eq_of_length_eq {α β : Type}
+    {xs : List α} {ys : List β}
+    (hlen : xs.length = ys.length)
+    (ix : Fin xs.length) (iy : Fin ys.length) :
+    (eraseFin xs ix).length = (eraseFin ys iy).length := by
+  simp [eraseFin_length, hlen]
+
 theorem eraseFin_pointwise_relation {α β : Type} {R : α → β → Prop}
     {xs : List α} {ys : List β}
     (hlen : xs.length = ys.length)
