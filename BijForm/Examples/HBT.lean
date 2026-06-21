@@ -89,9 +89,32 @@ def HBTSyntaxToLayer (i : Nat) :
         | false => lhs
         | true => rhs⟩
 
-def HBTSyntaxLayerPresentation :
-    CodeLayerPresentation HBTPoly HBTInversion HBTSyntax HBTSyntax :=
-  CodeLayerPresentation.ofMaps
+theorem HBT_layer_child_rank_lt :
+    ∀ {i : Nat} (z : HBTSyntax i)
+        (q : HBTPoly.Pos
+          (HBTInversion.decode i (HBTSyntaxToLayer i z).1).ctor
+          (HBTInversion.decode i (HBTSyntaxToLayer i z).1).param),
+      HBTSyntax.rank ((HBTSyntaxToLayer i z).2 q) <
+        HBTSyntax.rank z := by
+  intro i z q
+  cases z with
+  | leaf label => cases q
+  | branch lhs rhs =>
+      cases q
+      · simpa [HBTSyntaxToLayer, HBTInversion,
+          OutputIndexInversion.canonical, HBTSyntax.rank] using
+          Nat.lt_succ_of_le (Nat.le_max_left (HBTSyntax.rank lhs) (HBTSyntax.rank rhs))
+      · simpa [HBTSyntaxToLayer, HBTInversion,
+          OutputIndexInversion.canonical, HBTSyntax.rank] using
+          Nat.lt_succ_of_le (Nat.le_max_right (HBTSyntax.rank lhs) (HBTSyntax.rank rhs))
+
+/--
+Generated coding data for height-bounded trees. The example supplies only
+the local layer coding over `HBTInversion`; the full object-layer step is
+produced by the generated-code construction.
+-/
+def HBTSyntaxPresentation : SyntaxPresentation HBTPoly HBTInversion HBTSyntax :=
+  SyntaxPresentation.ofLayerMaps
     HBTLayerToSyntax
     HBTSyntaxToLayer
     (by
@@ -120,36 +143,6 @@ def HBTSyntaxLayerPresentation :
     (by
       intro i t
       cases t <;> simp [HBTLayerToSyntax, HBTSyntaxToLayer])
-
-theorem HBT_layer_child_rank_lt :
-    ∀ {i : Nat} (z : HBTSyntax i)
-          (q : HBTPoly.Pos
-          (HBTInversion.decode i ((HBTSyntaxLayerPresentation.iso i).invFun z).1).ctor
-          (HBTInversion.decode i ((HBTSyntaxLayerPresentation.iso i).invFun z).1).param),
-      HBTSyntax.rank (((HBTSyntaxLayerPresentation.iso i).invFun z).2 q) <
-        HBTSyntax.rank z := by
-  intro i z q
-  cases z with
-  | leaf label => cases q
-  | branch lhs rhs =>
-      cases q
-      · simpa [CodeLayerPresentation.iso, HBTSyntaxLayerPresentation, HBTSyntaxToLayer,
-          HBTInversion,
-          OutputIndexInversion.canonical, HBTSyntax.rank] using
-          Nat.lt_succ_of_le (Nat.le_max_left (HBTSyntax.rank lhs) (HBTSyntax.rank rhs))
-      · simpa [CodeLayerPresentation.iso, HBTSyntaxLayerPresentation, HBTSyntaxToLayer,
-          HBTInversion,
-          OutputIndexInversion.canonical, HBTSyntax.rank] using
-          Nat.lt_succ_of_le (Nat.le_max_right (HBTSyntax.rank lhs) (HBTSyntax.rank rhs))
-
-/--
-Generated coding data for height-bounded trees. The example supplies only
-the local layer coding over `HBTInversion`; the full object-layer step is
-produced by the generated-code construction.
--/
-def HBTSyntaxPresentation : SyntaxPresentation HBTPoly HBTInversion HBTSyntax :=
-  SyntaxPresentation.ofLayer
-    HBTSyntaxLayerPresentation
     (fun _ t => HBTSyntax.rank t)
     HBT_layer_child_rank_lt
 
