@@ -165,14 +165,12 @@ private theorem SINNonUnaryEntry.toFin6_injective :
                           simp [SINNonUnaryEntry.toFin6] at hval
                           omega
 
-private def SINNonUnaryEntryIso : SINNonUnaryEntry ≃ᵢ Fin 6 where
-  toFun := SINNonUnaryEntry.toFin6
-  invFun := SINNonUnaryEntry.ofFin6
-  left_inv := by
-    intro entry
-    apply SINNonUnaryEntry.toFin6_injective
-    exact SINNonUnaryEntry.toFin6_ofFin6 (SINNonUnaryEntry.toFin6 entry)
-  right_inv := SINNonUnaryEntry.toFin6_ofFin6
+private def SINNonUnaryEntryIso : SINNonUnaryEntry ≃ᵢ Fin 6 :=
+  Iso.ofRightInverseInjective
+    SINNonUnaryEntry.toFin6
+    SINNonUnaryEntry.ofFin6
+    SINNonUnaryEntry.toFin6_ofFin6
+    SINNonUnaryEntry.toFin6_injective
 
 /-- Finite single-sorted coding data for the SIN signature. -/
 def SymmetricInteractionNetCodingData :
@@ -186,7 +184,6 @@ def SymmetricInteractionNetCodingData :
     intro node
     cases node <;> decide
   rankScale := 4
-  rankScale_pos := by decide
   arity_lt_rankScale := by
     intro node
     cases node <;> decide

@@ -42,6 +42,7 @@ lake exe bijform
 - `BijForm.Coding`
   Defines the project-local `Iso` structure and basic iso combinators for
   reflexivity, symmetry, transitivity, products, and sums.
+  - `Iso.ofRightInverseInjective`
 
 - `BijForm.Pairing`
   Defines and proves the shell-based pairing function on `Nat x Nat`.
@@ -87,7 +88,6 @@ lake exe bijform
   - `GeneratedShapeCode`
   - `GeneratedRankedNatCode`
   - `GeneratedNatCode`
-  - `DepPoly.CodeLayer.canonical_ext_param_cast`
   - `initialAlgebraCoding`
 
 - `BijForm.QuotientPolynomial`
@@ -112,11 +112,18 @@ lake exe bijform
   generated-code isomorphism, and the semantic bridge to open endpoint/edge/node
   port-hypergraphs up to ordered-boundary-preserving isomorphism.  The
   implementation is split into `BijForm.StringDiagram.Basic`,
-  `BijForm.StringDiagram.Renderer`, `BijForm.StringDiagram.Polynomial`,
-  `BijForm.StringDiagram.Hypergraph`, `BijForm.StringDiagram.Traversal`,
-  `BijForm.StringDiagram.Bridge`, and `BijForm.StringDiagram.FiniteCoding`,
-  all re-exported by
-  `BijForm.StringDiagram`. The syntax-to-graph-to-syntax and
+  `BijForm.StringDiagram.Renderer.Core`,
+  `BijForm.StringDiagram.Renderer.Steps`,
+  `BijForm.StringDiagram.Renderer.Trace`,
+  `BijForm.StringDiagram.Polynomial`, `BijForm.StringDiagram.Hypergraph`,
+  `BijForm.StringDiagram.Traversal.State`,
+  `BijForm.StringDiagram.Traversal.Search`,
+  `BijForm.StringDiagram.Bridge.SyntaxRoundTrip`,
+  `BijForm.StringDiagram.Bridge.GraphRenderRelation`,
+  `BijForm.StringDiagram.Bridge.Quotient`,
+  `BijForm.StringDiagram.FiniteCoding.Syntax`, and
+  `BijForm.StringDiagram.FiniteCoding.OpenGraph`, with aggregate modules
+  re-exported by `BijForm.StringDiagram`. The syntax-to-graph-to-syntax and
   graph-to-syntax-to-graph inverse laws are recorded at the bridge boundary.
   - `StringDiagram.Signature`
   - `StringDiagram.Signature.nodePortsExcept_eq_of_val`
@@ -146,10 +153,6 @@ lake exe bijform
   - `StringDiagram.SingleSortedFiniteCodingData.tagToEntry_entryToTag`
   - `StringDiagram.SingleSortedFiniteCodingData.entryToTag_tagToEntry`
   - `StringDiagram.SingleSortedFiniteCodingData.entryIso`
-  - `StringDiagram.SingleSortedFiniteCodingData.unaryTagToEntry`
-  - `StringDiagram.SingleSortedFiniteCodingData.unaryTagToEntry_entry`
-  - `StringDiagram.SingleSortedFiniteCodingData.nonUnaryTagToEntry`
-  - `StringDiagram.SingleSortedFiniteCodingData.nonUnaryTagToEntry_entry`
   - `StringDiagram.singleSortedFiniteLayerShape`
   - `StringDiagram.singleSortedFiniteLayerShapeCarrierIso`
   - `StringDiagram.singleSortedFiniteRank`

@@ -47,6 +47,19 @@ def trans {α : Sort u} {β : Sort v} {γ : Sort w}
     intro c
     simp [Function.comp]
 
+def ofRightInverseInjective {α : Sort u} {β : Sort v}
+    (toFun : α → β) (invFun : β → α)
+    (right_inv : Function.RightInverse invFun toFun)
+    (toFun_injective : Function.Injective toFun) :
+    α ≃ᵢ β where
+  toFun := toFun
+  invFun := invFun
+  left_inv := by
+    intro a
+    apply toFun_injective
+    exact right_inv (toFun a)
+  right_inv := right_inv
+
 def prod {α : Type u} {β : Type v} {γ : Type w} {δ : Type x}
     (e₁ : α ≃ᵢ β) (e₂ : γ ≃ᵢ δ) : (α × γ) ≃ᵢ (β × δ) where
   toFun p := (e₁.toFun p.1, e₂.toFun p.2)
