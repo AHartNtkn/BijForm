@@ -57,26 +57,10 @@ if git grep -n '\.toWellFoundedCode' -- BijForm/Examples; then
   fail "examples must expose generated-code APIs instead of WellFoundedCode backend conversion"
 fi
 
-if git grep -n -E 'Fin\.ext[[:space:]]+rfl' -- BijForm/StringDiagram/Bridge/GraphRenderRelation.lean; then
-  fail "trivial inline Fin reconstruction proof found in GraphRenderRelation; use a shared helper"
-fi
+bash scripts/test-trivial-fin-ext-audit.sh
 
-if awk '
-  /apply[[:space:]]+Fin\.ext/ {
-    prevLine = $0
-    prevNr = NR
-    pending = 1
-    next
-  }
-  pending {
-    if ($0 ~ /^[[:space:]]*(rfl|exact[[:space:]]+rfl)[[:space:]]*$/) {
-      printf "%s:%d:%s\n%s:%d:%s\n", FILENAME, prevNr, prevLine, FILENAME, NR, $0
-      found = 1
-    }
-    pending = 0
-  }
-  END { exit found ? 0 : 1 }
-' BijForm/StringDiagram/Bridge/GraphRenderRelation.lean; then
+if ! awk -f scripts/check-trivial-fin-ext.awk \
+    BijForm/StringDiagram/Bridge/GraphRenderRelation.lean; then
   fail "trivial inline Fin reconstruction proof found in GraphRenderRelation; use fin_eq_of_val_eq or a more specific helper"
 fi
 
