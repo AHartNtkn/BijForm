@@ -114,9 +114,44 @@ def NumSyntaxToLayer (k : Nat) :
       | false => lhs
       | true => rhs⟩
 
-def NumSyntaxLayerPresentation :
-    CodeLayerPresentation NumPoly NumInversion NumSyntax NumSyntax :=
-  CodeLayerPresentation.ofMaps
+theorem Num_layer_child_rank_lt :
+    ∀ {k : Nat} (z : NumSyntax k)
+      (q : NumPoly.Pos
+          (NumInversion.decode k (NumSyntaxToLayer k z).1).ctor
+          (NumInversion.decode k (NumSyntaxToLayer k z).1).param),
+      NumSyntax.rank ((NumSyntaxToLayer k z).2 q) <
+        NumSyntax.rank z := by
+  intro k z q
+  cases z with
+  | var v => cases q
+  | zero => cases q
+  | succ e =>
+      cases q
+      simp [NumSyntaxToLayer, NumInversion,
+        OutputIndexInversion.canonical, NumSyntax.rank]
+  | plus lhs rhs =>
+      cases q
+      · simpa [NumSyntaxToLayer, NumInversion,
+          OutputIndexInversion.canonical,
+          NumSyntax.rank] using
+          Nat.lt_succ_of_le (Nat.le_max_left (NumSyntax.rank lhs) (NumSyntax.rank rhs))
+      · simpa [NumSyntaxToLayer, NumInversion,
+          OutputIndexInversion.canonical,
+          NumSyntax.rank] using
+          Nat.lt_succ_of_le (Nat.le_max_right (NumSyntax.rank lhs) (NumSyntax.rank rhs))
+  | times lhs rhs =>
+      cases q
+      · simpa [NumSyntaxToLayer, NumInversion,
+          OutputIndexInversion.canonical,
+          NumSyntax.rank] using
+          Nat.lt_succ_of_le (Nat.le_max_left (NumSyntax.rank lhs) (NumSyntax.rank rhs))
+      · simpa [NumSyntaxToLayer, NumInversion,
+          OutputIndexInversion.canonical,
+          NumSyntax.rank] using
+          Nat.lt_succ_of_le (Nat.le_max_right (NumSyntax.rank lhs) (NumSyntax.rank rhs))
+
+def NumSyntaxPresentation : SyntaxPresentation NumPoly NumInversion NumSyntax :=
+  SyntaxPresentation.ofLayerMaps
     NumLayerToSyntax
     NumSyntaxToLayer
     (by
@@ -183,56 +218,6 @@ def NumSyntaxLayerPresentation :
     (by
       intro k e
       cases e <;> simp [NumLayerToSyntax, NumSyntaxToLayer])
-
-theorem Num_layer_child_rank_lt :
-    ∀ {k : Nat} (z : NumSyntax k)
-      (q : NumPoly.Pos
-          (NumInversion.decode k ((NumSyntaxLayerPresentation.iso k).invFun z).1).ctor
-          (NumInversion.decode k ((NumSyntaxLayerPresentation.iso k).invFun z).1).param),
-      NumSyntax.rank (((NumSyntaxLayerPresentation.iso k).invFun z).2 q) <
-        NumSyntax.rank z := by
-  intro k z q
-  cases z with
-  | var v => cases q
-  | zero => cases q
-  | succ e =>
-      cases q
-      simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofMaps,
-        NumSyntaxLayerPresentation, NumSyntaxToLayer,
-        NumInversion,
-        OutputIndexInversion.canonical, NumSyntax.rank]
-  | plus lhs rhs =>
-      cases q
-      · simpa [CodeLayerPresentation.iso, CodeLayerPresentation.ofMaps,
-          NumSyntaxLayerPresentation, NumSyntaxToLayer,
-          NumInversion,
-          OutputIndexInversion.canonical,
-          NumSyntax.rank] using
-          Nat.lt_succ_of_le (Nat.le_max_left (NumSyntax.rank lhs) (NumSyntax.rank rhs))
-      · simpa [CodeLayerPresentation.iso, CodeLayerPresentation.ofMaps,
-          NumSyntaxLayerPresentation, NumSyntaxToLayer,
-          NumInversion,
-          OutputIndexInversion.canonical,
-          NumSyntax.rank] using
-          Nat.lt_succ_of_le (Nat.le_max_right (NumSyntax.rank lhs) (NumSyntax.rank rhs))
-  | times lhs rhs =>
-      cases q
-      · simpa [CodeLayerPresentation.iso, CodeLayerPresentation.ofMaps,
-          NumSyntaxLayerPresentation, NumSyntaxToLayer,
-          NumInversion,
-          OutputIndexInversion.canonical,
-          NumSyntax.rank] using
-          Nat.lt_succ_of_le (Nat.le_max_left (NumSyntax.rank lhs) (NumSyntax.rank rhs))
-      · simpa [CodeLayerPresentation.iso, CodeLayerPresentation.ofMaps,
-          NumSyntaxLayerPresentation, NumSyntaxToLayer,
-          NumInversion,
-          OutputIndexInversion.canonical,
-          NumSyntax.rank] using
-          Nat.lt_succ_of_le (Nat.le_max_right (NumSyntax.rank lhs) (NumSyntax.rank rhs))
-
-def NumSyntaxPresentation : SyntaxPresentation NumPoly NumInversion NumSyntax :=
-  SyntaxPresentation.ofLayer
-    NumSyntaxLayerPresentation
     (fun _ e => NumSyntax.rank e)
     Num_layer_child_rank_lt
 
