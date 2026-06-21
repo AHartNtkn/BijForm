@@ -83,9 +83,31 @@ def LamSyntaxToLayer (k : Nat) :
       | false => fn
       | true => arg⟩
 
-def LamSyntaxLayerPresentation :
-    CodeLayerPresentation LamPoly LamInversion LamSyntax LamSyntax :=
-  CodeLayerPresentation.ofMaps
+theorem Lam_layer_child_rank_lt :
+    ∀ {k : Nat} (z : LamSyntax k)
+      (q : LamPoly.Pos
+          (LamInversion.decode k (LamSyntaxToLayer k z).1).ctor
+          (LamInversion.decode k (LamSyntaxToLayer k z).1).param),
+      LamSyntax.rank ((LamSyntaxToLayer k z).2 q) <
+        LamSyntax.rank z := by
+  intro k z q
+  cases z with
+  | var v => cases q
+  | lam body =>
+      cases q
+      simp [LamSyntaxToLayer, LamInversion,
+        OutputIndexInversion.canonical, LamSyntax.rank]
+  | app fn arg =>
+      cases q
+      · simpa [LamSyntaxToLayer, LamInversion,
+          OutputIndexInversion.canonical, LamSyntax.rank] using
+          Nat.lt_succ_of_le (Nat.le_max_left (LamSyntax.rank fn) (LamSyntax.rank arg))
+      · simpa [LamSyntaxToLayer, LamInversion,
+          OutputIndexInversion.canonical, LamSyntax.rank] using
+          Nat.lt_succ_of_le (Nat.le_max_right (LamSyntax.rank fn) (LamSyntax.rank arg))
+
+def LamSyntaxPresentation : SyntaxPresentation LamPoly LamInversion LamSyntax :=
+  SyntaxPresentation.ofLayerMaps
     LamLayerToSyntax
     LamSyntaxToLayer
     (by
@@ -124,39 +146,6 @@ def LamSyntaxLayerPresentation :
     (by
       intro k t
       cases t <;> simp [LamLayerToSyntax, LamSyntaxToLayer])
-
-theorem Lam_layer_child_rank_lt :
-    ∀ {k : Nat} (z : LamSyntax k)
-      (q : LamPoly.Pos
-          (LamInversion.decode k ((LamSyntaxLayerPresentation.iso k).invFun z).1).ctor
-          (LamInversion.decode k ((LamSyntaxLayerPresentation.iso k).invFun z).1).param),
-      LamSyntax.rank (((LamSyntaxLayerPresentation.iso k).invFun z).2 q) <
-        LamSyntax.rank z := by
-  intro k z q
-  cases z with
-  | var v => cases q
-  | lam body =>
-      cases q
-      simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofMaps,
-        LamSyntaxLayerPresentation, LamSyntaxToLayer,
-        LamInversion,
-        OutputIndexInversion.canonical, LamSyntax.rank]
-  | app fn arg =>
-      cases q
-      · simpa [CodeLayerPresentation.iso, CodeLayerPresentation.ofMaps,
-          LamSyntaxLayerPresentation, LamSyntaxToLayer,
-          LamInversion,
-          OutputIndexInversion.canonical, LamSyntax.rank] using
-          Nat.lt_succ_of_le (Nat.le_max_left (LamSyntax.rank fn) (LamSyntax.rank arg))
-      · simpa [CodeLayerPresentation.iso, CodeLayerPresentation.ofMaps,
-          LamSyntaxLayerPresentation, LamSyntaxToLayer,
-          LamInversion,
-          OutputIndexInversion.canonical, LamSyntax.rank] using
-          Nat.lt_succ_of_le (Nat.le_max_right (LamSyntax.rank fn) (LamSyntax.rank arg))
-
-def LamSyntaxPresentation : SyntaxPresentation LamPoly LamInversion LamSyntax :=
-  SyntaxPresentation.ofLayer
-    LamSyntaxLayerPresentation
     (fun _ t => LamSyntax.rank t)
     Lam_layer_child_rank_lt
 
