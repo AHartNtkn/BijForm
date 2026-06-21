@@ -270,10 +270,7 @@ theorem firstPendingStepSearch?_some_connect_exact_of_witness
   rcases st.firstPendingStepSearch?_some_connect_of_witness mate hmate with
     ⟨mate', hmate', hstep⟩
   have hget : rest.get mate' = rest.get mate := by
-    rcases PortHypergraph.edgeMate_existsUnique G.raw active with
-      ⟨uniqueMate, _huniqueMate, huniq⟩
-    exact (huniq (rest.get mate') hmate').trans
-      (huniq (rest.get mate) hmate).symm
+    exact PortHypergraph.edgeMate_eq_of_same_endpoint G.raw hmate' hmate
   have hmateEq : mate' = mate :=
     list_get_injective_of_nodup rest hrestNodup hget
   subst mate'
@@ -410,10 +407,7 @@ theorem firstPendingStepSearch?_some_bud_exact_of_witness
     ⟨node', slot', hmate', hunseen', hstep⟩
   have hendpointEq :
       (G.raw.incident node').get slot' = (G.raw.incident node).get slot := by
-    rcases PortHypergraph.edgeMate_existsUnique G.raw active with
-      ⟨uniqueMate, _huniqueMate, huniq⟩
-    exact (huniq ((G.raw.incident node').get slot') hmate').trans
-      (huniq ((G.raw.incident node).get slot) hmate).symm
+    exact PortHypergraph.edgeMate_eq_of_same_endpoint G.raw hmate' hmate
   have hownerEq :
       (.constructor node' slot' :
         EndpointOwner boundary.length G.raw.nodeCount

@@ -135,11 +135,8 @@ theorem toOpenPortHypergraph_bud_initial_search
             G st.seenNode hcase with ⟨tailMate, htailMate, _hstep⟩
         have hsameMate :
             rest.get tailMate = (G.raw.incident nodeIndex).get slot := by
-          rcases PortHypergraph.edgeMate_existsUnique G.raw
-              (G.raw.boundaryPort ⟨0, by simp⟩) with
-            ⟨uniqueMate, _huniqueMate, huniq⟩
-          exact (huniq (rest.get tailMate) htailMate).trans
-            (huniq ((G.raw.incident nodeIndex).get slot) hmate).symm
+          exact PortHypergraph.edgeMate_eq_of_same_endpoint G.raw
+            htailMate hmate
         let b : Fin (active :: frontier).length :=
           ⟨tailMate.val + 1, by
             have htail := tailMate.isLt
@@ -1119,13 +1116,9 @@ theorem toDiag_of_renderPrefixRelated :
                     have htailEq :
                         rest.get tailMate =
                           ((RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph.raw.incident nodeIndex).get slot := by
-                      rcases PortHypergraph.edgeMate_existsUnique
-                         (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph.raw activeEndpoint with
-                        ⟨uniqueMate, _hunique, huniq⟩
-                      exact (huniq (rest.get tailMate) htailMate).trans
-                        (huniq
-                          (((RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph.raw.incident nodeIndex).get slot)
-                          hmateSearch).symm
+                      exact PortHypergraph.edgeMate_eq_of_same_endpoint
+                        (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph.raw
+                        htailMate hmateSearch
                     let tailRestIdx : Fin restIds.length :=
                       Fin.cast hrestLenVals tailMate
                     have htailVal :

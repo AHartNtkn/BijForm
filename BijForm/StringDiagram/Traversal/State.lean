@@ -759,13 +759,8 @@ def connectChild {G : OpenPortHypergraph Sig boundary}
         exact st.active_not_mem_rest hpending (by
           simpa [hactiveEndpoint] using hrestMem)
       have hendpointMate : endpoint = rest.get mate := by
-        rcases PortHypergraph.edgeMate_existsUnique G.raw active with
-          ⟨uniqueMate, _huniqueMate, huniq⟩
-        have hmateEq : rest.get mate = uniqueMate :=
-          huniq (rest.get mate) hmate
-        have hendpointEq : endpoint = uniqueMate :=
-          huniq endpoint ⟨hactiveNe, hnew.symm⟩
-        exact hendpointEq.trans hmateEq.symm
+        exact PortHypergraph.edgeMate_eq_of_same_endpoint G.raw
+          ⟨hactiveNe, hnew.symm⟩ hmate
       have hmateNotMem :
           rest.get mate ∉ eraseFin rest mate :=
         get_not_mem_eraseFin_of_nodup rest mate (st.rest_nodup hpending)
@@ -800,13 +795,8 @@ def connectChild {G : OpenPortHypergraph Sig boundary}
         exact hunseen hseen
       have hendpointMate :
           endpoint = rest.get mate := by
-        rcases PortHypergraph.edgeMate_existsUnique G.raw active with
-          ⟨uniqueMate, _huniqueMate, huniq⟩
-        have hmateEq : rest.get mate = uniqueMate :=
-          huniq (rest.get mate) hmate
-        have hendpointEq : endpoint = uniqueMate :=
-          huniq endpoint ⟨hactiveNe, hnew.symm⟩
-        exact hendpointEq.trans hmateEq.symm
+        exact PortHypergraph.edgeMate_eq_of_same_endpoint G.raw
+          ⟨hactiveNe, hnew.symm⟩ hmate
       have hmatePending : rest.get mate ∈ st.pending := by
         rw [hpending]
         right
@@ -949,13 +939,8 @@ def budChild {G : OpenPortHypergraph Sig boundary}
             simpa [hactiveEndpoint] using hrest)
         have hendpointMate :
             endpoint = (G.raw.incident node).get slot := by
-          rcases PortHypergraph.edgeMate_existsUnique G.raw active with
-            ⟨uniqueMate, _huniqueMate, huniq⟩
-          have hmateEq : (G.raw.incident node).get slot = uniqueMate :=
-            huniq ((G.raw.incident node).get slot) hmate
-          have hendpointEq : endpoint = uniqueMate :=
-            huniq endpoint ⟨hactiveNe, hnewProcessed.symm⟩
-          exact hendpointEq.trans hmateEq.symm
+          exact PortHypergraph.edgeMate_eq_of_same_endpoint G.raw
+            ⟨hactiveNe, hnewProcessed.symm⟩ hmate
         have hseen : node ∈ st.seenNodes :=
           st.constructor_seen_of_pending hstPending (by
             change (G.raw.incident node).get slot = endpoint
@@ -979,13 +964,8 @@ def budChild {G : OpenPortHypergraph Sig boundary}
           exact hunseen hseen
         have hendpointEntry :
             endpoint = (G.raw.incident node).get slot := by
-          rcases PortHypergraph.edgeMate_existsUnique G.raw active with
-            ⟨uniqueMate, _huniqueMate, huniq⟩
-          have hmateEq : (G.raw.incident node).get slot = uniqueMate :=
-            huniq ((G.raw.incident node).get slot) hmate
-          have hendpointEq : endpoint = uniqueMate :=
-            huniq endpoint ⟨hactiveNe, hnewProcessed.symm⟩
-          exact hendpointEq.trans hmateEq.symm
+          exact PortHypergraph.edgeMate_eq_of_same_endpoint G.raw
+            ⟨hactiveNe, hnewProcessed.symm⟩ hmate
         have hentryNotMem :
             (G.raw.incident node).get slot ∉
               eraseFin (G.raw.incident node) slot :=
@@ -1066,13 +1046,8 @@ def budChild {G : OpenPortHypergraph Sig boundary}
         exact hotherNotSeen hseen
       have hendpointEntry :
           endpoint = (G.raw.incident node).get slot := by
-        rcases PortHypergraph.edgeMate_existsUnique G.raw active with
-          ⟨uniqueMate, _huniqueMate, huniq⟩
-        have hmateEq : (G.raw.incident node).get slot = uniqueMate :=
-          huniq ((G.raw.incident node).get slot) hmate
-        have hendpointEq : endpoint = uniqueMate :=
-          huniq endpoint ⟨hactiveNe, hnewProcessed.symm⟩
-        exact hendpointEq.trans hmateEq.symm
+        exact PortHypergraph.edgeMate_eq_of_same_endpoint G.raw
+          ⟨hactiveNe, hnewProcessed.symm⟩ hmate
       have hownerOther :
           PortHypergraph.endpointOwnerEndpoint G.raw
               (.constructor otherNode otherSlot) =

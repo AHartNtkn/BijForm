@@ -193,6 +193,15 @@ theorem edgeMate_existsUnique (G : PortHypergraph Sig boundary)
       · have hsame : endpoint = mate' := hendpoint.trans hmateRight.symm
         exact False.elim (hmate'.1 hsame)
 
+theorem edgeMate_eq_of_same_endpoint (G : PortHypergraph Sig boundary)
+    {endpoint mate₁ mate₂ : Fin G.endpointCount}
+    (hmate₁ : EdgeMate G endpoint mate₁)
+    (hmate₂ : EdgeMate G endpoint mate₂) :
+    mate₁ = mate₂ := by
+  rcases edgeMate_existsUnique G endpoint with
+    ⟨mate, _hmate, huniq⟩
+  exact (huniq mate₁ hmate₁).trans (huniq mate₂ hmate₂).symm
+
 theorem edgeMate_compatible (G : PortHypergraph Sig boundary)
     {endpoint mate : Fin G.endpointCount}
     (hmate : EdgeMate G endpoint mate) :
