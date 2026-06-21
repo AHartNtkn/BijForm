@@ -1107,6 +1107,82 @@ namespace PortHypergraphIso
 
 variable {Sig : Signature} {boundary : List Sig.Port}
 
+def ofPreserved {G H : PortHypergraph Sig boundary}
+    (endpointEquiv : Fin G.endpointCount ≃ᵢ Fin H.endpointCount)
+    (edgeEquiv : Fin G.edgeCount ≃ᵢ Fin H.edgeCount)
+    (nodeEquiv : Fin G.nodeCount ≃ᵢ Fin H.nodeCount)
+    (boundary_preserved :
+      ∀ b : Fin boundary.length,
+        endpointEquiv.toFun (G.boundaryPort b) = H.boundaryPort b)
+    (endpoint_label_preserved :
+      ∀ endpoint : Fin G.endpointCount,
+        G.endpointLabel endpoint =
+          H.endpointLabel (endpointEquiv.toFun endpoint))
+    (edge_label_preserved :
+      ∀ edge : Fin G.edgeCount,
+        G.edgeLabel edge = H.edgeLabel (edgeEquiv.toFun edge))
+    (endpoint_edge_preserved :
+      ∀ endpoint : Fin G.endpointCount,
+        H.endpointEdge (endpointEquiv.toFun endpoint) =
+          edgeEquiv.toFun (G.endpointEdge endpoint))
+    (node_label_preserved :
+      ∀ node : Fin G.nodeCount,
+        G.nodeLabel node = H.nodeLabel (nodeEquiv.toFun node))
+    (incidence_preserved :
+      ∀ node : Fin G.nodeCount,
+        (G.incident node).map endpointEquiv.toFun =
+          H.incident (nodeEquiv.toFun node)) :
+    PortHypergraphIso G H where
+  endpointEquiv := endpointEquiv
+  edgeEquiv := edgeEquiv
+  nodeEquiv := nodeEquiv
+  boundary_preserved := boundary_preserved
+  boundary_reflected := by
+    intro b
+    have h := congrArg endpointEquiv.invFun (boundary_preserved b)
+    simpa using h.symm
+  endpoint_label_preserved := endpoint_label_preserved
+  endpoint_label_reflected := by
+    intro endpoint
+    have h := endpoint_label_preserved (endpointEquiv.invFun endpoint)
+    rw [endpointEquiv.right_inv endpoint] at h
+    exact h.symm
+  edge_label_preserved := edge_label_preserved
+  edge_label_reflected := by
+    intro edge
+    have h := edge_label_preserved (edgeEquiv.invFun edge)
+    rw [edgeEquiv.right_inv edge] at h
+    exact h.symm
+  endpoint_edge_preserved := endpoint_edge_preserved
+  endpoint_edge_reflected := by
+    intro endpoint
+    have h := endpoint_edge_preserved (endpointEquiv.invFun endpoint)
+    rw [endpointEquiv.right_inv endpoint] at h
+    have h' := congrArg edgeEquiv.invFun h
+    simpa using h'.symm
+  node_label_preserved := node_label_preserved
+  node_label_reflected := by
+    intro node
+    have h := node_label_preserved (nodeEquiv.invFun node)
+    rw [nodeEquiv.right_inv node] at h
+    exact h.symm
+  incidence_preserved := incidence_preserved
+  incidence_reflected := by
+    intro node
+    have h := incidence_preserved (nodeEquiv.invFun node)
+    rw [nodeEquiv.right_inv node] at h
+    have hmap := congrArg (List.map endpointEquiv.invFun) h
+    have hleft :
+        List.map endpointEquiv.invFun
+            (List.map endpointEquiv.toFun
+              (G.incident (nodeEquiv.invFun node))) =
+          G.incident (nodeEquiv.invFun node) := by
+      induction G.incident (nodeEquiv.invFun node) with
+      | nil => rfl
+      | cons endpoint endpoints ih =>
+          simp [endpointEquiv.left_inv endpoint, ih]
+    exact hmap.symm.trans hleft
+
 def refl (G : PortHypergraph Sig boundary) : PortHypergraphIso G G where
   endpointEquiv := Iso.refl (Fin G.endpointCount)
   edgeEquiv := Iso.refl (Fin G.edgeCount)

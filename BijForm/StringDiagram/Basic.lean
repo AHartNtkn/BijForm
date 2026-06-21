@@ -356,6 +356,15 @@ theorem nodup_append_disjoint {α : Type} :
         exact hsplit.1 (by simp [hright])
       · exact nodup_append_disjoint xs ys hsplit.2 htail hright
 
+theorem list_nodup_reverse {α : Type} {xs : List α}
+    (hnodup : xs.Nodup) : xs.reverse.Nodup := by
+  change List.Pairwise (fun left right : α => left ≠ right) xs.reverse
+  rw [List.pairwise_reverse]
+  change List.Pairwise (fun left right : α => right ≠ left) xs
+  exact hnodup.imp (by
+    intro left right hne
+    exact hne.symm)
+
 theorem list_exists_get_of_mem {α : Type} {x : α} :
     ∀ (xs : List α), x ∈ xs → ∃ i : Fin xs.length, xs.get i = x
   | [], h => by cases h
@@ -367,6 +376,98 @@ theorem list_exists_get_of_mem {α : Type} {x : α} :
       · rcases list_exists_get_of_mem ys h with ⟨i, hi⟩
         refine ⟨⟨i.val + 1, by simp [i.isLt]⟩, ?_⟩
         exact hi
+
+def listIndexOfMem {α : Type} [DecidableEq α] :
+    (xs : List α) → (x : α) → x ∈ xs → Fin xs.length
+  | [], _x, hmem => False.elim (by cases hmem)
+  | y :: ys, x, hmem =>
+      if hxy : x = y then
+        ⟨0, by simp⟩
+      else
+        let htail : x ∈ ys := by
+          simp at hmem
+          rcases hmem with hhead | htail
+          · exact False.elim (hxy hhead)
+          · exact htail
+        let idx := listIndexOfMem ys x htail
+        ⟨idx.val + 1, by simp [idx.isLt]⟩
+
+theorem listIndexOfMem_get {α : Type} [DecidableEq α] :
+    ∀ (xs : List α) (x : α) (hmem : x ∈ xs),
+      xs.get (listIndexOfMem xs x hmem) = x
+  | [], _x, hmem => by cases hmem
+  | y :: ys, x, hmem => by
+      unfold listIndexOfMem
+      by_cases hxy : x = y
+      · simp [hxy]
+      · simp [hxy]
+        let htail : x ∈ ys := by
+          simp at hmem
+          rcases hmem with hhead | htail
+          · exact False.elim (hxy hhead)
+          · exact htail
+        exact listIndexOfMem_get ys x htail
+
+theorem listIndexOfMem_get_eq_of_nodup {α : Type} [DecidableEq α] :
+    ∀ (xs : List α), xs.Nodup → (i : Fin xs.length) →
+      listIndexOfMem xs (xs.get i) (List.get_mem xs i) = i
+  | [], _hnodup, i => by
+      cases i with
+      | mk val isLt => exact False.elim (Nat.not_lt_zero val isLt)
+  | y :: ys, hnodup, i => by
+      cases i with
+      | mk iVal iLt =>
+          cases iVal with
+          | zero =>
+              unfold listIndexOfMem
+              simp
+          | succ iVal =>
+              have hsplit : y ∉ ys ∧ ys.Nodup := by
+                simpa using hnodup
+              let tailIndex : Fin ys.length :=
+                ⟨iVal, Nat.lt_of_succ_lt_succ iLt⟩
+              have hne : ys.get tailIndex ≠ y := by
+                intro hsame
+                exact hsplit.1 (by
+                  rw [← hsame]
+                  exact List.get_mem ys tailIndex)
+              have htailBound : iVal < ys.length :=
+                Nat.lt_of_succ_lt_succ iLt
+              have hneVal : ¬ ys[iVal]'htailBound = y := by
+                intro hsame
+                exact hne (by
+                  simpa [tailIndex] using hsame)
+              unfold listIndexOfMem
+              simp [hneVal]
+              have hrec :=
+                congrArg Fin.val
+                  (listIndexOfMem_get_eq_of_nodup ys hsplit.2 tailIndex)
+              simpa [tailIndex] using hrec
+
+def finCastIso {m n : Nat} (h : m = n) : Fin m ≃ᵢ Fin n where
+  toFun := Fin.cast h
+  invFun := Fin.cast h.symm
+  left_inv := by
+    intro x
+    cases h
+    rfl
+  right_inv := by
+    intro x
+    cases h
+    rfl
+
+def listFinIso {n : Nat} (xs : List (Fin n))
+    (hnodup : xs.Nodup)
+    (hcover : ∀ x : Fin n, x ∈ xs) :
+    Fin xs.length ≃ᵢ Fin n where
+  toFun i := xs.get i
+  invFun x := listIndexOfMem xs x (hcover x)
+  left_inv := by
+    intro i
+    exact listIndexOfMem_get_eq_of_nodup xs hnodup i
+  right_inv := by
+    intro x
+    exact listIndexOfMem_get xs x (hcover x)
 
 theorem findSome?_exists_of_mem_isSome {α β : Type}
     (xs : List α) (f : α → Option β) {x : α}
@@ -517,6 +618,27 @@ theorem list_length_le_fin_of_nodup {n : Nat}
   have hle :=
     list_length_le_of_nodup_subset xs (List.finRange n) hnodup hsubset
   simpa [List.length_ofFn, List.finRange] using hle
+
+theorem list_length_eq_fin_of_nodup_cover {n : Nat}
+    (xs : List (Fin n)) (hnodup : xs.Nodup)
+    (hcover : ∀ x : Fin n, x ∈ xs) :
+    xs.length = n := by
+  have hle : xs.length ≤ n :=
+    list_length_le_fin_of_nodup xs hnodup
+  have hge : n ≤ xs.length := by
+    have hsubset :
+        ∀ x : Fin n, x ∈ List.finRange n → x ∈ xs := by
+      intro x _hmem
+      exact hcover x
+    have hleRange :=
+      list_length_le_of_nodup_subset (List.finRange n) xs
+        (by
+          simpa [List.finRange] using
+            list_nodup_ofFn_injective (fun i : Fin n => i)
+              (fun _ _ h => h))
+        hsubset
+    simpa [List.finRange] using hleRange
+  omega
 
 /--
 A typed ordered-port string-diagram signature.

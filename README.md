@@ -203,9 +203,16 @@ lake exe bijform
   - `StringDiagram.listPrefixIndex_get`
   - `StringDiagram.listPrefixIndex_val`
   - `StringDiagram.list_get_map_eq_get`
+  - `StringDiagram.listIndexOfMem`
+  - `StringDiagram.listIndexOfMem_get`
+  - `StringDiagram.listIndexOfMem_get_eq_of_nodup`
+  - `StringDiagram.finCastIso`
+  - `StringDiagram.listFinIso`
+  - `StringDiagram.list_nodup_reverse`
   - `StringDiagram.nodup_append_left`
   - `StringDiagram.nodup_append_right`
   - `StringDiagram.nodup_append_disjoint`
+  - `StringDiagram.list_length_eq_fin_of_nodup_cover`
   - `StringDiagram.RenderState.ValidIds`
   - `StringDiagram.RenderState.edgeEndpointIds`
   - `StringDiagram.RenderState.edgeEndpointIdsOfEdges`
@@ -343,6 +350,7 @@ lake exe bijform
   - `StringDiagram.OpenPortHypergraph.SearchState.budChild_remainingEdges_lt`
   - `StringDiagram.OpenPortHypergraph.SearchState.budChild_proof_irrel`
   - `StringDiagram.PortHypergraphIso`
+  - `StringDiagram.PortHypergraphIso.ofPreserved`
   - `StringDiagram.PortHypergraphIso.edgeMate_preserved`
   - `StringDiagram.PortHypergraphIso.edgeMate_reflected`
   - `StringDiagram.PortHypergraphIso.incidenceSlotPreserved`
@@ -391,6 +399,27 @@ lake exe bijform
   - `StringDiagram.OpenPortHypergraph.SearchState.toDiag_isoRelated`
   - `StringDiagram.OpenPortHypergraph.fromGraph`
   - `StringDiagram.OpenPortHypergraph.SearchState.GraphExhausted`
+  - `StringDiagram.OpenPortHypergraph.SearchState.endpointOrder`
+  - `StringDiagram.OpenPortHypergraph.SearchState.edgeOrder`
+  - `StringDiagram.OpenPortHypergraph.SearchState.nodeOrder`
+  - `StringDiagram.OpenPortHypergraph.SearchState.incident_mem_node_eq`
+  - `StringDiagram.OpenPortHypergraph.SearchState.boundary_mem_not_incident_mem`
+  - `StringDiagram.OpenPortHypergraph.SearchState.incidentFlatMap_nodup_of_nodup`
+  - `StringDiagram.OpenPortHypergraph.SearchState.endpointOrder_nodup_of_seenNodes_nodup`
+  - `StringDiagram.OpenPortHypergraph.SearchState.edgeOrder_nodup`
+  - `StringDiagram.OpenPortHypergraph.SearchState.nodeOrder_nodup_of_seenNodes_nodup`
+  - `StringDiagram.OpenPortHypergraph.SearchState.pending_mem_endpointOrder`
+  - `StringDiagram.OpenPortHypergraph.SearchState.GraphRenderRelated`
+  - `StringDiagram.OpenPortHypergraph.SearchState.initial_graphRenderRelated`
+  - `StringDiagram.OpenPortHypergraph.SearchState.endpointOrder_connectChild`
+  - `StringDiagram.OpenPortHypergraph.SearchState.edgeOrder_connectChild`
+  - `StringDiagram.OpenPortHypergraph.SearchState.nodeOrder_connectChild`
+  - `StringDiagram.OpenPortHypergraph.SearchState.GraphRenderRelated.seenNodes_nodup`
+  - `StringDiagram.OpenPortHypergraph.SearchState.GraphRenderRelated.pending_cons_values`
+  - `StringDiagram.OpenPortHypergraph.SearchState.endpoint_mem_endpointOrder_of_graphExhausted`
+  - `StringDiagram.OpenPortHypergraph.SearchState.edge_mem_edgeOrder_of_graphExhausted`
+  - `StringDiagram.OpenPortHypergraph.SearchState.node_mem_nodeOrder_of_graphExhausted`
+  - `StringDiagram.OpenPortHypergraph.SearchState.GraphRenderRelated.toPortHypergraphIso`
   - `StringDiagram.OpenPortHypergraph.SearchState.pending_ne_nil_of_reachable_unprocessed`
   - `StringDiagram.OpenPortHypergraph.SearchState.allNodesSeen_of_pending_nil`
   - `StringDiagram.OpenPortHypergraph.SearchState.allEdgesProcessed_of_pending_nil`

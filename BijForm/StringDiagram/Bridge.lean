@@ -1309,6 +1309,646 @@ theorem toDiag_of_renderPrefixRelated :
 
 end Diag
 
+namespace OpenPortHypergraph
+namespace SearchState
+
+variable {Sig : Signature} {boundary : List Sig.Port}
+
+/-- Endpoint order induced by a graph traversal prefix. -/
+def endpointOrder (G : OpenPortHypergraph Sig boundary)
+    {frontier : List Sig.Port} (st : SearchState G frontier) :
+    List (Fin G.raw.endpointCount) :=
+  List.ofFn G.raw.boundaryPort ++
+    st.seenNodes.reverse.flatMap fun node => G.raw.incident node
+
+/-- Edge order induced by a graph traversal prefix. -/
+def edgeOrder {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port} (st : SearchState G frontier) :
+    List (Fin G.raw.edgeCount) :=
+  st.processedEdges.reverse
+
+/-- Constructor-node order induced by a graph traversal prefix. -/
+def nodeOrder {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port} (st : SearchState G frontier) :
+    List (Fin G.raw.nodeCount) :=
+  st.seenNodes.reverse
+
+theorem incident_mem_node_eq
+    {G : OpenPortHypergraph Sig boundary}
+    {leftNode rightNode : Fin G.raw.nodeCount}
+    {endpoint : Fin G.raw.endpointCount}
+    (hleft : endpoint ∈ G.raw.incident leftNode)
+    (hright : endpoint ∈ G.raw.incident rightNode) :
+    leftNode = rightNode := by
+  rcases list_exists_get_of_mem (G.raw.incident leftNode) hleft with
+    ⟨leftSlot, hleftSlot⟩
+  rcases list_exists_get_of_mem (G.raw.incident rightNode) hright with
+    ⟨rightSlot, hrightSlot⟩
+  rcases G.raw.endpoint_owner endpoint with ⟨owner, _howner, huniq⟩
+  have hleftOwner :
+      (.constructor leftNode leftSlot :
+        EndpointOwner boundary.length G.raw.nodeCount
+          (fun node => (G.raw.incident node).length)) = owner := by
+    apply huniq
+    simpa [PortHypergraph.endpointOwnerEndpoint] using hleftSlot
+  have hrightOwner :
+      (.constructor rightNode rightSlot :
+        EndpointOwner boundary.length G.raw.nodeCount
+          (fun node => (G.raw.incident node).length)) = owner := by
+    apply huniq
+    simpa [PortHypergraph.endpointOwnerEndpoint] using hrightSlot
+  have hsame :
+      (.constructor leftNode leftSlot :
+        EndpointOwner boundary.length G.raw.nodeCount
+          (fun node => (G.raw.incident node).length)) =
+      .constructor rightNode rightSlot :=
+    hleftOwner.trans hrightOwner.symm
+  cases hsame
+  rfl
+
+theorem boundary_mem_not_incident_mem
+    {G : OpenPortHypergraph Sig boundary}
+    {endpoint : Fin G.raw.endpointCount}
+    (hboundary : endpoint ∈ List.ofFn G.raw.boundaryPort)
+    {node : Fin G.raw.nodeCount}
+    (hincident : endpoint ∈ G.raw.incident node) :
+    False := by
+  rcases (List.mem_ofFn.mp hboundary) with ⟨boundaryIndex, hboundaryEq⟩
+  rcases list_exists_get_of_mem (G.raw.incident node) hincident with
+    ⟨slot, hslot⟩
+  rcases G.raw.endpoint_owner endpoint with ⟨owner, _howner, huniq⟩
+  have hboundaryOwner :
+      (.boundary boundaryIndex :
+        EndpointOwner boundary.length G.raw.nodeCount
+          (fun node => (G.raw.incident node).length)) = owner := by
+    apply huniq
+    simpa [PortHypergraph.endpointOwnerEndpoint] using hboundaryEq
+  have hconstructorOwner :
+      (.constructor node slot :
+        EndpointOwner boundary.length G.raw.nodeCount
+          (fun node => (G.raw.incident node).length)) = owner := by
+    apply huniq
+    simpa [PortHypergraph.endpointOwnerEndpoint] using hslot
+  have hsame :
+      (.boundary boundaryIndex :
+        EndpointOwner boundary.length G.raw.nodeCount
+          (fun node => (G.raw.incident node).length)) =
+      .constructor node slot :=
+    hboundaryOwner.trans hconstructorOwner.symm
+  cases hsame
+
+theorem incidentFlatMap_nodup_of_nodup
+    {G : OpenPortHypergraph Sig boundary} :
+    ∀ (nodes : List (Fin G.raw.nodeCount)),
+      nodes.Nodup →
+        (nodes.flatMap fun node => G.raw.incident node).Nodup
+  | [], _hnodup => by simp
+  | node :: nodes, hnodup => by
+      have hsplit : node ∉ nodes ∧ nodes.Nodup := by
+        simpa using hnodup
+      apply nodup_append_of_nodup_disjoint
+      · exact G.raw.incident_nodup node
+      · exact incidentFlatMap_nodup_of_nodup nodes hsplit.2
+      · intro endpoint hhead htail
+        rw [← List.flatMap_def] at htail
+        rw [List.mem_flatMap] at htail
+        rcases htail with ⟨otherNode, hotherNode, hotherIncident⟩
+        have hnodeEq :
+            node = otherNode :=
+          incident_mem_node_eq hhead hotherIncident
+        exact hsplit.1 (by simpa [hnodeEq] using hotherNode)
+
+theorem endpointOrder_nodup_of_seenNodes_nodup
+    {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port} {st : SearchState G frontier}
+    (hseen : st.seenNodes.Nodup) :
+    (endpointOrder G st).Nodup := by
+  unfold endpointOrder
+  apply nodup_append_of_nodup_disjoint
+  · exact list_nodup_ofFn_injective G.raw.boundaryPort G.raw.boundary_injective
+  · exact incidentFlatMap_nodup_of_nodup st.seenNodes.reverse
+      (list_nodup_reverse hseen)
+  · intro endpoint hboundary hincident
+    rw [List.mem_flatMap] at hincident
+    rcases hincident with ⟨node, _hnode, hincident⟩
+    exact boundary_mem_not_incident_mem hboundary hincident
+
+theorem edgeOrder_nodup
+    {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port} (st : SearchState G frontier) :
+    (edgeOrder st).Nodup := by
+  simpa [edgeOrder] using list_nodup_reverse st.processedEdges_nodup
+
+theorem nodeOrder_nodup_of_seenNodes_nodup
+    {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port} {st : SearchState G frontier}
+    (hseen : st.seenNodes.Nodup) :
+    (nodeOrder st).Nodup := by
+  simpa [nodeOrder] using list_nodup_reverse hseen
+
+theorem pending_mem_endpointOrder
+    {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port} (st : SearchState G frontier)
+    {endpoint : Fin G.raw.endpointCount}
+    (hpending : endpoint ∈ st.pending) :
+    endpoint ∈ endpointOrder G st := by
+  rcases G.raw.endpoint_owner endpoint with ⟨owner, howner, _huniq⟩
+  cases owner with
+  | boundary boundaryIndex =>
+      apply List.mem_append_left
+      rw [List.mem_ofFn]
+      refine ⟨boundaryIndex, ?_⟩
+      simpa [PortHypergraph.endpointOwnerEndpoint] using howner
+  | constructor node slot =>
+      have hownerEndpoint :
+          PortHypergraph.endpointOwnerEndpoint G.raw
+              (.constructor node slot) = endpoint := by
+        simpa [PortHypergraph.endpointOwnerEndpoint] using howner
+      have hseen :
+          node ∈ st.seenNodes :=
+        st.pending_owner_seen endpoint hpending (.constructor node slot)
+          hownerEndpoint
+      apply List.mem_append_right
+      rw [List.mem_flatMap]
+      refine ⟨node, ?_, ?_⟩
+      · simpa using hseen
+      · change endpoint ∈ G.raw.incident node
+        have hendpoint :
+            (G.raw.incident node).get slot = endpoint := by
+          simpa [PortHypergraph.endpointOwnerEndpoint] using howner
+        rw [← hendpoint]
+        exact List.get_mem (G.raw.incident node) slot
+
+/--
+Constructive correspondence between a renderer prefix and traversal over an
+original graph.  It records the relabeling that sends rendered endpoint, edge,
+and node indices to the original graph indices in traversal order.
+-/
+structure GraphRenderRelated (G : OpenPortHypergraph Sig boundary)
+    {frontier : List Sig.Port}
+    (rst : RenderState Sig frontier) (st : SearchState G frontier) : Prop where
+  endpoint_nodup : (endpointOrder G st).Nodup
+  edge_nodup : (edgeOrder st).Nodup
+  node_nodup : (nodeOrder st).Nodup
+  endpoint_length : rst.endpoints.length = (endpointOrder G st).length
+  edge_length : rst.edges.length = (edgeOrder st).length
+  node_length : rst.nodes.length = (nodeOrder st).length
+  frontier_id_bound :
+    ∀ id : Fin rst.frontierIds.length,
+      rst.frontierIds.get id < rst.endpoints.length
+  pending_length : rst.frontierIds.length = st.pending.length
+  pending_id :
+    ∀ id : Fin rst.frontierIds.length,
+      (endpointOrder G st).get
+          (Fin.cast endpoint_length
+            ⟨rst.frontierIds.get id, frontier_id_bound id⟩) =
+        st.pending.get (Fin.cast pending_length id)
+  endpoint_label :
+    ∀ endpoint : Fin rst.endpoints.length,
+      rst.endpoints.get endpoint =
+        G.raw.endpointLabel
+          ((endpointOrder G st).get (Fin.cast endpoint_length endpoint))
+  edge_label :
+    ∀ edge : Fin rst.edges.length,
+      (rst.edges.get edge).label =
+        G.raw.edgeLabel
+          ((edgeOrder st).get (Fin.cast edge_length edge))
+  edge_left_bound :
+    ∀ edge : Fin rst.edges.length,
+      (rst.edges.get edge).left < rst.endpoints.length
+  edge_right_bound :
+    ∀ edge : Fin rst.edges.length,
+      (rst.edges.get edge).right < rst.endpoints.length
+  edge_left :
+    ∀ edge : Fin rst.edges.length,
+      G.raw.endpointEdge
+          ((endpointOrder G st).get
+            (Fin.cast endpoint_length
+              ⟨(rst.edges.get edge).left, edge_left_bound edge⟩)) =
+        (edgeOrder st).get (Fin.cast edge_length edge)
+  edge_right :
+    ∀ edge : Fin rst.edges.length,
+      G.raw.endpointEdge
+          ((endpointOrder G st).get
+            (Fin.cast endpoint_length
+              ⟨(rst.edges.get edge).right, edge_right_bound edge⟩)) =
+        (edgeOrder st).get (Fin.cast edge_length edge)
+  node_label :
+    ∀ node : Fin rst.nodes.length,
+      (rst.nodes.get node).label =
+        G.raw.nodeLabel
+          ((nodeOrder st).get (Fin.cast node_length node))
+  node_incident_length :
+    ∀ node : Fin rst.nodes.length,
+      (rst.nodes.get node).incident.length =
+        (G.raw.incident
+          ((nodeOrder st).get (Fin.cast node_length node))).length
+  node_incident_bound :
+    ∀ (node : Fin rst.nodes.length)
+      (slot : Fin (rst.nodes.get node).incident.length),
+      (rst.nodes.get node).incident.get slot < rst.endpoints.length
+  node_incident :
+    ∀ (node : Fin rst.nodes.length)
+      (slot : Fin (rst.nodes.get node).incident.length),
+      (endpointOrder G st).get
+          (Fin.cast endpoint_length
+            ⟨(rst.nodes.get node).incident.get slot,
+              node_incident_bound node slot⟩) =
+        (G.raw.incident
+          ((nodeOrder st).get (Fin.cast node_length node))).get
+            (Fin.cast (node_incident_length node) slot)
+
+theorem initial_graphRenderRelated
+    (G : OpenPortHypergraph Sig boundary) :
+    GraphRenderRelated G (RenderState.initial Sig boundary) (initial G) where
+  endpoint_nodup := by
+    simpa [endpointOrder, initial] using
+      list_nodup_ofFn_injective G.raw.boundaryPort G.raw.boundary_injective
+  edge_nodup := by
+    simp [edgeOrder, initial]
+  node_nodup := by
+    simp [nodeOrder, initial]
+  endpoint_length := by
+    simp [endpointOrder, RenderState.initial, initial]
+  edge_length := by
+    simp [edgeOrder, RenderState.initial, initial]
+  node_length := by
+    simp [nodeOrder, RenderState.initial, initial]
+  frontier_id_bound := by
+    intro id
+    simpa [RenderState.initial] using id.isLt
+  pending_length := by
+    simp [RenderState.initial, initial]
+  pending_id := by
+    intro id
+    dsimp [RenderState.initial, initial, endpointOrder]
+    simp
+  endpoint_label := by
+    intro endpoint
+    dsimp [RenderState.initial, endpointOrder, initial]
+    simpa using (G.raw.boundary_label endpoint).symm
+  edge_label := by
+    intro edge
+    cases edge with
+    | mk val isLt => exact False.elim (Nat.not_lt_zero val isLt)
+  edge_left_bound := by
+    intro edge
+    cases edge with
+    | mk val isLt => exact False.elim (Nat.not_lt_zero val isLt)
+  edge_right_bound := by
+    intro edge
+    cases edge with
+    | mk val isLt => exact False.elim (Nat.not_lt_zero val isLt)
+  edge_left := by
+    intro edge
+    cases edge with
+    | mk val isLt => exact False.elim (Nat.not_lt_zero val isLt)
+  edge_right := by
+    intro edge
+    cases edge with
+    | mk val isLt => exact False.elim (Nat.not_lt_zero val isLt)
+  node_label := by
+    intro node
+    cases node with
+    | mk val isLt => exact False.elim (Nat.not_lt_zero val isLt)
+  node_incident_length := by
+    intro node
+    cases node with
+    | mk val isLt => exact False.elim (Nat.not_lt_zero val isLt)
+  node_incident_bound := by
+    intro node
+    cases node with
+    | mk val isLt => exact False.elim (Nat.not_lt_zero val isLt)
+  node_incident := by
+    intro node
+    cases node with
+    | mk val isLt => exact False.elim (Nat.not_lt_zero val isLt)
+
+theorem endpointOrder_connectChild
+    {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {frontier : List Sig.Port}
+    (st : SearchState G (activeLabel :: frontier))
+    {active : Fin G.raw.endpointCount}
+    {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest)
+    (mate : Fin rest.length)
+    (hmate : PortHypergraph.EdgeMate G.raw active (rest.get mate)) :
+    endpointOrder G (st.connectChild hpending mate hmate) =
+      endpointOrder G st := by
+  simp [endpointOrder, connectChild]
+
+theorem edgeOrder_connectChild
+    {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {frontier : List Sig.Port}
+    (st : SearchState G (activeLabel :: frontier))
+    {active : Fin G.raw.endpointCount}
+    {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest)
+    (mate : Fin rest.length)
+    (hmate : PortHypergraph.EdgeMate G.raw active (rest.get mate)) :
+    edgeOrder (st.connectChild hpending mate hmate) =
+      edgeOrder st ++ [G.raw.endpointEdge active] := by
+  simp [edgeOrder, connectChild]
+
+theorem nodeOrder_connectChild
+    {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {frontier : List Sig.Port}
+    (st : SearchState G (activeLabel :: frontier))
+    {active : Fin G.raw.endpointCount}
+    {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest)
+    (mate : Fin rest.length)
+    (hmate : PortHypergraph.EdgeMate G.raw active (rest.get mate)) :
+    nodeOrder (st.connectChild hpending mate hmate) =
+      nodeOrder st := by
+  simp [nodeOrder, connectChild]
+
+theorem GraphRenderRelated.seenNodes_nodup
+    {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port}
+    {rst : RenderState Sig frontier} {st : SearchState G frontier}
+    (hrel : GraphRenderRelated G rst st) :
+    st.seenNodes.Nodup := by
+  simpa [nodeOrder] using list_nodup_reverse hrel.node_nodup
+
+theorem GraphRenderRelated.pending_cons_values
+    {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {frontier : List Sig.Port}
+    {rst : RenderState Sig (activeLabel :: frontier)}
+    {st : SearchState G (activeLabel :: frontier)}
+    (hrel : GraphRenderRelated G rst st)
+    {active : Fin G.raw.endpointCount}
+    {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest)
+    {activeId : Nat} {restIds : List Nat}
+    (hids : rst.frontierIds = activeId :: restIds) :
+    (endpointOrder G st).get
+        (Fin.cast hrel.endpoint_length
+          ⟨activeId, by
+            have hbound := hrel.frontier_id_bound
+              (⟨0, by rw [hids]; simp⟩ : Fin rst.frontierIds.length)
+            simpa [hids] using hbound⟩) = active ∧
+      ∀ id : Fin restIds.length,
+        (endpointOrder G st).get
+            (Fin.cast hrel.endpoint_length
+              ⟨restIds.get id, by
+                have hbound := hrel.frontier_id_bound
+                  (⟨id.val + 1, by rw [hids]; simp [id.isLt]⟩ :
+                    Fin rst.frontierIds.length)
+                simpa [hids] using hbound⟩) =
+          rest.get (Fin.cast (by
+            have hpendingLen := hrel.pending_length
+            rw [hids, hpending] at hpendingLen
+            exact Nat.succ.inj hpendingLen) id) := by
+  constructor
+  · have h := hrel.pending_id
+      (⟨0, by rw [hids]; simp⟩ : Fin rst.frontierIds.length)
+    have hcast :
+        (Fin.cast hrel.pending_length
+            (⟨0, by rw [hids]; simp⟩ : Fin rst.frontierIds.length) :
+          Fin st.pending.length) =
+        ⟨0, by rw [hpending]; simp⟩ := by
+      apply Fin.ext
+      rfl
+    simpa [hids, hpending, hcast] using h
+  · intro id
+    have h := hrel.pending_id
+      (⟨id.val + 1, by rw [hids]; simp [id.isLt]⟩ :
+        Fin rst.frontierIds.length)
+    have htailLen :
+        restIds.length = rest.length := by
+      have hpendingLen := hrel.pending_length
+      rw [hids, hpending] at hpendingLen
+      exact Nat.succ.inj hpendingLen
+    have hcast :
+        (Fin.cast hrel.pending_length
+            (⟨id.val + 1, by rw [hids]; simp [id.isLt]⟩ :
+              Fin rst.frontierIds.length) :
+          Fin st.pending.length) =
+        ⟨id.val + 1, by
+          rw [hpending]
+          simp
+          rw [← htailLen]
+          exact id.isLt⟩ := by
+      apply Fin.ext
+      rfl
+    have htailCast :
+        (⟨id.val, by simpa [htailLen] using id.isLt⟩ :
+          Fin rest.length) =
+        Fin.cast htailLen id := by
+      apply Fin.ext
+      rfl
+    simpa [hids, hpending, hcast, htailCast] using h
+
+theorem endpoint_mem_endpointOrder_of_graphExhausted
+    {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port} {st : SearchState G frontier}
+    (hexhausted : st.GraphExhausted)
+    (endpoint : Fin G.raw.endpointCount) :
+    endpoint ∈ endpointOrder G st := by
+  rcases G.raw.endpoint_owner endpoint with ⟨owner, howner, _huniq⟩
+  cases owner with
+  | boundary boundaryIndex =>
+      apply List.mem_append_left
+      rw [List.mem_ofFn]
+      refine ⟨boundaryIndex, ?_⟩
+      simpa [PortHypergraph.endpointOwnerEndpoint] using howner
+  | constructor node slot =>
+      apply List.mem_append_right
+      rw [List.mem_flatMap]
+      refine ⟨node, ?_, ?_⟩
+      · simpa using hexhausted.allNodesSeen node
+      · change endpoint ∈ G.raw.incident node
+        have hendpoint :
+            (G.raw.incident node).get slot = endpoint := by
+          simpa [PortHypergraph.endpointOwnerEndpoint] using howner
+        rw [← hendpoint]
+        exact List.get_mem (G.raw.incident node) slot
+
+theorem edge_mem_edgeOrder_of_graphExhausted
+    {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port} {st : SearchState G frontier}
+    (hexhausted : st.GraphExhausted)
+    (edge : Fin G.raw.edgeCount) :
+    edge ∈ edgeOrder st := by
+  simpa [edgeOrder] using hexhausted.allEdgesProcessed edge
+
+theorem node_mem_nodeOrder_of_graphExhausted
+    {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port} {st : SearchState G frontier}
+    (hexhausted : st.GraphExhausted)
+    (node : Fin G.raw.nodeCount) :
+    node ∈ nodeOrder st := by
+  simpa [nodeOrder] using hexhausted.allNodesSeen node
+
+def GraphRenderRelated.toPortHypergraphIso
+    {G : OpenPortHypergraph Sig boundary}
+    {st : SearchState G []}
+    {rst : RenderState Sig []}
+    (hv : rst.ValidIds)
+    (hp : rst.EndpointPartition)
+    (hn : rst.NodeIncidentNodup)
+    (pref : rst.EndpointPrefix boundary)
+    (ho : rst.OwnerIdPartition boundary)
+    (hall :
+      PortHypergraph.AllConstructorsReachBoundary
+        (RenderState.portHypergraphEvidenceOfInvariants
+          hv hp hn pref ho).toPortHypergraph)
+    (hrel : GraphRenderRelated G rst st)
+    (hexhausted : st.GraphExhausted) :
+    PortHypergraphIso
+      (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph.raw
+      G.raw := by
+  let R :=
+    (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph.raw
+  let endpointCover :
+      ∀ endpoint : Fin G.raw.endpointCount,
+        endpoint ∈ endpointOrder G st :=
+    endpoint_mem_endpointOrder_of_graphExhausted hexhausted
+  let edgeCover :
+      ∀ edge : Fin G.raw.edgeCount,
+        edge ∈ edgeOrder st :=
+    edge_mem_edgeOrder_of_graphExhausted hexhausted
+  let nodeCover :
+      ∀ node : Fin G.raw.nodeCount,
+        node ∈ nodeOrder st :=
+    node_mem_nodeOrder_of_graphExhausted hexhausted
+  let endpointEquiv : Fin R.endpointCount ≃ᵢ Fin G.raw.endpointCount :=
+    Iso.trans (finCastIso hrel.endpoint_length)
+      (listFinIso (endpointOrder G st) hrel.endpoint_nodup endpointCover)
+  let edgeEquiv : Fin R.edgeCount ≃ᵢ Fin G.raw.edgeCount :=
+    Iso.trans (finCastIso hrel.edge_length)
+      (listFinIso (edgeOrder st) hrel.edge_nodup edgeCover)
+  let nodeEquiv : Fin R.nodeCount ≃ᵢ Fin G.raw.nodeCount :=
+    Iso.trans (finCastIso hrel.node_length)
+      (listFinIso (nodeOrder st) hrel.node_nodup nodeCover)
+  refine PortHypergraphIso.ofPreserved endpointEquiv edgeEquiv nodeEquiv ?_ ?_ ?_ ?_ ?_ ?_
+  · intro b
+    have hval :
+        (R.boundaryPort b).val = b.val := by
+      simpa [R, RenderState.OpenPortHypergraphEvidence.toOpenPortHypergraph,
+        RenderState.PortHypergraphEvidence.toPortHypergraph,
+        RenderState.openEvidenceOfInvariants,
+        RenderState.portHypergraphEvidenceOfInvariants] using
+        RenderState.boundaryEvidenceOfPrefix_boundaryPort_val pref b
+    dsimp [endpointEquiv, Iso.trans, finCastIso, listFinIso]
+    have hprefix :=
+      list_get_append_left (List.ofFn G.raw.boundaryPort)
+        (st.seenNodes.reverse.flatMap fun node => G.raw.incident node)
+        (i := b.val)
+        (by simp)
+        (by simp; omega)
+    have hboundary :
+        (List.ofFn G.raw.boundaryPort).get ⟨b.val, by simp⟩ =
+          G.raw.boundaryPort b := by
+      simp
+    change
+      (List.ofFn G.raw.boundaryPort ++
+          (st.seenNodes.reverse.flatMap fun node => G.raw.incident node)).get
+        ⟨b.val, by simp; omega⟩ =
+      G.raw.boundaryPort b
+    exact hprefix.trans hboundary
+  · intro endpoint
+    dsimp [R, endpointEquiv, Iso.trans, finCastIso, listFinIso,
+      RenderState.OpenPortHypergraphEvidence.toOpenPortHypergraph,
+      RenderState.PortHypergraphEvidence.toPortHypergraph,
+      RenderState.openEvidenceOfInvariants,
+      RenderState.portHypergraphEvidenceOfInvariants]
+    exact hrel.endpoint_label endpoint
+  · intro edge
+    dsimp [R, edgeEquiv, Iso.trans, finCastIso, listFinIso,
+      RenderState.OpenPortHypergraphEvidence.toOpenPortHypergraph,
+      RenderState.PortHypergraphEvidence.toPortHypergraph,
+      RenderState.openEvidenceOfInvariants,
+      RenderState.portHypergraphEvidenceOfInvariants]
+    exact hrel.edge_label edge
+  · intro endpoint
+    dsimp [R, endpointEquiv, edgeEquiv, Iso.trans, finCastIso, listFinIso,
+      RenderState.OpenPortHypergraphEvidence.toOpenPortHypergraph,
+      RenderState.PortHypergraphEvidence.toPortHypergraph,
+      RenderState.openEvidenceOfInvariants,
+      RenderState.portHypergraphEvidenceOfInvariants,
+      RenderState.edgeEvidenceOfPartition,
+      RenderState.endpointEdgeEvidenceOfPartition]
+    let edgeIndex := RenderState.endpointEdgeOfPartition hp endpoint
+    have hside :
+        endpoint.val = (rst.edges.get edgeIndex).left ∨
+          endpoint.val = (rst.edges.get edgeIndex).right := by
+      simpa [edgeIndex] using
+        RenderState.endpointEdgeOfPartition_endpoint hp endpoint
+    rcases hside with hleft | hright
+    · have hendpoint :
+          endpoint =
+            (⟨(rst.edges.get edgeIndex).left,
+              hrel.edge_left_bound edgeIndex⟩ : Fin rst.endpoints.length) := by
+        apply Fin.ext
+        exact hleft
+      rw [hendpoint]
+      have hedge :
+          RenderState.endpointEdgeOfPartition hp
+              (⟨(rst.edges.get edgeIndex).left,
+                hrel.edge_left_bound edgeIndex⟩ :
+                Fin rst.endpoints.length) = edgeIndex := by
+        exact RenderState.endpointEdgeOfPartition_left hv hp edgeIndex
+      rw [hedge]
+      exact hrel.edge_left edgeIndex
+    · have hendpoint :
+          endpoint =
+            (⟨(rst.edges.get edgeIndex).right,
+              hrel.edge_right_bound edgeIndex⟩ : Fin rst.endpoints.length) := by
+        apply Fin.ext
+        exact hright
+      rw [hendpoint]
+      have hedge :
+          RenderState.endpointEdgeOfPartition hp
+              (⟨(rst.edges.get edgeIndex).right,
+                hrel.edge_right_bound edgeIndex⟩ :
+                Fin rst.endpoints.length) = edgeIndex := by
+        exact RenderState.endpointEdgeOfPartition_right hv hp edgeIndex
+      rw [hedge]
+      exact hrel.edge_right edgeIndex
+  · intro node
+    dsimp [R, nodeEquiv, Iso.trans, finCastIso, listFinIso,
+      RenderState.OpenPortHypergraphEvidence.toOpenPortHypergraph,
+      RenderState.PortHypergraphEvidence.toPortHypergraph,
+      RenderState.openEvidenceOfInvariants,
+      RenderState.portHypergraphEvidenceOfInvariants]
+    exact hrel.node_label node
+  · intro node
+    dsimp [R, endpointEquiv, nodeEquiv, Iso.trans, finCastIso, listFinIso,
+      RenderState.OpenPortHypergraphEvidence.toOpenPortHypergraph,
+      RenderState.PortHypergraphEvidence.toPortHypergraph,
+      RenderState.openEvidenceOfInvariants,
+      RenderState.portHypergraphEvidenceOfInvariants,
+      RenderState.incidenceEvidenceOfValidIds,
+      RenderState.incidentOfValidIds]
+    apply List.ext_getElem
+    · simpa using hrel.node_incident_length node
+    · intro i hleft hright
+      rw [List.getElem_map]
+      let slot : Fin (rst.nodes.get node).incident.length :=
+        ⟨i, by simpa using hleft⟩
+      have hslotRight :
+          i <
+            (G.raw.incident
+              ((nodeOrder st).get (Fin.cast hrel.node_length node))).length := by
+        simpa [slot] using hright
+      have hslotCast :
+          (Fin.cast (hrel.node_incident_length node) slot).val = i := rfl
+      have hleftGet :
+          (endpointOrder G st).get
+              (Fin.cast hrel.endpoint_length
+                ⟨(rst.nodes.get node).incident.get slot,
+                  hrel.node_incident_bound node slot⟩) =
+            (G.raw.incident
+              ((nodeOrder st).get (Fin.cast hrel.node_length node))).get
+                (Fin.cast (hrel.node_incident_length node) slot) :=
+        hrel.node_incident node slot
+      simpa [slot, hslotCast] using hleftGet
+
+end SearchState
+end OpenPortHypergraph
+
 /-- Typed open boundary-connected port-hypergraphs quotiented by ordered
 boundary-preserving isomorphism. -/
 def OpenPortHypergraphUpToIso (Sig : Signature) (boundary : List Sig.Port) :
