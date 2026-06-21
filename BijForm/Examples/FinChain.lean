@@ -247,23 +247,16 @@ def FinChainLayerShapeLayerPresentation :
 
 def FinChainLayerShapePresentation :
     LayerShapePresentation FinChainPoly FinChainInversion FinChainCarrier FinChainLayerShape :=
-  LayerShapePresentation.ofComponents
+  LayerShapePresentation.ofShapeChildRank
     FinChainLayerShapeLayerPresentation
     FinChainLayerCarrierIso
     (fun i _ => i)
     (by
-    intro i z q
+    intro i shape q
     cases i with
     | zero =>
-        dsimp [CodeLayerPresentation.iso] at q
         cases q
     | succ n =>
-        dsimp [LayerShapePresentation.layer, CodeLayerPresentation.iso,
-          CodeLayerPresentation.transCarrier, FinChainLayerShapeLayerPresentation,
-          FinChainLayerCarrierIso, Iso.trans, Iso.sum] at q ⊢
-        generalize hshape :
-            (CodeAlgebra.finSum 1 ((n + 2) * FinChainSize n)).invFun z = shape at q ⊢
-        simp [Iso.refl] at q ⊢
         cases shape with
         | inl _ => cases q
         | inr _ =>

@@ -244,38 +244,26 @@ def HBTNatLayerShapeLayerPresentation :
 
 def HBTNatLayerShapePresentation :
     LayerShapePresentation HBTPoly HBTInversion (fun _ => Nat) HBTNatLayerShape :=
-  LayerShapePresentation.ofComponents
+  LayerShapePresentation.ofShapeChildRank
     HBTNatLayerShapeLayerPresentation
     HBTNatLayerCarrierIso
     (fun _ n => n)
     (by
-    intro i n
+    intro i shape
     cases i with
     | zero =>
         intro q
         cases q
     | succ m =>
-        let layerIso :=
-          (HBTNatLayerShapeLayerPresentation.transCarrier HBTNatLayerCarrierIso).iso (m + 1)
-        change
-          ∀ q : HBTPoly.Pos
-            (HBTInversion.decode (m + 1) (layerIso.invFun n).1).ctor
-            (HBTInversion.decode (m + 1) (layerIso.invFun n).1).param,
-            (layerIso.invFun n).2 q < n
-        dsimp [layerIso, CodeLayerPresentation.iso, CodeLayerPresentation.transCarrier,
-          HBTNatLayerCarrierIso, HBTNatLayerShapeLayerPresentation]
-        generalize hsum : CodeAlgebra.sumProdNat.invFun n = s
-        cases s with
+        cases shape with
         | inl label =>
             intro q
             cases q
         | inr pair =>
             intro q
             cases q
-            · change pair.1 < n
-              exact CodeAlgebra.sumProdNat_invFun_inr_fst_lt hsum
-            · change pair.2 < n
-              exact CodeAlgebra.sumProdNat_invFun_inr_snd_lt hsum)
+            · exact CodeAlgebra.sumProdNat_toFun_inr_fst_lt pair
+            · exact CodeAlgebra.sumProdNat_toFun_inr_snd_lt pair)
 
 def HBTNatLayerPresentation : NatLayerPresentation HBTPoly HBTInversion :=
   HBTNatLayerShapePresentation.toNatLayerPresentationOfRankEq (by
