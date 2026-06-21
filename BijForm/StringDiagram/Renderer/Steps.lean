@@ -164,9 +164,7 @@ def connectStep {active : Sig.Port} {frontier : List Sig.Port}
         simp at hlen)
   | activeId :: restIds =>
       have hrest : restIds.length = frontier.length := by
-        have hlen := st.frontierIds_length
-        rw [hids] at hlen
-        simpa using Nat.succ.inj hlen
+        exact RenderState.frontierIds_cons_tail_length st hids
       let mateId := restIds.get (Fin.cast hrest.symm mate)
       let childIds := eraseFin restIds (Fin.cast hrest.symm mate)
       { nextEndpoint := st.nextEndpoint
@@ -205,9 +203,7 @@ def budStep {active : Sig.Port} {frontier : List Sig.Port}
         simp at hlen)
   | activeId :: restIds =>
       have hrest : restIds.length = frontier.length := by
-        have hlen := st.frontierIds_length
-        rw [hids] at hlen
-        simpa using Nat.succ.inj hlen
+        exact RenderState.frontierIds_cons_tail_length st hids
       let nodeEndpoints := freshNodeEndpoints st.nextEndpoint (Sig.arity node)
       let entryId := nodeEndpoints.get
         (Fin.cast (by simp [nodeEndpoints]) entry)
@@ -288,9 +284,7 @@ theorem connectStep_new_edge_mem
        left := activeId
        right :=
         restIds.get (Fin.cast (by
-          have hlen := st.frontierIds_length
-          rw [hids] at hlen
-          exact (Nat.succ.inj hlen).symm) mate)
+          exact (RenderState.frontierIds_cons_tail_length st hids).symm) mate)
        left_label := rfl
        right_label := (Sig.compatible_edge ok).symm
        compatible := ok } : RenderEdge Sig) ∈
@@ -321,9 +315,7 @@ theorem connectStep_edges
            left := activeId
            right :=
             restIds.get (Fin.cast (by
-              have hlen := st.frontierIds_length
-              rw [hids] at hlen
-              exact (Nat.succ.inj hlen).symm) mate)
+              exact (RenderState.frontierIds_cons_tail_length st hids).symm) mate)
            left_label := rfl
            right_label := (Sig.compatible_edge ok).symm
            compatible := ok }] := by
@@ -356,9 +348,7 @@ theorem connectStep_edges_get_old
       left := activeId
       right :=
         restIds.get (Fin.cast (by
-          have hlen := st.frontierIds_length
-          rw [hids] at hlen
-          exact (Nat.succ.inj hlen).symm) mate)
+          exact (RenderState.frontierIds_cons_tail_length st hids).symm) mate)
       left_label := rfl
       right_label := (Sig.compatible_edge ok).symm
       compatible := ok }
@@ -398,9 +388,7 @@ theorem connectStep_edges_get_new
         left := activeId
         right :=
           restIds.get (Fin.cast (by
-            have hlen := st.frontierIds_length
-            rw [hids] at hlen
-            exact (Nat.succ.inj hlen).symm) mate)
+            exact (RenderState.frontierIds_cons_tail_length st hids).symm) mate)
         left_label := rfl
         right_label := (Sig.compatible_edge ok).symm
         compatible := ok } := by
@@ -411,9 +399,7 @@ theorem connectStep_edges_get_new
       left := activeId
       right :=
         restIds.get (Fin.cast (by
-          have hlen := st.frontierIds_length
-          rw [hids] at hlen
-          exact (Nat.succ.inj hlen).symm) mate)
+          exact (RenderState.frontierIds_cons_tail_length st hids).symm) mate)
       left_label := rfl
       right_label := (Sig.compatible_edge ok).symm
       compatible := ok }
@@ -441,9 +427,7 @@ theorem connectStep_frontierIds
     (hids : st.frontierIds = activeId :: restIds) :
     (connectStep mate ok st).frontierIds =
       eraseFin restIds (Fin.cast (by
-        have hlen := st.frontierIds_length
-        rw [hids] at hlen
-        exact (Nat.succ.inj hlen).symm) mate) := by
+        exact (RenderState.frontierIds_cons_tail_length st hids).symm) mate) := by
   unfold connectStep
   split
   · rename_i hidsNil
@@ -469,9 +453,7 @@ theorem connectStep_frontier_mem_old
     exact False.elim (RenderState.frontierIds_ne_nil st hids)
   · rename_i activeId restIds hids
     have hrest : restIds.length = frontier.length := by
-      have hlen := st.frontierIds_length
-      rw [hids] at hlen
-      simpa using Nat.succ.inj hlen
+      exact RenderState.frontierIds_cons_tail_length st hids
     rw [hids]
     right
     exact mem_of_mem_eraseFin restIds (Fin.cast hrest.symm mate) hmem
@@ -598,9 +580,7 @@ theorem budStep_frontier_mem_old_or_new
     exact False.elim (RenderState.frontierIds_ne_nil st hids)
   · rename_i activeId restIds hids
     have hrest : restIds.length = frontier.length := by
-      have hlen := st.frontierIds_length
-      rw [hids] at hlen
-      simpa using Nat.succ.inj hlen
+      exact RenderState.frontierIds_cons_tail_length st hids
     simp [freshNodeEndpoints] at hmem
     rcases hmem with hold | hnew
     · left
@@ -804,9 +784,7 @@ theorem connectStep_validIds {active : Sig.Port} {frontier : List Sig.Port}
     exact False.elim (RenderState.frontierIds_ne_nil st hids)
   · rename_i activeId restIds hids
     have hrest : restIds.length = frontier.length := by
-      have hlen := st.frontierIds_length
-      rw [hids] at hlen
-      simpa using Nat.succ.inj hlen
+      exact RenderState.frontierIds_cons_tail_length st hids
     dsimp
     refine
       { nextEndpoint_eq := hv.nextEndpoint_eq
@@ -891,9 +869,7 @@ theorem connectStep_endpointPartition {active : Sig.Port}
     exact False.elim (RenderState.frontierIds_ne_nil st hids)
   · rename_i activeId restIds hids
     have hrest : restIds.length = frontier.length := by
-      have hlen := st.frontierIds_length
-      rw [hids] at hlen
-      simpa using Nat.succ.inj hlen
+      exact RenderState.frontierIds_cons_tail_length st hids
     let idx : Fin restIds.length := Fin.cast hrest.symm mate
     have oldFrontierNodup : (activeId :: restIds).Nodup := by
       simpa [hids] using hp.frontier_nodup
@@ -1061,9 +1037,7 @@ theorem budStep_validIds {active : Sig.Port} {frontier : List Sig.Port}
     exact False.elim (RenderState.frontierIds_ne_nil st hids)
   · rename_i activeId restIds hids
     have hrest : restIds.length = frontier.length := by
-      have hlen := st.frontierIds_length
-      rw [hids] at hlen
-      simpa using Nat.succ.inj hlen
+      exact RenderState.frontierIds_cons_tail_length st hids
     dsimp
     let nodeEndpoints := freshNodeEndpoints st.nextEndpoint (Sig.arity node)
     let entryIdx : Fin nodeEndpoints.length :=
@@ -1298,9 +1272,7 @@ theorem budStep_endpointPartition {active : Sig.Port}
     exact False.elim (RenderState.frontierIds_ne_nil st hids)
   · rename_i activeId restIds hids
     have hrest : restIds.length = frontier.length := by
-      have hlen := st.frontierIds_length
-      rw [hids] at hlen
-      simpa using Nat.succ.inj hlen
+      exact RenderState.frontierIds_cons_tail_length st hids
     let nodeEndpoints := freshNodeEndpoints st.nextEndpoint (Sig.arity node)
     let entryIdx : Fin nodeEndpoints.length :=
       Fin.cast (by simp [nodeEndpoints]) entry
@@ -1523,9 +1495,7 @@ theorem budStep_ownerIdPartition {active : Sig.Port}
     exact False.elim (RenderState.frontierIds_ne_nil st hids)
   · rename_i activeId restIds hids
     have hrest : restIds.length = frontier.length := by
-      have hlen := st.frontierIds_length
-      rw [hids] at hlen
-      simpa using Nat.succ.inj hlen
+      exact RenderState.frontierIds_cons_tail_length st hids
     let nodeEndpoints := freshNodeEndpoints st.nextEndpoint (Sig.arity node)
     let entryIdx : Fin nodeEndpoints.length :=
       Fin.cast (by simp [nodeEndpoints]) entry

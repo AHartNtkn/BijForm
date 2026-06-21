@@ -59,6 +59,16 @@ theorem frontierIds_ne_nil {Sig : Signature}
   rw [hids] at hlen
   simp at hlen
 
+theorem frontierIds_cons_tail_length {Sig : Signature}
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (st : RenderState Sig (active :: frontier))
+    {activeId : Nat} {restIds : List Nat}
+    (hids : st.frontierIds = activeId :: restIds) :
+    restIds.length = frontier.length := by
+  have hlen := st.frontierIds_length
+  rw [hids] at hlen
+  simpa using Nat.succ.inj hlen
+
 theorem cast_frontierIds {Sig : Signature}
     {frontier frontier' : List Sig.Port}
     (h : frontier = frontier') (st : RenderState Sig frontier) :
