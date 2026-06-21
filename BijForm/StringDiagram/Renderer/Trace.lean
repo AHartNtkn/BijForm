@@ -416,28 +416,7 @@ theorem renderTrace_connect_new_edge_get
     dsimp [final]
     rw [renderTrace_connect, hsuffix, hstep]
     simp
-  have hbound : st.edges.length < final.edges.length := by
-    rw [hfinal]
-    simp
-  have hidx :
-      (⟨st.edges.length, by
-        dsimp [final]
-        rw [renderTrace_connect, hsuffix, hstep]
-        simp⟩ : Fin final.edges.length) =
-      ⟨st.edges.length, hbound⟩ := by
-    apply Fin.ext
-    rfl
-  rw [hidx]
-  have hopt :
-      final.edges[st.edges.length]? = some edge := by
-    rw [hfinal]
-    simp
-  have hsome :
-      final.edges[st.edges.length]? =
-        some (final.edges.get ⟨st.edges.length, hbound⟩) :=
-    List.getElem?_eq_getElem hbound
-  rw [hsome] at hopt
-  injection hopt with hget
+  exact list_get_of_eq_append_cons_at_length hfinal _ rfl
 
 /--
 The edge introduced by a top-level rendered `bud` is at the first edge index
@@ -504,28 +483,7 @@ theorem renderTrace_bud_new_edge_get
     dsimp [final]
     rw [renderTrace_bud, hsuffix, hstep]
     simp
-  have hbound : st.edges.length < final.edges.length := by
-    rw [hfinal]
-    simp
-  have hidx :
-      (⟨st.edges.length, by
-        dsimp [final]
-        rw [renderTrace_bud, hsuffix, hstep]
-        simp⟩ : Fin final.edges.length) =
-      ⟨st.edges.length, hbound⟩ := by
-    apply Fin.ext
-    rfl
-  rw [hidx]
-  have hopt :
-      final.edges[st.edges.length]? = some edge := by
-    rw [hfinal]
-    simp
-  have hsome :
-      final.edges[st.edges.length]? =
-        some (final.edges.get ⟨st.edges.length, hbound⟩) :=
-    List.getElem?_eq_getElem hbound
-  rw [hsome] at hopt
-  injection hopt with hget
+  exact list_get_of_eq_append_cons_at_length hfinal _ rfl
 
 theorem connectStep_nodesPrefix
     {active : Sig.Port} {frontier : List Sig.Port}
@@ -627,28 +585,7 @@ theorem renderTrace_bud_new_node_get
     dsimp [final]
     rw [renderTrace_bud, hsuffix, hstep]
     simp
-  have hbound : st.nodes.length < final.nodes.length := by
-    rw [hfinal]
-    simp
-  have hidx :
-      (⟨st.nodes.length, by
-        dsimp [final]
-        rw [renderTrace_bud, hsuffix, hstep]
-        simp⟩ : Fin final.nodes.length) =
-      ⟨st.nodes.length, hbound⟩ := by
-    apply Fin.ext
-    rfl
-  rw [hidx]
-  have hopt :
-      final.nodes[st.nodes.length]? = some renderNode := by
-    rw [hfinal]
-    simp
-  have hsome :
-      final.nodes[st.nodes.length]? =
-        some (final.nodes.get ⟨st.nodes.length, hbound⟩) :=
-    List.getElem?_eq_getElem hbound
-  rw [hsome] at hopt
-  injection hopt with hget
+  exact list_get_of_eq_append_cons_at_length hfinal _ rfl
 
 theorem connectStep_edges_length
     {active : Sig.Port} {frontier : List Sig.Port}

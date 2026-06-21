@@ -125,6 +125,20 @@ theorem list_get_append_single_at_length {α : Type}
   change (xs ++ x :: ys)[xs.length] = x
   simp
 
+theorem list_get_of_eq_append_cons_at_length {α : Type}
+    {full pref suffix : List α} {x : α}
+    (hfull : full = pref ++ x :: suffix)
+    (i : Fin full.length) (hval : i.val = pref.length) :
+    full.get i = x := by
+  subst full
+  have hidx :
+      i = ⟨pref.length, by
+        simp⟩ := by
+    apply Fin.ext
+    exact hval
+  rw [hidx]
+  exact list_get_append_single_at_length pref suffix x
+
 theorem list_get_of_eq {α : Type} {xs ys : List α}
     (h : xs = ys) (i : Fin xs.length) :
     xs.get i = ys.get (Fin.cast (congrArg List.length h) i) := by
