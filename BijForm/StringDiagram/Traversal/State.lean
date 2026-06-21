@@ -101,18 +101,6 @@ private theorem cast_processedEdges {G : OpenPortHypergraph Sig boundary}
   cases h
   rfl
 
-theorem nodePortsExcept_eq_of_val
-    {nodeA nodeB : Sig.Node}
-    (hnode : nodeA = nodeB)
-    {entryA : Fin (Sig.arity nodeA)} {entryB : Fin (Sig.arity nodeB)}
-    (hval : entryA.val = entryB.val) :
-    Sig.nodePortsExcept nodeA entryA =
-      Sig.nodePortsExcept nodeB entryB := by
-  cases hnode
-  have hentry : entryA = entryB := Fin.ext hval
-  cases hentry
-  rfl
-
 def seenNode {G : OpenPortHypergraph Sig boundary}
     {frontier : List Sig.Port} (st : SearchState G frontier)
     (node : Fin G.raw.nodeCount) : Prop :=
@@ -1635,7 +1623,7 @@ theorem IsoRelated.budChild
             (budEntry (G := G) node slot).val := by
         simp [budEntry, PortHypergraphIso.incidenceSlotPreserved]
       exact congrArg (fun tail => restLabels ++ tail)
-        (nodePortsExcept_eq_of_val
+        (Signature.nodePortsExcept_eq_of_val (Sig := Sig)
           (e.node_label_preserved node).symm hentryVal)
     IsoRelated e
       (left.budChild hpending node slot hmate hunseen)
@@ -1712,7 +1700,7 @@ theorem IsoRelated.budChild_with
               (budEntry (G := G) node slot) := by
       have hentryVal := budEntry_val_preserved e node slot
       exact congrArg (fun tail => restLabels ++ tail)
-        (nodePortsExcept_eq_of_val
+        (Signature.nodePortsExcept_eq_of_val (Sig := Sig)
           (e.node_label_preserved node).symm hentryVal)
     IsoRelated e
       (left.budChild hpending node slot hmate hunseen)

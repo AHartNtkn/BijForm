@@ -829,7 +829,7 @@ theorem toDiag_isoRelated
                 (budEntry (G := G) node slot) := by
         have hentryVal := budEntry_val_preserved e node slot
         exact congrArg (fun tail => restLabels ++ tail)
-          (nodePortsExcept_eq_of_val
+          (Signature.nodePortsExcept_eq_of_val (Sig := Sig)
             (e.node_label_preserved node).symm hentryVal)
       let rightChild :=
         hfrontier ▸
