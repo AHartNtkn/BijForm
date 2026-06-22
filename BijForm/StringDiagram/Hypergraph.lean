@@ -996,6 +996,43 @@ def renderTrace_openEvidence
   allConstructorsReachBoundary :=
     renderTrace_allConstructorsReachBoundary d st hv hp hn pref ho hr
 
+def connectStep_evidence
+    {active : Sig.Port} {frontier boundary : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (st : RenderState Sig (active :: frontier))
+    (ev : RenderState.RenderTraceEvidence st boundary) :
+    RenderState.RenderTraceEvidence (connectStep mate ok st) boundary where
+  validIds := connectStep_validIds mate ok st ev.validIds
+  endpointPartition :=
+    connectStep_endpointPartition mate ok st ev.validIds ev.endpointPartition
+  nodeIncidentNodup := connectStep_nodeIncidentNodup mate ok st
+    ev.nodeIncidentNodup
+  endpointPrefix := connectStep_endpointPrefix mate ok st ev.endpointPrefix
+  ownerIdPartition := connectStep_ownerIdPartition mate ok st
+    ev.ownerIdPartition
+  reachability := connectStep_reachability mate ok st ev.reachability
+
+def budStep_evidence
+    {active : Sig.Port} {frontier boundary : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (st : RenderState Sig (active :: frontier))
+    (ev : RenderState.RenderTraceEvidence st boundary) :
+    RenderState.RenderTraceEvidence (budStep node entry ok st) boundary where
+  validIds := budStep_validIds node entry ok st ev.validIds
+  endpointPartition :=
+    budStep_endpointPartition node entry ok st ev.validIds
+      ev.endpointPartition
+  nodeIncidentNodup := budStep_nodeIncidentNodup node entry ok st
+    ev.nodeIncidentNodup
+  endpointPrefix := budStep_endpointPrefix node entry ok st ev.endpointPrefix
+  ownerIdPartition :=
+    budStep_ownerIdPartition node entry ok st ev.validIds
+      ev.ownerIdPartition
+  reachability := budStep_reachability node entry ok st ev.reachability
+
 def renderTrace_evidence
     {frontier boundary : List Sig.Port} (d : Diag Sig frontier)
     (st : RenderState Sig frontier)
