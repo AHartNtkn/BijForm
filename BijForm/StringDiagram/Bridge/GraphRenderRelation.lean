@@ -1161,6 +1161,241 @@ theorem GraphRenderRelated.connectChild
               ((nodeOrder (st.connectChild hpending mate hmate)).get
                 childNode)).get childGraphSlot := hgraphIncident
 
+theorem GraphRenderRelated.budChild_frontierPending
+    {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {frontier : List Sig.Port}
+    {rst : RenderState Sig (activeLabel :: frontier)}
+    {st : SearchState G (activeLabel :: frontier)}
+    (hrel : GraphRenderRelated G rst st)
+    (rv : rst.ValidIds)
+    {active : Fin G.raw.endpointCount}
+    {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest)
+    (node : Fin G.raw.nodeCount)
+    (slot : Fin (G.raw.incident node).length)
+    (hmate :
+      PortHypergraph.EdgeMate G.raw active ((G.raw.incident node).get slot))
+    (hunseen : node ∉ st.seenNodes)
+    {activeId : Nat} {restIds : List Nat}
+    (hids : rst.frontierIds = activeId :: restIds)
+    (hchildEndpointLength :
+      (Diag.budStep (G.raw.nodeLabel node)
+        (SearchState.budEntry (G := G) node slot)
+        (st.bud_compatible hpending node slot hmate) rst).endpoints.length =
+        (endpointOrder G
+          (st.budChild hpending node slot hmate hunseen)).length) :
+    GraphRenderRelated.FrontierPendingFields G
+      (Diag.budStep (G.raw.nodeLabel node)
+        (SearchState.budEntry (G := G) node slot)
+        (st.bud_compatible hpending node slot hmate) rst)
+      (st.budChild hpending node slot hmate hunseen)
+      hchildEndpointLength := by
+  let renderNode := G.raw.nodeLabel node
+  let entry := SearchState.budEntry (G := G) node slot
+  let ok := st.bud_compatible hpending node slot hmate
+  have htailLen : restIds.length = rest.length := by
+    have hlen := hrel.pending_length
+    rw [hids, hpending] at hlen
+    exact Nat.succ.inj hlen
+  let nodeEndpoints := Diag.freshNodeEndpoints rst.nextEndpoint
+    (Sig.arity renderNode)
+  let entryIdx : Fin nodeEndpoints.length :=
+    listIndexCast nodeEndpoints
+      (by simp [nodeEndpoints, Diag.freshNodeEndpoints, renderNode]) entry
+  have hpendingVals := hrel.pending_cons_values hpending hids
+  have horderTrace :=
+    budChild_orderTrace rst st hpending node slot hmate hunseen hids
+      hrel.endpoint_length hrel.edge_length hrel.node_length
+  have hchildIds :=
+    Diag.budStep_frontierIds renderNode entry ok rst hids
+  have hchildFrontierBound :
+      ∀ id : Fin (Diag.budStep renderNode entry ok rst).frontierIds.length,
+        (Diag.budStep renderNode entry ok rst).frontierIds.get id <
+          (Diag.budStep renderNode entry ok rst).endpoints.length := by
+    intro id
+    have hmem :
+        (Diag.budStep renderNode entry ok rst).frontierIds.get id ∈
+          restIds ++ eraseFin nodeEndpoints entryIdx := by
+      rw [← hchildIds]
+      exact List.get_mem (Diag.budStep renderNode entry ok rst).frontierIds id
+    rcases List.mem_append.mp hmem with hold | hnew
+    · have holdMem :
+          (Diag.budStep renderNode entry ok rst).frontierIds.get id ∈
+            rst.frontierIds := by
+        rw [hids]
+        right
+        exact hold
+      have hbound := hrel.frontier_id_bound_of_mem holdMem
+      change
+        (Diag.budStep renderNode entry ok rst).frontierIds.get id <
+          (Diag.budStep renderNode entry ok rst).endpoints.length
+      rw [Diag.budStep_endpoints_length renderNode entry ok rst]
+      omega
+    · have hfresh :
+          (Diag.budStep renderNode entry ok rst).frontierIds.get id ∈
+            nodeEndpoints :=
+        mem_of_mem_eraseFin nodeEndpoints entryIdx hnew
+      have hbound := Diag.freshNodeEndpoints_mem_lt hfresh
+      change
+        (Diag.budStep renderNode entry ok rst).frontierIds.get id <
+          (Diag.budStep renderNode entry ok rst).endpoints.length
+      rw [Diag.budStep_endpoints_length renderNode entry ok rst]
+      simpa [nodeEndpoints, renderNode, rv.nextEndpoint_eq] using hbound
+  have hchildPendingLen :
+      (Diag.budStep renderNode entry ok rst).frontierIds.length =
+        (st.budChild hpending node slot hmate hunseen).pending.length := by
+    rw [hchildIds]
+    simp [SearchState.budChild, eraseFin_length, htailLen,
+      renderNode, G.raw.incident_length node]
+  refine
+    { frontier_id_bound := hchildFrontierBound
+      pending_length := hchildPendingLen
+      pending_id := ?_ }
+  intro id
+  have hnodeEndpointsLen :
+      nodeEndpoints.length = (G.raw.incident node).length := by
+    simp [nodeEndpoints, renderNode, G.raw.incident_length node]
+  have hentryIdxVal : entryIdx.val = slot.val := by
+    simp [entryIdx, entry, SearchState.budEntry, nodeEndpoints,
+      renderNode]
+  let R := fun raw endpoint =>
+    ∃ hbound : raw < (Diag.budStep renderNode entry ok rst).endpoints.length,
+      (endpointOrder G (st.budChild hpending node slot hmate hunseen)).get
+          (endpointOrderIndex
+            (st.budChild hpending node slot hmate hunseen)
+            hchildEndpointLength ⟨raw, hbound⟩) =
+        endpoint
+  have hleftRel : IndexedListRel R restIds rest := by
+    refine { length := htailLen, get := ?_ }
+    intro n hid hrest
+    have holdBound :
+        restIds.get ⟨n, hid⟩ < rst.endpoints.length :=
+      hrel.frontier_id_bound_of_mem (by
+        rw [hids]
+        right
+        exact List.get_mem restIds ⟨n, hid⟩)
+    have hchildBound :
+        restIds.get ⟨n, hid⟩ <
+          (Diag.budStep renderNode entry ok rst).endpoints.length := by
+      rw [Diag.budStep_endpoints_length renderNode entry ok rst]
+      omega
+    refine ⟨hchildBound, ?_⟩
+    have hold :
+        (endpointOrder G st).get
+            (Fin.cast hrel.endpoint_length
+              ⟨restIds.get ⟨n, hid⟩, holdBound⟩) =
+          rest.get ⟨n, hrest⟩ := by
+      have hidx :
+          (⟨n, hrest⟩ : Fin rest.length) =
+            Fin.cast htailLen ⟨n, hid⟩ := by
+        exact fin_eq_of_val_eq rfl
+      rw [hidx]
+      exact hpendingVals.2 ⟨n, hid⟩
+    let childEndpoint :
+        Fin (endpointOrder G
+          (st.budChild hpending node slot hmate hunseen)).length :=
+      endpointOrderIndex
+        (st.budChild hpending node slot hmate hunseen)
+        hchildEndpointLength
+        ⟨restIds.get ⟨n, hid⟩, hchildBound⟩
+    let oldEndpoint : Fin (endpointOrder G st).length :=
+      Fin.cast hrel.endpoint_length
+        ⟨restIds.get ⟨n, hid⟩, holdBound⟩
+    have hchildOld :
+        (endpointOrder G (st.budChild hpending node slot hmate hunseen)).get
+            childEndpoint =
+          (endpointOrder G st).get oldEndpoint :=
+      horderTrace.endpoint.get_prefix_at_right_of_val_eq
+        childEndpoint oldEndpoint (by simp [childEndpoint, oldEndpoint])
+    exact hchildOld.trans hold
+  have hrightRel :
+      IndexedListRel R nodeEndpoints (G.raw.incident node) := by
+    refine { length := hnodeEndpointsLen, get := ?_ }
+    intro n hid hincident
+    have hfreshMem :
+        nodeEndpoints.get ⟨n, hid⟩ ∈ nodeEndpoints :=
+      List.get_mem nodeEndpoints ⟨n, hid⟩
+    have hfreshLt := Diag.freshNodeEndpoints_mem_lt hfreshMem
+    have hchildBound :
+        nodeEndpoints.get ⟨n, hid⟩ <
+          (Diag.budStep renderNode entry ok rst).endpoints.length := by
+      rw [Diag.budStep_endpoints_length renderNode entry ok rst]
+      simpa [nodeEndpoints, renderNode, rv.nextEndpoint_eq] using hfreshLt
+    refine ⟨hchildBound, ?_⟩
+    let childEndpoint :
+        Fin (endpointOrder G
+          (st.budChild hpending node slot hmate hunseen)).length :=
+      endpointOrderIndex
+        (st.budChild hpending node slot hmate hunseen)
+        hchildEndpointLength
+        ⟨nodeEndpoints.get ⟨n, hid⟩, hchildBound⟩
+    let incidentEndpoint : Fin (G.raw.incident node).length :=
+      ⟨n, hincident⟩
+    have holdLen :
+        (endpointOrder G st).length = rst.endpoints.length :=
+      hrel.endpoint_length.symm
+    have hle :
+        (endpointOrder G st).length ≤ childEndpoint.val := by
+      have hfreshGe := Diag.freshNodeEndpoints_mem_ge hfreshMem
+      rw [holdLen]
+      simpa [childEndpoint, nodeEndpoints, rv.nextEndpoint_eq] using
+        hfreshGe
+    have hsub :
+        childEndpoint.val - (endpointOrder G st).length =
+          incidentEndpoint.val := by
+      rw [holdLen]
+      simpa [childEndpoint, incidentEndpoint, nodeEndpoints] using
+        Diag.freshNodeEndpoints_get_sub_of_eq
+          (start := rst.nextEndpoint)
+          (base := rst.endpoints.length)
+          (arity := Sig.arity renderNode)
+          rv.nextEndpoint_eq ⟨n, hid⟩
+    exact horderTrace.endpoint.get_suffix_at_right_of_val_eq
+      childEndpoint incidentEndpoint hle hsub
+  have herasedRight := hrightRel.erase entryIdx slot hentryIdxVal
+  let appendIndex : Fin (restIds ++ eraseFin nodeEndpoints entryIdx).length :=
+    ⟨id.val, by
+      have hlen :=
+        congrArg List.length hchildIds
+      exact Nat.lt_of_lt_of_eq id.isLt hlen⟩
+  let pendingIndex : Fin (rest ++ eraseFin (G.raw.incident node) slot).length :=
+    ⟨id.val, by
+      have hlen :
+          (Diag.budStep renderNode entry ok rst).frontierIds.length =
+            (rest ++ eraseFin (G.raw.incident node) slot).length := by
+        rw [hchildPendingLen]
+        simp [SearchState.budChild]
+      exact Nat.lt_of_lt_of_eq id.isLt hlen⟩
+  have hall := hleftRel.append herasedRight
+  rcases hall.get id.val appendIndex.isLt pendingIndex.isLt with
+    ⟨hbound, hget⟩
+  have hrawEq :
+      (restIds ++ eraseFin nodeEndpoints entryIdx).get appendIndex =
+        (Diag.budStep renderNode entry ok rst).frontierIds.get id := by
+    have hgetIds := list_get_of_eq hchildIds id
+    have hcast :
+        Fin.cast (congrArg List.length hchildIds) id = appendIndex := by
+      exact fin_eq_of_val_eq rfl
+    simpa [appendIndex, hcast] using hgetIds.symm
+  have htargetBound :=
+    hchildFrontierBound id
+  have hpendingIndex :
+      (st.budChild hpending node slot hmate hunseen).pending.get
+          (Fin.cast hchildPendingLen id) =
+        (rest ++ eraseFin (G.raw.incident node) slot).get pendingIndex := by
+    simp [SearchState.budChild, pendingIndex]
+  have hendpointIndex :
+      Fin.cast hchildEndpointLength
+          ⟨(Diag.budStep renderNode entry ok rst).frontierIds.get id,
+            htargetBound⟩ =
+        Fin.cast hchildEndpointLength
+          ⟨(restIds ++ eraseFin nodeEndpoints entryIdx).get appendIndex,
+            hbound⟩ := by
+    exact fin_eq_of_val_eq hrawEq.symm
+  rw [hendpointIndex]
+  rw [hpendingIndex]
+  exact hget
+
 theorem GraphRenderRelated.budChild
     {G : OpenPortHypergraph Sig boundary}
     {activeLabel : Sig.Port} {frontier : List Sig.Port}
@@ -1188,12 +1423,6 @@ theorem GraphRenderRelated.budChild
   | nil =>
       exact False.elim (RenderState.frontierIds_ne_nil rst hids)
   | cons activeId restIds =>
-      have hrestIdsLen : restIds.length = frontier.length := by
-        exact RenderState.frontierIds_cons_tail_length rst hids
-      have htailLen : restIds.length = rest.length := by
-        have hlen := hrel.pending_length
-        rw [hids, hpending] at hlen
-        exact Nat.succ.inj hlen
       let nodeEndpoints := Diag.freshNodeEndpoints rst.nextEndpoint
         (Sig.arity renderNode)
       let entryIdx : Fin nodeEndpoints.length :=
@@ -1232,6 +1461,9 @@ theorem GraphRenderRelated.budChild
       have horderTrace :=
         budChild_orderTrace rst st hpending node slot hmate hunseen hids
           hrel.endpoint_length hrel.edge_length hrel.node_length
+      let hfrontierPending :=
+        hrel.budChild_frontierPending rv hpending node slot hmate hunseen hids
+          hchildEndpointLength
       have hchildNodeIncidentLength :
           ∀ renderIdx : Fin (Diag.budStep renderNode entry ok rst).nodes.length,
             ((Diag.budStep renderNode entry ok rst).nodes.get renderIdx).incident.length =
@@ -1351,218 +1583,9 @@ theorem GraphRenderRelated.budChild
       · exact hchildEndpointLength
       · exact hchildEdgeLength
       · exact hchildNodeLength
-      · intro id
-        have hchildIds :=
-          Diag.budStep_frontierIds renderNode entry ok rst hids
-        have hmem :
-            (Diag.budStep renderNode entry ok rst).frontierIds.get id ∈
-              restIds ++ eraseFin nodeEndpoints entryIdx := by
-          rw [← hchildIds]
-          exact List.get_mem (Diag.budStep renderNode entry ok rst).frontierIds id
-        rcases List.mem_append.mp hmem with hold | hnew
-        · have holdMem :
-              (Diag.budStep renderNode entry ok rst).frontierIds.get id ∈
-                rst.frontierIds := by
-            rw [hids]
-            right
-            exact hold
-          have hbound := hrel.frontier_id_bound_of_mem holdMem
-          change
-            (Diag.budStep renderNode entry ok rst).frontierIds.get id <
-              (Diag.budStep renderNode entry ok rst).endpoints.length
-          rw [Diag.budStep_endpoints_length renderNode entry ok rst]
-          omega
-        · have hfresh :
-              (Diag.budStep renderNode entry ok rst).frontierIds.get id ∈
-                nodeEndpoints :=
-            mem_of_mem_eraseFin nodeEndpoints entryIdx hnew
-          have hbound := Diag.freshNodeEndpoints_mem_lt hfresh
-          change
-            (Diag.budStep renderNode entry ok rst).frontierIds.get id <
-              (Diag.budStep renderNode entry ok rst).endpoints.length
-          rw [Diag.budStep_endpoints_length renderNode entry ok rst]
-          simpa [nodeEndpoints, renderNode, rv.nextEndpoint_eq] using hbound
-      · have hchildIds :=
-          Diag.budStep_frontierIds renderNode entry ok rst hids
-        rw [hchildIds]
-        simp [SearchState.budChild, eraseFin_length, htailLen,
-          renderNode, G.raw.incident_length node]
-      · intro id
-        have hchildIds :=
-          Diag.budStep_frontierIds renderNode entry ok rst hids
-        have hchildPendingLen :
-            (Diag.budStep renderNode entry ok rst).frontierIds.length =
-              (st.budChild hpending node slot hmate hunseen).pending.length := by
-          rw [hchildIds]
-          simp [SearchState.budChild, eraseFin_length, htailLen,
-            renderNode, G.raw.incident_length node]
-        have hnodeEndpointsLen :
-            nodeEndpoints.length = (G.raw.incident node).length := by
-          simp [nodeEndpoints, renderNode, G.raw.incident_length node]
-        have hentryIdxVal : entryIdx.val = slot.val := by
-          simp [entryIdx, entry, SearchState.budEntry, nodeEndpoints,
-            renderNode]
-        let R := fun raw endpoint =>
-          ∃ hbound : raw < (Diag.budStep renderNode entry ok rst).endpoints.length,
-            (endpointOrder G (st.budChild hpending node slot hmate hunseen)).get
-                (endpointOrderIndex
-                  (st.budChild hpending node slot hmate hunseen)
-                  hchildEndpointLength ⟨raw, hbound⟩) =
-              endpoint
-        have hleftRel : IndexedListRel R restIds rest := by
-          refine { length := htailLen, get := ?_ }
-          intro n hid hrest
-          have holdBound :
-              restIds.get ⟨n, hid⟩ < rst.endpoints.length :=
-            hrel.frontier_id_bound_of_mem (by
-              rw [hids]
-              right
-              exact List.get_mem restIds ⟨n, hid⟩)
-          have hchildBound :
-              restIds.get ⟨n, hid⟩ <
-                (Diag.budStep renderNode entry ok rst).endpoints.length := by
-            rw [Diag.budStep_endpoints_length renderNode entry ok rst]
-            omega
-          refine ⟨hchildBound, ?_⟩
-          have hold :
-              (endpointOrder G st).get
-                  (Fin.cast hrel.endpoint_length
-                    ⟨restIds.get ⟨n, hid⟩, holdBound⟩) =
-                rest.get ⟨n, hrest⟩ := by
-            have hidx :
-                (⟨n, hrest⟩ : Fin rest.length) =
-                  Fin.cast htailLen ⟨n, hid⟩ := by
-              exact fin_eq_of_val_eq rfl
-            rw [hidx]
-            exact hpendingVals.2 ⟨n, hid⟩
-          let childEndpoint :
-              Fin (endpointOrder G
-                (st.budChild hpending node slot hmate hunseen)).length :=
-            endpointOrderIndex
-              (st.budChild hpending node slot hmate hunseen)
-              hchildEndpointLength
-              ⟨restIds.get ⟨n, hid⟩, hchildBound⟩
-          let oldEndpoint : Fin (endpointOrder G st).length :=
-            Fin.cast hrel.endpoint_length
-              ⟨restIds.get ⟨n, hid⟩, holdBound⟩
-          have hchildOld :
-              (endpointOrder G (st.budChild hpending node slot hmate hunseen)).get
-                  childEndpoint =
-                (endpointOrder G st).get oldEndpoint :=
-            horderTrace.endpoint.get_prefix_at_right_of_val_eq
-              childEndpoint oldEndpoint (by simp [childEndpoint, oldEndpoint])
-          exact hchildOld.trans hold
-        have hrightRel :
-            IndexedListRel R nodeEndpoints (G.raw.incident node) := by
-          refine { length := hnodeEndpointsLen, get := ?_ }
-          intro n hid hincident
-          have hfreshMem :
-              nodeEndpoints.get ⟨n, hid⟩ ∈ nodeEndpoints :=
-            List.get_mem nodeEndpoints ⟨n, hid⟩
-          have hfreshLt := Diag.freshNodeEndpoints_mem_lt hfreshMem
-          have hchildBound :
-              nodeEndpoints.get ⟨n, hid⟩ <
-                (Diag.budStep renderNode entry ok rst).endpoints.length := by
-            rw [Diag.budStep_endpoints_length renderNode entry ok rst]
-            simpa [nodeEndpoints, renderNode, rv.nextEndpoint_eq] using hfreshLt
-          refine ⟨hchildBound, ?_⟩
-          let childEndpoint :
-              Fin (endpointOrder G
-                (st.budChild hpending node slot hmate hunseen)).length :=
-            endpointOrderIndex
-              (st.budChild hpending node slot hmate hunseen)
-              hchildEndpointLength
-              ⟨nodeEndpoints.get ⟨n, hid⟩, hchildBound⟩
-          let incidentEndpoint : Fin (G.raw.incident node).length :=
-            ⟨n, hincident⟩
-          have holdLen :
-              (endpointOrder G st).length = rst.endpoints.length :=
-            hrel.endpoint_length.symm
-          have hle :
-              (endpointOrder G st).length ≤ childEndpoint.val := by
-            have hfreshGe := Diag.freshNodeEndpoints_mem_ge hfreshMem
-            rw [holdLen]
-            simpa [childEndpoint, nodeEndpoints, rv.nextEndpoint_eq] using
-              hfreshGe
-          have hsub :
-              childEndpoint.val - (endpointOrder G st).length =
-                incidentEndpoint.val := by
-            rw [holdLen]
-            simpa [childEndpoint, incidentEndpoint, nodeEndpoints] using
-              Diag.freshNodeEndpoints_get_sub_of_eq
-                (start := rst.nextEndpoint)
-                (base := rst.endpoints.length)
-                (arity := Sig.arity renderNode)
-                rv.nextEndpoint_eq ⟨n, hid⟩
-          exact horderTrace.endpoint.get_suffix_at_right_of_val_eq
-            childEndpoint incidentEndpoint hle hsub
-        have herasedRight := hrightRel.erase entryIdx slot hentryIdxVal
-        let appendIndex : Fin (restIds ++ eraseFin nodeEndpoints entryIdx).length :=
-          ⟨id.val, by
-            have hlen :=
-              congrArg List.length hchildIds
-            exact Nat.lt_of_lt_of_eq id.isLt hlen⟩
-        let pendingIndex : Fin (rest ++ eraseFin (G.raw.incident node) slot).length :=
-          ⟨id.val, by
-            have hlen :
-                (Diag.budStep renderNode entry ok rst).frontierIds.length =
-                  (rest ++ eraseFin (G.raw.incident node) slot).length := by
-              rw [hchildPendingLen]
-              simp [SearchState.budChild]
-            exact Nat.lt_of_lt_of_eq id.isLt hlen⟩
-        have hall := hleftRel.append herasedRight
-        rcases hall.get id.val appendIndex.isLt pendingIndex.isLt with
-          ⟨hbound, hget⟩
-        have hrawEq :
-            (restIds ++ eraseFin nodeEndpoints entryIdx).get appendIndex =
-              (Diag.budStep renderNode entry ok rst).frontierIds.get id := by
-          have hgetIds := list_get_of_eq hchildIds id
-          have hcast :
-              Fin.cast (congrArg List.length hchildIds) id = appendIndex := by
-            exact fin_eq_of_val_eq rfl
-          simpa [appendIndex, hcast] using hgetIds.symm
-        have htargetBound :
-            (Diag.budStep renderNode entry ok rst).frontierIds.get id <
-              (Diag.budStep renderNode entry ok rst).endpoints.length := by
-          have hmem :
-              (Diag.budStep renderNode entry ok rst).frontierIds.get id ∈
-                restIds ++ eraseFin nodeEndpoints entryIdx := by
-            rw [← hchildIds]
-            exact List.get_mem
-              (Diag.budStep renderNode entry ok rst).frontierIds id
-          rcases List.mem_append.mp hmem with hold | hnew
-          · have holdMem :
-                (Diag.budStep renderNode entry ok rst).frontierIds.get id ∈
-                  rst.frontierIds := by
-              rw [hids]
-              right
-              exact hold
-            have hboundOld := hrel.frontier_id_bound_of_mem holdMem
-            rw [Diag.budStep_endpoints_length renderNode entry ok rst]
-            omega
-          · have hfresh :
-                (Diag.budStep renderNode entry ok rst).frontierIds.get id ∈
-                  nodeEndpoints :=
-              mem_of_mem_eraseFin nodeEndpoints entryIdx hnew
-            have hfreshLt := Diag.freshNodeEndpoints_mem_lt hfresh
-            rw [Diag.budStep_endpoints_length renderNode entry ok rst]
-            simpa [nodeEndpoints, renderNode, rv.nextEndpoint_eq] using hfreshLt
-        have hpendingIndex :
-            (st.budChild hpending node slot hmate hunseen).pending.get
-                (Fin.cast hchildPendingLen id) =
-              (rest ++ eraseFin (G.raw.incident node) slot).get pendingIndex := by
-          simp [SearchState.budChild, pendingIndex]
-        have hendpointIndex :
-            Fin.cast hchildEndpointLength
-                ⟨(Diag.budStep renderNode entry ok rst).frontierIds.get id,
-                  htargetBound⟩ =
-              Fin.cast hchildEndpointLength
-                ⟨(restIds ++ eraseFin nodeEndpoints entryIdx).get appendIndex,
-                  hbound⟩ := by
-          exact fin_eq_of_val_eq hrawEq.symm
-        rw [hendpointIndex]
-        rw [hpendingIndex]
-        exact hget
+      · exact hfrontierPending.frontier_id_bound
+      · exact hfrontierPending.pending_length
+      · exact hfrontierPending.pending_id
       · intro endpoint
         by_cases hold : endpoint.val < rst.endpoints.length
         · let oldEndpoint : Fin rst.endpoints.length := ⟨endpoint.val, hold⟩

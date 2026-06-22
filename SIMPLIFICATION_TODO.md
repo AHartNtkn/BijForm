@@ -426,6 +426,10 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     connect child frontier/pending relation-field update; the main
     `connectChild` constructor proof consumes those fields instead of locally
     rebuilding the erased-list relation.
+  - Partial: `GraphRenderRelated.budChild_frontierPending` now owns the bud
+    child rest-plus-fresh-endpoint frontier/pending relation-field update; the
+    main `budChild` constructor proof no longer locally assembles the
+    left/right `IndexedListRel` append-and-erase bridge.
 
 - [ ] Introduce declarative render deltas for connect and bud.
   - Owner: `BijForm.StringDiagram.Renderer.Steps`
