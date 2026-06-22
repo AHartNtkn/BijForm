@@ -307,6 +307,36 @@ theorem map_eraseFin {α β : Type} (f : α → β) :
       have ih := map_eraseFin f xs ⟨n, Nat.lt_of_succ_lt_succ h⟩
       simp [eraseFin, ih]
 
+def listMapIndex {α β : Type} (f : α → β) (xs : List α)
+    (i : Fin xs.length) : Fin (xs.map f).length :=
+  Fin.cast (by simp) i
+
+@[simp]
+theorem listMapIndex_val {α β : Type} (f : α → β) (xs : List α)
+    (i : Fin xs.length) :
+    (listMapIndex f xs i).val = i.val := by
+  simp [listMapIndex]
+
+theorem listMapIndex_get {α β : Type} (f : α → β) (xs : List α)
+    (i : Fin xs.length) :
+    (xs.map f).get (listMapIndex f xs i) = f (xs.get i) := by
+  simp [listMapIndex]
+
+def listMapPreimageIndex {α β : Type} (f : α → β) (xs : List α)
+    (i : Fin (xs.map f).length) : Fin xs.length :=
+  Fin.cast (by simp) i
+
+@[simp]
+theorem listMapPreimageIndex_val {α β : Type} (f : α → β) (xs : List α)
+    (i : Fin (xs.map f).length) :
+    (listMapPreimageIndex f xs i).val = i.val := by
+  simp [listMapPreimageIndex]
+
+theorem listMapPreimageIndex_get {α β : Type} (f : α → β) (xs : List α)
+    (i : Fin (xs.map f).length) :
+    (xs.map f).get i = f (xs.get (listMapPreimageIndex f xs i)) := by
+  simp [listMapPreimageIndex]
+
 theorem list_get_map_eq_get {α β : Type} (f : α → β)
     {xs : List α} {ys : List β}
     (hmap : xs.map f = ys) (i : Fin xs.length) :

@@ -297,7 +297,7 @@ theorem IsoRelated.firstPendingStepSearch?_connect
     (mate : Fin rest.length)
     (hmate : PortHypergraph.EdgeMate G.raw active (rest.get mate)) :
     let rightMate : Fin (rest.map e.endpointEquiv.toFun).length :=
-      hr.mappedRestIndex hpending mate
+      listMapIndex e.endpointEquiv.toFun rest mate
     ∃ rightMateEdge :
         PortHypergraph.EdgeMate H.raw (e.endpointEquiv.toFun active)
           ((rest.map e.endpointEquiv.toFun).get rightMate),
@@ -306,11 +306,12 @@ theorem IsoRelated.firstPendingStepSearch?_connect
         some (FirstPendingStep.connect rightMate rightMateEdge) := by
   dsimp
   let rightMate : Fin (rest.map e.endpointEquiv.toFun).length :=
-    hr.mappedRestIndex hpending mate
+    listMapIndex e.endpointEquiv.toFun rest mate
   have rightMateEdge :
       PortHypergraph.EdgeMate H.raw (e.endpointEquiv.toFun active)
         ((rest.map e.endpointEquiv.toFun).get rightMate) := by
-    exact hr.mappedRestIndex_edgeMate hpending mate hmate
+    simpa [rightMate, listMapIndex_get] using
+      PortHypergraphIso.edgeMate_preserved e hmate
   have hrightPending := hr.pending_cons hpending
   have hrightNodup :
       (rest.map e.endpointEquiv.toFun).Nodup :=
@@ -326,9 +327,9 @@ theorem IsoRelated.firstPendingConnectSearch?_none
     {activeLabel : Sig.Port} {restLabels : List Sig.Port}
     {left : SearchState G (activeLabel :: restLabels)}
     {right : SearchState H (activeLabel :: restLabels)}
-    (hr : IsoRelated e left right)
+    (_hr : IsoRelated e left right)
     {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
-    (hpending : left.pending = active :: rest)
+    (_hpending : left.pending = active :: rest)
     (hconnect :
       firstPendingConnectSearch? G left.seenNode active rest = none) :
     firstPendingConnectSearch? H right.seenNode (e.endpointEquiv.toFun active)
@@ -342,10 +343,14 @@ theorem IsoRelated.firstPendingConnectSearch?_none
           H right.seenNode hright with
         ⟨rightMate, hmateRight, _hstepEq⟩
       let leftMate : Fin rest.length :=
-        hr.mappedRestPreimageIndex hpending rightMate
+        listMapPreimageIndex e.endpointEquiv.toFun rest rightMate
       have hmateLeft :
-          PortHypergraph.EdgeMate G.raw active (rest.get leftMate) :=
-        hr.mappedRestPreimageIndex_edgeMate hpending rightMate hmateRight
+          PortHypergraph.EdgeMate G.raw active (rest.get leftMate) := by
+        have hmateMapped :
+            PortHypergraph.EdgeMate H.raw (e.endpointEquiv.toFun active)
+              (e.endpointEquiv.toFun (rest.get leftMate)) := by
+          simpa [leftMate, listMapPreimageIndex_get] using hmateRight
+        simpa using PortHypergraphIso.edgeMate_reflected e hmateMapped
       rcases firstPendingConnectSearch?_exists_of_witness
           G left.seenNode leftMate hmateLeft with
         ⟨leftStep, hleftStep⟩
@@ -767,22 +772,23 @@ theorem toDiag_isoRelated
   | case2 activeLabel restLabels active rest mate hmate st _hcomplete
       hcomplete hpending hstep _hstep ih =>
       have hrightPending := hrel.pending_cons hpending
+      let rightMate := listMapIndex e.endpointEquiv.toFun rest mate
       rcases hrel.firstPendingStepSearch?_connect hpending mate hmate with
         ⟨rightMateEdge, hrightStep⟩
       have hchildRel :=
         hrel.connectChild_with hpending mate hmate rightMateEdge
       have hchild :=
-        ih (right.connectChild hrightPending (Fin.cast (by simp) mate)
+        ih (right.connectChild hrightPending rightMate
               rightMateEdge) hchildRel
           (right.connectChild_frontierComplete hrightPending
-            (Fin.cast (by simp) mate) rightMateEdge hright)
+            rightMate rightMateEdge hright)
       rw [toDiag_connect st hcomplete hpending mate hmate hstep]
       rw [toDiag_connect right hright hrightPending
-        (Fin.cast (by simp) mate) rightMateEdge hrightStep]
+        rightMate rightMateEdge hrightStep]
       have hidx := hrel.restLabelIndex hpending mate
       cases hidx
       have hok :
-          right.connect_compatible hrightPending (Fin.cast (by simp) mate)
+          right.connect_compatible hrightPending rightMate
               rightMateEdge =
             st.connect_compatible hpending mate hmate := Subsingleton.elim _ _
       cases hok
