@@ -721,13 +721,12 @@ theorem budStep_frontierIds
   have hdelta := budStep_delta node entry ok st hids
   simpa [nodeEndpoints, entryIdx] using hdelta.frontierIds_eq
 
-theorem connectStep_edgesPrefix
+def connectStep_edgesAppend
     {active : Sig.Port} {frontier : List Sig.Port}
     (mate : Fin frontier.length)
     (ok : Sig.compatible active (frontier.get mate))
     (st : RenderState Sig (active :: frontier)) :
-    ∃ suffix : List (RenderEdge Sig),
-      (connectStep mate ok st).edges = st.edges ++ suffix := by
+    AppendStep.Witness st.edges (connectStep mate ok st).edges := by
   cases hids : st.frontierIds with
   | nil =>
       exact False.elim (RenderState.frontierIds_ne_nil st hids)
@@ -744,18 +743,17 @@ theorem connectStep_edgesPrefix
           left_label := rfl
           right_label := (Sig.compatible_edge ok).symm
           compatible := ok }
-      refine ⟨[edge], ?_⟩
+      refine { suffix := [edge], step := ?_ }
       have hdelta := connectStep_delta mate ok st hids
-      simpa [idx, edge] using hdelta.edges.eq_append
+      exact ⟨by simpa [idx, edge] using hdelta.edges.eq_append⟩
 
-theorem budStep_edgesPrefix
+def budStep_edgesAppend
     {active : Sig.Port} {frontier : List Sig.Port}
     (node : Sig.Node)
     (entry : Fin (Sig.arity node))
     (ok : Sig.compatible active (Sig.port node entry))
     (st : RenderState Sig (active :: frontier)) :
-    ∃ suffix : List (RenderEdge Sig),
-      (budStep node entry ok st).edges = st.edges ++ suffix := by
+    AppendStep.Witness st.edges (budStep node entry ok st).edges := by
   cases hids : st.frontierIds with
   | nil =>
       exact False.elim (RenderState.frontierIds_ne_nil st hids)
@@ -772,33 +770,32 @@ theorem budStep_edgesPrefix
           left_label := rfl
           right_label := (Sig.compatible_edge ok).symm
           compatible := ok }
-      refine ⟨[edge], ?_⟩
+      refine { suffix := [edge], step := ?_ }
       have hdelta := budStep_delta node entry ok st hids
-      simpa [nodeEndpoints, entryIdx, edge] using hdelta.edges.eq_append
+      exact ⟨by
+        simpa [nodeEndpoints, entryIdx, edge] using hdelta.edges.eq_append⟩
 
-theorem connectStep_nodesPrefix
+def connectStep_nodesAppend
     {active : Sig.Port} {frontier : List Sig.Port}
     (mate : Fin frontier.length)
     (ok : Sig.compatible active (frontier.get mate))
     (st : RenderState Sig (active :: frontier)) :
-    ∃ suffix : List (RenderNode Sig),
-      (connectStep mate ok st).nodes = st.nodes ++ suffix := by
+    AppendStep.Witness st.nodes (connectStep mate ok st).nodes := by
   cases hids : st.frontierIds with
   | nil =>
       exact False.elim (RenderState.frontierIds_ne_nil st hids)
   | cons _activeId _restIds =>
-      refine ⟨[], ?_⟩
+      refine { suffix := [], step := ?_ }
       have hdelta := connectStep_delta mate ok st hids
-      simpa using hdelta.nodes.eq_append
+      exact ⟨by simpa using hdelta.nodes.eq_append⟩
 
-theorem budStep_nodesPrefix
+def budStep_nodesAppend
     {active : Sig.Port} {frontier : List Sig.Port}
     (node : Sig.Node)
     (entry : Fin (Sig.arity node))
     (ok : Sig.compatible active (Sig.port node entry))
     (st : RenderState Sig (active :: frontier)) :
-    ∃ suffix : List (RenderNode Sig),
-      (budStep node entry ok st).nodes = st.nodes ++ suffix := by
+    AppendStep.Witness st.nodes (budStep node entry ok st).nodes := by
   cases hids : st.frontierIds with
   | nil =>
       exact False.elim (RenderState.frontierIds_ne_nil st hids)
@@ -807,9 +804,10 @@ theorem budStep_nodesPrefix
       let renderNode : RenderNode Sig :=
         { label := node
           incident := nodeEndpoints }
-      refine ⟨[renderNode], ?_⟩
+      refine { suffix := [renderNode], step := ?_ }
       have hdelta := budStep_delta node entry ok st hids
-      simpa [nodeEndpoints, renderNode] using hdelta.nodes.eq_append
+      exact ⟨by simpa [nodeEndpoints, renderNode] using
+        hdelta.nodes.eq_append⟩
 
 theorem budStep_edges
     {active : Sig.Port} {frontier : List Sig.Port}
@@ -988,6 +986,25 @@ theorem budStep_endpoints
       have hdelta := budStep_delta node entry ok st hids
       simpa using hdelta.endpoints.eq_append
 
+def connectStep_endpointsAppend
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (st : RenderState Sig (active :: frontier)) :
+    AppendStep.Witness st.endpoints (connectStep mate ok st).endpoints where
+  suffix := []
+  step := ⟨by simp [connectStep_endpoints mate ok st]⟩
+
+def budStep_endpointsAppend
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (st : RenderState Sig (active :: frontier)) :
+    AppendStep.Witness st.endpoints (budStep node entry ok st).endpoints where
+  suffix := Sig.nodePorts node
+  step := ⟨by rw [budStep_endpoints node entry ok st]⟩
+
 theorem budStep_edgeEndpointIds
     {active : Sig.Port} {frontier : List Sig.Port}
     (node : Sig.Node)
@@ -1025,11 +1042,10 @@ def connectStep_endpointPrefix
     (ok : Sig.compatible active (frontier.get mate))
     (st : RenderState Sig (active :: frontier))
     (pref : st.EndpointPrefix boundary) :
-    (connectStep mate ok st).EndpointPrefix boundary where
-  suffix := pref.suffix
-  endpoints_eq := by
-    rw [connectStep_endpoints]
-    exact pref.endpoints_eq
+    (connectStep mate ok st).EndpointPrefix boundary :=
+  pref.trans
+    { suffix := (connectStep_endpointsAppend mate ok st).suffix
+      endpoints_eq := (connectStep_endpointsAppend mate ok st).step.eq_append }
 
 def budStep_endpointPrefix
     {active : Sig.Port} {frontier boundary : List Sig.Port}
@@ -1038,11 +1054,11 @@ def budStep_endpointPrefix
     (ok : Sig.compatible active (Sig.port node entry))
     (st : RenderState Sig (active :: frontier))
     (pref : st.EndpointPrefix boundary) :
-    (budStep node entry ok st).EndpointPrefix boundary where
-  suffix := pref.suffix ++ Sig.nodePorts node
-  endpoints_eq := by
-    rw [budStep_endpoints]
-    rw [pref.endpoints_eq, List.append_assoc]
+    (budStep node entry ok st).EndpointPrefix boundary :=
+  pref.trans
+    { suffix := (budStep_endpointsAppend node entry ok st).suffix
+      endpoints_eq :=
+        (budStep_endpointsAppend node entry ok st).step.eq_append }
 
 theorem budStep_edges_length
     {active : Sig.Port} {frontier : List Sig.Port}

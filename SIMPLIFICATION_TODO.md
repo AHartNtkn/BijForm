@@ -544,7 +544,7 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     node-incident-nodup, and owner-partition proofs now use public step facts
     instead of unfolding the steps.
 
-- [ ] Factor render trace prefix/index proofs.
+- [x] Factor render trace prefix/index proofs.
   - Owner: `BijForm.StringDiagram.Renderer.Trace`
   - Evidence: endpoints, edges, and nodes repeat prefix/append trace reasoning
     and new-index/get lemmas.
@@ -552,11 +552,11 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     suffix, old index, and new index theorems.
   - Validation: bridge proofs still have the trace computation and new-index
     facts they need.
-  - Partial: added `AppendStep.trans` and `AppendStep.get_first_suffix_at`, and
-    routed the connect-edge, bud-edge, and bud-node first-new render lookup
-    proofs through those helpers. Full data-carrying trace-field/index
-    ownership remains open because the current recursive prefix witnesses are
-    existential `Prop` evidence.
+  - Completed: `AppendStep.Witness` now carries suffix data with append proofs.
+    Connect/bud step append witnesses own endpoint, edge, and node field
+    growth; render traces expose endpoint, edge, and node append witnesses.
+    The first-new edge/node index and get proofs derive from those witnesses,
+    and the old recursive existential prefix model has been removed.
 
 - [ ] Factor traversal child-state updates.
   - Owner: `BijForm.StringDiagram.Traversal.State`

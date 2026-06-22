@@ -240,6 +240,29 @@ theorem trans {α : Type} {pref mid full suffix₁ suffix₂ : List α}
   eq_append := by
     rw [h₂.eq_append, h₁.eq_append, List.append_assoc]
 
+structure Witness {α : Type} (pref full : List α) where
+  suffix : List α
+  step : AppendStep pref full suffix
+
+namespace Witness
+
+def refl {α : Type} (xs : List α) : Witness xs xs where
+  suffix := []
+  step := ⟨by simp⟩
+
+def trans {α : Type} {pref mid full : List α}
+    (h₁ : Witness pref mid) (h₂ : Witness mid full) :
+    Witness pref full where
+  suffix := h₁.suffix ++ h₂.suffix
+  step := h₁.step.trans h₂.step
+
+theorem eq_append {α : Type} {pref full : List α}
+    (h : Witness pref full) :
+    full = pref ++ h.suffix :=
+  h.step.eq_append
+
+end Witness
+
 theorem get_first_suffix_at {α : Type} {pref full : List α}
     {x : α} {suffix : List α}
     (h : AppendStep pref full (x :: suffix))
