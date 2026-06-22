@@ -149,6 +149,10 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
   - Partial: routed more final preservation proof sites through the relation
     helpers; `GraphRenderRelation` still has raw child-step and incident-slot
     transports that need a separate helper family.
+  - Partial: added generic `endpointOrderIndex`, `edgeOrderIndex`, and
+    `nodeOrderIndex` helpers beside the order-list definitions and routed one
+    bud-child preservation block through them. Raw child-step casts remain in
+    connect-child, later bud-child, and incident-slot proof regions.
 
 ## Code Algebra and Rank Descent
 

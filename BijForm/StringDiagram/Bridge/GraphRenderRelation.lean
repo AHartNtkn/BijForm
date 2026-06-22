@@ -29,6 +29,45 @@ def nodeOrder {G : OpenPortHypergraph Sig boundary}
     List (Fin G.raw.nodeCount) :=
   st.seenNodes.reverse
 
+/-- Transport an endpoint index across an endpoint-order length equality. -/
+def endpointOrderIndex {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port} (st : SearchState G frontier)
+    {n : Nat} (h : n = (endpointOrder G st).length) (idx : Fin n) :
+    Fin (endpointOrder G st).length :=
+  listIndexCast (endpointOrder G st) h idx
+
+/-- Transport an edge index across an edge-order length equality. -/
+def edgeOrderIndex {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port} (st : SearchState G frontier)
+    {n : Nat} (h : n = (edgeOrder st).length) (idx : Fin n) :
+    Fin (edgeOrder st).length :=
+  listIndexCast (edgeOrder st) h idx
+
+/-- Transport a node index across a node-order length equality. -/
+def nodeOrderIndex {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port} (st : SearchState G frontier)
+    {n : Nat} (h : n = (nodeOrder st).length) (idx : Fin n) :
+    Fin (nodeOrder st).length :=
+  listIndexCast (nodeOrder st) h idx
+
+@[simp] theorem endpointOrderIndex_val {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port} (st : SearchState G frontier)
+    {n : Nat} (h : n = (endpointOrder G st).length) (idx : Fin n) :
+    (endpointOrderIndex st h idx).val = idx.val :=
+  rfl
+
+@[simp] theorem edgeOrderIndex_val {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port} (st : SearchState G frontier)
+    {n : Nat} (h : n = (edgeOrder st).length) (idx : Fin n) :
+    (edgeOrderIndex st h idx).val = idx.val :=
+  rfl
+
+@[simp] theorem nodeOrderIndex_val {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port} (st : SearchState G frontier)
+    {n : Nat} (h : n = (nodeOrder st).length) (idx : Fin n) :
+    (nodeOrderIndex st h idx).val = idx.val :=
+  rfl
+
 theorem incident_mem_node_eq
     {G : OpenPortHypergraph Sig boundary}
     {leftNode rightNode : Fin G.raw.nodeCount}
@@ -1720,14 +1759,18 @@ theorem GraphRenderRelated.budChild
             (hold : raw < rst.endpoints.length)
             (hbound : raw < (Diag.budStep renderNode entry ok rst).endpoints.length),
             (endpointOrder G (st.budChild hpending node slot hmate hunseen)).get
-                (Fin.cast hchildEndpointLength ⟨raw, hbound⟩) =
+                (endpointOrderIndex
+                  (st.budChild hpending node slot hmate hunseen)
+                  hchildEndpointLength ⟨raw, hbound⟩) =
               (endpointOrder G st).get
                 (Fin.cast hrel.endpoint_length ⟨raw, hold⟩) := by
         intro raw hold hbound
         let childEndpoint :
             Fin (endpointOrder G
               (st.budChild hpending node slot hmate hunseen)).length :=
-          Fin.cast hchildEndpointLength ⟨raw, hbound⟩
+          endpointOrderIndex
+            (st.budChild hpending node slot hmate hunseen)
+            hchildEndpointLength ⟨raw, hbound⟩
         let oldEndpoint : Fin (endpointOrder G st).length :=
           Fin.cast hrel.endpoint_length ⟨raw, hold⟩
         exact endpointOrder_budChild_get_old st hpending node slot hmate
@@ -1738,7 +1781,9 @@ theorem GraphRenderRelated.budChild
             (hle : rst.endpoints.length ≤ raw)
             (hbound : raw < (Diag.budStep renderNode entry ok rst).endpoints.length),
             (endpointOrder G (st.budChild hpending node slot hmate hunseen)).get
-                (Fin.cast hchildEndpointLength ⟨raw, hbound⟩) =
+                (endpointOrderIndex
+                  (st.budChild hpending node slot hmate hunseen)
+                  hchildEndpointLength ⟨raw, hbound⟩) =
               (G.raw.incident node).get
                 ⟨raw - rst.endpoints.length, by
                   rw [Diag.budStep_endpoints_length renderNode entry ok rst] at hbound
@@ -1750,7 +1795,9 @@ theorem GraphRenderRelated.budChild
         let childEndpoint :
             Fin (endpointOrder G
               (st.budChild hpending node slot hmate hunseen)).length :=
-          Fin.cast hchildEndpointLength ⟨raw, hbound⟩
+          endpointOrderIndex
+            (st.budChild hpending node slot hmate hunseen)
+            hchildEndpointLength ⟨raw, hbound⟩
         have hleOrder : (endpointOrder G st).length ≤ raw := by
           rw [← hrel.endpoint_length]
           exact hle
@@ -1772,13 +1819,17 @@ theorem GraphRenderRelated.budChild
             (hold : raw < rst.edges.length)
             (hbound : raw < (Diag.budStep renderNode entry ok rst).edges.length),
             (edgeOrder (st.budChild hpending node slot hmate hunseen)).get
-                (Fin.cast hchildEdgeLength ⟨raw, hbound⟩) =
+                (edgeOrderIndex
+                  (st.budChild hpending node slot hmate hunseen)
+                  hchildEdgeLength ⟨raw, hbound⟩) =
               (edgeOrder st).get
                 (hrel.edgeIndex ⟨raw, hold⟩) := by
         intro raw hold hbound
         let childEdge :
             Fin (edgeOrder (st.budChild hpending node slot hmate hunseen)).length :=
-          Fin.cast hchildEdgeLength ⟨raw, hbound⟩
+          edgeOrderIndex
+            (st.budChild hpending node slot hmate hunseen)
+            hchildEdgeLength ⟨raw, hbound⟩
         let oldEdge : Fin (edgeOrder st).length :=
           hrel.edgeIndex ⟨raw, hold⟩
         exact edgeOrder_budChild_get_old st hpending node slot hmate
@@ -1788,12 +1839,16 @@ theorem GraphRenderRelated.budChild
             (hnew : raw = rst.edges.length)
             (hbound : raw < (Diag.budStep renderNode entry ok rst).edges.length),
             (edgeOrder (st.budChild hpending node slot hmate hunseen)).get
-                (Fin.cast hchildEdgeLength ⟨raw, hbound⟩) =
+                (edgeOrderIndex
+                  (st.budChild hpending node slot hmate hunseen)
+                  hchildEdgeLength ⟨raw, hbound⟩) =
               G.raw.endpointEdge active := by
         intro raw hnew hbound
         let childEdge :
             Fin (edgeOrder (st.budChild hpending node slot hmate hunseen)).length :=
-          Fin.cast hchildEdgeLength ⟨raw, hbound⟩
+          edgeOrderIndex
+            (st.budChild hpending node slot hmate hunseen)
+            hchildEdgeLength ⟨raw, hbound⟩
         exact edgeOrder_budChild_get_new st hpending node slot hmate
           hunseen childEdge (by simp [childEdge, hnew, hrel.edge_length])
       have nodeAt_old :
@@ -1801,13 +1856,17 @@ theorem GraphRenderRelated.budChild
             (hold : raw < rst.nodes.length)
             (hbound : raw < (Diag.budStep renderNode entry ok rst).nodes.length),
             (nodeOrder (st.budChild hpending node slot hmate hunseen)).get
-                (Fin.cast hchildNodeLength ⟨raw, hbound⟩) =
+                (nodeOrderIndex
+                  (st.budChild hpending node slot hmate hunseen)
+                  hchildNodeLength ⟨raw, hbound⟩) =
               (nodeOrder st).get
                 (Fin.cast hrel.node_length ⟨raw, hold⟩) := by
         intro raw hold hbound
         let childNode :
             Fin (nodeOrder (st.budChild hpending node slot hmate hunseen)).length :=
-          Fin.cast hchildNodeLength ⟨raw, hbound⟩
+          nodeOrderIndex
+            (st.budChild hpending node slot hmate hunseen)
+            hchildNodeLength ⟨raw, hbound⟩
         let oldNode : Fin (nodeOrder st).length :=
           Fin.cast hrel.node_length ⟨raw, hold⟩
         exact nodeOrder_budChild_get_old st hpending node slot hmate
@@ -1817,12 +1876,16 @@ theorem GraphRenderRelated.budChild
             (hnew : raw = rst.nodes.length)
             (hbound : raw < (Diag.budStep renderNode entry ok rst).nodes.length),
             (nodeOrder (st.budChild hpending node slot hmate hunseen)).get
-                (Fin.cast hchildNodeLength ⟨raw, hbound⟩) =
+                (nodeOrderIndex
+                  (st.budChild hpending node slot hmate hunseen)
+                  hchildNodeLength ⟨raw, hbound⟩) =
               node := by
         intro raw hnew hbound
         let childNode :
             Fin (nodeOrder (st.budChild hpending node slot hmate hunseen)).length :=
-          Fin.cast hchildNodeLength ⟨raw, hbound⟩
+          nodeOrderIndex
+            (st.budChild hpending node slot hmate hunseen)
+            hchildNodeLength ⟨raw, hbound⟩
         exact nodeOrder_budChild_get_new st hpending node slot hmate
           hunseen childNode (by simp [childNode, hnew, hrel.node_length])
       have hchildNodeIncidentLength :
