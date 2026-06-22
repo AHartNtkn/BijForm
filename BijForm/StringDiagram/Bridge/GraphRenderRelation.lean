@@ -919,54 +919,30 @@ theorem GraphRenderRelated.connectChild_edgeLabel
   let horderTrace :=
     connectChild_orderTrace rst st hpending mate hmate hids
       hrel.endpoint_length hrel.edge_length hrel.node_length
+  have hactiveLabel := (st.pending_labels_cons hpending).1
+  have hlabelNew :
+      Sig.portEdge activeLabel =
+        G.raw.edgeLabel (G.raw.endpointEdge active) := by
+    rw [← hactiveLabel]
+    exact G.raw.endpoint_edge_label active
+  have hlabelRel :
+      AppendTraceRelation horderTrace.edge
+        (fun renderEdge graphEdge =>
+          renderEdge.label = G.raw.edgeLabel graphEdge) := by
+    refine { prefix_rel := ?_, suffix_rel := ?_ }
+    · intro oldEdge graphEdge hval
+      have hidx : graphEdge = hrel.edgeIndex oldEdge := by
+        exact fin_eq_of_val_eq hval.symm
+      simpa [hidx] using hrel.edge_label oldEdge
+    · intro renderEdge graphEdge _hval
+      simpa [horderTrace, connectChild_orderTrace] using hlabelNew
   intro edge
-  by_cases hold : edge.val < rst.edges.length
-  · let oldEdge : Fin rst.edges.length := ⟨edge.val, hold⟩
-    have hedgeEq :
-        (Diag.connectStep rendererMate ok rst).edges.get edge =
-          rst.edges.get oldEdge :=
-      Diag.connectStep_edges_get_old rendererMate ok rst hids edge hold
-    let childEdge :
-        Fin (edgeOrder (st.connectChild hpending mate hmate)).length :=
-      Fin.cast hchildEdgeLength edge
-    have hedgeOrder :
-        (edgeOrder (st.connectChild hpending mate hmate)).get
-            childEdge =
-          (edgeOrder st).get (hrel.edgeIndex oldEdge) := by
-      exact horderTrace.edge.get_prefix_at_right_of_val_eq
-        childEdge (hrel.edgeIndex oldEdge) (by simp [childEdge, oldEdge])
-    rw [hedgeEq]
-    simpa [childEdge] using
-      (hrel.edge_label oldEdge).trans
-        (congrArg G.raw.edgeLabel hedgeOrder.symm)
-  · have hnewVal : edge.val = rst.edges.length := by
-      have hlen : edge.val < rst.edges.length + 1 := by
-        exact Nat.lt_of_lt_of_eq edge.isLt
-          (Diag.connectStep_edges_length rendererMate ok rst)
-      omega
-    have hnewEdge := horderTrace.renderEdge_get edge hnewVal
-    let childEdge :
-        Fin (edgeOrder (st.connectChild hpending mate hmate)).length :=
-      Fin.cast hchildEdgeLength edge
-    have hnewOrder :
-        (edgeOrder (st.connectChild hpending mate hmate)).get
-            childEdge =
-          G.raw.endpointEdge active := by
-      exact horderTrace.edge.get_single_at_right_prefix_length
-        childEdge (by simp [childEdge, hnewVal, hrel.edge_length])
-    have hactiveLabel := (st.pending_labels_cons hpending).1
-    have hlabelNew :
-        Sig.portEdge activeLabel =
-          G.raw.edgeLabel (G.raw.endpointEdge active) := by
-      rw [← hactiveLabel]
-      exact G.raw.endpoint_edge_label active
-    rw [hnewEdge]
-    have hrenderLabel :
-        horderTrace.renderEdge.label = Sig.portEdge activeLabel := by
-      simp [horderTrace, connectChild_orderTrace]
-    rw [hrenderLabel]
-    simpa [childEdge] using
-      hlabelNew.trans (congrArg G.raw.edgeLabel hnewOrder.symm)
+  let childEdge :
+      Fin (edgeOrder (st.connectChild hpending mate hmate)).length :=
+    Fin.cast hchildEdgeLength edge
+  have hidx : horderTrace.edge.rightIndex edge = childEdge := by
+    exact fin_eq_of_val_eq rfl
+  simpa [childEdge, hidx] using AppendTraceRelation.get hlabelRel edge
 
 theorem GraphRenderRelated.connectChild_edgeLeft
     {G : OpenPortHypergraph Sig boundary}

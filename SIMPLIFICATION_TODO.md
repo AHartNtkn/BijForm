@@ -485,6 +485,10 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
   - Partial: the main `GraphRenderRelated.budChild` constructor proof no
     longer carries stale fresh-endpoint, pending-value, or trace locals after
     delegating those fields to helper theorems.
+  - Partial: `AppendTraceRelation` now packages prefix/suffix field laws into
+    a full-index relation over paired append traces, and
+    `GraphRenderRelated.connectChild_edgeLabel` consumes it instead of owning a
+    local old/new edge split.
 
 - [ ] Introduce declarative render deltas for connect and bud.
   - Owner: `BijForm.StringDiagram.Renderer.Steps`

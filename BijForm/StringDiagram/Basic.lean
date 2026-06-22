@@ -387,6 +387,66 @@ theorem get_single_at_right_prefix_length {α β : Type}
 
 end AppendTrace
 
+/--
+Field-level relation carried by a paired append trace.  The prefix and suffix
+laws are enough to prove the relation at every full-list index, centralizing
+the old/new index split that callers otherwise repeat.
+-/
+structure AppendTraceRelation {α β : Type}
+    {leftPref leftFull leftSuffix : List α}
+    {rightPref rightFull rightSuffix : List β}
+    (trace : AppendTrace leftPref leftFull leftSuffix
+      rightPref rightFull rightSuffix)
+    (R : α → β → Prop) : Prop where
+  prefix_rel :
+    ∀ (left : Fin leftPref.length) (right : Fin rightPref.length),
+      left.val = right.val → R (leftPref.get left) (rightPref.get right)
+  suffix_rel :
+    ∀ (left : Fin leftSuffix.length) (right : Fin rightSuffix.length),
+      left.val = right.val → R (leftSuffix.get left) (rightSuffix.get right)
+
+namespace AppendTraceRelation
+
+theorem get {α β : Type}
+    {leftPref leftFull leftSuffix : List α}
+    {rightPref rightFull rightSuffix : List β}
+    {trace : AppendTrace leftPref leftFull leftSuffix
+      rightPref rightFull rightSuffix}
+    {R : α → β → Prop}
+    (h : AppendTraceRelation trace R)
+    (i : Fin leftFull.length) :
+    R (leftFull.get i) (rightFull.get (trace.rightIndex i)) := by
+  by_cases hi : i.val < leftPref.length
+  · let leftIdx : Fin leftPref.length := ⟨i.val, hi⟩
+    let rightIdx : Fin rightPref.length := trace.prefixRightIndex i hi
+    have hleft :
+        leftFull.get i = leftPref.get leftIdx := by
+      exact AppendStep.get_prefix_of_val_eq trace.left_step i leftIdx rfl
+    have hright :
+        rightFull.get (trace.rightIndex i) = rightPref.get rightIdx := by
+      exact trace.get_prefix i hi
+    rw [hleft, hright]
+    exact h.prefix_rel leftIdx rightIdx rfl
+  · have hle : leftPref.length ≤ i.val := Nat.le_of_not_gt hi
+    let leftIdx : Fin leftSuffix.length :=
+      ⟨i.val - leftPref.length, by
+        have hlen := AppendStep.length trace.left_step
+        omega⟩
+    let rightIdx : Fin rightSuffix.length :=
+      ⟨i.val - leftPref.length, by
+        have hbound : i.val - leftPref.length < leftSuffix.length := leftIdx.isLt
+        simpa [trace.suffix_length] using hbound⟩
+    have hleft :
+        leftFull.get i = leftSuffix.get leftIdx := by
+      exact AppendStep.get_suffix_of_val_eq trace.left_step i leftIdx hle rfl
+    have hright :
+        rightFull.get (trace.rightIndex i) = rightSuffix.get rightIdx := by
+      exact trace.get_suffix_of_val_eq i rightIdx hle rfl
+    rw [hleft, hright]
+    exact h.suffix_rel leftIdx rightIdx rfl
+
+end AppendTraceRelation
+
 def listIndexCast {α : Type} (xs : List α) {n : Nat}
     (h : n = xs.length) (i : Fin n) : Fin xs.length :=
   Fin.cast h i
