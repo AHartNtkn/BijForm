@@ -1,3 +1,4 @@
+import BijForm.FiniteSubtypeTable
 import BijForm.StringDiagram.FiniteCoding
 
 namespace BijForm

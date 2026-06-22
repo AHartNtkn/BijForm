@@ -117,14 +117,16 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     `Nat.not_lt_zero` eliminations were replaced, and the closed app-term empty
     carrier composes through the reusable empty product iso.
 
-- [ ] Move `FiniteSubtypeTable` out of root `Coding`.
-  - Owner: finite subtype/table module under `CodeAlgebra` or a new finite-table
-    boundary.
+- [x] Move `FiniteSubtypeTable` out of root `Coding`.
+  - Owner: `BijForm.FiniteSubtypeTable`
   - Evidence: `FiniteSubtypeTable` in `BijForm/Coding.lean` is table
     enumeration infrastructure; current main consumer is
     `Examples/SymmetricInteractionNet.lean`.
   - Action: keep root `Coding` focused on `Iso` and primitive equality helpers.
   - Validation: `SymmetricInteractionNet` imports the new owner and builds.
+  - Completed: table structure and namespace API moved to
+    `BijForm.FiniteSubtypeTable`; `Coding` no longer contains table machinery,
+    and `SymmetricInteractionNet` imports the new owner directly.
 
 - [ ] Add structured list-index transport APIs.
   - Owner: `BijForm.StringDiagram.Basic`
