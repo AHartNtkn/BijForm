@@ -451,6 +451,10 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
   - Partial: `GraphRenderRelated.connectChild_edgeLabel` now owns the connect
     child old/new edge-label update; the main `connectChild` proof consumes the
     edge-label field instead of splitting on old versus appended edges there.
+  - Partial: `GraphRenderRelated.connectChild_edgeLeft` now owns the connect
+    child old/new left-endpoint incidence update; the main `connectChild`
+    proof consumes that field instead of rebuilding endpoint and edge-order
+    transport locally.
 
 - [ ] Introduce declarative render deltas for connect and bud.
   - Owner: `BijForm.StringDiagram.Renderer.Steps`
