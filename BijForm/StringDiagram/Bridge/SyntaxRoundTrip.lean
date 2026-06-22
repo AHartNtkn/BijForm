@@ -629,12 +629,14 @@ theorem toDiag_of_renderPrefixRelated :
                     (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall) (connectStep mate ok rst)
                     (sst.connectChild hpending searchMate hmateSearch') := by
                 cases hidx
-                exact hrel.connectChild_of_new_edge hpending searchMate
-                  hmateSearch' ok hactiveEdge
-                  (connectStep_edges_length mate ok rst)
-                  (by
-                    have hnodes := connectStep_nodes mate ok rst
-                    exact congrArg List.length hnodes)
+                simpa [OpenPortHypergraph.SearchState.firstPendingChildState] using
+                  hrel.firstPendingChild hpending
+                    (OpenPortHypergraph.SearchState.RenderPrefixChildStep.connect
+                      searchMate hmateSearch' ok hactiveEdge
+                      (connectStep_edges_length mate ok rst)
+                      (by
+                        have hnodes := connectStep_nodes mate ok rst
+                        exact congrArg List.length hnodes))
               have hchild :=
                 ih (connectStep mate ok rst)
                   (connectStep_validIds mate ok rst rhv)
@@ -811,23 +813,30 @@ theorem toDiag_of_renderPrefixRelated :
                   OpenPortHypergraph.SearchState.RenderPrefixRelated
                     (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall)
                     (hfrontier.symm ▸ budStep node entry ok rst) searchChildB := by
-                exact hrel.budChild_of_new_edge_node hpending nodeIndex slot
-                  hmateSearch' hunseen' node entry ok hfrontier hincidentVals hslotVal
-                  hactiveEdge hnewNode
-                  (by
-                    have hcast :=
-                      RenderState.cast_edges hfrontier.symm
-                        (budStep node entry ok rst)
-                    have hlen := congrArg List.length hcast
-                    simpa [hlen] using
-                      budStep_edges_length node entry ok rst)
-                  (by
-                    have hcast :=
-                      RenderState.cast_nodes hfrontier.symm
-                        (budStep node entry ok rst)
-                    have hlen := congrArg List.length hcast
-                    simpa [hlen] using
-                      budStep_nodes_length node entry ok rst)
+                simpa [OpenPortHypergraph.SearchState.firstPendingChildState,
+                  searchChildB] using
+                  hrel.firstPendingChild hpending
+                    (OpenPortHypergraph.SearchState.RenderPrefixChildStep.bud
+                      (ev := RenderState.openEvidenceOfInvariants hv hp hn
+                        pref ho hall)
+                      (rst := rst)
+                      (sst := sst)
+                      nodeIndex slot hmateSearch' hunseen' node entry ok
+                      hfrontier hincidentVals hslotVal hactiveEdge hnewNode
+                      (by
+                        have hcast :=
+                          RenderState.cast_edges hfrontier.symm
+                            (budStep node entry ok rst)
+                        have hlen := congrArg List.length hcast
+                        simpa [hlen] using
+                          budStep_edges_length node entry ok rst)
+                      (by
+                        have hcast :=
+                          RenderState.cast_nodes hfrontier.symm
+                            (budStep node entry ok rst)
+                        have hlen := congrArg List.length hcast
+                        simpa [hlen] using
+                          budStep_nodes_length node entry ok rst))
               let searchChildA : OpenPortHypergraph.SearchState
                   (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph
                   (frontier ++ Sig.nodePortsExcept node entry) :=

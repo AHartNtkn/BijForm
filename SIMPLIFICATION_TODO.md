@@ -558,7 +558,7 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     The first-new edge/node index and get proofs derive from those witnesses,
     and the old recursive existential prefix model has been removed.
 
-- [ ] Factor traversal child-state updates.
+- [x] Factor traversal child-state updates.
   - Owner: `BijForm.StringDiagram.Traversal.State`
   - Evidence: `connectChild`, `budChild`, and their `RenderPrefixRelated` and
     `IsoRelated` preservation lemmas repeat pending, seen, processed, frontier
@@ -567,25 +567,18 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     child state and common facts once.
   - Validation: connect/bud iso-preservation becomes one generic theorem plus
     small constructors.
-  - Partial: added active-consumption helper lemmas for pending-cons membership
-    and processed-edge nodup after consuming the active endpoint; `connectChild`,
-    `budChild`, and their remaining-edge descent proofs now use those helpers.
-    The full `SearchStepDelta`/generic preservation theorem remains open.
-  - Partial: added generic `fin_cons_prefix_iff` for one-element `Fin` prefix
-    extensions and routed the connect/bud `RenderPrefixRelated` processed/seen
-    prefix updates through it. Branch-facing preservation theorems still need a
-    `FirstPendingStep` child-delta owner.
-  - Partial: added `firstPendingChildFrontier`, `firstPendingChildState`,
-    `firstPendingChild_frontierComplete`, and
-    `firstPendingChild_remainingEdges_lt`; `toDiag` now gets recursive child
-    completeness and descent through the first-pending step owner. Generic
-    branch-facing `RenderPrefixRelated`/`IsoRelated` preservation remains open.
-  - Partial: added `FirstPendingStep.IsoImage`,
-    `IsoRelated.firstPendingChildFrontier_eq`, and
-    `IsoRelated.firstPendingChild`; `toDiag_isoRelated` now recurses through
-    the first-pending iso-preservation theorem instead of directly invoking
-    connect/bud child relation lemmas. Generic `RenderPrefixRelated`
-    preservation and a full child-delta owner remain open.
+  - Completed: `firstPendingChildFrontier` and `firstPendingChildState` now
+    own the child transition selected by `FirstPendingStep`; the shared
+    frontier-completeness and remaining-edge descent facts derive from that
+    owner. `FirstPendingStep.IsoImage` plus
+    `IsoRelated.firstPendingChild` own iso-preservation, and
+    `RenderPrefixChildStep` plus `RenderPrefixRelated.firstPendingChild` own
+    render-prefix preservation. Branch connect/bud lemmas remain as low-level
+    implementation facts behind those first-pending APIs, and recursive
+    traversal/bridge proofs consume the generic first-pending child surface.
+    Supporting cleanup included active-consumption helper lemmas for
+    pending-cons membership and processed-edge nodup, plus the generic
+    `fin_cons_prefix_iff` prefix update used by the low-level branch proofs.
 
 - [ ] Generalize first-pending finite search correctness.
   - Owner: `BijForm.StringDiagram.Traversal.Search`

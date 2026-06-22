@@ -1746,6 +1746,78 @@ theorem firstPendingChild_remainingEdges_lt
         st.budChild_remainingEdges_lt hpending node slot hmate
           (by simpa [seenNode] using hunseen)
 
+/--
+Renderer-side evidence for a first-pending child step.  The constructors carry
+the renderer facts needed by the branch implementations, while consumers can
+ask only for preservation of `firstPendingChildState`.
+-/
+inductive RenderPrefixChildStep
+    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
+    {final : RenderState Sig []}
+    {ev : RenderState.OpenPortHypergraphEvidence final boundary}
+    {rst : RenderState Sig (activeLabel :: restLabels)}
+    {sst : SearchState ev.toOpenPortHypergraph (activeLabel :: restLabels)}
+    {active : Fin ev.toOpenPortHypergraph.raw.endpointCount}
+    {rest : List (Fin ev.toOpenPortHypergraph.raw.endpointCount)}
+    (hpending : sst.pending = active :: rest) :
+    (step : FirstPendingStep ev.toOpenPortHypergraph sst.seenNode active rest) →
+    RenderState Sig (sst.firstPendingChildFrontier hpending step) → Prop where
+  | connect (mate : Fin rest.length)
+      (hmate :
+        PortHypergraph.EdgeMate ev.toOpenPortHypergraph.raw active
+          (rest.get mate))
+      (ok :
+        Sig.compatible activeLabel
+          (restLabels.get (sst.restLabelIndex hpending mate)))
+      (hactiveEdge :
+        (ev.toOpenPortHypergraph.raw.endpointEdge active).val =
+          rst.edges.length)
+      (hedgesLength :
+        (Diag.connectStep (sst.restLabelIndex hpending mate) ok rst).edges.length =
+          rst.edges.length + 1)
+      (hnodesLength :
+        (Diag.connectStep (sst.restLabelIndex hpending mate) ok rst).nodes.length =
+          rst.nodes.length) :
+      RenderPrefixChildStep hpending
+        (FirstPendingStep.connect mate hmate)
+        (Diag.connectStep (sst.restLabelIndex hpending mate) ok rst)
+  | bud (node : Fin ev.toOpenPortHypergraph.raw.nodeCount)
+      (slot : Fin (ev.toOpenPortHypergraph.raw.incident node).length)
+      (hmate :
+        PortHypergraph.EdgeMate ev.toOpenPortHypergraph.raw active
+          ((ev.toOpenPortHypergraph.raw.incident node).get slot))
+      (hunseen : ¬ sst.seenNode node)
+      (rendererNode : Sig.Node)
+      (entry : Fin (Sig.arity rendererNode))
+      (ok : Sig.compatible activeLabel (Sig.port rendererNode entry))
+      (hfrontier :
+        restLabels ++
+            Sig.nodePortsExcept
+              (ev.toOpenPortHypergraph.raw.nodeLabel node)
+              (budEntry node slot) =
+          restLabels ++ Sig.nodePortsExcept rendererNode entry)
+      (hincidentVals :
+        (ev.toOpenPortHypergraph.raw.incident node).map
+            (fun endpoint => endpoint.val) =
+          Diag.freshNodeEndpoints rst.nextEndpoint
+            (Sig.arity rendererNode))
+      (hslot : slot.val = entry.val)
+      (hactiveEdge :
+        (ev.toOpenPortHypergraph.raw.endpointEdge active).val =
+          rst.edges.length)
+      (hnewNode : node.val = rst.nodes.length)
+      (hedgesLength :
+        (hfrontier.symm ▸ Diag.budStep rendererNode entry ok rst).edges.length =
+          rst.edges.length + 1)
+      (hnodesLength :
+        (hfrontier.symm ▸ Diag.budStep rendererNode entry ok rst).nodes.length =
+          rst.nodes.length + 1) :
+      RenderPrefixChildStep hpending
+        (FirstPendingStep.bud node slot hmate hunseen)
+        (by
+          simpa [firstPendingChildFrontier] using
+            (hfrontier.symm ▸ Diag.budStep rendererNode entry ok rst))
+
 theorem RenderPrefixRelated.connectChild_of_new_edge
     {activeLabel : Sig.Port} {frontier : List Sig.Port}
     {final : RenderState Sig []}
@@ -1920,6 +1992,35 @@ theorem RenderPrefixRelated.budChild_of_new_edge_node
     have hprefix :=
       fin_cons_prefix_iff hrel.seen_prefix hnewNode hnodesLength candidate
     simpa [budChild] using hprefix
+
+theorem RenderPrefixRelated.firstPendingChild
+    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
+    {final : RenderState Sig []}
+    {ev : RenderState.OpenPortHypergraphEvidence final boundary}
+    {rst : RenderState Sig (activeLabel :: restLabels)}
+    {sst : SearchState ev.toOpenPortHypergraph (activeLabel :: restLabels)}
+    (hrel : RenderPrefixRelated ev rst sst)
+    {active : Fin ev.toOpenPortHypergraph.raw.endpointCount}
+    {rest : List (Fin ev.toOpenPortHypergraph.raw.endpointCount)}
+    (hpending : sst.pending = active :: rest)
+    {step : FirstPendingStep ev.toOpenPortHypergraph sst.seenNode active rest}
+    {childRst : RenderState Sig (sst.firstPendingChildFrontier hpending step)}
+    (hstep : RenderPrefixChildStep (rst := rst) hpending step childRst) :
+    RenderPrefixRelated ev childRst
+      (sst.firstPendingChildState hpending step) := by
+  cases hstep with
+  | connect mate hmate ok hactiveEdge hedgesLength hnodesLength =>
+      simpa [firstPendingChildState, firstPendingChildFrontier] using
+        hrel.connectChild_of_new_edge hpending mate hmate ok hactiveEdge
+          hedgesLength hnodesLength
+  | bud node slot hmate hunseen rendererNode entry ok hfrontier hincidentVals
+      hslot hactiveEdge hnewNode hedgesLength hnodesLength =>
+      have hunseenMem : node ∉ sst.seenNodes := by
+        simpa [seenNode] using hunseen
+      simpa [firstPendingChildState, firstPendingChildFrontier, seenNode] using
+        hrel.budChild_of_new_edge_node hpending node slot hmate hunseenMem
+          rendererNode entry ok hfrontier hincidentVals hslot hactiveEdge
+          hnewNode hedgesLength hnodesLength
 
 theorem IsoRelated.connectChild
     {G H : OpenPortHypergraph Sig boundary}
