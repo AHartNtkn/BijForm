@@ -46,13 +46,15 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     output-fiber layer; `BijForm.InitialAlgebra` owns `Mu`, fold,
     generated-code, shape-code, and presentation APIs.
 
-- [ ] Remove the parallel `Obj` and `FiberObj` layer representation model.
-  - Owner: `BijForm.DependentPolynomial`
-  - Evidence: `Obj`, `FiberObj`, `objFiberIso`, and child transport code in
-    `BijForm/DependentPolynomial.lean`.
+- [x] Remove the parallel `Obj` and `FiberObj` layer representation model.
+  - Owner: `BijForm.DependentPolynomial` and `BijForm.InitialAlgebra`
+  - Evidence: `Obj`, `FiberObj`, `objFiberIso`, and child transport code across
+    the container and initial-algebra boundary.
   - Action: make one representation authoritative, either by storing `Fiber`
     inside `Obj` or by making one representation an abbrev over the other.
   - Validation: no duplicate object/fiber layer conversion path remains.
+  - Completed: `Obj` is the only layer-with-children representation; the
+    generated-code bridge now maps `Obj` directly to `CodeLayer`.
 
 - [ ] Replace child eta tactic variants with one generic helper.
   - Owner: `DepPoly.CodeLayer`

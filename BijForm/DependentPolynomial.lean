@@ -66,26 +66,6 @@ theorem eq_mk_of_param_eq {P : DepPoly ι} {i : ι} {ctor : P.Ctor}
 
 end Fiber
 
-def FiberObj (P : DepPoly ι) (X : ι → Type v) (i : ι) : Type (max u v) :=
-  Σ f : Fiber P i, (q : P.Pos f.ctor f.param) → X (P.input f.param q)
-
-def objFiberIso (P : DepPoly ι) (X : ι → Type v) (i : ι) :
-    Obj P X i ≃ᵢ FiberObj P X i where
-  toFun x :=
-    ⟨⟨x.ctor, x.param, x.out_eq⟩, x.child⟩
-  invFun x :=
-    ⟨x.1.ctor, x.1.param, x.1.out_eq, x.2⟩
-  left_inv := by
-    intro x
-    cases x
-    rfl
-  right_inv := by
-    intro x
-    cases x with
-    | mk f rec =>
-      cases f
-      rfl
-
 /--
 Index-local constructor data for each output fiber. This structure records the
 same-fiber representation used by later layer-coding definitions; by itself it

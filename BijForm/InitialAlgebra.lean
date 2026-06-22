@@ -179,6 +179,17 @@ theorem castFiberChild_heq {P : DepPoly ι} {Code : ι → Type v} {i : ι}
   cases h
   rfl
 
+theorem obj_eq_of_fiber_eq {P : DepPoly ι} {Code : ι → Type v} {i : ι}
+    {f g : Fiber P i} (h : g = f)
+    (child : (q : P.Pos f.ctor f.param) → Code (P.input f.param q)) :
+    ({ ctor := g.ctor
+       param := g.param
+       out_eq := g.out_eq
+       child := castFiberChild h.symm child } : Obj P Code i) =
+      { ctor := f.ctor, param := f.param, out_eq := f.out_eq, child := child } := by
+  cases h
+  rfl
+
 theorem CodeLayer.canonical_ext_cast {P : DepPoly ι} {Code : ι → Type v} {i : ι}
     {f g : Fiber P i} (hf : f = g)
     (child : (q : P.Pos f.ctor f.param) → Code (P.input f.param q)) :
@@ -188,42 +199,40 @@ theorem CodeLayer.canonical_ext_cast {P : DepPoly ι} {Code : ι → Type v} {i 
   cases hf
   rfl
 
-def fiberObjCodeLayerTo {P : DepPoly ι} {Code : ι → Type v} {i : ι}
-    (H : OutputIndexInversion P) (x : FiberObj P Code i) :
+def objCodeLayerTo {P : DepPoly ι} {Code : ι → Type v} {i : ι}
+    (H : OutputIndexInversion P) (x : Obj P Code i) :
     CodeLayer P H Code i := by
-  cases x with
-  | mk f child =>
-      exact ⟨H.encode i f, castFiberChild (H.decode_encode i f).symm child⟩
+  exact
+    ⟨H.encode i ⟨x.ctor, x.param, x.out_eq⟩,
+      castFiberChild
+        (H.decode_encode i ⟨x.ctor, x.param, x.out_eq⟩).symm
+        x.child⟩
 
-def fiberObjCodeLayerInv {P : DepPoly ι} {Code : ι → Type v} {i : ι}
+def objCodeLayerInv {P : DepPoly ι} {Code : ι → Type v} {i : ι}
     (H : OutputIndexInversion P) (x : CodeLayer P H Code i) :
-    FiberObj P Code i :=
-  ⟨H.decode i x.1, x.2⟩
+    Obj P Code i :=
+  let f := H.decode i x.1
+  ⟨f.ctor, f.param, f.out_eq, x.2⟩
 
-def fiberObjCodeLayerIso {P : DepPoly ι} (H : OutputIndexInversion P)
+def objCodeLayerIso {P : DepPoly ι} (H : OutputIndexInversion P)
     (Code : ι → Type v) (i : ι) :
-    FiberObj P Code i ≃ᵢ CodeLayer P H Code i where
-  toFun := fiberObjCodeLayerTo H
-  invFun := fiberObjCodeLayerInv H
+    Obj P Code i ≃ᵢ CodeLayer P H Code i where
+  toFun := objCodeLayerTo H
+  invFun := objCodeLayerInv H
   left_inv := by
     intro x
     cases x with
-    | mk f child =>
-        dsimp [fiberObjCodeLayerTo, fiberObjCodeLayerInv]
-        refine Sigma.ext (H.decode_encode i f) ?_
-        exact castFiberChild_heq (H.decode_encode i f).symm child
+    | mk ctor param out_eq child =>
+        dsimp [objCodeLayerTo, objCodeLayerInv]
+        let f : Fiber P i := { ctor := ctor, param := param, out_eq := out_eq }
+        exact obj_eq_of_fiber_eq (H.decode_encode i f) child
   right_inv := by
     intro x
     cases x with
     | mk c child =>
-        dsimp [fiberObjCodeLayerTo, fiberObjCodeLayerInv]
+        dsimp [objCodeLayerTo, objCodeLayerInv]
         refine Sigma.ext (H.encode_decode i c) ?_
         exact castFiberChild_heq (H.decode_encode i (H.decode i c)).symm child
-
-def objCodeLayerIso {P : DepPoly ι} (H : OutputIndexInversion P)
-    (Code : ι → Type v) (i : ι) :
-    Obj P Code i ≃ᵢ CodeLayer P H Code i :=
-  Iso.trans (objFiberIso P Code i) (fiberObjCodeLayerIso H Code i)
 
 /--
 The corrected condition for automatic codings.  Besides the one-step
@@ -362,8 +371,7 @@ def toWellFoundedCode (C : GeneratedCode P Code) :
   rank := C.rank
   child_rank_lt := by
     intro i z q
-    simpa [step, objCodeLayerIso, Iso.trans, fiberObjCodeLayerIso,
-      fiberObjCodeLayerInv, objFiberIso] using C.child_rank_lt z q
+    simpa [step, objCodeLayerIso, objCodeLayerInv] using C.child_rank_lt z q
 
 def iso (C : GeneratedCode P Code) (i : ι) : Mu P i ≃ᵢ Code i :=
   C.toWellFoundedCode.iso i
