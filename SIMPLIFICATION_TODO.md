@@ -238,7 +238,7 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     `rank_scaled_payload_le_with_gap`; finite string-diagram syntax uses the
     public names and has no private scaled-rank copies.
 
-- [ ] Make closed-form pairing the single public product codec.
+- [x] Make closed-form pairing the single public product codec.
   - Owner: `BijForm.Pairing`
   - Evidence: scan-based `encode`/`decode`/`iso` and closed-form
     `encodeFast`/`decodeFast`/`isoFast` coexist.
@@ -246,6 +246,9 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     machinery private proof scaffolding only where needed.
   - Validation: `CodeAlgebra.prodNat` and all product-code users build through
     the closed-form public API.
+  - Completed: `Pairing.encode`, `Pairing.decode`, and `Pairing.iso` now use
+    the closed-form path; the shell-scan encoder/decoder are private proof
+    scaffolding, and `encodeFast`/`decodeFast`/`isoFast` are gone.
 
 ## Examples
 

@@ -4,14 +4,15 @@ namespace BijForm
 namespace Pairing
 
 /-
-This module proves a shell-based natural-number pairing function and records a
-closed-form optimization target. The closed arithmetic expression is
+This module exposes a closed-form natural-number pairing function. The proof
+passes through an equivalent shell-scan construction. The public arithmetic
+expression is
 
   (g + s - 2) * 2^s + y * 2^g + x + 2
 
 after measuring `x` and `y` as binary strings. Over `Nat`, the leading integer
-offset is negative in the first shells, so the proved definition uses the
-equivalent shell start plus within-shell position.
+offset is negative in the first shells, so the definition uses the equivalent
+closed shell start plus within-shell position.
 -/
 
 def pow2 (n : Nat) : Nat :=
@@ -45,12 +46,12 @@ def shellPos (x y : Nat) : Nat :=
   let yp := y - blockStart h
   g * pow2 (g + h) + yp * pow2 g + xp
 
-def encode (x y : Nat) : Nat :=
+private def encodeScan (x y : Nat) : Nat :=
   let g := len x
   let h := len y
   shellStart (g + h) + shellPos x y
 
-def encodeFast (x y : Nat) : Nat :=
+def encode (x y : Nat) : Nat :=
   let g := len x
   let h := len y
   shellStartClosed (g + h) + shellPos x y
@@ -103,11 +104,11 @@ def clw (n : Nat) : Nat :=
   else
     w
 
-def decodeFast (n : Nat) : Nat × Nat :=
+def decode (n : Nat) : Nat × Nat :=
   let s := clw n
   decodeInShell s (n - shellStartClosed s)
 
-def decode (n : Nat) : Nat × Nat :=
+private def decodeScan (n : Nat) : Nat × Nat :=
   let sp := locateShell n
   decodeInShell sp.1 sp.2
 
@@ -466,8 +467,8 @@ theorem shellStartClosed_eq_shellStart (s : Nat) :
             Nat.two_mul, Nat.add_mul, Nat.mul_add, Nat.add_assoc, Nat.add_comm,
             Nat.add_left_comm]
 
-theorem encodeFast_eq_encode (x y : Nat) : encodeFast x y = encode x y := by
-  simp [encodeFast, encode, shellStartClosed_eq_shellStart]
+private theorem encode_eq_encodeScan (x y : Nat) : encode x y = encodeScan x y := by
+  simp [encode, encodeScan, shellStartClosed_eq_shellStart]
 
 theorem shellStart_add (s k : Nat) :
     shellStart (s + k) = shellStart s + shellGap s k := by
@@ -560,16 +561,16 @@ theorem locateShell_of_bounds {s n : Nat}
   simpa [p, Nat.zero_add] using
     locateShellFromCore_gap 0 s p (by simpa [Nat.zero_add] using hp)
 
-theorem decodeInShell_eq_decode_of_bounds {s n : Nat}
+private theorem decodeInShell_eq_decodeScan_of_bounds {s n : Nat}
     (hl : shellStartClosed s ≤ n)
     (hu : n < shellStartClosed (s + 1)) :
-    decodeInShell s (n - shellStartClosed s) = decode n := by
+    decodeInShell s (n - shellStartClosed s) = decodeScan n := by
   have hloc : locateShell n = (s, n - shellStart s) := by
     exact locateShell_of_bounds
       (s := s) (n := n)
       (by simpa [shellStartClosed_eq_shellStart] using hl)
       (by simpa [shellStartClosed_eq_shellStart] using hu)
-  simp [decode, hloc, shellStartClosed_eq_shellStart]
+  simp [decodeScan, hloc, shellStartClosed_eq_shellStart]
 
 /-- Index arithmetic for `clwCore`: it approximates the inverse of
 `s ↦ s + bitLen s` closely enough to bracket the true shell. -/
@@ -672,9 +673,9 @@ theorem clw_shell_bounds (n : Nat) :
 /--
 The non-recursive decoder agrees with the proved shell-scan decoder.
 -/
-theorem decodeFast_eq_decode (n : Nat) : decodeFast n = decode n := by
-  unfold decodeFast
-  exact decodeInShell_eq_decode_of_bounds
+private theorem decode_eq_decodeScan (n : Nat) : decode n = decodeScan n := by
+  unfold decode
+  exact decodeInShell_eq_decodeScan_of_bounds
     (s := clw n) (n := n) (clw_shell_bounds n).1 (clw_shell_bounds n).2
 
 theorem decodeInShell_encodeInShell (x y : Nat) :
@@ -710,27 +711,30 @@ theorem decodeInShell_encodeInShell (x y : Nat) :
   simp [decodeInShell, shellPos, g, h, s, xp, yp, Nat.add_assoc,
     hdivS, hmodS, hmodG, hdivG, hsub, hxrec, hyrec]
 
-theorem locateShell_encode (x y : Nat) :
-    locateShell (encode x y) = (len x + len y, shellPos x y) := by
+private theorem locateShell_encodeScan (x y : Nat) :
+    locateShell (encodeScan x y) = (len x + len y, shellPos x y) := by
   let s := len x + len y
   let p := shellPos x y
   have hp : p < shellSize s := by
     simpa [s, p] using shellPos_lt_shellSize x y
   have hgap : shellGap 0 s = shellStart s := shellGap_zero s
-  unfold locateShell locateShellFrom encode
+  unfold locateShell locateShellFrom encodeScan
   change locateShellFromCore (0, shellStart s + p) = (s, p)
   rw [← hgap]
   simpa [Nat.zero_add] using
     locateShellFromCore_gap 0 s p (by simpa [Nat.zero_add] using hp)
 
-/-- The simplified pairing decoder is a left inverse of the encoder. -/
-theorem decode_encode (x y : Nat) : decode (encode x y) = (x, y) := by
-  unfold decode
-  rw [locateShell_encode x y]
+private theorem decodeScan_encodeScan (x y : Nat) :
+    decodeScan (encodeScan x y) = (x, y) := by
+  unfold decodeScan
+  rw [locateShell_encodeScan x y]
   exact decodeInShell_encodeInShell x y
 
-theorem encode_decodeInShell {s p : Nat} (hp : p < shellSize s) :
-    encode (decodeInShell s p).1 (decodeInShell s p).2 = shellStart s + p := by
+theorem decode_encode (x y : Nat) : decode (encode x y) = (x, y) := by
+  rw [decode_eq_decodeScan, encode_eq_encodeScan, decodeScan_encodeScan]
+
+private theorem encodeScan_decodeInShell {s p : Nat} (hp : p < shellSize s) :
+    encodeScan (decodeInShell s p).1 (decodeInShell s p).2 = shellStart s + p := by
   let g := p / pow2 s
   let q := p % pow2 s
   let xp := q % pow2 g
@@ -764,7 +768,7 @@ theorem encode_decodeInShell {s p : Nat} (hp : p < shellSize s) :
       g * pow2 s + q = pow2 s * g + q := by rw [Nat.mul_comm g (pow2 s)]
       _ = p := by
         simpa [g, q] using Nat.div_add_mod p (pow2 s)
-  simp [decodeInShell, encode, shellPos, g, q, xp, yp, x, y,
+  simp [decodeInShell, encodeScan, shellPos, g, q, xp, yp, x, y,
     hlenx, hleny, hsadd, hxsub, hysub, hqrec, hprec, Nat.add_assoc]
 
 theorem shellStart_locateShell (n : Nat) :
@@ -862,8 +866,8 @@ theorem decodeInShell_snd_le {s p : Nat} (hp : p < shellSize s) :
   change blockStart (s - g) + yp ≤ shellStart s + p
   omega
 
-theorem decode_fst_le (n : Nat) : (decode n).1 ≤ n := by
-  unfold decode
+private theorem decodeScan_fst_le (n : Nat) : (decodeScan n).1 ≤ n := by
+  unfold decodeScan
   let sp := locateShell n
   change (decodeInShell sp.1 sp.2).1 ≤ n
   have hspec := locateShell_spec n
@@ -872,8 +876,12 @@ theorem decode_fst_le (n : Nat) : (decode n).1 ≤ n := by
   have hle := decodeInShell_fst_le (s := sp.1) (p := sp.2) hs
   omega
 
-theorem decode_snd_le (n : Nat) : (decode n).2 ≤ n := by
-  unfold decode
+theorem decode_fst_le (n : Nat) : (decode n).1 ≤ n := by
+  rw [decode_eq_decodeScan]
+  exact decodeScan_fst_le n
+
+private theorem decodeScan_snd_le (n : Nat) : (decodeScan n).2 ≤ n := by
+  unfold decodeScan
   let sp := locateShell n
   change (decodeInShell sp.1 sp.2).2 ≤ n
   have hspec := locateShell_spec n
@@ -882,34 +890,25 @@ theorem decode_snd_le (n : Nat) : (decode n).2 ≤ n := by
   have hle := decodeInShell_snd_le (s := sp.1) (p := sp.2) hs
   omega
 
-/-- The simplified pairing encoder is a right inverse of the decoder. -/
-theorem encode_decode (n : Nat) : encode (decode n).1 (decode n).2 = n := by
-  unfold decode
+theorem decode_snd_le (n : Nat) : (decode n).2 ≤ n := by
+  rw [decode_eq_decodeScan]
+  exact decodeScan_snd_le n
+
+private theorem encodeScan_decodeScan (n : Nat) :
+    encodeScan (decodeScan n).1 (decodeScan n).2 = n := by
+  unfold decodeScan
   let sp := locateShell n
   have hspec := locateShell_spec n
   have hs : sp.2 < shellSize sp.1 := hspec.1
   have hoff : shellStart sp.1 + sp.2 = n := hspec.2
-  rw [encode_decodeInShell hs, hoff]
+  rw [encodeScan_decodeInShell hs, hoff]
 
-/--
-The executable closed-form encoder and decoder form the same bijection as
-`iso`.
--/
-def isoFast : (Nat × Nat) ≃ᵢ Nat where
-  toFun p := encodeFast p.1 p.2
-  invFun := decodeFast
-  left_inv := by
-    intro p
-    cases p with
-    | mk x y =>
-        change decodeFast (encodeFast x y) = (x, y)
-        rw [decodeFast_eq_decode, encodeFast_eq_encode, decode_encode]
-  right_inv := by
-    intro n
-    change encodeFast (decodeFast n).1 (decodeFast n).2 = n
-    rw [decodeFast_eq_decode, encodeFast_eq_encode, encode_decode]
+/-- The simplified pairing encoder is a right inverse of the decoder. -/
+theorem encode_decode (n : Nat) : encode (decode n).1 (decode n).2 = n := by
+  rw [decode_eq_decodeScan, encode_eq_encodeScan]
+  exact encodeScan_decodeScan n
 
-/-- The proved shell-based pairing function, packaged as a bijection. -/
+/-- The proved closed-form pairing function, packaged as a bijection. -/
 def iso : (Nat × Nat) ≃ᵢ Nat where
   toFun p := encode p.1 p.2
   invFun := decode
