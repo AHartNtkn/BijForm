@@ -762,24 +762,30 @@ def singleSortedFiniteGeneratedShapeCode
         (data := data) (boundary := boundary) shape q)).toShapeLayerPresentation
         (openFrontierShape Sig)).generatedCode
 
+/-- Syntax for any open frontier is coded by the generated open-frontier shape. -/
+def singleSortedFiniteSyntaxShapeIso
+    (Sig : Signature) (data : SingleSortedFiniteCodingData Sig)
+    (boundary : List Sig.Port) :
+    Diag Sig boundary ≃ᵢ (openFrontierShape Sig boundary).Carrier :=
+  GeneratedCode.shapeCodeIso
+    (generatedCode Sig)
+    (singleSortedFiniteGeneratedShapeCode Sig data)
+    boundary
+
 /-- Empty-frontier syntax is generated as the singleton finite carrier. -/
 def singleSortedFiniteSyntaxEmptyFinOneIso
     (Sig : Signature) (data : SingleSortedFiniteCodingData Sig) :
     Diag Sig [] ≃ᵢ Fin 1 :=
-  GeneratedCode.shapeFinIso
-    (generatedCode Sig)
-    (singleSortedFiniteGeneratedShapeCode Sig data)
-    [] rfl
+  Iso.trans (singleSortedFiniteSyntaxShapeIso Sig data [])
+    (CodeShape.finiteIso rfl)
 
 /-- Nonempty-frontier syntax is generated as a natural-number carrier. -/
 def singleSortedFiniteSyntaxNonemptyNatIso
     (Sig : Signature) (data : SingleSortedFiniteCodingData Sig)
     (active : Sig.Port) (frontier : List Sig.Port) :
     Diag Sig (active :: frontier) ≃ᵢ Nat :=
-  GeneratedCode.shapeNatIso
-    (generatedCode Sig)
-    (singleSortedFiniteGeneratedShapeCode Sig data)
-    (active :: frontier) rfl
+  Iso.trans (singleSortedFiniteSyntaxShapeIso Sig data (active :: frontier))
+    (CodeShape.infiniteIso rfl)
 
 end StringDiagram
 end BijForm
