@@ -679,12 +679,6 @@ theorem GraphRenderRelated.connectChild_edgeEndpointBounds
   let horderTrace :=
     connectChild_orderTrace rst st hpending mate hmate hids
       hrel.endpoint_length hrel.edge_length hrel.node_length
-  have hconnectRenderEdgeLeft :
-      horderTrace.renderEdge.left = activeId := by
-    simp [horderTrace, connectChild_orderTrace]
-  have hconnectRenderEdgeRight :
-      horderTrace.renderEdge.right = restIds.get idx := by
-    simp [horderTrace, connectChild_orderTrace, idx, rendererMate]
   have hstepEndpointLength :
       rst.endpoints.length =
         (Diag.connectStep rendererMate ok rst).endpoints.length :=
@@ -711,7 +705,7 @@ theorem GraphRenderRelated.connectChild_edgeEndpointBounds
                   rw [hids]
                   simp))
           hstepEndpointLength
-      simpa [hconnectRenderEdgeLeft] using hbound
+      simpa [horderTrace, connectChild_orderTrace] using hbound
   have hrightBoundRel :
       AppendTraceRelation horderTrace.edge
         (fun renderEdge _ =>
@@ -733,7 +727,8 @@ theorem GraphRenderRelated.connectChild_edgeEndpointBounds
                 right
                 exact List.get_mem restIds idx))
           hstepEndpointLength
-      simpa [hconnectRenderEdgeRight] using hbound
+      simpa [horderTrace, connectChild_orderTrace, idx, rendererMate] using
+        hbound
   refine { left := ?_, right := ?_ }
   · intro edge
     exact AppendTraceRelation.get hleftBoundRel edge
@@ -1731,8 +1726,7 @@ theorem GraphRenderRelated.budChild_nodeIncident
     · intro suffixNode graphNode hval renderSlot hbound hlen
       let freshSlot : Fin nodeEndpoints.length :=
         listIndexCast nodeEndpoints (by
-          simp [horderTrace, budChild_orderTrace, nodeEndpoints,
-            renderNode])
+          simp [nodeEndpoints, renderNode])
           renderSlot
       have hnodeBound :
           nodeEndpoints.get freshSlot <
@@ -2306,7 +2300,7 @@ theorem GraphRenderRelated.budChild
       · exact hrel.nodeLabel_of_appendTrace horderTrace.node hchildNodeLength
           (by
             intro renderNodeIdx graphNode _hval
-            simp [horderTrace, budChild_orderTrace])
+            simp)
       · intro renderIdx
         exact hnodeIncidentFields.node_incident_length renderIdx
       · intro renderIdx renderSlot

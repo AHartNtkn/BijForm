@@ -278,6 +278,13 @@ is ordered to turn helper additions into actual deletion.
     live inside `IsoRelated.firstPendingChild`, with `FirstPendingStep.IsoImage`
     carrying branch image evidence. The item remains open because branch
     order-trace and graph-relation helper families still exist.
+  - Partial: the duplicate order-trace record types `ConnectChildOrderTrace`
+    and `BudChildOrderTrace`, plus the unused
+    `ConnectChildOrderTrace.renderEdge_get`, were deleted. Connect and bud
+    trace constructors now instantiate the shared `ChildOrderTrace` record with
+    their branch-specific suffixes. The item remains open because
+    `connectChild_orderTrace`, `budChild_orderTrace`, and graph-relation helper
+    families still exist.
 
 - [x] Delete low-value generated-code and presentation pass-through wrappers.
   - Owners: `BijForm.InitialAlgebra`,

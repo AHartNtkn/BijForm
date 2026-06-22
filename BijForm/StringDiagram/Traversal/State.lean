@@ -1338,67 +1338,31 @@ def nodeOrder_budChild_step
   eq_append := nodeOrder_budChild st hpending node slot hmate hunseen
 
 /--
-Ordered trace evidence for a connect child.  The bridge supplies the old render
-to graph length equalities; traversal owns the graph-side append facts.
+Ordered trace evidence for a child step.  The branch determines the render and
+graph suffix lists; the append-trace shape itself is shared.
 -/
-structure ConnectChildOrderTrace
+structure ChildOrderTrace
     {G : OpenPortHypergraph Sig boundary}
     {activeLabel : Sig.Port} {frontier childFrontier : List Sig.Port}
     (rst : RenderState Sig (activeLabel :: frontier))
     (childRst : RenderState Sig childFrontier)
     (st : SearchState G (activeLabel :: frontier))
     (childSt : SearchState G childFrontier)
-    (active : Fin G.raw.endpointCount) where
-  renderEdge : RenderEdge Sig
+    (newRenderEndpoints : List Sig.Port)
+    (newGraphEndpoints : List (Fin G.raw.endpointCount))
+    (newRenderEdges : List (RenderEdge Sig))
+    (newGraphEdges : List (Fin G.raw.edgeCount))
+    (newRenderNodes : List (RenderNode Sig))
+    (newGraphNodes : List (Fin G.raw.nodeCount)) where
   endpoint :
-    AppendTrace rst.endpoints childRst.endpoints []
-      (endpointOrder G st) (endpointOrder G childSt) []
+    AppendTrace rst.endpoints childRst.endpoints newRenderEndpoints
+      (endpointOrder G st) (endpointOrder G childSt) newGraphEndpoints
   edge :
-    AppendTrace rst.edges childRst.edges [renderEdge]
-      (edgeOrder st) (edgeOrder childSt) [G.raw.endpointEdge active]
+    AppendTrace rst.edges childRst.edges newRenderEdges
+      (edgeOrder st) (edgeOrder childSt) newGraphEdges
   node :
-    AppendTrace rst.nodes childRst.nodes []
-      (nodeOrder st) (nodeOrder childSt) []
-
-/--
-Ordered trace evidence for a bud child.  The bridge still proves graph semantic
-facts; this package only supplies old/new order lookup transport.
--/
-structure BudChildOrderTrace
-    {G : OpenPortHypergraph Sig boundary}
-    {activeLabel : Sig.Port} {frontier childFrontier : List Sig.Port}
-    (rst : RenderState Sig (activeLabel :: frontier))
-    (childRst : RenderState Sig childFrontier)
-    (st : SearchState G (activeLabel :: frontier))
-    (childSt : SearchState G childFrontier)
-    (active : Fin G.raw.endpointCount)
-    (node : Fin G.raw.nodeCount) where
-  renderEdge : RenderEdge Sig
-  renderNode : RenderNode Sig
-  endpoint :
-    AppendTrace rst.endpoints childRst.endpoints
-      (Sig.nodePorts (G.raw.nodeLabel node))
-      (endpointOrder G st) (endpointOrder G childSt) (G.raw.incident node)
-  edge :
-    AppendTrace rst.edges childRst.edges [renderEdge]
-      (edgeOrder st) (edgeOrder childSt) [G.raw.endpointEdge active]
-  node :
-    AppendTrace rst.nodes childRst.nodes [renderNode]
-      (nodeOrder st) (nodeOrder childSt) [node]
-
-theorem ConnectChildOrderTrace.renderEdge_get
-    {G : OpenPortHypergraph Sig boundary}
-    {activeLabel : Sig.Port} {frontier childFrontier : List Sig.Port}
-    {rst : RenderState Sig (activeLabel :: frontier)}
-    {childRst : RenderState Sig childFrontier}
-    {st : SearchState G (activeLabel :: frontier)}
-    {childSt : SearchState G childFrontier}
-    {active : Fin G.raw.endpointCount}
-    (trace : ConnectChildOrderTrace rst childRst st childSt active)
-    (edge : Fin childRst.edges.length)
-    (hval : edge.val = rst.edges.length) :
-    childRst.edges.get edge = trace.renderEdge :=
-  trace.edge.left_step.get_single_at_length edge hval
+    AppendTrace rst.nodes childRst.nodes newRenderNodes
+      (nodeOrder st) (nodeOrder childSt) newGraphNodes
 
 def connectChild_orderTrace
     {G : OpenPortHypergraph Sig boundary}
@@ -1415,24 +1379,24 @@ def connectChild_orderTrace
     (hendpointLength : rst.endpoints.length = (endpointOrder G st).length)
     (hedgeLength : rst.edges.length = (edgeOrder st).length)
     (hnodeLength : rst.nodes.length = (nodeOrder st).length) :
-    ConnectChildOrderTrace rst
+    ChildOrderTrace rst
       (Diag.connectStep (st.restLabelIndex hpending mate)
         (st.connect_compatible hpending mate hmate) rst)
-      st (st.connectChild hpending mate hmate) active where
-  renderEdge :=
-    { label := Sig.portEdge activeLabel
-      leftLabel := activeLabel
-      rightLabel := frontier.get (st.restLabelIndex hpending mate)
-      left := activeId
-      right :=
-        restIds.get (listIndexCast restIds
-          (by
-            exact (RenderState.frontierIds_cons_tail_length rst hids).symm)
-          (st.restLabelIndex hpending mate))
-      left_label := rfl
-      right_label := (Sig.compatible_edge
-        (st.connect_compatible hpending mate hmate)).symm
-      compatible := st.connect_compatible hpending mate hmate }
+      st (st.connectChild hpending mate hmate) [] []
+      [{ label := Sig.portEdge activeLabel
+         leftLabel := activeLabel
+         rightLabel := frontier.get (st.restLabelIndex hpending mate)
+         left := activeId
+         right :=
+           restIds.get (listIndexCast restIds
+             (by
+               exact (RenderState.frontierIds_cons_tail_length rst hids).symm)
+             (st.restLabelIndex hpending mate))
+         left_label := rfl
+         right_label := (Sig.compatible_edge
+           (st.connect_compatible hpending mate hmate)).symm
+         compatible := st.connect_compatible hpending mate hmate }]
+      [G.raw.endpointEdge active] [] [] where
   endpoint :=
     { prefix_length := hendpointLength
       suffix_length := rfl
@@ -1481,33 +1445,34 @@ def budChild_orderTrace
     (hendpointLength : rst.endpoints.length = (endpointOrder G st).length)
     (hedgeLength : rst.edges.length = (edgeOrder st).length)
     (hnodeLength : rst.nodes.length = (nodeOrder st).length) :
-    BudChildOrderTrace rst
+    ChildOrderTrace rst
       (Diag.budStep (G.raw.nodeLabel node)
         (SearchState.budEntry (G := G) node slot)
         (st.bud_compatible hpending node slot hmate) rst)
-      st (st.budChild hpending node slot hmate hunseen) active node where
-  renderEdge :=
-    { label := Sig.portEdge activeLabel
-      leftLabel := activeLabel
-      rightLabel := Sig.port (G.raw.nodeLabel node)
-        (SearchState.budEntry (G := G) node slot)
-      left := activeId
-      right :=
-        (Diag.freshNodeEndpoints rst.nextEndpoint
-          (Sig.arity (G.raw.nodeLabel node))).get
-          (listIndexCast
-            (Diag.freshNodeEndpoints rst.nextEndpoint
-              (Sig.arity (G.raw.nodeLabel node)))
-            (by simp [Diag.freshNodeEndpoints])
-            (SearchState.budEntry (G := G) node slot))
-      left_label := rfl
-      right_label := (Sig.compatible_edge
-        (st.bud_compatible hpending node slot hmate)).symm
-      compatible := st.bud_compatible hpending node slot hmate }
-  renderNode :=
-    { label := G.raw.nodeLabel node
-      incident := Diag.freshNodeEndpoints rst.nextEndpoint
-        (Sig.arity (G.raw.nodeLabel node)) }
+      st (st.budChild hpending node slot hmate hunseen)
+      (Sig.nodePorts (G.raw.nodeLabel node)) (G.raw.incident node)
+      [{ label := Sig.portEdge activeLabel
+         leftLabel := activeLabel
+         rightLabel := Sig.port (G.raw.nodeLabel node)
+           (SearchState.budEntry (G := G) node slot)
+         left := activeId
+         right :=
+           (Diag.freshNodeEndpoints rst.nextEndpoint
+             (Sig.arity (G.raw.nodeLabel node))).get
+             (listIndexCast
+               (Diag.freshNodeEndpoints rst.nextEndpoint
+                 (Sig.arity (G.raw.nodeLabel node)))
+               (by simp [Diag.freshNodeEndpoints])
+               (SearchState.budEntry (G := G) node slot))
+         left_label := rfl
+         right_label := (Sig.compatible_edge
+           (st.bud_compatible hpending node slot hmate)).symm
+         compatible := st.bud_compatible hpending node slot hmate }]
+      [G.raw.endpointEdge active]
+      [{ label := G.raw.nodeLabel node
+         incident := Diag.freshNodeEndpoints rst.nextEndpoint
+           (Sig.arity (G.raw.nodeLabel node)) }]
+      [node] where
   endpoint :=
     { prefix_length := hendpointLength
       suffix_length := by
