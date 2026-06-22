@@ -740,6 +740,51 @@ def familyCarrierIso (Γ : List Ty) (t : Ty)
   Iso.trans (familyIso (S := S) (Code := Code) Γ t)
     (Iso.sum varIso ctorIso)
 
+def layerCoding {Carrier : Poly.Ix S → Type}
+    (layerShape : ∀ Γ t, LayerShape S Code Γ t ≃ᵢ Carrier (Γ, t))
+    (Γ : List Ty) (t : Ty) :
+    CodeLayer (PolyOf S) (inversion S) Code (Γ, t) ≃ᵢ Carrier (Γ, t) :=
+  Iso.trans (iso (S := S) (Code := Code) Γ t) (layerShape Γ t)
+
+theorem layerCoding_op_toFun {Carrier : Poly.Ix S → Type}
+    (layerShape : ∀ Γ t, LayerShape S Code Γ t ≃ᵢ Carrier (Γ, t))
+    (Γ : List Ty) (c : S.Ctor)
+    (child :
+      (q : S.ArgPos c) →
+        Code ((S.arg c q).binders ++ Γ, (S.arg c q).sort)) :
+    (layerCoding (S := S) (Code := Code) layerShape Γ (S.ret c)).toFun
+        (⟨FiberCode.op c rfl, child⟩ :
+          CodeLayer (PolyOf S) (inversion S) Code (Γ, S.ret c)) =
+      (layerShape Γ (S.ret c)).toFun
+        (Sum.inr (⟨c, rfl, child⟩ : CtorLayer S Code Γ (S.ret c))) :=
+  rfl
+
+def layerCarrierCoding (Γ : List Ty) (t : Ty)
+    {VarCode CtorCode : Type}
+    (varIso : Var Γ t ≃ᵢ VarCode)
+    (ctorIso : CtorFamily S Code Γ t ≃ᵢ CtorCode) :
+    CodeLayer (PolyOf S) (inversion S) Code (Γ, t) ≃ᵢ (VarCode ⊕ CtorCode) :=
+  Iso.trans (iso (S := S) (Code := Code) Γ t)
+    (familyCarrierIso (S := S) (Code := Code) Γ t varIso ctorIso)
+
+theorem layerCarrierCoding_op_toFun (Γ : List Ty)
+    {VarCode CtorCode : Type}
+    (c : S.Ctor)
+    (varIso : Var Γ (S.ret c) ≃ᵢ VarCode)
+    (ctorIso : CtorFamily S Code Γ (S.ret c) ≃ᵢ CtorCode)
+    (child :
+      (q : S.ArgPos c) →
+        Code ((S.arg c q).binders ++ Γ, (S.arg c q).sort)) :
+    (layerCarrierCoding (S := S) (Code := Code) Γ (S.ret c) varIso ctorIso).toFun
+        (⟨FiberCode.op c rfl, child⟩ :
+          CodeLayer (PolyOf S) (inversion S) Code (Γ, S.ret c)) =
+      Sum.inr
+        (ctorIso.toFun
+          ⟨c, rfl,
+            ArgTuple.ofChild (S := S) (Code := Code) Γ
+              (args := S.args c) child⟩) :=
+  rfl
+
 theorem familyCarrierIso_op_toFun (Γ : List Ty)
     {VarCode CtorCode : Type}
     (c : S.Ctor)
@@ -779,8 +824,8 @@ abbrev LayerShapeRankProof {Ty : Type} (S : Signature Ty)
           ((inversion S).decode (Γ, t) layer.1).param q)
         (layer.2 q) <
       rank (Γ, t)
-        ((layerShape Γ t).toFun
-          ((LayerShape.iso (S := S) (Code := Code) Γ t).toFun layer))
+        ((LayerShape.layerCoding (S := S) (Code := Code) layerShape Γ t).toFun
+          layer)
 
 /-- Coding data whose one-step layer is generated from the typed-binding
 signature before being encoded into the concrete carrier.  Instances supply an
@@ -800,8 +845,7 @@ def layer (D : LayerShapeCodingData S) (i : Poly.Ix S) :
     CodeLayer (PolyOf S) (inversion S) D.Code i ≃ᵢ D.Code i := by
   cases i with
   | mk Γ t =>
-      exact Iso.trans (LayerShape.iso (S := S) (Code := D.Code) Γ t)
-        (D.layerShape Γ t)
+      exact LayerShape.layerCoding (S := S) (Code := D.Code) D.layerShape Γ t
 
 def toGeneratedCode (D : LayerShapeCodingData S) :
     GeneratedCode (PolyOf S) D.Code :=

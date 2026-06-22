@@ -289,15 +289,19 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     `NFGeneratedLayer_child_rank_lt` proof in
     `BijForm/Examples/TypedBinding/NF.lean`.
   - Action: add typed-binding helpers for finite constructor families by return
-    sort and public rank lemmas for generated `LayerShape.familyCarrierIso`.
-  - Validation: NF rank proof no longer unfolds `LayerShape.iso`,
-    `ArgTuple.ofChild`, and codec internals repeatedly.
+    sort and public rank lemmas for generated layer codings.
+  - Validation: NF rank proof uses public `LayerShape.layerCoding`/
+    `LayerShape.layerCarrierCoding` projection lemmas instead of directly
+    naming `LayerShape.iso`, `LayerShape.familyCarrierIso`,
+    `ArgTuple.ofChild`, or codec internals repeatedly.
   - Partial: added `ArgTuple.singleIso`, `ArgTuple.pairIso`,
     `CtorFamily.singleIso`, `CtorFamily.sumIso`, and
-    `LayerShape.familyCarrierIso_op_toFun` in `TypedBinding`; routed both NF
+    `LayerShape.layerCoding`, `LayerShape.layerCarrierCoding`, and their
+    operation projection lemmas in `TypedBinding`; routed both NF
     normal-expression and app-term family carriers through those helpers. The
-    local `NF*FamilyToCarrier`/`NF*FamilyOfCarrier` maps are gone, and NF
-    parent-code proofs no longer unfold `LayerShape.layerToShape`,
+    local `NF*FamilyToCarrier`/`NF*FamilyOfCarrier` maps are gone, and
+    `NFGeneratedLayer_child_rank_lt` no longer directly names
+    `LayerShape.iso`, `LayerShape.familyCarrierIso`, `LayerShape.layerToShape`,
     `LayerShape.familyIso`, `CtorLayer.familyIso`, `CtorLayer.toFamily`,
     `ArgTuple.ofChild`, or `ListPiTuple.ofPi`. Repeated codec arithmetic inside
     `NFGeneratedLayer_child_rank_lt` remains open.
