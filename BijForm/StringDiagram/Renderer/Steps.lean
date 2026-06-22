@@ -232,6 +232,7 @@ structure RenderDelta {source target : List Sig.Port}
   endpoints : AppendStep st.endpoints child.endpoints endpointSuffix
   edges : AppendStep st.edges child.edges edgeSuffix
   nodes : AppendStep st.nodes child.nodes nodeSuffix
+  nextEndpoint_eq : child.nextEndpoint = st.nextEndpoint + endpointSuffix.length
   frontierIds_eq : child.frontierIds = frontierIds
 
 /-- `connectStep` exposes its append effects through `RenderDelta`. -/
@@ -269,10 +270,12 @@ theorem connectStep_delta
       { endpoints := ?_
         edges := ?_
         nodes := ?_
+        nextEndpoint_eq := ?_
         frontierIds_eq := ?_ }
     · exact ⟨by simp⟩
     · exact ⟨by simp [listIndexCast]⟩
     · exact ⟨by simp⟩
+    · simp
     · simp [listIndexCast]
 
 /-- `budStep` exposes its append effects through `RenderDelta`. -/
@@ -314,10 +317,12 @@ theorem budStep_delta
       { endpoints := ?_
         edges := ?_
         nodes := ?_
+        nextEndpoint_eq := ?_
         frontierIds_eq := ?_ }
     · exact ⟨by simp⟩
     · exact ⟨by simp [freshNodeEndpoints, listIndexCast]⟩
     · exact ⟨by simp [freshNodeEndpoints]⟩
+    · simp [Signature.nodePorts]
     · simp [freshNodeEndpoints, listIndexCast]
 
 theorem connectStep_edge_mem_old
@@ -1346,33 +1351,45 @@ theorem connectStep_validIds {active : Sig.Port} {frontier : List Sig.Port}
     (st : RenderState Sig (active :: frontier))
     (hv : st.ValidIds) :
     (connectStep mate ok st).ValidIds := by
-  unfold connectStep
-  split
-  · rename_i hids
-    exact False.elim (RenderState.frontierIds_ne_nil st hids)
-  · rename_i activeId restIds hids
+  cases hids : st.frontierIds with
+  | nil =>
+      exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  | cons activeId restIds =>
     have hrest : restIds.length = frontier.length := by
       exact RenderState.frontierIds_cons_tail_length st hids
-    dsimp
+    let idx : Fin restIds.length := listIndexCast restIds hrest.symm mate
+    have hdelta := connectStep_delta mate ok st hids
     refine
-      { nextEndpoint_eq := hv.nextEndpoint_eq
+      { nextEndpoint_eq := ?_
         frontier_bound := ?_
         frontier_label := ?_
         edge_left_bound := ?_
         edge_right_bound := ?_
         edge_left_label := ?_
         edge_right_label := ?_
-        node_incident_length := hv.node_incident_length
-        node_incident_bound := hv.node_incident_bound
-        node_incident_label := hv.node_incident_label }
+        node_incident_length := ?_
+        node_incident_bound := ?_
+        node_incident_label := ?_ }
+    · calc
+        (connectStep mate ok st).nextEndpoint = st.nextEndpoint := by
+          simpa using hdelta.nextEndpoint_eq
+        _ = st.endpoints.length := hv.nextEndpoint_eq
+        _ = (connectStep mate ok st).endpoints.length := by
+          rw [connectStep_endpoints mate ok st]
     · intro id hid
-      exact hv.frontier_bound id (by
-        rw [hids]
-        right
-        exact mem_of_mem_eraseFin restIds
-          (listIndexCast restIds hrest.symm mate) hid)
+      have hbound := hv.frontier_bound id
+        (connectStep_frontier_mem_old mate ok st hid)
+      simpa [connectStep_endpoints mate ok st] using hbound
     · intro n hid hfrontier
-      let idx : Fin restIds.length := listIndexCast restIds hrest.symm mate
+      have hfrontierIdsEq := connectStep_frontierIds mate ok st hids
+      have hidErase : n < (eraseFin restIds idx).length := by
+        exact Nat.lt_of_lt_of_eq hid
+          (congrArg List.length hfrontierIdsEq)
+      have hgetId :
+          (connectStep mate ok st).frontierIds.get ⟨n, hid⟩ =
+            (eraseFin restIds idx).get ⟨n, hidErase⟩ := by
+        exact list_get_of_eq_of_val_eq hfrontierIdsEq
+          ⟨n, hid⟩ ⟨n, hidErase⟩ rfl
       have hrel :
           IndexedListRel
             (fun id label =>
@@ -1388,37 +1405,73 @@ theorem connectStep_validIds {active : Sig.Port} {frontier : List Sig.Port}
           right
           exact List.get_mem restIds ⟨n, hx⟩
         · simpa using hlabel
-      have haligned := (hrel.erase idx mate (by simp [idx])).get n hid hfrontier
+      have haligned := (hrel.erase idx mate (by simp [idx])).get
+        n hidErase hfrontier
       rcases haligned with ⟨hbound, hlabel⟩
-      simpa using hlabel
+      have hchildBound :
+          (connectStep mate ok st).frontierIds.get ⟨n, hid⟩ <
+            (connectStep mate ok st).endpoints.length := by
+        rw [hgetId]
+        exact Nat.lt_of_lt_of_eq hbound
+          (congrArg List.length (connectStep_endpoints mate ok st)).symm
+      change
+        (connectStep mate ok st).endpoints.get
+            ⟨(connectStep mate ok st).frontierIds.get ⟨n, hid⟩,
+              hchildBound⟩ =
+          (eraseFin frontier mate).get ⟨n, hfrontier⟩
+      exact
+        (list_get_of_eq_of_val_eq
+          (connectStep_endpoints mate ok st)
+          ⟨(connectStep mate ok st).frontierIds.get ⟨n, hid⟩,
+            hchildBound⟩
+          ⟨(eraseFin restIds idx).get ⟨n, hidErase⟩, hbound⟩
+          (by simpa using hgetId)).trans hlabel
     · intro edge hmem
-      simp at hmem
+      simp [connectStep_edges mate ok st hids] at hmem
       rcases hmem with hold | hnew
-      · exact hv.edge_left_bound edge hold
+      · have hbound := hv.edge_left_bound edge hold
+        simpa [connectStep_endpoints mate ok st] using hbound
       · cases hnew
-        exact hv.frontier_bound activeId (by rw [hids]; simp)
+        have hbound := hv.frontier_bound activeId (by simp [hids])
+        simpa [connectStep_endpoints mate ok st] using hbound
     · intro edge hmem
-      simp at hmem
+      simp [connectStep_edges mate ok st hids] at hmem
       rcases hmem with hold | hnew
-      · exact hv.edge_right_bound edge hold
+      · have hbound := hv.edge_right_bound edge hold
+        simpa [connectStep_endpoints mate ok st] using hbound
       · cases hnew
-        exact hv.frontier_bound
-          (restIds.get (listIndexCast restIds hrest.symm mate)) (by
-            rw [hids]
-            right
-            exact List.get_mem restIds (listIndexCast restIds hrest.symm mate))
+        have hbound := hv.frontier_bound (restIds.get idx) (by
+          rw [hids]
+          right
+          exact List.get_mem restIds idx)
+        simpa [connectStep_endpoints mate ok st] using hbound
     · intro edge hmem
-      simp at hmem
+      simp [connectStep_edges mate ok st hids] at hmem
       rcases hmem with hold | hnew
-      · exact hv.edge_left_label edge hold
+      · have hlabel := hv.edge_left_label edge hold
+        simpa [connectStep_endpoints mate ok st] using hlabel
       · cases hnew
-        exact hv.frontier_head_label hids
+        have hlabel := hv.frontier_head_label hids
+        simpa [connectStep_endpoints mate ok st] using hlabel
     · intro edge hmem
-      simp at hmem
+      simp [connectStep_edges mate ok st hids] at hmem
       rcases hmem with hold | hnew
-      · exact hv.edge_right_label edge hold
+      · have hlabel := hv.edge_right_label edge hold
+        simpa [connectStep_endpoints mate ok st] using hlabel
       · cases hnew
-        exact hv.frontier_tail_label hids hrest (listIndexCast restIds hrest.symm mate)
+        have hlabel := hv.frontier_tail_label hids hrest idx
+        simpa [idx, connectStep_endpoints mate ok st] using hlabel
+    · intro node hmem
+      exact hv.node_incident_length node
+        (connectStep_node_mem_old_of_child mate ok st hmem)
+    · intro node hmem slot
+      have hold := connectStep_node_mem_old_of_child mate ok st hmem
+      have hbound := hv.node_incident_bound node hold slot
+      simpa [connectStep_endpoints mate ok st] using hbound
+    · intro node hmem slot
+      have hold := connectStep_node_mem_old_of_child mate ok st hmem
+      have hlabel := hv.node_incident_label node hold slot
+      simpa [connectStep_endpoints mate ok st] using hlabel
 
 theorem connectStep_endpointPartition {active : Sig.Port}
     {frontier : List Sig.Port}
