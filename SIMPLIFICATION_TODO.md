@@ -225,7 +225,7 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     source scan over examples and finite string-diagram syntax reports no
     remaining direct low-level child-bound lemma uses.
 
-- [ ] Move generic scaled-rank payload lemmas out of finite string diagrams.
+- [x] Move generic scaled-rank payload lemmas out of finite string diagrams.
   - Owner: `BijForm.CodeAlgebra`
   - Evidence: private `rank_scaled_payload_lt` and
     `rank_scaled_payload_le_with_gap` in
@@ -234,6 +234,9 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     reuse them.
   - Validation: `#check BijForm.CodeAlgebra.rank_scaled_payload_lt` or the final
     chosen public name after importing `BijForm.CodeAlgebra`.
+  - Completed: `CodeAlgebra` now owns `rank_scaled_payload_lt` and
+    `rank_scaled_payload_le_with_gap`; finite string-diagram syntax uses the
+    public names and has no private scaled-rank copies.
 
 - [ ] Make closed-form pairing the single public product codec.
   - Owner: `BijForm.Pairing`

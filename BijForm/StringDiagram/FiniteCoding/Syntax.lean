@@ -208,29 +208,6 @@ def singleSortedFiniteRank
       simp [singleSortedFiniteRank, openFrontierNonemptyIso,
         CodeShape.infiniteIso, Iso.refl]
 
-private theorem rank_scaled_payload_lt
-    {scale childBase parentBase payload code : Nat}
-    (hbase : childBase < parentBase + scale)
-    (hz : payload < code) :
-    childBase + scale * payload < parentBase + scale * code := by
-  have hsucc : payload + 1 ≤ code := Nat.succ_le_of_lt hz
-  have hmul : scale * (payload + 1) ≤ scale * code :=
-    Nat.mul_le_mul_left scale hsucc
-  have hstep : childBase + scale * payload <
-      parentBase + scale * (payload + 1) := by
-    rw [Nat.mul_succ]
-    omega
-  exact Nat.lt_of_lt_of_le hstep (Nat.add_le_add_left hmul parentBase)
-
-private theorem rank_scaled_payload_le_with_gap
-    {scale childBase parentBase payload code : Nat}
-    (hbase : childBase < parentBase)
-    (hz : payload ≤ code) :
-    childBase + scale * payload < parentBase + scale * code := by
-  have hmul : scale * payload ≤ scale * code :=
-    Nat.mul_le_mul_left scale hz
-  omega
-
 def singleSortedFiniteLayerToShape
     {Sig : Signature} (data : SingleSortedFiniteCodingData Sig) :
     ∀ boundary,
@@ -671,7 +648,7 @@ private theorem singleSortedFiniteLayer_shape_child_rank_lt
                     Signature.nodePortsExcept_length nonUnary.val.1 nonUnary.val.2
                   simp [singleSortedFiniteLayerFromShape, inversion,
                     OutputIndexInversion.canonical, poly, input, hlen]
-                  exact rank_scaled_payload_lt
+                  exact CodeAlgebra.rank_scaled_payload_lt
                     (scale := data.rankScale)
                     (childBase := Sig.arity nonUnary.val.1 - 1)
                     (parentBase := 1)
@@ -710,7 +687,7 @@ private theorem singleSortedFiniteLayer_shape_child_rank_lt
                         Signature.nodePortsExcept_length entry.1 entry.2
                       simp [singleSortedFiniteLayerFromShape, inversion,
                         OutputIndexInversion.canonical, poly, input]
-                      exact rank_scaled_payload_lt
+                      exact CodeAlgebra.rank_scaled_payload_lt
                         (scale := data.rankScale)
                         (childBase :=
                           (Sig.nodePortsExcept entry.1 entry.2).length + 1)
@@ -744,7 +721,7 @@ private theorem singleSortedFiniteLayer_shape_child_rank_lt
                         eraseFin_length (first :: second :: rest) mate
                       simp [singleSortedFiniteLayerFromShape, inversion,
                         OutputIndexInversion.canonical, poly, input, hlen]
-                      exact rank_scaled_payload_le_with_gap
+                      exact CodeAlgebra.rank_scaled_payload_le_with_gap
                         (scale := data.rankScale)
                         (childBase := (first :: second :: rest).length - 1)
                         (parentBase := (first :: second :: rest).length + 1)
@@ -777,7 +754,7 @@ private theorem singleSortedFiniteLayer_shape_child_rank_lt
                         Signature.nodePortsExcept_length entry.1 entry.2
                       simp [singleSortedFiniteLayerFromShape, inversion,
                         OutputIndexInversion.canonical, poly, input]
-                      exact rank_scaled_payload_lt
+                      exact CodeAlgebra.rank_scaled_payload_lt
                         (scale := data.rankScale)
                         (childBase :=
                           rest.length +
