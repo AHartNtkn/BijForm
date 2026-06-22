@@ -1557,51 +1557,22 @@ theorem GraphRenderRelated.budChild
             Fin (endpointOrder G
               (st.budChild hpending node slot hmate hunseen)).length :=
           Fin.cast hchildEndpointLength ⟨raw, hbound⟩
-        let appendEndpoint :
-            Fin (endpointOrder G st ++ G.raw.incident node).length :=
-          Fin.cast (congrArg List.length horder) childEndpoint
-        have hget := list_get_of_eq horder childEndpoint
         have hleOrder : (endpointOrder G st).length ≤ raw := by
           rw [← hrel.endpoint_length]
           exact hle
-        have happ :
-            (endpointOrder G st ++ G.raw.incident node).get appendEndpoint =
-              (G.raw.incident node).get
-                ⟨raw - rst.endpoints.length, by
-                  rw [Diag.budStep_endpoints_length renderNode entry ok rst] at hbound
-                  have hincidentLen := G.raw.incident_length node
-                  rw [hincidentLen]
-                  change raw - rst.endpoints.length < Sig.arity renderNode
-                  omega⟩ := by
-          have hright :=
-            list_get_append_right (endpointOrder G st)
-              (G.raw.incident node) hleOrder appendEndpoint.isLt
-          have hidx :
-              (⟨raw - (endpointOrder G st).length, by
-                have holdLen :
-                    (endpointOrder G st).length = rst.endpoints.length :=
-                  hrel.endpoint_length.symm
-                have hslotBound :
-                    raw - rst.endpoints.length < (G.raw.incident node).length := by
-                  rw [Diag.budStep_endpoints_length renderNode entry ok rst] at hbound
-                  rw [G.raw.incident_length node]
-                  change raw - rst.endpoints.length < Sig.arity renderNode
-                  omega
-                simpa [holdLen] using hslotBound⟩ :
-                  Fin (G.raw.incident node).length) =
-                ⟨raw - rst.endpoints.length, by
-                  rw [Diag.budStep_endpoints_length renderNode entry ok rst] at hbound
-                  have hincidentLen := G.raw.incident_length node
-                  rw [hincidentLen]
-                  change raw - rst.endpoints.length < Sig.arity renderNode
-                  omega⟩ := by
-            apply Fin.ext
+        let newEndpoint : Fin (G.raw.incident node).length :=
+          ⟨raw - rst.endpoints.length, by
+            rw [Diag.budStep_endpoints_length renderNode entry ok rst] at hbound
+            have hincidentLen := G.raw.incident_length node
+            rw [hincidentLen]
+            change raw - rst.endpoints.length < Sig.arity renderNode
+            omega⟩
+        exact list_get_of_eq_append_right_of_val_eq horder
+          childEndpoint newEndpoint hleOrder (by
             have holdLen :
                 (endpointOrder G st).length = rst.endpoints.length :=
               hrel.endpoint_length.symm
-            simp [holdLen]
-          exact hright.trans (by rw [hidx])
-        exact hget.trans happ
+            simp [childEndpoint, newEndpoint, holdLen])
       have edgeAt_old :
           ∀ {raw : Nat}
             (hold : raw < rst.edges.length)
@@ -1633,26 +1604,8 @@ theorem GraphRenderRelated.budChild
         let childEdge :
             Fin (edgeOrder (st.budChild hpending node slot hmate hunseen)).length :=
           Fin.cast hchildEdgeLength ⟨raw, hbound⟩
-        let appendEdge : Fin (edgeOrder st ++ [G.raw.endpointEdge active]).length :=
-          Fin.cast (congrArg List.length horder) childEdge
-        have hget := list_get_of_eq horder childEdge
-        have hidx : appendEdge.val = (edgeOrder st).length := by
-          simp [appendEdge, childEdge, hnew, hrel.edge_length]
-        have happ :
-            (edgeOrder st ++ [G.raw.endpointEdge active]).get appendEdge =
-              G.raw.endpointEdge active := by
-          have hnewGet :=
-            list_get_append_single_at_length (edgeOrder st) []
-              (G.raw.endpointEdge active)
-          have hcast :
-              appendEdge =
-                (⟨(edgeOrder st).length, by simp⟩ :
-                  Fin (edgeOrder st ++ [G.raw.endpointEdge active]).length) := by
-            apply Fin.ext
-            exact hidx
-          rw [hcast]
-          exact hnewGet
-        exact hget.trans happ
+        exact list_get_of_eq_append_cons_at_length horder childEdge
+          (by simp [childEdge, hnew, hrel.edge_length])
       have nodeAt_old :
           ∀ {raw : Nat}
             (hold : raw < rst.nodes.length)
@@ -1684,24 +1637,8 @@ theorem GraphRenderRelated.budChild
         let childNode :
             Fin (nodeOrder (st.budChild hpending node slot hmate hunseen)).length :=
           Fin.cast hchildNodeLength ⟨raw, hbound⟩
-        let appendNode : Fin (nodeOrder st ++ [node]).length :=
-          Fin.cast (congrArg List.length horder) childNode
-        have hget := list_get_of_eq horder childNode
-        have hidx : appendNode.val = (nodeOrder st).length := by
-          simp [appendNode, childNode, hnew, hrel.node_length]
-        have happ :
-            (nodeOrder st ++ [node]).get appendNode = node := by
-          have hnewGet :=
-            list_get_append_single_at_length (nodeOrder st) [] node
-          have hcast :
-              appendNode =
-                (⟨(nodeOrder st).length, by simp⟩ :
-                  Fin (nodeOrder st ++ [node]).length) := by
-            apply Fin.ext
-            exact hidx
-          rw [hcast]
-          exact hnewGet
-        exact hget.trans happ
+        exact list_get_of_eq_append_cons_at_length horder childNode
+          (by simp [childNode, hnew, hrel.node_length])
       have hchildNodeIncidentLength :
           ∀ renderIdx : Fin (Diag.budStep renderNode entry ok rst).nodes.length,
             ((Diag.budStep renderNode entry ok rst).nodes.get renderIdx).incident.length =
