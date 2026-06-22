@@ -134,7 +134,8 @@ structure ValidIds {Sig : Signature} {frontier : List Sig.Port}
         ⟨node.incident.get slot,
           node_incident_bound node hmem slot⟩ =
         Sig.port node.label
-          (Fin.cast (node_incident_length node hmem) slot)
+          (Sig.nodePortIndexOfLength node.label
+            (node_incident_length node hmem) slot)
 
 structure EdgeEndpointBounds {Sig : Signature} {frontier : List Sig.Port}
     (st : RenderState Sig frontier) : Prop where
@@ -886,7 +887,8 @@ theorem incidentOfValidIds_val_mem_nodeIncidentIds {Sig : Signature}
   simp [incidentOfValidIds, nodeIncidentIds]
   refine ⟨st.nodes.get node, List.get_mem st.nodes node, ?_⟩
   exact List.get_mem (st.nodes.get node).incident
-    (Fin.cast (by simp [incidentOfValidIds]) slot)
+    (listIndexCast (st.nodes.get node).incident
+      (by simp [incidentOfValidIds]) slot)
 
 theorem incidentOfValidIds_exists_of_mem_nodeIncidentIds {Sig : Signature}
     {st : RenderState Sig []}
@@ -908,7 +910,8 @@ theorem incidentOfValidIds_exists_of_mem_nodeIncidentIds {Sig : Signature}
       hincidentMem' with
     ⟨rawSlot, hrawSlot⟩
   let slot : Fin (incidentOfValidIds hv node).length :=
-    Fin.cast (by simp [incidentOfValidIds]) rawSlot
+    listIndexCast (incidentOfValidIds hv node)
+      (by simp [incidentOfValidIds]) rawSlot
   refine ⟨node, slot, ?_⟩
   exact fin_eq_of_val_eq (by
     simpa [incidentOfValidIds, slot] using hrawSlot)
@@ -931,9 +934,11 @@ theorem incidentOfValidIds_injective {Sig : Signature}
   intro i j h
   have hi :
       (st.nodes.get node).incident.get
-          (Fin.cast (by simp [incidentOfValidIds]) i) =
+          (listIndexCast (st.nodes.get node).incident
+            (by simp [incidentOfValidIds]) i) =
         (st.nodes.get node).incident.get
-          (Fin.cast (by simp [incidentOfValidIds]) j) := by
+          (listIndexCast (st.nodes.get node).incident
+            (by simp [incidentOfValidIds]) j) := by
     have hval := congrArg Fin.val h
     simpa [incidentOfValidIds] using hval
   have horig :=
@@ -950,12 +955,15 @@ theorem incidentOfValidIds_label {Sig : Signature}
     (slot : Fin (incidentOfValidIds hv node).length) :
     st.endpoints.get ((incidentOfValidIds hv node).get slot) =
       Sig.port ((st.nodes.get node).label)
-        (Fin.cast (incidentOfValidIds_length hv node) slot) := by
+        (Sig.nodePortIndexOfLength ((st.nodes.get node).label)
+          (incidentOfValidIds_length hv node) slot) := by
   have hlabel :=
     hv.node_incident_label (st.nodes.get node)
       (List.get_mem st.nodes node)
-      (Fin.cast (by simp [incidentOfValidIds]) slot)
-  simpa [incidentOfValidIds, incidentOfValidIds_length] using hlabel
+      (listIndexCast (st.nodes.get node).incident
+        (by simp [incidentOfValidIds]) slot)
+  simpa [incidentOfValidIds, incidentOfValidIds_length,
+    Signature.nodePortIndexOfLength] using hlabel
 
 theorem boundaryEvidenceOfPrefix_ne_incidentOfValidIds {Sig : Signature}
     {st : RenderState Sig []} {boundary : List Sig.Port}
@@ -1013,7 +1021,8 @@ theorem nodeIncidentIds_get_node_eq_of_nodup {Sig : Signature} :
                         ⟨rightTailVal, Nat.lt_of_succ_lt_succ rightLt⟩
                       let rightSlotTail :
                           Fin ((tail.get rightTail).incident.length) :=
-                        Fin.cast (by simp [rightTail]) rightSlot
+                        listIndexCast (tail.get rightTail).incident
+                          (by simp [rightTail]) rightSlot
                       have hleftMem :
                           head.incident.get leftSlot ∈ head.incident :=
                         List.get_mem head.incident leftSlot
@@ -1043,7 +1052,8 @@ theorem nodeIncidentIds_get_node_eq_of_nodup {Sig : Signature} :
                         ⟨leftTailVal, Nat.lt_of_succ_lt_succ leftLt⟩
                       let leftSlotTail :
                           Fin ((tail.get leftTail).incident.length) :=
-                        Fin.cast (by simp [leftTail]) leftSlot
+                        listIndexCast (tail.get leftTail).incident
+                          (by simp [leftTail]) leftSlot
                       have hleftMemRaw :
                           (tail.get leftTail).incident.get leftSlotTail ∈
                             tail.flatMap fun node => node.incident := by
@@ -1073,10 +1083,12 @@ theorem nodeIncidentIds_get_node_eq_of_nodup {Sig : Signature} :
                         ⟨rightTailVal, Nat.lt_of_succ_lt_succ rightLt⟩
                       let leftSlotTail :
                           Fin ((tail.get leftTail).incident.length) :=
-                        Fin.cast (by simp [leftTail]) leftSlot
+                        listIndexCast (tail.get leftTail).incident
+                          (by simp [leftTail]) leftSlot
                       let rightSlotTail :
                           Fin ((tail.get rightTail).incident.length) :=
-                        Fin.cast (by simp [rightTail]) rightSlot
+                        listIndexCast (tail.get rightTail).incident
+                          (by simp [rightTail]) rightSlot
                       have htail :
                           (tail.get leftTail).incident.get leftSlotTail =
                             (tail.get rightTail).incident.get rightSlotTail := by
@@ -1106,9 +1118,11 @@ theorem incidentOfValidIds_eq_node_eq {Sig : Signature}
     leftNode = rightNode := by
   have hraw :
       (st.nodes.get leftNode).incident.get
-          (Fin.cast (by simp [incidentOfValidIds]) leftSlot) =
+          (listIndexCast (st.nodes.get leftNode).incident
+            (by simp [incidentOfValidIds]) leftSlot) =
         (st.nodes.get rightNode).incident.get
-          (Fin.cast (by simp [incidentOfValidIds]) rightSlot) := by
+          (listIndexCast (st.nodes.get rightNode).incident
+            (by simp [incidentOfValidIds]) rightSlot) := by
     have hval := congrArg (fun endpoint : Fin st.endpoints.length => endpoint.val) h
     simpa [incidentOfValidIds] using hval
   exact nodeIncidentIds_get_node_eq_of_nodup st.nodes
@@ -1132,7 +1146,9 @@ structure IncidenceEvidence {Sig : Signature}
   incidence_label :
     ∀ (node : Fin st.nodes.length) (slot : Fin (incident node).length),
       st.endpoints.get ((incident node).get slot) =
-        Sig.port ((st.nodes.get node).label) (Fin.cast (incident_length node) slot)
+        Sig.port ((st.nodes.get node).label)
+          (Sig.nodePortIndexOfLength ((st.nodes.get node).label)
+            (incident_length node) slot)
 
 def incidenceEvidenceOfValidIds {Sig : Signature}
     {st : RenderState Sig []}
@@ -1167,7 +1183,7 @@ theorem ValidIds.frontier_tail_label {Sig : Signature}
     st.endpoints.get
       ⟨restIds.get i,
         hv.frontier_bound (restIds.get i) (by rw [hids]; simp)⟩ =
-      frontier.get (Fin.cast hrest i) := by
+      frontier.get (listIndexCast frontier hrest i) := by
   have hlabel :=
     hv.frontier_label (i.val + 1)
       (by rw [hids]; simp [i.isLt])

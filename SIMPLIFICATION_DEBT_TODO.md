@@ -51,7 +51,7 @@ is ordered to turn helper additions into actual deletion.
     proof. One-frontier entry arity dispatch remains isolated in
     `singleSortedFiniteOneFrontierBudShape` and is not a frontier classifier.
 
-- [ ] Finish deleting raw string-diagram index transport scaffolding.
+- [x] Finish deleting raw string-diagram index transport scaffolding.
   - Owners: `BijForm.StringDiagram.Basic`,
     `BijForm.StringDiagram.Bridge.GraphRenderRelation`,
     `BijForm.StringDiagram.Renderer.Core`,
@@ -59,9 +59,9 @@ is ordered to turn helper additions into actual deletion.
     `BijForm.StringDiagram.Renderer.Trace`,
     `BijForm.StringDiagram.Traversal.State`, and
     `BijForm.StringDiagram.Hypergraph`.
-  - Why this remains open: source scan still shows direct `Fin.cast` use in
-    renderer, traversal, hypergraph, and bridge files, including over one
-    hundred hits in `GraphRenderRelation.lean`.
+  - Original debt: source scan still showed direct `Fin.cast` use in renderer,
+    traversal, hypergraph, and bridge files, including over one hundred hits in
+    `GraphRenderRelation.lean`.
   - Delete: proof-body `Fin.cast` chains, repeated length-congruence casts,
     manual `get` transport proofs, and old/new index reconstruction at call
     sites.
@@ -71,7 +71,7 @@ is ordered to turn helper additions into actual deletion.
   - Validation:
     `rg -n "Fin\\.cast" BijForm/StringDiagram/Bridge BijForm/StringDiagram/Renderer BijForm/StringDiagram/Traversal BijForm/StringDiagram/Hypergraph.lean`
     should be empty outside owner helper implementations.
-  - Partial: `GraphRenderRelated`, `FrontierPendingFields`, and
+  - Completed: `GraphRenderRelated`, `FrontierPendingFields`, and
     `NodeIncidentFields` now expose `listIndexCast` in their field statements
     instead of raw relation-boundary casts. The connect/bud child label proofs
     also use append-trace right indices plus `listIndexCast` instead of local
@@ -80,20 +80,23 @@ is ordered to turn helper additions into actual deletion.
     `GraphRenderRelation.lean` direct `Fin.cast` hits dropped from `103` to
     `0`. Hypergraph proof-body casts now route through `listIndexCast`,
     `eraseFin_eq_of_eq_of_val_eq`, and signature node-port index helpers;
-    `Hypergraph.lean` direct `Fin.cast` hits are down to the two
-    `PortHypergraphIso` incidence-slot transport helper implementations. The
+    `Hypergraph.lean` direct `Fin.cast` hits dropped to `0`. The
     renderer trace rest/fresh-node edge expressions now use `listIndexCast`,
     so `Renderer/Trace.lean` direct `Fin.cast` hits dropped to `0`. The item
     renderer `connectStep_*_get` lemmas now delegate to
     `list_get_of_eq_of_val_eq`, and the old-node incident-label proof now uses
     `Sig.nodePortIndexOfLength`; `Renderer/Steps.lean` direct `Fin.cast` hits
-    dropped to `0`. The item remains open because renderer core owner internals
-    and traversal casts still remain. Traversal helper definitions for
-    rest-label indices, bud entries, connect-child pending labels, and
-    connect-child endpoint-order gets now use shared list/signature transport;
-    render-prefix connect/bud child proof clusters now use `listMapIndex`,
-    `listIndexCast`, and `eraseFin_eq_of_eq_of_val_eq`, so
-    `Traversal/State.lean` direct `Fin.cast` hits dropped to `0`.
+    dropped to `0`. Renderer core incident evidence, incident lookup proofs,
+    tail frontier labels, and node-incident nodup recursion now use
+    `listIndexCast` and `Sig.nodePortIndexOfLength`. Traversal helper
+    definitions for rest-label indices, bud entries, connect-child pending
+    labels, and connect-child endpoint-order gets now use shared list/signature
+    transport; render-prefix connect/bud child proof clusters now use
+    `listMapIndex`, `listIndexCast`, and `eraseFin_eq_of_eq_of_val_eq`, so
+    `Traversal/State.lean` direct `Fin.cast` hits dropped to `0`. The broad
+    validation scan over `Bridge`, `Renderer`, `Traversal`, and
+    `Hypergraph.lean` is empty; raw casts remain only in owner-level generic
+    helpers outside that consumer boundary.
 
 - [ ] Collapse the graph-render relation helper volume into schemas.
   - Owners: `BijForm.StringDiagram.Bridge.GraphRenderRelation`,

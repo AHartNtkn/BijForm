@@ -1558,7 +1558,7 @@ def incidenceSlotPreserved {G H : PortHypergraph Sig boundary}
     (e : PortHypergraphIso G H) (node : Fin G.nodeCount)
     (slot : Fin (G.incident node).length) :
     Fin (H.incident (e.nodeEquiv.toFun node)).length :=
-  Fin.cast
+  listIndexCast (H.incident (e.nodeEquiv.toFun node))
     (by
       have hlen := congrArg List.length (e.incidence_preserved node)
       simpa using hlen)
@@ -1568,7 +1568,7 @@ def incidenceSlotReflected {G H : PortHypergraph Sig boundary}
     (e : PortHypergraphIso G H) (node : Fin H.nodeCount)
     (slot : Fin (H.incident node).length) :
     Fin (G.incident (e.nodeEquiv.invFun node)).length :=
-  Fin.cast
+  listIndexCast (G.incident (e.nodeEquiv.invFun node))
     (by
       have hlen := congrArg List.length (e.incidence_reflected node)
       simpa using hlen)
