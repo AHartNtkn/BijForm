@@ -27,7 +27,7 @@ is ordered to turn helper additions into actual deletion.
 
 ## High-Priority Deletion Work
 
-- [ ] Table-drive finite string-diagram frontier cases.
+- [x] Table-drive finite string-diagram frontier cases.
   - Owner: `BijForm.StringDiagram.FiniteCoding.Syntax`.
   - Why this remains open: the original tracker still has this unchecked, and
     the file still contains repeated frontier and rest destructuring:
@@ -39,6 +39,12 @@ is ordered to turn helper additions into actual deletion.
   - Validation:
     `rg -n "cases frontier with|cases rest with|by_cases hentry" BijForm/StringDiagram/FiniteCoding/Syntax.lean`
     should have no old-model proof-body hits after the table owner is in use.
+  - Completed: `BijForm.StringDiagram.FiniteCoding.Syntax` now owns boundary
+    classification through `openBoundaryCases` and one-frontier entry arity
+    dispatch through `singleSortedFiniteOneFrontierBudShape`. The layer
+    presentation uses shared left/right inverse helpers and the rank proof
+    consumes the same boundary classifier. Focused Lean check passes, and the
+    old-model source scan has no hits in `FiniteCoding/Syntax.lean`.
 
 - [ ] Finish deleting raw string-diagram index transport scaffolding.
   - Owners: `BijForm.StringDiagram.Basic`,
