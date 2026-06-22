@@ -219,6 +219,40 @@ theorem subsingletonLeft {α : Type u} {β : Type v}
 
 end Iso
 
+/--
+Normal-form coding data for a quotient setoid.
+
+`encode` must be constant on setoid classes, while `decode` chooses a
+representative whose class is inverse to `encode`.
+-/
+structure QuotientNormalForm {Raw : Type u} (S : Setoid Raw) (Out : Type v) where
+  encode : Raw → Out
+  decode : Out → Raw
+  encode_respects : ∀ {x y}, S.r x y → encode x = encode y
+  decode_encode_rel : ∀ x, S.r (decode (encode x)) x
+  encode_decode : ∀ z, encode (decode z) = z
+
+namespace QuotientNormalForm
+
+def quotientIso {Raw : Type u} {S : Setoid Raw} {Out : Type v}
+    (N : QuotientNormalForm S Out) :
+    Quotient S ≃ᵢ Out where
+  toFun :=
+    Quotient.lift N.encode (by
+      intro x y hxy
+      exact N.encode_respects hxy)
+  invFun := fun z => Quotient.mk S (N.decode z)
+  left_inv := by
+    intro q
+    exact Quotient.inductionOn q (fun x => by
+      change Quotient.mk S (N.decode (N.encode x)) = Quotient.mk S x
+      exact Quotient.sound (N.decode_encode_rel x))
+  right_inv := by
+    intro z
+    exact N.encode_decode z
+
+end QuotientNormalForm
+
 /-- The empty finite carrier is isomorphic to `Empty`. -/
 def fin_zero_empty_iso : Fin 0 ≃ᵢ Empty where
   toFun := fin_zero_elim

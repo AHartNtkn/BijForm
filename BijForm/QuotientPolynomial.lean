@@ -240,33 +240,26 @@ namespace DescendedCode
 variable {Q : QuotientPresentation P} {Code : ι → Type v}
 variable {C : WellFoundedCode P Code} {Out : ι → Type w}
 
+def normalForm (D : DescendedCode Q C Out) (i : ι) :
+    QuotientNormalForm (codeSetoid Q C i) (Out i) where
+  encode := D.encode i
+  decode := D.decode i
+  encode_respects := by
+    intro a b hab
+    exact D.encode_respects hab
+  decode_encode_rel := by
+    intro a
+    change CodeRel Q C i (D.decode i (D.encode i a)) a
+    exact D.decode_encode_rel i a
+  encode_decode := by
+    intro z
+    exact D.encode_decode i z
+
 /-- A descended code criterion gives a bijection from the quotient code carrier
 to the concrete carrier. -/
 def codeCarrierIso (D : DescendedCode Q C Out) (i : ι) :
-    CodeCarrier Q C i ≃ᵢ Out i where
-  toFun :=
-    Quotient.lift (D.encode i)
-      (by
-        intro a b hab
-        exact D.encode_respects hab)
-  invFun := fun z => Quotient.mk (codeSetoid Q C i) (D.decode i z)
-  left_inv := by
-    intro q
-    exact Quotient.ind (s := codeSetoid Q C i)
-      (motive := fun q =>
-        Quotient.mk (codeSetoid Q C i)
-            (D.decode i (Quotient.lift (D.encode i)
-              (by
-                intro a b hab
-                exact D.encode_respects hab) q)) = q)
-      (fun a => by
-        apply Quotient.sound
-        change CodeRel Q C i (D.decode i (D.encode i a)) a
-        exact D.decode_encode_rel i a)
-      q
-  right_inv := by
-    intro z
-    exact D.encode_decode i z
+    CodeCarrier Q C i ≃ᵢ Out i :=
+  (D.normalForm i).quotientIso
 
 /-- A descended code criterion gives a concrete coding of the quotient
 datatype. -/

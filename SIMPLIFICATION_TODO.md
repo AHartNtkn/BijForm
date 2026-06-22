@@ -481,7 +481,7 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
 
 ## Quotients and Validation Tooling
 
-- [ ] Extract generic quotient-normal-form coding.
+- [x] Extract generic quotient-normal-form coding.
   - Owner: new quotient-code boundary or `BijForm.QuotientPolynomial`
   - Evidence: `TupleAction.ConcreteQuotientCode` and quotient-polynomial
     descended code both encode normalize/denormalize descent to concrete
@@ -490,6 +490,10 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     instantiate it for tuple actions and polynomial code quotients.
   - Validation: `TupleAction.BinarySwap` and `Examples/HBTQuotient.lean` build
     through the shared abstraction.
+  - Completed: added `QuotientNormalForm` and
+    `QuotientNormalForm.quotientIso` in `BijForm.Coding`.
+    `ConcreteQuotientCode.iso` and `DescendedCode.codeCarrierIso` now both
+    route through the shared quotient-normal-form isomorphism.
 
 - [x] Add generic setoid transport across `Iso`.
   - Owner: `BijForm.Coding` or `BijForm.QuotientPolynomial`

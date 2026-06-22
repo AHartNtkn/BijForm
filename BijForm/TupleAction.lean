@@ -69,37 +69,28 @@ def ofRaw {Raw : Type u} (C : ConcreteQuotientCode Raw) (x : Raw) :
     C.Carrier :=
   Quotient.mk C.setoid x
 
-def iso {Raw : Type u} (C : ConcreteQuotientCode Raw) : C.Carrier ≃ᵢ Nat where
-  toFun :=
-    Quotient.lift (fun x => C.code.toFun (C.normalize x))
-      (by
-        intro x y hxy
-        change C.code.toFun (C.normalize x) = C.code.toFun (C.normalize y)
-        rw [C.normalize_respects hxy])
-  invFun := fun n => C.ofRaw (C.denormalize (C.code.invFun n))
-  left_inv := by
-    intro q
-    exact Quotient.ind (s := C.setoid)
-      (motive := fun q =>
-        C.ofRaw (C.denormalize
-          (C.code.invFun
-            (Quotient.lift (fun x => C.code.toFun (C.normalize x))
-              (by
-                intro x y hxy
-                change C.code.toFun (C.normalize x) = C.code.toFun (C.normalize y)
-                rw [C.normalize_respects hxy]) q))) = q)
-      (fun x => by
-        change C.ofRaw
-            (C.denormalize (C.code.invFun (C.code.toFun (C.normalize x)))) =
-          C.ofRaw x
-        rw [C.code.left_inv]
-        exact Quotient.sound (C.denormalize_normalize_rel x))
-      q
-  right_inv := by
+def normalForm {Raw : Type u} (C : ConcreteQuotientCode Raw) :
+    QuotientNormalForm C.setoid Nat where
+  encode x := C.code.toFun (C.normalize x)
+  decode n := C.denormalize (C.code.invFun n)
+  encode_respects := by
+    intro x y hxy
+    change C.code.toFun (C.normalize x) = C.code.toFun (C.normalize y)
+    rw [C.normalize_respects hxy]
+  decode_encode_rel := by
+    intro x
+    change C.Rel
+      (C.denormalize (C.code.invFun (C.code.toFun (C.normalize x)))) x
+    rw [C.code.left_inv]
+    exact C.denormalize_normalize_rel x
+  encode_decode := by
     intro n
     change C.code.toFun
-        (C.normalize (C.denormalize (C.code.invFun n))) = n
+      (C.normalize (C.denormalize (C.code.invFun n))) = n
     rw [C.normalize_denormalize, C.code.right_inv]
+
+def iso {Raw : Type u} (C : ConcreteQuotientCode Raw) : C.Carrier ≃ᵢ Nat :=
+  C.normalForm.quotientIso
 
 end ConcreteQuotientCode
 
