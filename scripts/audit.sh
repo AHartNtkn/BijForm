@@ -44,26 +44,6 @@ if git grep -n -E '(^|[^A-Za-z0-9_])sorry([^A-Za-z0-9_]|$)' -- '*.lean' >"$sorry
   done <"$sorry_hits"
 fi
 
-if git grep -n -E 'QuotientPresentation\.inn($|[^R[:alnum:]_])|QuotientPresentation\.inn_layer_sound|HBTChildSwap_inn_branch_sound' -- BijForm; then
-  fail "stale quotient declaration name found"
-fi
-
-if git grep -n -E '^def [A-Za-z0-9_]*WellFoundedCode[[:space:]]*:' -- BijForm/Examples; then
-  fail "example exposes a pass-through WellFoundedCode alias"
-fi
-
-if git grep -n 'singleSortedFiniteSyntaxIso' -- BijForm; then
-  fail "finite-coding syntax wrapper must not ignore finite coding data"
-fi
-
-if git grep -n 'OutputIndexInversion\.ofIso' -- BijForm/Examples; then
-  fail "examples must not use low-level opaque output-index inversion"
-fi
-
-if git grep -n '\.toWellFoundedCode' -- BijForm/Examples; then
-  fail "examples must expose generated-code APIs instead of WellFoundedCode backend conversion"
-fi
-
 bash scripts/test-trivial-fin-ext-audit.sh
 
 mapfile -t lean_files < <(git ls-files '*.lean')

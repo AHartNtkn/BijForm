@@ -502,7 +502,7 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     `BijForm.Coding`; `syntaxSetoid`, `codeSetoid`, `syntaxCarrierIso`, and
     `codeIso` now route through the generic transport.
 
-- [ ] Replace stale-name audit greps with Lean validation surfaces.
+- [x] Replace stale-name audit greps with Lean validation surfaces.
   - Owner: audit tooling plus quotient/example validation modules.
   - Evidence: `scripts/audit.sh` greps for old declaration names and exact
     source strings.
@@ -510,6 +510,10 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     public surfaces, then remove greps that only prove old spellings are absent.
   - Validation: `lake build` includes the validation modules and `scripts/audit.sh`
     no longer contains stale-name policy greps.
+  - Completed: added `BijForm.Validation.PublicSurfaces` to typecheck quotient,
+    generated-code, finite string-diagram, typed-binding NF, and canonical
+    inversion public surfaces; removed the stale-name/source-shape grep blocks
+    from `scripts/audit.sh`.
 
 - [ ] Consolidate audit command ownership.
   - Owner: Lake/tooling.
