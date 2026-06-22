@@ -1465,7 +1465,7 @@ theorem GraphRenderRelated.budChild_frontierPending
     simp [nodeEndpoints, renderNode, G.raw.incident_length node]
   have hentryIdxVal : entryIdx.val = slot.val := by
     simp [entryIdx, entry, SearchState.budEntry, nodeEndpoints,
-      renderNode]
+      renderNode, Signature.nodePortIndexOfLength]
   let R := fun raw endpoint =>
     ∃ hbound : raw < (Diag.budStep renderNode entry ok rst).endpoints.length,
       (endpointOrder G (st.budChild hpending node slot hmate hunseen)).get
@@ -2343,7 +2343,7 @@ theorem GraphRenderRelated.budChild_edgeRight
             simp [childEndpoint, graphSlot])
       have hentryIdxVal : entryIdx.val = slot.val := by
         simp [entryIdx, entry, SearchState.budEntry, nodeEndpoints,
-          renderNode]
+          renderNode, Signature.nodePortIndexOfLength]
       have hedgeSlotIdx : graphSlot = slot := by
         exact fin_eq_of_val_eq (by
           change

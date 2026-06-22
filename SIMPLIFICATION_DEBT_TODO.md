@@ -88,7 +88,11 @@ is ordered to turn helper additions into actual deletion.
     `list_get_of_eq_of_val_eq`, and the old-node incident-label proof now uses
     `Sig.nodePortIndexOfLength`; `Renderer/Steps.lean` direct `Fin.cast` hits
     dropped to `0`. The item remains open because renderer core owner internals
-    and traversal casts still remain.
+    and traversal casts still remain. Traversal helper definitions for
+    rest-label indices, bud entries, connect-child pending labels, and
+    connect-child endpoint-order gets now use shared list/signature transport;
+    the remaining traversal hits are in render-prefix connect/bud child proof
+    clusters.
 
 - [ ] Collapse the graph-render relation helper volume into schemas.
   - Owners: `BijForm.StringDiagram.Bridge.GraphRenderRelation`,

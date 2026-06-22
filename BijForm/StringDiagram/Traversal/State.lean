@@ -515,7 +515,7 @@ def restLabelIndex {G : OpenPortHypergraph Sig boundary}
     (hpending : st.pending = active :: rest)
     (mate : Fin rest.length) : Fin restLabels.length :=
   let hrest := (st.pending_labels_cons hpending).2
-  Fin.cast (by
+  listIndexCast restLabels (by
     rw [← hrest]
     simp) mate
 
@@ -813,16 +813,18 @@ def budEntry {G : OpenPortHypergraph Sig boundary}
     (node : Fin G.raw.nodeCount)
     (slot : Fin (G.raw.incident node).length) :
     Fin (Sig.arity (G.raw.nodeLabel node)) :=
-  Fin.cast (G.raw.incident_length node) slot
+  Sig.nodePortIndexOfLength (G.raw.nodeLabel node)
+    (G.raw.incident_length node) slot
 
 theorem budEntry_val_preserved {G H : OpenPortHypergraph Sig boundary}
     (e : PortHypergraphIso G.raw H.raw)
     (node : Fin G.raw.nodeCount)
     (slot : Fin (G.raw.incident node).length) :
-    (budEntry (G := H) (e.nodeEquiv.toFun node)
+      (budEntry (G := H) (e.nodeEquiv.toFun node)
         (PortHypergraphIso.incidenceSlotPreserved e node slot)).val =
       (budEntry (G := G) node slot).val := by
-  simp [budEntry, PortHypergraphIso.incidenceSlotPreserved]
+  simp [budEntry, Signature.nodePortIndexOfLength,
+    PortHypergraphIso.incidenceSlotPreserved]
 
 theorem bud_compatible {G : OpenPortHypergraph Sig boundary}
     {activeLabel : Sig.Port} {restLabels : List Sig.Port}
@@ -854,12 +856,15 @@ def connectChild {G : OpenPortHypergraph Sig boundary}
   pending_labels := by
     calc
       (eraseFin rest mate).map G.raw.endpointLabel =
-          eraseFin (rest.map G.raw.endpointLabel) (Fin.cast (by simp) mate) :=
-        map_eraseFin G.raw.endpointLabel rest mate
+          eraseFin (rest.map G.raw.endpointLabel)
+            (listMapIndex G.raw.endpointLabel rest mate) := by
+        simpa [listMapIndex] using map_eraseFin G.raw.endpointLabel rest mate
       _ = eraseFin restLabels (st.restLabelIndex hpending mate) := by
         have hrest := (st.pending_labels_cons hpending).2
-        cases hrest
-        simp [restLabelIndex]
+        exact eraseFin_eq_of_eq_of_val_eq hrest
+          (listMapIndex G.raw.endpointLabel rest mate)
+          (st.restLabelIndex hpending mate)
+          (by simp [listMapIndex, restLabelIndex])
   pending_nodup :=
     nodup_eraseFin rest mate (st.rest_nodup hpending)
   seenNodes := st.seenNodes
@@ -1219,11 +1224,17 @@ theorem endpointOrder_connectChild_get
       Fin (endpointOrder G (st.connectChild hpending mate hmate)).length) :
     (endpointOrder G (st.connectChild hpending mate hmate)).get endpoint =
       (endpointOrder G st).get
-        (Fin.cast
+        (listIndexCast (endpointOrder G st)
           (congrArg List.length
             (endpointOrder_connectChild st hpending mate hmate))
           endpoint) :=
-  list_get_of_eq (endpointOrder_connectChild st hpending mate hmate) endpoint
+  list_get_of_eq_of_val_eq
+    (endpointOrder_connectChild st hpending mate hmate) endpoint
+    (listIndexCast (endpointOrder G st)
+      (congrArg List.length
+        (endpointOrder_connectChild st hpending mate hmate))
+      endpoint)
+    rfl
 
 theorem edgeOrder_connectChild
     {G : OpenPortHypergraph Sig boundary}
@@ -2084,7 +2095,7 @@ theorem IsoRelated.budChild
           (budEntry (G := H) (e.nodeEquiv.toFun node)
               (PortHypergraphIso.incidenceSlotPreserved e node slot)).val =
             (budEntry (G := G) node slot).val := by
-        simp [budEntry, PortHypergraphIso.incidenceSlotPreserved]
+        exact budEntry_val_preserved e node slot
       exact congrArg (fun tail => restLabels ++ tail)
         (Signature.nodePortsExcept_eq_of_val (Sig := Sig)
           (e.node_label_preserved node).symm hentryVal)
