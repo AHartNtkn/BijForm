@@ -221,18 +221,10 @@ def PeanoNatLayerShapeLayerPresentation :
             cases out_eq
             dsimp [PeanoNatLayerShapeTo, PeanoNatLayerShapeInv]
             rw [(NumNatIso k).left_inv lhs, (NumNatIso k).left_inv rhs]
-            have hchild : (fun q => nomatch q) = child := by
-              child_eta_cases
-            cases hchild
-            refine CodeLayer.ext_layer
+            exact CodeLayer.ext_rfl
               (P := PeanoPoly) (H := PeanoInversion) (Code := fun _ => Nat)
-              (i := k) ?_ ?_
-            · apply congrArg
-                (fun h =>
-                  (⟨PeanoCtor.eq, ⟨k, (lhs, rhs)⟩, h⟩ : Fiber PeanoPoly k))
-              apply Subsingleton.elim
-            · apply heq_of_eq
-              child_eta_cases
+              (i := k)
+              (by child_eta_cases)
       | not =>
           finish_code_layer_left_inv out_eq child
       | implies =>
@@ -251,14 +243,7 @@ def PeanoNatLayerShapeLayerPresentation :
             dsimp [PeanoNatLayerShapeTo, PeanoNatLayerShapeInv]
             rw [(NumNatIso k).right_inv lhs, (NumNatIso k).right_inv rhs]
       | inr tail =>
-          cases tail with
-          | inl child => rfl
-          | inr rest =>
-              cases rest with
-              | inl p =>
-                  cases p
-                  rfl
-              | inr child => rfl
+          rcases tail with child | (⟨_lhs, _rhs⟩ | child) <;> rfl
     exact hshape x)
 
 theorem PeanoNat_layer_child_lt :

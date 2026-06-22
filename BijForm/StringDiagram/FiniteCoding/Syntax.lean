@@ -613,13 +613,14 @@ private theorem singleSortedFiniteLayer_ext_connect_ok
     singleSortedFiniteConnectLayer ok out_eq childf =
       singleSortedFiniteConnectLayer ok' out_eq' childg := by
   unfold singleSortedFiniteConnectLayer
+  cases hchild
   refine CodeLayer.canonical_ext_param
     (P := poly Sig)
     (Code := fun boundary => (openFrontierShape Sig boundary).Carrier)
     (i := active :: frontier)
     (ctor := Ctor.connect)
     (ConnectParam.eq_of_ok) ?_
-  exact heq_of_eq hchild
+  rfl
 
 private def singleSortedFiniteBudLayer
     {Sig : Signature}
@@ -660,13 +661,14 @@ private theorem singleSortedFiniteLayer_ext_bud_ok
     singleSortedFiniteBudLayer ok out_eq childf =
       singleSortedFiniteBudLayer ok' out_eq' childg := by
   unfold singleSortedFiniteBudLayer
+  cases hchild
   refine CodeLayer.canonical_ext_param
     (P := poly Sig)
     (Code := fun boundary => (openFrontierShape Sig boundary).Carrier)
     (i := active :: frontier)
     (ctor := Ctor.bud)
     (BudParam.eq_of_ok) ?_
-  exact heq_of_eq hchild
+  rfl
 
 @[simp] private theorem singleSortedFiniteLayerToShape_one_bud
     {Sig : Signature} (data : SingleSortedFiniteCodingData Sig)

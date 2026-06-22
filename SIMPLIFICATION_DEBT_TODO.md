@@ -134,7 +134,7 @@ is ordered to turn helper additions into actual deletion.
     incident preservation, and final connect/bud record assembly are still
     separate helper families.
 
-- [ ] Finish payload-local inverse boilerplate removal in coding examples.
+- [x] Finish payload-local inverse boilerplate removal in coding examples.
   - Owners: `BijForm.InitialAlgebra`,
     `BijForm.StringDiagram.FiniteCoding.Syntax`,
     `BijForm.Examples.Num`, `BijForm.Examples.Peano`,
@@ -160,10 +160,14 @@ is ordered to turn helper additions into actual deletion.
     `heq_of_eq` assembly. Peano Nat-layer no-child branches, the sorted leaf
     no-child branch, and the finite syntax finish branch now call the
     owner-level `finish_code_layer_left_inv` macro instead of spelling direct
-    `child_eta_rfl child` locally. The item remains open because typed-binding
-    layer branches outside the macro's current reduction class, finite syntax
-    helper extensionality, example sum-tail destructuring, and
-    proof-field-sensitive `heq_of_eq` branches still exist.
+    `child_eta_rfl child` locally.
+  - Completed: the remaining example sum-tail destructuring in Num and Peano
+    was replaced by direct nested structural patterns; Peano's equality branch
+    now uses `CodeLayer.ext_rfl`; finite syntax connect/bud helper
+    extensionality eliminates child equality before calling
+    `CodeLayer.canonical_ext_param`. The payload scan over examples,
+    `TypedBinding.lean`, and finite syntax is empty; only owner-level
+    `InitialAlgebra.lean` macros still contain the generic eta tactic names.
 
 - [x] Finish typed-binding proof-surface cleanup.
   - Owners: `BijForm.TypedBinding` and

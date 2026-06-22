@@ -296,16 +296,8 @@ def NumNatLayerShapeLayerPresentation :
               change k + 1 = tag.val
               omega))
       | inr tail =>
-          cases tail with
-          | inl child => rfl
-          | inr rest =>
-              cases rest with
-              | inl p =>
-                  cases p
-                  rfl
-              | inr p =>
-                  cases p
-                  rfl
+          rcases tail with child | (⟨_plusLeft, _plusRight⟩ | ⟨_timesLeft, _timesRight⟩) <;>
+            rfl
     exact hshape x)
 
 theorem NumNat_layer_child_lt :
