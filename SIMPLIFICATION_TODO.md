@@ -386,15 +386,22 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     only a finite node table; the dependent constructor-entry table and its
     unary/non-unary refinements are generated generically.
 
-- [ ] Review low-value generated-code pass-through wrappers.
+- [x] Review low-value generated-code pass-through wrappers.
   - Owner: example modules and `BijForm.DependentPolynomial.GeneratedCode`
   - Evidence: many local `GeneratedCode`, syntax iso, Nat iso, shape iso, and
     finite iso wrappers across examples.
   - Action: keep public characterization theorems required by the repository
     goal, but replace internal aliases with consistent generic composition
     helpers.
-  - Validation: public example surfaces remain available; internal wrapper
-    source count drops.
+  - Validation: public example surfaces remain available; scanned internal
+    compositions use generic helper APIs rather than bespoke trans chains.
+  - Completed: reviewed public example isomorphism wrappers. The retained
+    `*NatIso`, `*FinIso`, and `*ShapeIso` names are public characterization
+    surfaces checked by `BijForm.Validation.PublicSurfaces`; scanned
+    compositions already go through `GeneratedCode.natCodeIso`,
+    `GeneratedCode.rankedNatCodeIso`, `GeneratedCode.shapeNatIso`,
+    `GeneratedCode.shapeFinIso`, typed-binding `syntaxCodeIso`, or quotient
+    descent helpers.
 
 ## String Diagrams, Rendering, and Traversal
 
