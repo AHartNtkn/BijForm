@@ -438,61 +438,36 @@ theorem NFGeneratedLayer_app_arg_child_rank_lt (Γ : List NFSort)
 
 theorem NFGeneratedLayer_child_rank_lt :
     LayerShapeRankProof NFSignature NFCode NFGeneratedShapeIso NFCodeRank := by
-  intro Γ t layer
-  cases t with
-    | normalExp =>
-        cases layer with
-        | mk code child =>
-          cases code with
-          | var v =>
-              intro q
-              cases q
-          | op c h =>
-              cases c with
-              | dum =>
-                  cases h
-                  intro q
-                  cases q using Fin.cases with
-                  | zero =>
-                      simpa [NFSignature, NFArgs] using
-                        NFGeneratedLayer_dum_child_rank_lt Γ child
-                  | succ q => exact fin_zero_elim q
-              | lam =>
-                  cases h
-                  intro q
-                  cases q using Fin.cases with
-                  | zero =>
-                      simpa [NFSignature, NFArgs] using
-                        NFGeneratedLayer_lam_child_rank_lt Γ child
-                  | succ q => exact fin_zero_elim q
-              | app =>
-                  cases h
-    | appTerm =>
-        cases layer with
-        | mk code child =>
-          cases code with
-          | var v =>
-              intro q
-              cases q
-          | op c h =>
-              cases c with
-              | dum =>
-                  cases h
-              | lam =>
-                  cases h
-              | app =>
-                  cases h
-                  intro q
-                  cases q using Fin.cases with
-                  | zero =>
-                      simpa [NFSignature, NFArgs] using
-                        NFGeneratedLayer_app_fn_child_rank_lt Γ child
-                  | succ q =>
-                      cases q using Fin.cases with
-                      | zero =>
-                          simpa [NFSignature, NFArgs] using
-                            NFGeneratedLayer_app_arg_child_rank_lt Γ child
-                      | succ q => exact fin_zero_elim q
+  apply LayerShapeRankProof.of_op
+  intro Γ c child q
+  cases c with
+  | dum =>
+      cases q using Fin.cases with
+      | zero =>
+          simpa [NFSignature, NFArgs, NFGeneratedShapeIso, NFGeneratedLayerIso,
+            NFNormalGeneratedShapeIso, NFNormalGeneratedLayerIso] using
+            NFGeneratedLayer_dum_child_rank_lt Γ child
+      | succ q => exact fin_zero_elim q
+  | lam =>
+      cases q using Fin.cases with
+      | zero =>
+          simpa [NFSignature, NFArgs, NFGeneratedShapeIso, NFGeneratedLayerIso,
+            NFNormalGeneratedShapeIso, NFNormalGeneratedLayerIso] using
+            NFGeneratedLayer_lam_child_rank_lt Γ child
+      | succ q => exact fin_zero_elim q
+  | app =>
+      cases q using Fin.cases with
+      | zero =>
+          simpa [NFSignature, NFArgs, NFGeneratedShapeIso, NFGeneratedLayerIso,
+            NFAppGeneratedShapeIso, NFAppGeneratedLayerIso] using
+            NFGeneratedLayer_app_fn_child_rank_lt Γ child
+      | succ q =>
+          cases q using Fin.cases with
+          | zero =>
+              simpa [NFSignature, NFArgs, NFGeneratedShapeIso, NFGeneratedLayerIso,
+                NFAppGeneratedShapeIso, NFAppGeneratedLayerIso] using
+                NFGeneratedLayer_app_arg_child_rank_lt Γ child
+          | succ q => exact fin_zero_elim q
 
 def NFLayerShapeCodingData : LayerShapeCodingData NFSignature where
   Code := NFCode

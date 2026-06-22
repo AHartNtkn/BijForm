@@ -1,5 +1,4 @@
-import BijForm.InitialAlgebra
-import BijForm.CodeAlgebra
+import BijForm.RankDescent
 
 namespace BijForm
 namespace Examples
@@ -218,16 +217,9 @@ def FinChainLayerPresentation :
     FinChainLayerCarrierIso
     (fun i _ => i)
     (by
-    intro i shape q
-    cases i with
-    | zero =>
-        cases q
-    | succ n =>
-        cases shape with
-        | inl _ => cases q
-        | inr _ =>
-            cases q
-            exact Nat.lt_succ_self n)
+    finish_rank_descent [FinChainLayerShape, FinChainLayerShapeLayerPresentation,
+      FinChainLayerCarrierIso, FinChainCarrier, FinChainShape, FinChainPos,
+      FinChainInput, FinChainPoly, FinChainOut, FinChainInversion])
 
 def FinChainShapeLayerPresentation :
     ShapeLayerPresentation FinChainPoly FinChainInversion :=

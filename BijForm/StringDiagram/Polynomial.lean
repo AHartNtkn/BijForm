@@ -1,4 +1,5 @@
 import BijForm.StringDiagram.Basic
+import BijForm.RankDescent
 
 namespace BijForm
 namespace StringDiagram

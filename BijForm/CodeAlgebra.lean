@@ -494,13 +494,39 @@ theorem SubcodeLe.toNatFinProd_payload {α : Type u} {β : Type v}
 def sumProdNat : (Nat ⊕ (Nat × Nat)) ≃ᵢ Nat :=
   toNatSum (Iso.refl Nat) prodNat
 
+@[simp]
+theorem sumProdNat_toFun_inl_le (n : Nat) :
+    n ≤ sumProdNat.toFun (Sum.inl n) :=
+  toNatSum_inl_le_of_le (Iso.refl Nat) prodNat (Nat.le_refl n)
+
+@[simp]
+theorem sumProdNat_toFun_inr_fst_lt (p : Nat × Nat) :
+    p.1 < sumProdNat.toFun (Sum.inr p) :=
+  toNatSum_inr_lt_of_le (Iso.refl Nat) prodNat
+    (prodNat_toFun_fst_le p)
+
+@[simp]
+theorem sumProdNat_toFun_inr_snd_lt (p : Nat × Nat) :
+    p.2 < sumProdNat.toFun (Sum.inr p) :=
+  toNatSum_inr_lt_of_le (Iso.refl Nat) prodNat
+    (prodNat_toFun_snd_le p)
+
+@[simp]
+theorem sumProdNat_toFun_inr_fst_pair_lt (a b : Nat) :
+    a < sumProdNat.toFun (Sum.inr (a, b)) :=
+  sumProdNat_toFun_inr_fst_lt (a, b)
+
+@[simp]
+theorem sumProdNat_toFun_inr_snd_pair_lt (a b : Nat) :
+    b < sumProdNat.toFun (Sum.inr (a, b)) :=
+  sumProdNat_toFun_inr_snd_lt (a, b)
+
 theorem sumProdNat_invFun_inr_fst_lt {n a b : Nat}
     (h : sumProdNat.invFun n = Sum.inr (a, b)) : a < n := by
   have hright := Iso.toFun_eq_of_invFun_eq sumProdNat h
   have hlt :
       a < sumProdNat.toFun (Sum.inr (a, b)) :=
-    toNatSum_inr_lt_of_le (Iso.refl Nat) prodNat
-      (prodNat_toFun_fst_le (a, b))
+    sumProdNat_toFun_inr_fst_lt (a, b)
   rw [hright] at hlt
   exact hlt
 
@@ -509,8 +535,7 @@ theorem sumProdNat_invFun_inr_snd_lt {n a b : Nat}
   have hright := Iso.toFun_eq_of_invFun_eq sumProdNat h
   have hlt :
       b < sumProdNat.toFun (Sum.inr (a, b)) :=
-    toNatSum_inr_lt_of_le (Iso.refl Nat) prodNat
-      (prodNat_toFun_snd_le (a, b))
+    sumProdNat_toFun_inr_snd_lt (a, b)
   rw [hright] at hlt
   exact hlt
 
@@ -518,13 +543,203 @@ def natOrProdOrProdNat :
     (Nat ⊕ ((Nat × Nat) ⊕ (Nat × Nat))) ≃ᵢ Nat :=
   toNatSum3 (Iso.refl Nat) prodNat prodNat
 
+@[simp]
+theorem natOrProdOrProdNat_toFun_inl_le (n : Nat) :
+    n ≤ natOrProdOrProdNat.toFun (Sum.inl n) :=
+  toNatSum3_inl_le_of_le (Iso.refl Nat) prodNat prodNat
+    (Nat.le_refl n)
+
+@[simp]
+theorem natOrProdOrProdNat_toFun_inr_inl_fst_lt (p : Nat × Nat) :
+    p.1 < natOrProdOrProdNat.toFun (Sum.inr (Sum.inl p)) :=
+  toNatSum3_inr_inl_lt_of_le (Iso.refl Nat) prodNat prodNat
+    (prodNat_toFun_fst_le p)
+
+@[simp]
+theorem natOrProdOrProdNat_toFun_inr_inl_snd_lt (p : Nat × Nat) :
+    p.2 < natOrProdOrProdNat.toFun (Sum.inr (Sum.inl p)) :=
+  toNatSum3_inr_inl_lt_of_le (Iso.refl Nat) prodNat prodNat
+    (prodNat_toFun_snd_le p)
+
+@[simp]
+theorem natOrProdOrProdNat_toFun_inr_inr_fst_lt (p : Nat × Nat) :
+    p.1 < natOrProdOrProdNat.toFun (Sum.inr (Sum.inr p)) :=
+  toNatSum3_inr_inr_lt_of_le (Iso.refl Nat) prodNat prodNat
+    (prodNat_toFun_fst_le p)
+
+@[simp]
+theorem natOrProdOrProdNat_toFun_inr_inr_snd_lt (p : Nat × Nat) :
+    p.2 < natOrProdOrProdNat.toFun (Sum.inr (Sum.inr p)) :=
+  toNatSum3_inr_inr_lt_of_le (Iso.refl Nat) prodNat prodNat
+    (prodNat_toFun_snd_le p)
+
 def prodOrNatOrProdOrNat :
     ((Nat × Nat) ⊕ (Nat ⊕ ((Nat × Nat) ⊕ Nat))) ≃ᵢ Nat :=
   toNatSum4 prodNat (Iso.refl Nat) prodNat (Iso.refl Nat)
 
+@[simp]
+theorem prodOrNatOrProdOrNat_toFun_inr_inl_lt (n : Nat) :
+    n < prodOrNatOrProdOrNat.toFun (Sum.inr (Sum.inl n)) :=
+  toNatSum4_inr_inl_lt_of_le prodNat (Iso.refl Nat) prodNat
+    (Iso.refl Nat) (Nat.le_refl n)
+
+@[simp]
+theorem prodOrNatOrProdOrNat_toFun_inr_inr_inl_fst_lt
+    (p : Nat × Nat) :
+    p.1 < prodOrNatOrProdOrNat.toFun
+      (Sum.inr (Sum.inr (Sum.inl p))) :=
+  toNatSum4_inr_inr_inl_lt_of_le prodNat (Iso.refl Nat) prodNat
+    (Iso.refl Nat) (prodNat_toFun_fst_le p)
+
+@[simp]
+theorem prodOrNatOrProdOrNat_toFun_inr_inr_inl_snd_lt
+    (p : Nat × Nat) :
+    p.2 < prodOrNatOrProdOrNat.toFun
+      (Sum.inr (Sum.inr (Sum.inl p))) :=
+  toNatSum4_inr_inr_inl_lt_of_le prodNat (Iso.refl Nat) prodNat
+    (Iso.refl Nat) (prodNat_toFun_snd_le p)
+
+@[simp]
+theorem prodOrNatOrProdOrNat_toFun_inr_inr_inl_fst_pair_lt
+    (a b : Nat) :
+    a < prodOrNatOrProdOrNat.toFun
+      (Sum.inr (Sum.inr (Sum.inl (a, b)))) :=
+  prodOrNatOrProdOrNat_toFun_inr_inr_inl_fst_lt (a, b)
+
+@[simp]
+theorem prodOrNatOrProdOrNat_toFun_inr_inr_inl_snd_pair_lt
+    (a b : Nat) :
+    b < prodOrNatOrProdOrNat.toFun
+      (Sum.inr (Sum.inr (Sum.inl (a, b)))) :=
+  prodOrNatOrProdOrNat_toFun_inr_inr_inl_snd_lt (a, b)
+
+@[simp]
+theorem prodOrNatOrProdOrNat_toFun_inr_inr_inr_lt (n : Nat) :
+    n < prodOrNatOrProdOrNat.toFun
+      (Sum.inr (Sum.inr (Sum.inr n))) :=
+  toNatSum4_inr_inr_inr_lt_of_le prodNat (Iso.refl Nat) prodNat
+    (Iso.refl Nat) (Nat.le_refl n)
+
 def finPrefixNat {α : Type u} (k : Nat) (tail : α ≃ᵢ Nat) :
     (Fin k ⊕ α) ≃ᵢ Nat :=
   Iso.trans (Iso.sum (Iso.refl (Fin k)) tail) (finPlusNat k)
+
+@[simp]
+theorem finPrefixNat_sumProdNat_toFun_inr_inr_fst_lt
+    (k : Nat) (p : Nat × Nat) :
+    p.1 < (finPrefixNat k sumProdNat).toFun (Sum.inr (Sum.inr p)) :=
+by
+  have h := sumProdNat_toFun_inr_fst_lt p
+  dsimp [finPrefixNat, Iso.trans, Iso.sum, finPlusNat]
+  omega
+
+@[simp]
+theorem finPrefixNat_sumProdNat_toFun_inr_inr_snd_lt
+    (k : Nat) (p : Nat × Nat) :
+    p.2 < (finPrefixNat k sumProdNat).toFun (Sum.inr (Sum.inr p)) :=
+by
+  have h := sumProdNat_toFun_inr_snd_lt p
+  dsimp [finPrefixNat, Iso.trans, Iso.sum, finPlusNat]
+  omega
+
+@[simp]
+theorem finPrefixNat_sumProdNat_toFun_inr_inr_fst_pair_lt
+    (k a b : Nat) :
+    a < (finPrefixNat k sumProdNat).toFun (Sum.inr (Sum.inr (a, b))) :=
+  finPrefixNat_sumProdNat_toFun_inr_inr_fst_lt k (a, b)
+
+@[simp]
+theorem finPrefixNat_sumProdNat_toFun_inr_inr_snd_pair_lt
+    (k a b : Nat) :
+    b < (finPrefixNat k sumProdNat).toFun (Sum.inr (Sum.inr (a, b))) :=
+  finPrefixNat_sumProdNat_toFun_inr_inr_snd_lt k (a, b)
+
+@[simp]
+theorem finPrefixNat_sumProdNat_toFun_inr_inl_lt_rankOffset
+    (k n : Nat) :
+    n < (finPrefixNat k sumProdNat).toFun (Sum.inr (Sum.inl n)) +
+      (if k = 0 then 1 else 0) := by
+  have h := sumProdNat_toFun_inl_le n
+  dsimp [finPrefixNat, Iso.trans, Iso.sum, finPlusNat]
+  split <;> omega
+
+@[simp]
+theorem finPrefixNat_natOrProdOrProdNat_toFun_inr_inl_lt_add_two
+    (k n : Nat) :
+    n < (finPrefixNat (k + 2) natOrProdOrProdNat).toFun
+      (Sum.inr (Sum.inl n)) :=
+by
+  have h := natOrProdOrProdNat_toFun_inl_le n
+  dsimp [finPrefixNat, Iso.trans, Iso.sum, finPlusNat]
+  omega
+
+@[simp]
+theorem finPrefixNat_natOrProdOrProdNat_toFun_inr_inr_inl_fst_lt
+    (k : Nat) (p : Nat × Nat) :
+    p.1 < (finPrefixNat k natOrProdOrProdNat).toFun
+      (Sum.inr (Sum.inr (Sum.inl p))) :=
+by
+  have h := natOrProdOrProdNat_toFun_inr_inl_fst_lt p
+  dsimp [finPrefixNat, Iso.trans, Iso.sum, finPlusNat]
+  omega
+
+@[simp]
+theorem finPrefixNat_natOrProdOrProdNat_toFun_inr_inr_inl_snd_lt
+    (k : Nat) (p : Nat × Nat) :
+    p.2 < (finPrefixNat k natOrProdOrProdNat).toFun
+      (Sum.inr (Sum.inr (Sum.inl p))) :=
+by
+  have h := natOrProdOrProdNat_toFun_inr_inl_snd_lt p
+  dsimp [finPrefixNat, Iso.trans, Iso.sum, finPlusNat]
+  omega
+
+@[simp]
+theorem finPrefixNat_natOrProdOrProdNat_toFun_inr_inr_inl_fst_pair_lt
+    (k a b : Nat) :
+    a < (finPrefixNat k natOrProdOrProdNat).toFun
+      (Sum.inr (Sum.inr (Sum.inl (a, b)))) :=
+  finPrefixNat_natOrProdOrProdNat_toFun_inr_inr_inl_fst_lt k (a, b)
+
+@[simp]
+theorem finPrefixNat_natOrProdOrProdNat_toFun_inr_inr_inl_snd_pair_lt
+    (k a b : Nat) :
+    b < (finPrefixNat k natOrProdOrProdNat).toFun
+      (Sum.inr (Sum.inr (Sum.inl (a, b)))) :=
+  finPrefixNat_natOrProdOrProdNat_toFun_inr_inr_inl_snd_lt k (a, b)
+
+@[simp]
+theorem finPrefixNat_natOrProdOrProdNat_toFun_inr_inr_inr_fst_lt
+    (k : Nat) (p : Nat × Nat) :
+    p.1 < (finPrefixNat k natOrProdOrProdNat).toFun
+      (Sum.inr (Sum.inr (Sum.inr p))) :=
+by
+  have h := natOrProdOrProdNat_toFun_inr_inr_fst_lt p
+  dsimp [finPrefixNat, Iso.trans, Iso.sum, finPlusNat]
+  omega
+
+@[simp]
+theorem finPrefixNat_natOrProdOrProdNat_toFun_inr_inr_inr_snd_lt
+    (k : Nat) (p : Nat × Nat) :
+    p.2 < (finPrefixNat k natOrProdOrProdNat).toFun
+      (Sum.inr (Sum.inr (Sum.inr p))) :=
+by
+  have h := natOrProdOrProdNat_toFun_inr_inr_snd_lt p
+  dsimp [finPrefixNat, Iso.trans, Iso.sum, finPlusNat]
+  omega
+
+@[simp]
+theorem finPrefixNat_natOrProdOrProdNat_toFun_inr_inr_inr_fst_pair_lt
+    (k a b : Nat) :
+    a < (finPrefixNat k natOrProdOrProdNat).toFun
+      (Sum.inr (Sum.inr (Sum.inr (a, b)))) :=
+  finPrefixNat_natOrProdOrProdNat_toFun_inr_inr_inr_fst_lt k (a, b)
+
+@[simp]
+theorem finPrefixNat_natOrProdOrProdNat_toFun_inr_inr_inr_snd_pair_lt
+    (k a b : Nat) :
+    b < (finPrefixNat k natOrProdOrProdNat).toFun
+      (Sum.inr (Sum.inr (Sum.inr (a, b)))) :=
+  finPrefixNat_natOrProdOrProdNat_toFun_inr_inr_inr_snd_lt k (a, b)
 
 /-- Finite constructor branches plus finitely tagged recursive `Nat` branches. -/
 def finiteRecursiveNat (finite recursive : Nat) (hrec : 0 < recursive) :

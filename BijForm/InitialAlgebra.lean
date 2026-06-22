@@ -236,21 +236,6 @@ theorem nat_lt_max_succ_left (a b : Nat) : a < Nat.max a b + 1 :=
 theorem nat_lt_max_succ_right (a b : Nat) : b < Nat.max a b + 1 :=
   Nat.lt_succ_of_le (Nat.le_max_right a b)
 
-/--
-Close structural syntax child-rank descent goals after the local rank equations
-are tagged as simp rules.
--/
-syntax "finish_rank_descent" : tactic
-macro_rules
-  | `(tactic| finish_rank_descent) =>
-      `(tactic|
-        (intro idx z q
-         cases z <;>
-           simp_all! [OutputIndexInversion.canonical] <;>
-           try cases q <;>
-           simp_all! [OutputIndexInversion.canonical] <;>
-           try omega))
-
 def castFiberChild {P : DepPoly ι} {Code : ι → Type v} {i : ι}
     {f g : Fiber P i} (h : f = g)
     (child : (q : P.Pos f.ctor f.param) → Code (P.input f.param q)) :
@@ -649,6 +634,28 @@ def ofMaps
   fromCarrier := fromCarrier
   left_inv := left_inv
   right_inv := right_inv
+
+@[simp]
+theorem ofMaps_toCarrier
+    (toCarrier : ∀ i, CodeLayer P H Code i → Carrier i)
+    (fromCarrier : ∀ i, Carrier i → CodeLayer P H Code i)
+    (left_inv : ∀ i, Function.LeftInverse (fromCarrier i) (toCarrier i))
+    (right_inv : ∀ i, Function.RightInverse (fromCarrier i) (toCarrier i))
+    (i : ι) (x : CodeLayer P H Code i) :
+    (ofMaps toCarrier fromCarrier left_inv right_inv).toCarrier i x =
+      toCarrier i x :=
+  rfl
+
+@[simp]
+theorem ofMaps_fromCarrier
+    (toCarrier : ∀ i, CodeLayer P H Code i → Carrier i)
+    (fromCarrier : ∀ i, Carrier i → CodeLayer P H Code i)
+    (left_inv : ∀ i, Function.LeftInverse (fromCarrier i) (toCarrier i))
+    (right_inv : ∀ i, Function.RightInverse (fromCarrier i) (toCarrier i))
+    (i : ι) (z : Carrier i) :
+    (ofMaps toCarrier fromCarrier left_inv right_inv).fromCarrier i z =
+      fromCarrier i z :=
+  rfl
 
 def ofIso (layer : ∀ i, CodeLayer P H Code i ≃ᵢ Carrier i) :
     CodeLayerPresentation P H Code Carrier where

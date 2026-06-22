@@ -1,6 +1,5 @@
 import BijForm.Examples.Num
-import BijForm.InitialAlgebra
-import BijForm.CodeAlgebra
+import BijForm.RankDescent
 
 namespace BijForm
 namespace Examples
@@ -232,75 +231,8 @@ theorem PeanoNat_layer_child_lt :
           (PeanoInversion.decode k layer.1).param),
       layer.2 q <
         CodeAlgebra.prodOrNatOrProdOrNat.toFun (PeanoNatLayerShapeTo k layer) := by
-  intro k layer
-  cases layer with
-  | mk code child =>
-    cases code with
-    | mk ctor param out_eq =>
-      cases ctor with
-      | eq =>
-        cases param with
-        | mk k' pair =>
-          cases pair with
-          | mk lhs rhs =>
-            dsimp [PeanoPoly, PeanoOut] at out_eq
-            cases out_eq
-            intro q
-            cases q
-      | not =>
-          change PeanoParam PeanoCtor.not at param
-          change Nat at param
-          cases out_eq
-          intro q
-          cases q
-          let c := child ()
-          have hpath :
-              CodeAlgebra.SubcodeLt CodeAlgebra.prodOrNatOrProdOrNat
-                (fun c : Nat => Sum.inr (Sum.inl c)) id := by
-            exact CodeAlgebra.SubcodeLe.toNatSum4_inr_inl_lt
-              (first := CodeAlgebra.prodNat) (third := CodeAlgebra.prodNat)
-              (fourth := Iso.refl Nat) CodeAlgebra.subcode_nat_id
-          simpa [c, PeanoNatLayerShapeTo] using
-            hpath c
-      | implies =>
-          change PeanoParam PeanoCtor.implies at param
-          change Nat at param
-          cases out_eq
-          intro q
-          cases q
-          · have hpath :
-                CodeAlgebra.SubcodeLt CodeAlgebra.prodOrNatOrProdOrNat
-                  (fun p : Nat × Nat => Sum.inr (Sum.inr (Sum.inl p)))
-                  Prod.fst := by
-              exact CodeAlgebra.SubcodeLe.toNatSum4_inr_inr_inl_lt
-                (first := CodeAlgebra.prodNat) (second := Iso.refl Nat)
-                (fourth := Iso.refl Nat) CodeAlgebra.subcode_prodNat_fst
-            simpa [PeanoNatLayerShapeTo] using
-              hpath (child false, child true)
-          · have hpath :
-                CodeAlgebra.SubcodeLt CodeAlgebra.prodOrNatOrProdOrNat
-                  (fun p : Nat × Nat => Sum.inr (Sum.inr (Sum.inl p)))
-                  Prod.snd := by
-              exact CodeAlgebra.SubcodeLe.toNatSum4_inr_inr_inl_lt
-                (first := CodeAlgebra.prodNat) (second := Iso.refl Nat)
-                (fourth := Iso.refl Nat) CodeAlgebra.subcode_prodNat_snd
-            simpa [PeanoNatLayerShapeTo] using
-              hpath (child false, child true)
-      | forallE =>
-          change PeanoParam PeanoCtor.forallE at param
-          change Nat at param
-          cases out_eq
-          intro q
-          cases q
-          let c := child ()
-          have hpath :
-              CodeAlgebra.SubcodeLt CodeAlgebra.prodOrNatOrProdOrNat
-                (fun c : Nat => Sum.inr (Sum.inr (Sum.inr c))) id := by
-            exact CodeAlgebra.SubcodeLe.toNatSum4_inr_inr_inr_lt
-              (first := CodeAlgebra.prodNat) (second := Iso.refl Nat)
-              (third := CodeAlgebra.prodNat) CodeAlgebra.subcode_nat_id
-          simpa [c, PeanoNatLayerShapeTo] using
-            hpath c
+  finish_rank_descent [PeanoNatLayerShapeTo, PeanoPoly, PeanoOut, PeanoPos,
+    PeanoInput, PeanoInversion]
 
 def PeanoNatLayerPresentation : NatLayerPresentation PeanoPoly PeanoInversion :=
   LayerPresentation.ofLayerShapeChildRank

@@ -1,5 +1,4 @@
-import BijForm.InitialAlgebra
-import BijForm.CodeAlgebra
+import BijForm.RankDescent
 
 namespace BijForm
 namespace Examples
@@ -207,31 +206,8 @@ def HBTNatLayerPresentation : NatLayerPresentation HBTPoly HBTInversion :=
     HBTNatLayerCarrierIso
     (fun _ n => n)
     (by
-    intro i shape
-    cases i with
-    | zero =>
-        intro q
-        cases q
-    | succ m =>
-        cases shape with
-        | inl label =>
-            intro q
-            cases q
-        | inr pair =>
-            intro q
-            cases q
-            · have hpath :
-                  CodeAlgebra.SubcodeLt CodeAlgebra.sumProdNat
-                    (fun p : Nat × Nat => Sum.inr p) Prod.fst := by
-                exact CodeAlgebra.SubcodeLe.toNatSum_inr_lt
-                  (left := Iso.refl Nat) CodeAlgebra.subcode_prodNat_fst
-              exact hpath pair
-            · have hpath :
-                  CodeAlgebra.SubcodeLt CodeAlgebra.sumProdNat
-                    (fun p : Nat × Nat => Sum.inr p) Prod.snd := by
-                exact CodeAlgebra.SubcodeLe.toNatSum_inr_lt
-                  (left := Iso.refl Nat) CodeAlgebra.subcode_prodNat_snd
-              exact hpath pair)
+    finish_rank_descent [HBTNatLayerShape, HBTNatLayerShapeLayerPresentation,
+      HBTNatLayerCarrierIso])
 
 /-- Generated Nat coding data for height-bounded trees. The recursive encoder
 and decoder are produced by `GeneratedNatCode`, not by an example-specific

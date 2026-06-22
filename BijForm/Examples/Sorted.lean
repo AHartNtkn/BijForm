@@ -1,5 +1,4 @@
-import BijForm.InitialAlgebra
-import BijForm.CodeAlgebra
+import BijForm.RankDescent
 
 namespace BijForm
 namespace Examples

@@ -1,5 +1,4 @@
-import BijForm.InitialAlgebra
-import BijForm.CodeAlgebra
+import BijForm.RankDescent
 
 namespace BijForm
 namespace Examples
@@ -206,82 +205,8 @@ theorem LamNat_layer_child_rank_lt :
         LamNatRank k
           ((CodeAlgebra.finPrefixNat k CodeAlgebra.sumProdNat).toFun
             (LamNatLayerShapeTo k layer)) := by
-  intro k layer
-  cases layer with
-  | mk code child =>
-    cases code with
-    | mk ctor param out_eq =>
-      cases ctor with
-      | var =>
-        intro q
-        cases q
-      | lam =>
-        dsimp [LamPoly, LamParam] at param
-        cases out_eq
-        intro q
-        cases q
-        let bodyCode := child ()
-        have hparent :
-            (CodeAlgebra.finPrefixNat param CodeAlgebra.sumProdNat).toFun
-                (LamNatLayerShapeTo param
-                  ⟨⟨LamCtor.lam, (param : Nat), rfl⟩, child⟩) =
-              param + 2 * bodyCode := by
-          simp [bodyCode, LamNatLayerShapeTo,
-            CodeAlgebra.finPrefixNat, CodeAlgebra.sumProdNat, CodeAlgebra.toNatSum,
-            Iso.trans, Iso.sum, CodeAlgebra.finPlusNat, CodeAlgebra.sumNat, Iso.refl]
-        change LamNatRank (param + 1) bodyCode <
-          LamNatRank param
-            ((CodeAlgebra.finPrefixNat param CodeAlgebra.sumProdNat).toFun
-              (LamNatLayerShapeTo param
-                ⟨⟨LamCtor.lam, (param : Nat), rfl⟩, child⟩))
-        rw [hparent]
-        dsimp [LamNatRank]
-        by_cases hk : param = 0
-        · subst param
-          simp
-          omega
-        · have hkpos : 0 < param := Nat.pos_of_ne_zero hk
-          simp [hk]
-          omega
-      | app =>
-        dsimp [LamPoly, LamParam] at param
-        cases out_eq
-        intro q
-        cases q
-        · change LamNatRank param (child false) <
-            LamNatRank param
-              ((CodeAlgebra.finPrefixNat param CodeAlgebra.sumProdNat).toFun
-                (LamNatLayerShapeTo param
-                  ⟨⟨LamCtor.app, (param : Nat), rfl⟩, child⟩))
-          have hchild_lt_parent :=
-            have htail :
-                CodeAlgebra.SubcodeLt CodeAlgebra.sumProdNat
-                  (fun p : Nat × Nat => Sum.inr p) Prod.fst := by
-              exact CodeAlgebra.SubcodeLe.toNatSum_inr_lt
-                (left := Iso.refl Nat) CodeAlgebra.subcode_prodNat_fst
-            (CodeAlgebra.SubcodeLt.finPrefixNat_inr param htail)
-              (child false, child true)
-          dsimp [LamNatRank]
-          by_cases hk : param = 0
-          · simpa [hk, LamNatLayerShapeTo] using hchild_lt_parent
-          · simpa [hk, LamNatLayerShapeTo] using hchild_lt_parent
-        · change LamNatRank param (child true) <
-            LamNatRank param
-              ((CodeAlgebra.finPrefixNat param CodeAlgebra.sumProdNat).toFun
-                (LamNatLayerShapeTo param
-                  ⟨⟨LamCtor.app, (param : Nat), rfl⟩, child⟩))
-          have hchild_lt_parent :=
-            have htail :
-                CodeAlgebra.SubcodeLt CodeAlgebra.sumProdNat
-                  (fun p : Nat × Nat => Sum.inr p) Prod.snd := by
-              exact CodeAlgebra.SubcodeLe.toNatSum_inr_lt
-                (left := Iso.refl Nat) CodeAlgebra.subcode_prodNat_snd
-            (CodeAlgebra.SubcodeLt.finPrefixNat_inr param htail)
-              (child false, child true)
-          dsimp [LamNatRank]
-          by_cases hk : param = 0
-          · simpa [hk, LamNatLayerShapeTo] using hchild_lt_parent
-          · simpa [hk, LamNatLayerShapeTo] using hchild_lt_parent
+  finish_rank_descent [LamNatLayerShapeTo, LamNatRank, LamPoly, LamOut, LamPos,
+    LamInput, LamInversion]
 
 def LamNatLayerPresentation : RankedNatLayerPresentation LamPoly LamInversion :=
   LayerPresentation.ofLayerShapeChildRank

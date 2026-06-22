@@ -858,6 +858,38 @@ abbrev LayerShapeRankProof {Ty : Type} (S : Signature Ty)
         ((LayerShape.layerCoding (S := S) (Code := Code) layerShape Γ t).toFun
           layer)
 
+namespace LayerShapeRankProof
+
+variable {Ty : Type} {S : Signature Ty} {Code : Poly.Ix S → Type}
+variable {layerShape : ∀ Γ t, LayerShape S Code Γ t ≃ᵢ Code (Γ, t)}
+variable {rank : ∀ i, Code i → Nat}
+
+theorem of_op
+    (hop : ∀ (Γ : List Ty) (c : S.Ctor)
+      (child :
+        (q : S.ArgPos c) →
+          Code ((S.arg c q).binders ++ Γ, (S.arg c q).sort))
+      (q : S.ArgPos c),
+      rank ((S.arg c q).binders ++ Γ, (S.arg c q).sort) (child q) <
+        rank (Γ, S.ret c)
+          ((layerShape Γ (S.ret c)).toFun
+            (Sum.inr
+              (⟨c, rfl, child⟩ :
+                CtorLayer S Code Γ (S.ret c))))) :
+    LayerShapeRankProof S Code layerShape rank := by
+  intro Γ t layer q
+  cases layer with
+  | mk code child =>
+    cases code with
+    | var v =>
+        cases q
+    | op c h =>
+        cases h
+        simpa [LayerShape.layerCoding_op_toFun, Poly.input, Poly.depPoly] using
+          hop Γ c child q
+
+end LayerShapeRankProof
+
 /-- Coding data whose one-step layer is generated from the typed-binding
 signature before being encoded into the concrete carrier.  Instances supply an
 isomorphism from the generated variable/constructor shape to their carrier,

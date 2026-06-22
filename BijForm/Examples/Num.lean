@@ -1,5 +1,4 @@
-import BijForm.InitialAlgebra
-import BijForm.CodeAlgebra
+import BijForm.RankDescent
 
 namespace BijForm
 namespace Examples
@@ -282,95 +281,8 @@ theorem NumNat_layer_child_lt :
       layer.2 q <
         (CodeAlgebra.finPrefixNat (k + 2) CodeAlgebra.natOrProdOrProdNat).toFun
           (NumNatLayerShapeTo k layer) := by
-  intro k layer
-  cases layer with
-  | mk code child =>
-      cases code with
-      | mk ctor param out_eq =>
-        cases ctor with
-        | var =>
-          cases param with
-          | mk k' v =>
-            intro q
-            cases q
-        | zero =>
-          intro q
-          cases q
-        | succ =>
-          change NumParam NumCtor.succ at param
-          change Nat at param
-          dsimp [NumPoly, NumOut] at out_eq
-          cases out_eq.symm
-          cases out_eq
-          intro q
-          cases q
-          let c := child ()
-          have htail :
-              CodeAlgebra.SubcodeLe CodeAlgebra.natOrProdOrProdNat
-                (fun c : Nat => Sum.inl c) id := by
-            exact CodeAlgebra.SubcodeLe.toNatSum3_inl
-              (middle := CodeAlgebra.prodNat) (right := CodeAlgebra.prodNat)
-              CodeAlgebra.subcode_nat_id
-          have hlt :=
-            (CodeAlgebra.SubcodeLe.finPrefixNat_inr_lt (k + 2) (by omega)
-              htail) c
-          simpa [c, NumNatLayerShapeTo] using hlt
-        | plus =>
-          change NumParam NumCtor.plus at param
-          change Nat at param
-          dsimp [NumPoly, NumOut] at out_eq
-          cases out_eq.symm
-          cases out_eq
-          intro q
-          cases q
-          · have hlt :=
-              have htail :
-                  CodeAlgebra.SubcodeLt CodeAlgebra.natOrProdOrProdNat
-                    (fun p : Nat × Nat => Sum.inr (Sum.inl p)) Prod.fst := by
-                exact CodeAlgebra.SubcodeLe.toNatSum3_inr_inl_lt
-                  (left := Iso.refl Nat) (right := CodeAlgebra.prodNat)
-                  CodeAlgebra.subcode_prodNat_fst
-              (CodeAlgebra.SubcodeLt.finPrefixNat_inr (k + 2) htail)
-                (child false, child true)
-            simpa [NumNatLayerShapeTo] using hlt
-          · have hlt :=
-              have htail :
-                  CodeAlgebra.SubcodeLt CodeAlgebra.natOrProdOrProdNat
-                    (fun p : Nat × Nat => Sum.inr (Sum.inl p)) Prod.snd := by
-                exact CodeAlgebra.SubcodeLe.toNatSum3_inr_inl_lt
-                  (left := Iso.refl Nat) (right := CodeAlgebra.prodNat)
-                  CodeAlgebra.subcode_prodNat_snd
-              (CodeAlgebra.SubcodeLt.finPrefixNat_inr (k + 2) htail)
-                (child false, child true)
-            simpa [NumNatLayerShapeTo] using hlt
-        | times =>
-          change NumParam NumCtor.times at param
-          change Nat at param
-          dsimp [NumPoly, NumOut] at out_eq
-          cases out_eq.symm
-          cases out_eq
-          intro q
-          cases q
-          · have hlt :=
-              have htail :
-                  CodeAlgebra.SubcodeLt CodeAlgebra.natOrProdOrProdNat
-                    (fun p : Nat × Nat => Sum.inr (Sum.inr p)) Prod.fst := by
-                exact CodeAlgebra.SubcodeLe.toNatSum3_inr_inr_lt
-                  (left := Iso.refl Nat) (middle := CodeAlgebra.prodNat)
-                  CodeAlgebra.subcode_prodNat_fst
-              (CodeAlgebra.SubcodeLt.finPrefixNat_inr (k + 2) htail)
-                (child false, child true)
-            simpa [NumNatLayerShapeTo] using hlt
-          · have hlt :=
-              have htail :
-                  CodeAlgebra.SubcodeLt CodeAlgebra.natOrProdOrProdNat
-                    (fun p : Nat × Nat => Sum.inr (Sum.inr p)) Prod.snd := by
-                exact CodeAlgebra.SubcodeLe.toNatSum3_inr_inr_lt
-                  (left := Iso.refl Nat) (middle := CodeAlgebra.prodNat)
-                  CodeAlgebra.subcode_prodNat_snd
-              (CodeAlgebra.SubcodeLt.finPrefixNat_inr (k + 2) htail)
-                (child false, child true)
-            simpa [NumNatLayerShapeTo] using hlt
+  finish_rank_descent [NumNatLayerShapeTo, NumPoly, NumOut, NumPos, NumInput,
+    NumInversion]
 
 def NumNatLayerPresentation : NatLayerPresentation NumPoly NumInversion :=
   LayerPresentation.ofLayerShapeChildRank

@@ -7,6 +7,7 @@ import BijForm.TupleAction
 import BijForm.DependentTuple
 import BijForm.FiniteSubtypeTable
 import BijForm.InitialAlgebra
+import BijForm.RankDescent
 import BijForm.QuotientPolynomial
 import BijForm.TypedBinding
 import BijForm.StringDiagram
