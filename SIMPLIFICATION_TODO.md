@@ -457,6 +457,10 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     child state and common facts once.
   - Validation: connect/bud iso-preservation becomes one generic theorem plus
     small constructors.
+  - Partial: added active-consumption helper lemmas for pending-cons membership
+    and processed-edge nodup after consuming the active endpoint; `connectChild`,
+    `budChild`, and their remaining-edge descent proofs now use those helpers.
+    The full `SearchStepDelta`/generic preservation theorem remains open.
 
 - [ ] Generalize first-pending finite search correctness.
   - Owner: `BijForm.StringDiagram.Traversal.Search`

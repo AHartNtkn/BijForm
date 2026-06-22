@@ -120,20 +120,37 @@ def remainingEdges {G : OpenPortHypergraph Sig boundary}
     {frontier : List Sig.Port} (st : SearchState G frontier) : Nat :=
   G.raw.edgeCount - st.processedEdges.length
 
+theorem active_mem_of_pending_cons {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
+    (st : SearchState G (activeLabel :: restLabels))
+    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest) :
+    active ∈ st.pending := by
+  rw [hpending]
+  simp
+
+theorem processedEdges_cons_nodup_of_pending
+    {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port} (st : SearchState G frontier)
+    {active : Fin G.raw.endpointCount}
+    (hactive : active ∈ st.pending) :
+    (G.raw.endpointEdge active :: st.processedEdges).Nodup := by
+  have hfresh : G.raw.endpointEdge active ∉ st.processedEdges :=
+    st.pending_unprocessed active hactive
+  constructor
+  · intro edge hmem heq
+    exact hfresh (by simpa [heq] using hmem)
+  · exact st.processedEdges_nodup
+
 theorem processedEdges_length_lt_of_pending
     {G : OpenPortHypergraph Sig boundary}
     {frontier : List Sig.Port} (st : SearchState G frontier)
     {active : Fin G.raw.endpointCount}
     (hactive : active ∈ st.pending) :
     st.processedEdges.length < G.raw.edgeCount := by
-  have hfresh : G.raw.endpointEdge active ∉ st.processedEdges :=
-    st.pending_unprocessed active hactive
   have hnodup :
       (G.raw.endpointEdge active :: st.processedEdges).Nodup := by
-    constructor
-    · intro edge hmem heq
-      exact hfresh (by simpa [heq] using hmem)
-    · exact st.processedEdges_nodup
+    exact st.processedEdges_cons_nodup_of_pending hactive
   have hle :
       (G.raw.endpointEdge active :: st.processedEdges).length ≤
         G.raw.edgeCount :=
@@ -805,16 +822,9 @@ def connectChild {G : OpenPortHypergraph Sig boundary}
     nodup_eraseFin rest mate (st.rest_nodup hpending)
   seenNodes := st.seenNodes
   processedEdges := G.raw.endpointEdge active :: st.processedEdges
-  processedEdges_nodup := by
-    have hactivePending : active ∈ st.pending := by
-      rw [hpending]
-      simp
-    have hfresh : G.raw.endpointEdge active ∉ st.processedEdges :=
-      st.pending_unprocessed active hactivePending
-    constructor
-    · intro edge hmem heq
-      exact hfresh (by simpa [heq] using hmem)
-    · exact st.processedEdges_nodup
+  processedEdges_nodup :=
+    st.processedEdges_cons_nodup_of_pending
+      (st.active_mem_of_pending_cons hpending)
   pending_unprocessed := by
     intro endpoint hmem hprocessed
     have hrestMem : endpoint ∈ rest :=
@@ -984,16 +994,9 @@ def budChild {G : OpenPortHypergraph Sig boundary}
       exact hunseen hseen
   seenNodes := node :: st.seenNodes
   processedEdges := G.raw.endpointEdge active :: st.processedEdges
-  processedEdges_nodup := by
-    have hactivePending : active ∈ st.pending := by
-      rw [hpending]
-      simp
-    have hfresh : G.raw.endpointEdge active ∉ st.processedEdges :=
-      st.pending_unprocessed active hactivePending
-    constructor
-    · intro edge hmem heq
-      exact hfresh (by simpa [heq] using hmem)
-    · exact st.processedEdges_nodup
+  processedEdges_nodup :=
+    st.processedEdges_cons_nodup_of_pending
+      (st.active_mem_of_pending_cons hpending)
   pending_unprocessed := by
     intro endpoint hmem hprocessed
     simp at hmem
@@ -1600,10 +1603,9 @@ theorem connectChild_remainingEdges_lt {G : OpenPortHypergraph Sig boundary}
     (mate : Fin rest.length)
     (hmate : PortHypergraph.EdgeMate G.raw active (rest.get mate)) :
     (st.connectChild hpending mate hmate).remainingEdges < st.remainingEdges := by
-  have hactive : active ∈ st.pending := by
-    rw [hpending]
-    simp
-  have hlt := st.processedEdges_length_lt_of_pending hactive
+  have hlt :=
+    st.processedEdges_length_lt_of_pending
+      (st.active_mem_of_pending_cons hpending)
   simp [remainingEdges, connectChild]
   omega
 
@@ -1619,10 +1621,9 @@ theorem budChild_remainingEdges_lt {G : OpenPortHypergraph Sig boundary}
     (hunseen : node ∉ st.seenNodes) :
     (st.budChild hpending node slot hmate hunseen).remainingEdges <
       st.remainingEdges := by
-  have hactive : active ∈ st.pending := by
-    rw [hpending]
-    simp
-  have hlt := st.processedEdges_length_lt_of_pending hactive
+  have hlt :=
+    st.processedEdges_length_lt_of_pending
+      (st.active_mem_of_pending_cons hpending)
   simp [remainingEdges, budChild]
   omega
 
