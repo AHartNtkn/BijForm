@@ -582,8 +582,11 @@ theorem toDiag_of_renderPrefixRelated :
                         hmateSearch')
                       ((sst.connectChild hpending searchMate
                           hmateSearch').toDiag
-                        (sst.connectChild_frontierComplete hpending
-                          searchMate hmateSearch' hcomplete)) := by
+                        (by
+                          simpa [OpenPortHypergraph.SearchState.firstPendingChildState] using
+                            sst.firstPendingChild_frontierComplete hpending
+                              (OpenPortHypergraph.FirstPendingStep.connect
+                                searchMate hmateSearch') hcomplete)) := by
                 simpa using
                   OpenPortHypergraph.SearchState.toDiag_step sst hcomplete
                     hpending
@@ -606,8 +609,11 @@ theorem toDiag_of_renderPrefixRelated :
                   hactiveEq hactiveEdgeRaw
               have hchildComplete :
                   (sst.connectChild hpending searchMate hmateSearch').FrontierComplete :=
-                sst.connectChild_frontierComplete hpending searchMate
-                  hmateSearch' hcomplete
+                by
+                  simpa [OpenPortHypergraph.SearchState.firstPendingChildState] using
+                    sst.firstPendingChild_frontierComplete hpending
+                      (OpenPortHypergraph.FirstPendingStep.connect
+                        searchMate hmateSearch') hcomplete
               have hchildRel :
                   OpenPortHypergraph.SearchState.RenderPrefixRelated
                     traceEv (connectStep mate ok rst)
@@ -768,8 +774,14 @@ theorem toDiag_of_renderPrefixRelated :
                         hmateSearch')
                       ((sst.budChild hpending nodeIndex slot hmateSearch'
                           hunseen').toDiag
-                        (sst.budChild_frontierComplete hpending nodeIndex slot
-                          hmateSearch' hunseen' hcomplete)) := by
+                        (by
+                          simpa [OpenPortHypergraph.SearchState.firstPendingChildState,
+                            OpenPortHypergraph.SearchState.firstPendingChildFrontier,
+                            OpenPortHypergraph.SearchState.seenNode] using
+                            sst.firstPendingChild_frontierComplete hpending
+                              (OpenPortHypergraph.FirstPendingStep.bud
+                                nodeIndex slot hmateSearch' hunseen')
+                              hcomplete)) := by
                 simpa using
                   OpenPortHypergraph.SearchState.toDiag_step sst hcomplete
                     hpending
@@ -844,8 +856,14 @@ theorem toDiag_of_renderPrefixRelated :
                   OpenPortHypergraph.SearchState.RenderPrefixRelated.cast_cancel_left
                     hfrontier hchildRelB
               have hchildCompleteB : searchChildB.FrontierComplete :=
-                sst.budChild_frontierComplete hpending nodeIndex slot
-                  hmateSearch' hunseen' hcomplete
+                by
+                  simpa [searchChildB,
+                    OpenPortHypergraph.SearchState.firstPendingChildState,
+                    OpenPortHypergraph.SearchState.firstPendingChildFrontier,
+                    OpenPortHypergraph.SearchState.seenNode] using
+                    sst.firstPendingChild_frontierComplete hpending
+                      (OpenPortHypergraph.FirstPendingStep.bud
+                        nodeIndex slot hmateSearch' hunseen') hcomplete
               have hchildCompleteA : searchChildA.FrontierComplete := by
                 dsimp [searchChildA]
                 exact OpenPortHypergraph.SearchState.frontierComplete_cast

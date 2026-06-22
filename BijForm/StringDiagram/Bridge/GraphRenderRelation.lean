@@ -2370,7 +2370,10 @@ theorem GraphRenderRelated.toDiag
       rw [Diag.renderTrace_connect]
       let childSt := st.connectChild hpending mate hmate
       have hchildComplete : childSt.FrontierComplete :=
-        st.connectChild_frontierComplete hpending mate hmate hcomplete
+        by
+          simpa [childSt, SearchState.firstPendingChildState] using
+            st.firstPendingChild_frontierComplete hpending
+              (FirstPendingStep.connect mate hmate) hcomplete
       have hchildValid :
           (Diag.connectStep (st.restLabelIndex hpending mate)
             (st.connect_compatible hpending mate hmate) rst).ValidIds :=
@@ -2393,8 +2396,11 @@ theorem GraphRenderRelated.toDiag
       let childSt := st.budChild hpending node slot hmate
         (by simpa [SearchState.seenNode] using hunseen)
       have hchildComplete : childSt.FrontierComplete :=
-        st.budChild_frontierComplete hpending node slot hmate
-          (by simpa [SearchState.seenNode] using hunseen) hcomplete
+        by
+          simpa [childSt, SearchState.firstPendingChildState,
+            SearchState.firstPendingChildFrontier, SearchState.seenNode] using
+            st.firstPendingChild_frontierComplete hpending
+              (FirstPendingStep.bud node slot hmate hunseen) hcomplete
       have hchildValid :
           (Diag.budStep (G.raw.nodeLabel node) (SearchState.budEntry node slot)
             (st.bud_compatible hpending node slot hmate) rst).ValidIds :=

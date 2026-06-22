@@ -258,6 +258,14 @@ is ordered to turn helper additions into actual deletion.
     `FirstPendingStep.bud` directly. The item remains open because branch
     frontier-complete, order-trace, render-prefix, iso, and graph-relation
     helper families still exist.
+  - Partial: the public branch frontier-completeness and termination wrappers
+    `connectChild_frontierComplete`, `budChild_frontierComplete`,
+    `connectChild_remainingEdges_lt`, and `budChild_remainingEdges_lt` were
+    deleted. `Traversal.Search`, graph-render, and syntax round-trip consumers
+    now obtain those child facts through `firstPendingChild_frontierComplete`
+    and `firstPendingChild_remainingEdges_lt`. The item remains open because
+    branch order-trace, render-prefix, iso, and graph-relation helper families
+    still exist.
 
 - [x] Delete low-value generated-code and presentation pass-through wrappers.
   - Owners: `BijForm.InitialAlgebra`,

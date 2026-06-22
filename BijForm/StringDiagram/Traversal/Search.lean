@@ -706,18 +706,19 @@ theorem toDiag_step {G : OpenPortHypergraph Sig boundary}
           Diag.connect
             (st.restLabelIndex hpending mate)
             (st.connect_compatible hpending mate hmate)
-            ((st.connectChild hpending mate hmate).toDiag
-              (st.connectChild_frontierComplete hpending mate hmate
-                hcomplete))
+            ((st.firstPendingChildState hpending
+                (FirstPendingStep.connect mate hmate)).toDiag
+              (st.firstPendingChild_frontierComplete hpending
+                (FirstPendingStep.connect mate hmate) hcomplete))
       | FirstPendingStep.bud node slot hmate hunseen =>
           Diag.bud
             (G.raw.nodeLabel node)
             (budEntry node slot)
             (st.bud_compatible hpending node slot hmate)
-            ((st.budChild hpending node slot hmate
-                (by simpa [seenNode] using hunseen)).toDiag
-              (st.budChild_frontierComplete hpending node slot hmate
-                (by simpa [seenNode] using hunseen) hcomplete)) := by
+            ((st.firstPendingChildState hpending
+                (FirstPendingStep.bud node slot hmate hunseen)).toDiag
+              (st.firstPendingChild_frontierComplete hpending
+                (FirstPendingStep.bud node slot hmate hunseen) hcomplete)) := by
   rw [SearchState.toDiag.eq_2]
   split
   · rename_i hnil
@@ -776,8 +777,10 @@ theorem toDiag_isoRelated
       have hchild :=
         ih (right.connectChild hrightPending rightMate
               rightMateEdge) hchildRel
-          (right.connectChild_frontierComplete hrightPending
-            rightMate rightMateEdge hright)
+          (by
+            simpa [rightStep, firstPendingChildState] using
+              right.firstPendingChild_frontierComplete hrightPending
+                rightStep hright)
       rw [toDiag_step st hcomplete hpending
         (FirstPendingStep.connect mate hmate) hstep]
       rw [toDiag_step right hright hrightPending
@@ -841,8 +844,11 @@ theorem toDiag_isoRelated
       have hrightChildCompleteUncast :
           (right.budChild hrightPending rightNode rightSlot rightMateEdge
             rightUnseenMem).FrontierComplete :=
-        right.budChild_frontierComplete hrightPending rightNode rightSlot
-          rightMateEdge rightUnseenMem hright
+        by
+          simpa [rightStep, rightNode, rightSlot, rightUnseenMem,
+            firstPendingChildState, firstPendingChildFrontier, seenNode] using
+            right.firstPendingChild_frontierComplete hrightPending
+              rightStep hright
       have hrightChildComplete : rightChild.FrontierComplete := by
         dsimp [rightChild]
         exact frontierComplete_cast hfrontier
@@ -867,8 +873,11 @@ theorem toDiag_isoRelated
           hrightChildCompleteUncast
       have hchildCast :
           (st.budChild hpending node slot hmate leftUnseenMem).toDiag
-              (st.budChild_frontierComplete hpending node slot hmate
-                leftUnseenMem hcomplete) =
+              (by
+                simpa [leftStep, leftUnseenMem, firstPendingChildState,
+                  firstPendingChildFrontier, seenNode] using
+                  st.firstPendingChild_frontierComplete hpending
+                    leftStep hcomplete) =
             hfrontier ▸
               (right.budChild hrightPending rightNode rightSlot rightMateEdge
                 rightUnseenMem).toDiag hrightChildCompleteUncast := by
@@ -881,8 +890,11 @@ theorem toDiag_isoRelated
           rightMateEdge)
         (childA :=
           (st.budChild hpending node slot hmate leftUnseenMem).toDiag
-            (st.budChild_frontierComplete hpending node slot hmate
-              leftUnseenMem hcomplete))
+            (by
+              simpa [leftStep, leftUnseenMem, firstPendingChildState,
+                firstPendingChildFrontier, seenNode] using
+                st.firstPendingChild_frontierComplete hpending
+                  leftStep hcomplete))
         (childB :=
           (right.budChild hrightPending rightNode rightSlot rightMateEdge
             rightUnseenMem).toDiag hrightChildCompleteUncast)
