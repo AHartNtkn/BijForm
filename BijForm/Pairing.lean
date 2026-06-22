@@ -775,6 +775,13 @@ theorem shellStart_locateShell (n : Nat) :
       + (locateShellFromCore (0, n)).2 = n
   simpa [shellStart] using h
 
+theorem locateShell_spec (n : Nat) :
+    let sp := locateShell n
+    sp.2 < shellSize sp.1 ∧ shellStart sp.1 + sp.2 = n := by
+  refine ⟨?_, ?_⟩
+  · exact locateShellFrom_sound 0 n
+  · exact shellStart_locateShell n
+
 theorem blockStart_mono {a b : Nat} (h : a ≤ b) :
     blockStart a ≤ blockStart b := by
   unfold blockStart
@@ -857,37 +864,31 @@ theorem decodeInShell_snd_le {s p : Nat} (hp : p < shellSize s) :
 
 theorem decode_fst_le (n : Nat) : (decode n).1 ≤ n := by
   unfold decode
-  generalize hsp : locateShell n = sp
+  let sp := locateShell n
   change (decodeInShell sp.1 sp.2).1 ≤ n
-  have hs : sp.2 < shellSize sp.1 := by
-    rw [← hsp]
-    exact locateShellFrom_sound 0 n
-  have hoff : shellStart sp.1 + sp.2 = n := by
-    simpa [hsp] using shellStart_locateShell n
+  have hspec := locateShell_spec n
+  have hs : sp.2 < shellSize sp.1 := hspec.1
+  have hoff : shellStart sp.1 + sp.2 = n := hspec.2
   have hle := decodeInShell_fst_le (s := sp.1) (p := sp.2) hs
   omega
 
 theorem decode_snd_le (n : Nat) : (decode n).2 ≤ n := by
   unfold decode
-  generalize hsp : locateShell n = sp
+  let sp := locateShell n
   change (decodeInShell sp.1 sp.2).2 ≤ n
-  have hs : sp.2 < shellSize sp.1 := by
-    rw [← hsp]
-    exact locateShellFrom_sound 0 n
-  have hoff : shellStart sp.1 + sp.2 = n := by
-    simpa [hsp] using shellStart_locateShell n
+  have hspec := locateShell_spec n
+  have hs : sp.2 < shellSize sp.1 := hspec.1
+  have hoff : shellStart sp.1 + sp.2 = n := hspec.2
   have hle := decodeInShell_snd_le (s := sp.1) (p := sp.2) hs
   omega
 
 /-- The simplified pairing encoder is a right inverse of the decoder. -/
 theorem encode_decode (n : Nat) : encode (decode n).1 (decode n).2 = n := by
   unfold decode
-  generalize hsp : locateShell n = sp
-  have hs : sp.2 < shellSize sp.1 := by
-    rw [← hsp]
-    exact locateShellFrom_sound 0 n
-  have hoff : shellStart sp.1 + sp.2 = n := by
-    simpa [hsp] using shellStart_locateShell n
+  let sp := locateShell n
+  have hspec := locateShell_spec n
+  have hs : sp.2 < shellSize sp.1 := hspec.1
+  have hoff : shellStart sp.1 + sp.2 = n := hspec.2
   rw [encode_decodeInShell hs, hoff]
 
 /--
