@@ -169,7 +169,7 @@ def NFAppFamilyCarrierIso (Γ : List NFSort) :
 def NFNormalGeneratedShapeIso (Γ : List NFSort) :
     LayerShape NFSignature NFCode Γ .normalExp ≃ᵢ NFCode (Γ, .normalExp) :=
   Iso.trans
-    (LayerShape.familyCarrierIso (S := NFSignature) (Code := NFCode)
+    (LayerShape.carrierCoding (S := NFSignature) (Code := NFCode)
       Γ .normalExp (Var.finIso Γ .normalExp) (NFNormalFamilyCarrierIso Γ))
     (Iso.trans
       (Iso.sum (Iso.refl (Fin (normalExpCount Γ)))
@@ -179,7 +179,7 @@ def NFNormalGeneratedShapeIso (Γ : List NFSort) :
 def NFAppGeneratedShapeIso (Γ : List NFSort) :
     LayerShape NFSignature NFCode Γ .appTerm ≃ᵢ NFCode (Γ, .appTerm) :=
   Iso.trans
-    (LayerShape.familyCarrierIso (S := NFSignature) (Code := NFCode)
+    (LayerShape.carrierCoding (S := NFSignature) (Code := NFCode)
       Γ .appTerm (Var.finIso Γ .appTerm) (NFAppFamilyCarrierIso Γ))
     (CodeAlgebra.finTaggedProdNat (appTermCount Γ))
 

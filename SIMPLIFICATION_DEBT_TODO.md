@@ -165,7 +165,7 @@ is ordered to turn helper additions into actual deletion.
     helper extensionality, example sum-tail destructuring, and
     proof-field-sensitive `heq_of_eq` branches still exist.
 
-- [ ] Finish typed-binding proof-surface cleanup.
+- [x] Finish typed-binding proof-surface cleanup.
   - Owners: `BijForm.TypedBinding` and
     `BijForm.Examples.TypedBinding.NF`.
   - Why this remains open: the branch added more reusable typed-binding
@@ -182,6 +182,12 @@ is ordered to turn helper additions into actual deletion.
   - Validation:
     `rg -n "LayerShape\\.familyCarrierIso|cases rest with|heq_of_eq|child_eta_rfl child" BijForm/TypedBinding.lean BijForm/Examples/TypedBinding/NF.lean`
     should have no old-model proof-body hits.
+  - Completed: `LayerShape.familyCarrierIso` was deleted and replaced by the
+    owner-level `LayerShape.carrierCoding`; NF shape encoders now consume that
+    surface. `FiberCode.var_codeLayer_eta` and `FiberCode.op_codeLayer_eta`
+    own the no-child and same-child layer eta proofs used by both syntax and
+    layer-shape inverses, so the tracked local `child_eta_rfl child` and
+    `heq_of_eq` fragments are gone from `TypedBinding.lean`.
 
 - [x] Delete specialized nested-code theorem surfaces after generic routing.
   - Owner: `BijForm.CodeAlgebra`.

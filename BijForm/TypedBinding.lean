@@ -278,6 +278,28 @@ abbrev LayerChild (Code : Poly.Ix S → Type v) {i : Poly.Ix S}
       ((inversion S).decode i code).param) →
     Code ((PolyOf S).input ((inversion S).decode i code).param q)
 
+theorem var_codeLayer_eta {Code : Poly.Ix S → Type v}
+    {Γ : List Ty} {t : Ty} (v : Var Γ t)
+    (child : LayerChild (S := S) Code (.var v)) :
+    (⟨.var v, fun q => nomatch q⟩ :
+      CodeLayer (PolyOf S) (inversion S) Code (Γ, t)) =
+      ⟨.var v, child⟩ := by
+  refine CodeLayer.ext_rfl
+    (P := PolyOf S) (H := inversion S) (Code := Code)
+    (i := (Γ, t)) (c := .var v) ?_
+  funext q
+  cases q
+
+theorem op_codeLayer_eta {Code : Poly.Ix S → Type v}
+    {Γ : List Ty} {t : Ty} (ctor : S.Ctor) (h : S.ret ctor = t)
+    (child : LayerChild (S := S) Code (.op (Γ := Γ) ctor h)) :
+    (⟨.op ctor h, fun q => child q⟩ :
+      CodeLayer (PolyOf S) (inversion S) Code (Γ, t)) =
+      ⟨.op ctor h, child⟩ := by
+  exact CodeLayer.ext_rfl
+    (P := PolyOf S) (H := inversion S) (Code := Code)
+    (i := (Γ, t)) (c := .op (Γ := Γ) ctor h) rfl
+
 theorem codeLayer_left_inv_by_cases {Code : Poly.Ix S → Type v}
     {Carrier : Poly.Ix S → Type w}
     {toCarrier : ∀ i, CodeLayer (PolyOf S) (inversion S) Code i → Carrier i}
@@ -338,15 +360,13 @@ theorem layer_left_inv (i : Poly.Ix S) :
     (fromCarrier := fun i t => termToLayer t)
     (by
       intro Γ t v child
-      child_eta_rfl child)
+      exact FiberCode.var_codeLayer_eta (S := S)
+        (Code := fun i => Term S i.1 i.2) v child)
     (by
       intro Γ t c h child
       cases h
-      apply CodeLayer.ext_layer
-      · rfl
-      · apply heq_of_eq
-        funext q
-        rfl)
+      exact FiberCode.op_codeLayer_eta (S := S)
+        (Code := fun i => Term S i.1 i.2) c rfl child)
     i
 
 theorem layer_right_inv (i : Poly.Ix S) :
@@ -713,16 +733,11 @@ theorem layerShape_left_inv (Γ : List Ty) (t : Ty) :
       shapeToLayer (S := S) (Code := Code) i.1 i.2)
     (by
       intro Γ t v child
-      child_eta_rfl child)
+      exact FiberCode.var_codeLayer_eta (S := S) (Code := Code) v child)
     (by
       intro Γ t c h child
       cases h
-      dsimp [layerToShape, shapeToLayer]
-      apply CodeLayer.ext_layer
-      · rfl
-      · apply heq_of_eq
-        funext q
-        rfl)
+      exact FiberCode.op_codeLayer_eta (S := S) (Code := Code) c rfl child)
     (Γ, t)
 
 theorem layerShape_right_inv (Γ : List Ty) (t : Ty) :
@@ -749,7 +764,7 @@ def familyIso (Γ : List Ty) (t : Ty) :
     LayerShape S Code Γ t ≃ᵢ (Var Γ t ⊕ CtorFamily S Code Γ t) :=
   Iso.sum (Iso.refl (Var Γ t)) (CtorLayer.familyIso (S := S) (Code := Code) Γ t)
 
-def familyCarrierIso (Γ : List Ty) (t : Ty)
+def carrierCoding (Γ : List Ty) (t : Ty)
     {VarCode CtorCode : Type}
     (varIso : Var Γ t ≃ᵢ VarCode)
     (ctorIso : CtorFamily S Code Γ t ≃ᵢ CtorCode) :
@@ -782,7 +797,7 @@ def layerCarrierCoding (Γ : List Ty) (t : Ty)
     (ctorIso : CtorFamily S Code Γ t ≃ᵢ CtorCode) :
     CodeLayer (PolyOf S) (inversion S) Code (Γ, t) ≃ᵢ (VarCode ⊕ CtorCode) :=
   Iso.trans (iso (S := S) (Code := Code) Γ t)
-    (familyCarrierIso (S := S) (Code := Code) Γ t varIso ctorIso)
+    (carrierCoding (S := S) (Code := Code) Γ t varIso ctorIso)
 
 theorem layerCarrierCoding_op_toFun (Γ : List Ty)
     {VarCode CtorCode : Type}
@@ -802,7 +817,7 @@ theorem layerCarrierCoding_op_toFun (Γ : List Ty)
               (args := S.args c) child⟩) :=
   rfl
 
-theorem familyCarrierIso_op_toFun (Γ : List Ty)
+theorem carrierCoding_op_toFun (Γ : List Ty)
     {VarCode CtorCode : Type}
     (c : S.Ctor)
     (varIso : Var Γ (S.ret c) ≃ᵢ VarCode)
@@ -810,7 +825,7 @@ theorem familyCarrierIso_op_toFun (Γ : List Ty)
     (child :
       (q : S.ArgPos c) →
         Code ((S.arg c q).binders ++ Γ, (S.arg c q).sort)) :
-    (familyCarrierIso (S := S) (Code := Code) Γ (S.ret c) varIso ctorIso).toFun
+    (carrierCoding (S := S) (Code := Code) Γ (S.ret c) varIso ctorIso).toFun
         ((iso (S := S) (Code := Code) Γ (S.ret c)).toFun
           (⟨FiberCode.op c rfl, child⟩ :
             CodeLayer (PolyOf S) (inversion S) Code (Γ, S.ret c))) =
