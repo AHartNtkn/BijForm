@@ -195,12 +195,12 @@ def SortedSyntaxPresentation : SyntaxPresentation SortedPoly SortedInversion Sor
           cases ctor with
           | leaf =>
               cases out_eq
-              child_eta_empty_rfl child
+              child_eta_rfl child
           | branch =>
               cases param with
               | mk _i pivot =>
                 cases out_eq
-                child_eta_bool_rfl child)
+                child_eta_rfl child)
     (by
       intro i t
       cases t with
@@ -315,7 +315,7 @@ private def SortedFiniteConstructorPayloadIso (lower upper : Nat) (h : lower ≤
         cases ctor with
         | leaf =>
             cases out_eq
-            child_eta_empty_rfl child
+            child_eta_rfl child
         | branch =>
             cases param with
             | mk _i pivot =>
@@ -392,7 +392,7 @@ private def SortedInfiniteConstructorPayloadIso (lower : Nat) :
         cases ctor with
         | leaf =>
             cases out_eq
-            child_eta_empty_rfl child
+            child_eta_rfl child
         | branch =>
             cases param with
             | mk _i pivot =>
@@ -501,7 +501,7 @@ private def SortedCarrierLayerIso (i : SortedIx) :
                 | leaf =>
                     cases out_eq
                     simp [h]
-                    child_eta_empty_rfl child
+                    child_eta_rfl child
                 | branch =>
                     cases param with
                     | mk _i pivot =>

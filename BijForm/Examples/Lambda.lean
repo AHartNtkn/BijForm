@@ -121,17 +121,17 @@ def LamSyntaxPresentation : SyntaxPresentation LamPoly LamInversion LamSyntax :=
             cases param with
             | mk k' v =>
               cases out_eq
-              child_eta_empty_rfl child
+              child_eta_rfl child
           | lam =>
             change LamParam LamCtor.lam at param
             change Nat at param
             cases out_eq
-            child_eta_unit_rfl child
+            child_eta_rfl child
           | app =>
             change LamParam LamCtor.app at param
             change Nat at param
             cases out_eq
-            child_eta_bool_rfl child)
+            child_eta_rfl child)
     (by
       intro k t
       cases t <;> simp [LamLayerToSyntax, LamSyntaxToLayer])
@@ -187,17 +187,17 @@ def LamNatLayerShapeLayerPresentation :
             cases param with
             | mk k' v =>
               cases out_eq
-              child_eta_empty_rfl child
+              child_eta_rfl child
           | lam =>
             change LamParam LamCtor.lam at param
             change Nat at param
             cases out_eq
-            child_eta_unit_rfl child
+            child_eta_rfl child
           | app =>
             change LamParam LamCtor.app at param
             change Nat at param
             cases out_eq
-            child_eta_bool_rfl child)
+            child_eta_rfl child)
     (by
       intro k shape
       cases shape with

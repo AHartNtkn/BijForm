@@ -462,7 +462,7 @@ def singleSortedFiniteLayerPresentation
                   | finish =>
                       cases param
                       cases out_eq
-                      child_eta_empty_rfl child
+                      child_eta_rfl child
                   | connect =>
                       cases param with
                       | mk active frontier mate ok =>
@@ -512,7 +512,7 @@ def singleSortedFiniteLayerPresentation
                               · simp [singleSortedFiniteLayerToShape,
                                   singleSortedFiniteLayerFromShape, hentry]
                                 exact singleSortedFiniteLayer_ext_bud_ok (by
-                                  child_eta_unit)
+                                  child_eta_cases)
           | cons first rest =>
               cases rest with
               | nil =>
@@ -548,7 +548,7 @@ def singleSortedFiniteLayerPresentation
                                   simp [singleSortedFiniteLayerToShape,
                                     singleSortedFiniteLayerFromShape]
                                   exact singleSortedFiniteLayer_ext_bud_ok (by
-                                    child_eta_unit)
+                                    child_eta_cases)
               | cons second rest =>
                   cases layer with
                   | mk code child =>
@@ -568,7 +568,7 @@ def singleSortedFiniteLayerPresentation
                                   simp [singleSortedFiniteLayerToShape,
                                     singleSortedFiniteLayerFromShape]
                                   exact singleSortedFiniteLayer_ext_connect_ok (by
-                                    child_eta_unit)
+                                    child_eta_cases)
                           | bud =>
                               cases param with
                               | mk active' frontier node entry ok =>
@@ -576,7 +576,7 @@ def singleSortedFiniteLayerPresentation
                                   simp [singleSortedFiniteLayerToShape,
                                     singleSortedFiniteLayerFromShape]
                                   exact singleSortedFiniteLayer_ext_bud_ok (by
-                                    child_eta_unit))
+                                    child_eta_cases))
     (by
       intro boundary shape
       cases boundary with

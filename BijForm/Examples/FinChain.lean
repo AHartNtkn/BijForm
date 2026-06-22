@@ -101,12 +101,12 @@ def FinChainSyntaxPresentation :
           cases ctor with
           | done =>
               cases out_eq
-              child_eta_empty_rfl child
+              child_eta_rfl child
           | step =>
               cases param with
               | mk n tag =>
                 cases out_eq
-                child_eta_unit_rfl child)
+                child_eta_rfl child)
     (by
       intro i t
       cases t with
@@ -188,7 +188,7 @@ def FinChainLayerShapeLayerPresentation :
               cases ctor with
               | done =>
                   cases out_eq
-                  child_eta_empty_rfl child
+                  child_eta_rfl child
               | step =>
                   cases param with
                   | mk _m _tag => cases out_eq
@@ -200,14 +200,14 @@ def FinChainLayerShapeLayerPresentation :
               cases ctor with
               | done =>
                   cases out_eq
-                  child_eta_empty_rfl child
+                  child_eta_rfl child
               | step =>
                   cases param with
                   | mk m tag =>
                       have hmn : m = n := Nat.succ.inj out_eq
                       cases hmn
                       cases out_eq
-                      child_eta_unit_rfl child)
+                      child_eta_rfl child)
     (by
       intro i shape
       cases i with

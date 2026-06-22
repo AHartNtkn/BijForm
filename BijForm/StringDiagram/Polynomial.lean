@@ -142,17 +142,17 @@ def syntaxPresentation (Sig : Signature) :
           | finish =>
               cases param
               cases out_eq
-              child_eta_empty_rfl child
+              child_eta_rfl child
           | connect =>
               cases param with
               | mk active frontier mate ok =>
                 cases out_eq
-                child_eta_unit_rfl child
+                child_eta_rfl child
           | bud =>
               cases param with
               | mk active frontier node entry ok =>
                 cases out_eq
-                child_eta_unit_rfl child)
+                child_eta_rfl child)
     (by
       intro boundary t
       cases t with

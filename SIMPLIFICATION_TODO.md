@@ -56,14 +56,15 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
   - Completed: `Obj` is the only layer-with-children representation; the
     generated-code bridge now maps `Obj` directly to `CodeLayer`.
 
-- [ ] Replace child eta tactic variants with one generic helper.
-  - Owner: `DepPoly.CodeLayer`
+- [x] Replace child eta tactic variants with one generic helper.
+  - Owner: `BijForm.InitialAlgebra`
   - Evidence: `child_eta_empty`, `child_eta_unit`, and `child_eta_bool` are
-    aliases for the same tactic in `BijForm/DependentPolynomial.lean`.
-  - Action: provide one child-function extensionality helper plus `CodeLayer`
-    extensionality lemmas.
-  - Validation: `rg "child_eta_(empty|unit|bool)" BijForm` drops to the helper
-    boundary or disappears.
+    aliases for the same tactic in `BijForm.InitialAlgebra`.
+  - Action: provide one child-function extensionality helper.
+  - Validation: `rg "child_eta_(empty|unit|bool)" BijForm --glob '*.lean'`
+    has no matches.
+  - Completed: `child_eta_cases` is the single primitive tactic, and
+    `child_eta_rfl child` is the only close-by-rfl wrapper.
 
 - [ ] Add generic `CodeLayer` child equality/extensionality lemmas.
   - Owner: `DepPoly.CodeLayer`
@@ -164,12 +165,12 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
 - [ ] Replace repeated `SyntaxPresentation.ofLayerMaps` inverse boilerplate.
   - Owner: `BijForm.DependentPolynomial` plus example modules.
   - Evidence: repeated same-fiber unpacking, `cases out_eq`, constructor cases,
-    and `child_eta_*_rfl` in `Num`, `Peano`, `Lambda`, `HBT`, `FinChain`,
+    and `child_eta_rfl` in `Num`, `Peano`, `Lambda`, `HBT`, `FinChain`,
     `Sorted`, and `StringDiagram/Polynomial`.
   - Action: add a shared constructor-layer presentation helper that examples
     instantiate with domain-specific constructor clauses and rank.
   - Validation: source search for `SyntaxPresentation.ofLayerMaps` and
-    `child_eta_*_rfl child` drops in examples.
+    repeated `child_eta_rfl child` proof bodies drops in examples.
 
 - [ ] Factor finite and infinite sorted branch payload coding.
   - Owner: `BijForm.Examples.Sorted`, backed by `CodeAlgebra` payload lemmas.

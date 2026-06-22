@@ -118,52 +118,23 @@ macro_rules
         | (funext q; cases q <;> rfl)
         | (symm; funext q; cases q <;> rfl))
 
-/-- Prove child-function eta facts for constructors with no recursive positions. -/
-syntax "child_eta_empty" : tactic
+/-- Close goals that become `rfl` after eta-expanding a child function. -/
+syntax "child_eta_rfl " ident : tactic
 macro_rules
-  | `(tactic| child_eta_empty) =>
-      `(tactic| child_eta_cases)
-
-/-- Prove child-function eta facts for constructors with one recursive position. -/
-syntax "child_eta_unit" : tactic
-macro_rules
-  | `(tactic| child_eta_unit) =>
-      `(tactic| child_eta_cases)
-
-/-- Prove child-function eta facts for constructors with boolean recursive positions. -/
-syntax "child_eta_bool" : tactic
-macro_rules
-  | `(tactic| child_eta_bool) =>
-      `(tactic| child_eta_cases)
-
-/-- Close goals that become `rfl` after eta-expanding an empty child function. -/
-syntax "child_eta_empty_rfl " ident : tactic
-macro_rules
-  | `(tactic| child_eta_empty_rfl $child:ident) =>
+  | `(tactic| child_eta_rfl $child:ident) =>
       `(tactic|
-        (have hchild_eta : (fun q => nomatch q) = $child := by child_eta_empty;
-         cases hchild_eta;
-         rfl))
-
-/-- Close goals that become `rfl` after eta-expanding a unit child function. -/
-syntax "child_eta_unit_rfl " ident : tactic
-macro_rules
-  | `(tactic| child_eta_unit_rfl $child:ident) =>
-      `(tactic|
-        (have hchild_eta : (fun _ => $child ()) = $child := by child_eta_unit;
-         cases hchild_eta;
-         rfl))
-
-/-- Close goals that become `rfl` after eta-expanding a boolean child function. -/
-syntax "child_eta_bool_rfl " ident : tactic
-macro_rules
-  | `(tactic| child_eta_bool_rfl $child:ident) =>
-      `(tactic|
-        (have hchild_eta : $child = (fun
-            | false => $child false
-            | true => $child true) := by child_eta_bool;
-         rw [hchild_eta];
-         rfl))
+        first
+        | (have hchild_eta : (fun q => nomatch q) = $child := by child_eta_cases;
+           cases hchild_eta;
+           rfl)
+        | (have hchild_eta : (fun _ => $child ()) = $child := by child_eta_cases;
+           cases hchild_eta;
+           rfl)
+        | (have hchild_eta : $child = (fun
+              | false => $child false
+              | true => $child true) := by child_eta_cases;
+           rw [hchild_eta];
+           rfl))
 
 def castFiberChild {P : DepPoly ι} {Code : ι → Type v} {i : ι}
     {f g : Fiber P i} (h : f = g)

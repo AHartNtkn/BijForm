@@ -128,10 +128,10 @@ def HBTSyntaxPresentation : SyntaxPresentation HBTPoly HBTInversion HBTSyntax :=
               cases param with
               | mk height label =>
                 cases out_eq
-                child_eta_empty_rfl child
+                child_eta_rfl child
           | branch =>
               cases out_eq
-              child_eta_bool_rfl child)
+              child_eta_rfl child)
     (by
       intro i t
       cases t <;> simp [HBTLayerToSyntax, HBTSyntaxToLayer])
@@ -195,7 +195,7 @@ def HBTNatLayerShapeLayerPresentation :
                     cases param with
                     | mk height label =>
                       cases out_eq
-                      child_eta_empty_rfl child
+                      child_eta_rfl child
                 | branch => cases out_eq
       | succ m =>
           cases x with
@@ -207,10 +207,10 @@ def HBTNatLayerShapeLayerPresentation :
                     cases param with
                     | mk height label =>
                       cases out_eq
-                      child_eta_empty_rfl child
+                      child_eta_rfl child
                 | branch =>
                     cases out_eq
-                    child_eta_bool_rfl child)
+                    child_eta_rfl child)
     (by
       intro i shape
       cases i with

@@ -309,7 +309,7 @@ theorem layer_left_inv (i : Poly.Ix S) :
     | mk code child =>
       cases code with
       | var v =>
-          child_eta_empty_rfl child
+          child_eta_rfl child
       | op c h =>
           cases h
           refine Sigma.ext rfl ?_
@@ -549,7 +549,7 @@ theorem layerShape_left_inv (Γ : List Ty) (t : Ty) :
   | mk code child =>
       cases code with
       | var v =>
-          child_eta_empty_rfl child
+          child_eta_rfl child
       | op c h =>
           cases h
           dsimp [layerToShape, shapeToLayer]
