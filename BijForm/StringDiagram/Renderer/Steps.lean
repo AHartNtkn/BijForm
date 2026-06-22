@@ -1557,13 +1557,10 @@ theorem connectStep_nodeIncidentNodup {active : Sig.Port}
     (st : RenderState Sig (active :: frontier))
     (hn : st.NodeIncidentNodup) :
     (connectStep mate ok st).NodeIncidentNodup := by
-  unfold connectStep
-  split
-  · rename_i hids
-    exact False.elim (RenderState.frontierIds_ne_nil st hids)
-  · constructor
-    intro node hmem
-    exact hn.node_incident_nodup node hmem
+  constructor
+  intro node hmem
+  exact hn.node_incident_nodup node
+    (connectStep_node_mem_old_of_child mate ok st hmem)
 
 theorem connectStep_ownerIdPartition {active : Sig.Port}
     {frontier : List Sig.Port}
@@ -1573,20 +1570,22 @@ theorem connectStep_ownerIdPartition {active : Sig.Port}
     {boundary : List Sig.Port}
     (ho : st.OwnerIdPartition boundary) :
     (connectStep mate ok st).OwnerIdPartition boundary := by
-  unfold connectStep
-  split
-  · rename_i hids
-    exact False.elim (RenderState.frontierIds_ne_nil st hids)
-  · constructor
-    · simpa [RenderState.ownerEndpointIds, RenderState.nodeIncidentIds]
-        using ho.owner_nodup
-    · intro id hmem
-      exact ho.owner_bound id (by
-        simpa [RenderState.ownerEndpointIds, RenderState.nodeIncidentIds]
-          using hmem)
-    · intro id hid
-      simpa [RenderState.ownerEndpointIds, RenderState.nodeIncidentIds] using
-        ho.owner_covered id hid
+  have hnodes := connectStep_nodes mate ok st
+  have hendpoints := connectStep_endpoints mate ok st
+  constructor
+  · simpa [RenderState.ownerEndpointIds, RenderState.nodeIncidentIds,
+      hnodes] using ho.owner_nodup
+  · intro id hmem
+    have holdMem : id ∈ st.ownerEndpointIds boundary := by
+      simpa [RenderState.ownerEndpointIds, RenderState.nodeIncidentIds,
+        hnodes] using hmem
+    have hbound := ho.owner_bound id holdMem
+    simpa [hendpoints] using hbound
+  · intro id hid
+    have holdBound : id < st.endpoints.length := by
+      simpa [hendpoints] using hid
+    simpa [RenderState.ownerEndpointIds, RenderState.nodeIncidentIds,
+      hnodes] using ho.owner_covered id holdBound
 
 theorem budStep_validIds {active : Sig.Port} {frontier : List Sig.Port}
     (node : Sig.Node)
