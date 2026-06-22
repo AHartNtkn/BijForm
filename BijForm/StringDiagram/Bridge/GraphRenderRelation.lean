@@ -857,38 +857,27 @@ theorem GraphRenderRelated.connectChild_nodeLabel
         G.raw.nodeLabel
           ((nodeOrder (st.connectChild hpending mate hmate)).get
             (Fin.cast hchildNodeLength node)) := by
-  let rendererMate := st.restLabelIndex hpending mate
-  let ok := st.connect_compatible hpending mate hmate
   let horderTrace :=
     connectChild_orderTrace rst st hpending mate hmate hids
       hrel.endpoint_length hrel.edge_length hrel.node_length
+  have hlabelRel :
+      AppendTraceRelation horderTrace.node
+        (fun renderNode graphNode =>
+          renderNode.label = G.raw.nodeLabel graphNode) := by
+    refine { prefix_rel := ?_, suffix_rel := ?_ }
+    · intro prefixNode graphNode hval
+      have hidx : graphNode = hrel.nodeIndex prefixNode := by
+        exact fin_eq_of_val_eq hval.symm
+      simpa [hidx] using hrel.node_label prefixNode
+    · intro renderNodeIdx _graphNode _hval
+      exact fin_zero_elim renderNodeIdx
   intro node
-  let oldNode : Fin rst.nodes.length :=
-    Fin.cast (congrArg List.length
-      (Diag.connectStep_nodes rendererMate ok rst)) node
   let childNode : Fin
       (nodeOrder (st.connectChild hpending mate hmate)).length :=
     Fin.cast hchildNodeLength node
-  let oldOrderNode : Fin (nodeOrder st).length :=
-    hrel.nodeIndex oldNode
-  have hnodeGet :=
-    Diag.connectStep_nodes_get rendererMate ok rst node
-  have hnodeOrder :
-      (nodeOrder (st.connectChild hpending mate hmate)).get childNode =
-        (nodeOrder st).get oldOrderNode := by
-    exact horderTrace.node.get_prefix_at_right_of_val_eq
-      childNode oldOrderNode rfl
-  calc
-    ((Diag.connectStep rendererMate ok rst).nodes.get node).label =
-        (rst.nodes.get oldNode).label := by
-      exact congrArg RenderNode.label hnodeGet
-    _ = G.raw.nodeLabel ((nodeOrder st).get oldOrderNode) :=
-        hrel.node_label oldNode
-    _ =
-      G.raw.nodeLabel
-        ((nodeOrder (st.connectChild hpending mate hmate)).get
-          childNode) := by
-        exact congrArg G.raw.nodeLabel hnodeOrder.symm
+  have hidx : horderTrace.node.rightIndex node = childNode := by
+    exact fin_eq_of_val_eq rfl
+  simpa [childNode, hidx] using AppendTraceRelation.get hlabelRel node
 
 theorem GraphRenderRelated.connectChild_edgeLabel
     {G : OpenPortHypergraph Sig boundary}
