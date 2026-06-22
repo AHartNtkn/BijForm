@@ -250,8 +250,7 @@ def singleSortedFiniteLayerToShape
       cases p with
       | mk _ frontier mate _ =>
           cases h
-          cases mate with
-          | mk val isLt => exact False.elim (Nat.not_lt_zero val isLt)
+          exact fin_zero_elim mate
   | active :: [], ⟨⟨.bud, p, h⟩, child⟩ => by
       cases p with
       | mk _ frontier node entry _ =>
@@ -486,9 +485,7 @@ def singleSortedFiniteLayerPresentation
                           cases param with
                           | mk active' frontier mate ok =>
                               cases out_eq
-                              cases mate with
-                              | mk val isLt =>
-                                  exact False.elim (Nat.not_lt_zero val isLt)
+                              exact fin_zero_elim mate
                       | bud =>
                           cases param with
                           | mk active' frontier node entry ok =>

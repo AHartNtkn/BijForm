@@ -60,9 +60,7 @@ theorem eraseFin_pointwise_relation {α β : Type} {R : α → β → Prop}
   induction xs with
   | nil =>
       intro ys hlen hrel ix iy hindex n hx hy
-      cases ix with
-      | mk val isLt =>
-          exact False.elim (Nat.not_lt_zero val isLt)
+      exact fin_zero_elim ix
   | cons x xs ih =>
       intro ys hlen hrel ix iy hindex n hx hy
       cases ys with
@@ -540,8 +538,7 @@ theorem listIndexOfMem_get_eq_of_nodup {α : Type} [DecidableEq α] :
     ∀ (xs : List α), xs.Nodup → (i : Fin xs.length) →
       listIndexOfMem xs (xs.get i) (List.get_mem xs i) = i
   | [], _hnodup, i => by
-      cases i with
-      | mk val isLt => exact False.elim (Nat.not_lt_zero val isLt)
+      exact fin_zero_elim i
   | y :: ys, hnodup, i => by
       cases i with
       | mk iVal iLt =>
@@ -658,8 +655,7 @@ theorem list_get_injective_of_nodup {α : Type} :
     ∀ (xs : List α), xs.Nodup →
       Function.Injective fun i : Fin xs.length => xs.get i
   | [], _hnodup, i, _j, _h => by
-      cases i with
-      | mk val isLt => exact False.elim (Nat.not_lt_zero val isLt)
+      exact fin_zero_elim i
   | x :: xs, hnodup, i, j, h => by
       have hsplit : x ∉ xs ∧ xs.Nodup := by
         simpa using hnodup

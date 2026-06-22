@@ -283,7 +283,7 @@ theorem NFGeneratedLayer_child_rank_lt :
                           CodeAlgebra.finProdNatOrNat_inl_snd_le
                             (appTermCount Γ) app
                       omega
-                  | succ q => exact False.elim (Nat.not_lt_zero q.val q.isLt)
+                  | succ q => exact fin_zero_elim q
               | lam =>
                   cases h
                   intro q
@@ -349,7 +349,7 @@ theorem NFGeneratedLayer_child_rank_lt :
                         rw [hparent]
                         simp [NFCodeRank, appTermCount, Var.count, hc]
                         omega
-                  | succ q => exact False.elim (Nat.not_lt_zero q.val q.isLt)
+                  | succ q => exact fin_zero_elim q
               | app =>
                   cases h
     | appTerm =>
@@ -424,7 +424,7 @@ theorem NFGeneratedLayer_child_rank_lt :
                               CodeAlgebra.finTaggedProdNat_inr_snd_lt
                                 (appTermCount Γ) pair
                           omega
-                      | succ q => exact False.elim (Nat.not_lt_zero q.val q.isLt)
+                      | succ q => exact fin_zero_elim q
 
 def NFLayerShapeCodingData : LayerShapeCodingData NFSignature where
   Code := NFCode
@@ -455,18 +455,8 @@ theorem NFCode_closedApp_carrier :
     NFCode ([], .appTerm) = (Fin 0 × Nat) :=
   rfl
 
-def ClosedAppTermEmptyIso : AppTerm [] ≃ᵢ Empty where
-  toFun := fun x =>
-    let code := (AppTermCodeIso []).toFun x
-    False.elim (Nat.not_lt_zero code.1.val code.1.isLt)
-  invFun := fun e => nomatch e
-  left_inv := by
-    intro x
-    let code := (AppTermCodeIso []).toFun x
-    exact False.elim (Nat.not_lt_zero code.1.val code.1.isLt)
-  right_inv := by
-    intro e
-    cases e
+def ClosedAppTermEmptyIso : AppTerm [] ≃ᵢ Empty :=
+  Iso.trans (AppTermCodeIso []) (fin_zero_prod_empty_iso Nat)
 
 end TypedBinding
 end Examples

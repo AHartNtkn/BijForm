@@ -105,13 +105,17 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     remaining `Fin.ext` source hit is the helper implementation in
     `BijForm/Coding.lean`.
 
-- [ ] Add reusable `Fin 0` eliminators and empty-code isomorphisms.
+- [x] Add reusable `Fin 0` eliminators and empty-code isomorphisms.
   - Owner: `BijForm.Coding` and `BijForm.CodeAlgebra`
   - Evidence: repeated `False.elim (Nat.not_lt_zero ...)`, `nomatch`, and
     empty-side code branches in `Coding`, `CodeAlgebra`, and NF examples.
   - Action: add `Fin 0` eliminator, `Fin 0` to `Empty` iso, and codec helpers
     for empty sum/product sides.
   - Validation: source search for manual `Nat.not_lt_zero` eliminations drops.
+  - Completed: `fin_zero_elim`, `fin_zero_empty_iso`, and
+    `fin_zero_prod_empty_iso` now live in `BijForm.Coding`; direct
+    `Nat.not_lt_zero` eliminations were replaced, and the closed app-term empty
+    carrier composes through the reusable empty product iso.
 
 - [ ] Move `FiniteSubtypeTable` out of root `Coding`.
   - Owner: finite subtype/table module under `CodeAlgebra` or a new finite-table

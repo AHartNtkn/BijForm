@@ -418,8 +418,7 @@ theorem edgeEndpointIdsOfEdges_get_left_ne_right
         ∀ edgeIndex : Fin edges.length,
           (edges.get edgeIndex).left ≠ (edges.get edgeIndex).right
   | [], _hnodup, edgeIndex => by
-      cases edgeIndex with
-      | mk val isLt => exact False.elim (Nat.not_lt_zero val isLt)
+      exact fin_zero_elim edgeIndex
   | edge :: edges, hnodup, edgeIndex => by
       cases edgeIndex with
       | mk idx idxLt =>
@@ -478,8 +477,7 @@ theorem edgeEndpointRefOfEndpointId_unique {Sig : Signature} :
         id = (edges.get edgeIndex).right) →
         (edgeEndpointRefOfEndpointId edges hmem).1 = edgeIndex
   | [], _id, _hmem, _hnodup, edgeIndex, _hside => by
-      cases edgeIndex with
-      | mk val isLt => exact False.elim (Nat.not_lt_zero val isLt)
+      exact fin_zero_elim edgeIndex
   | edge :: edges, id, hmem, hnodup, edgeIndex, hside => by
       cases edgeIndex with
       | mk idx idxLt =>
@@ -982,8 +980,7 @@ theorem nodeIncidentIds_get_node_eq_of_nodup {Sig : Signature} :
           (nodes.get rightNode).incident.get rightSlot →
         leftNode = rightNode
   | [], _hnodup, leftNode, _rightNode, _leftSlot, _rightSlot, _h => by
-      cases leftNode with
-      | mk val isLt => exact False.elim (Nat.not_lt_zero val isLt)
+      exact fin_zero_elim leftNode
   | head :: tail, hnodup, leftNode, rightNode, leftSlot, rightSlot, h => by
       have hflat :
           (head.incident ++ tail.flatMap fun node => node.incident).Nodup := by

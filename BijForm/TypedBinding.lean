@@ -62,7 +62,7 @@ def toFin [DecidableEq Ty] : {Γ : List Ty} → {t : Ty} → Var Γ t → Fin (c
           simp [count, h]⟩
 
 def ofFin [DecidableEq Ty] (t : Ty) : {Γ : List Ty} → Fin (count t Γ) → Var Γ t
-  | [], i => False.elim (Nat.not_lt_zero i.val i.isLt)
+  | [], i => fin_zero_elim i
   | u :: Γ, i => by
       by_cases h : u = t
       · cases h
@@ -78,7 +78,7 @@ theorem ofFin_toFin [DecidableEq Ty] (t : Ty) :
   induction Γ with
   | nil =>
       intro i
-      exact False.elim (Nat.not_lt_zero i.val i.isLt)
+      exact fin_zero_elim i
   | cons u Γ ih =>
       intro i
       by_cases h : u = t
@@ -143,7 +143,7 @@ theorem le_finMax {n : Nat} (f : Fin n → Nat) (q : Fin n) :
     f q ≤ finMax f := by
   induction n with
   | zero =>
-      exact False.elim (Nat.not_lt_zero q.val q.isLt)
+      exact fin_zero_elim q
   | succ n ih =>
       cases q using Fin.cases with
       | zero =>

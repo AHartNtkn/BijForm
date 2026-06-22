@@ -29,7 +29,7 @@ def toPi :
     {xs : List α} →
       ListPiTuple F xs →
         (q : Fin xs.length) → F (xs.get q)
-  | [], _tuple, q => False.elim (Nat.not_lt_zero q.val q.isLt)
+  | [], _tuple, q => fin_zero_elim q
   | _x :: _xs, tuple, q => by
       cases q using Fin.cases with
       | zero =>
@@ -74,7 +74,7 @@ theorem toPi_ofPi :
       toPi (ofPi child) = child
   | [], child => by
       funext q
-      exact False.elim (Nat.not_lt_zero q.val q.isLt)
+      exact fin_zero_elim q
   | _x :: xs, child => by
       funext q
       cases q using Fin.cases with

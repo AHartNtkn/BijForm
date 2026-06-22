@@ -16,6 +16,10 @@ theorem fin_mk_val_eq {n : Nat} (i : Fin n) (h : i.val < n) :
 theorem fin_one_eq (i j : Fin 1) : i = j :=
   fin_eq_of_val_eq ((Nat.lt_one_iff.mp i.isLt).trans (Nat.lt_one_iff.mp j.isLt).symm)
 
+/-- Eliminate an impossible `Fin 0` value. -/
+def fin_zero_elim {α : Sort u} (i : Fin 0) : α :=
+  nomatch i
+
 /-- A concrete bijection, kept local so the project does not need mathlib's
 `Equiv` while the formalization is still dependency-free. -/
 structure Iso (α : Sort u) (β : Sort v) where
@@ -187,6 +191,20 @@ theorem subsingletonLeft {α : Type u} {β : Type v}
 
 end Iso
 
+/-- The empty finite carrier is isomorphic to `Empty`. -/
+def fin_zero_empty_iso : Fin 0 ≃ᵢ Empty where
+  toFun := fin_zero_elim
+  invFun := fun e => nomatch e
+  left_inv := fun i => fin_zero_elim i
+  right_inv := fun e => nomatch e
+
+/-- Any product with a `Fin 0` factor is empty. -/
+def fin_zero_prod_empty_iso (α : Type u) : (Fin 0 × α) ≃ᵢ Empty where
+  toFun := fun p => fin_zero_elim p.1
+  invFun := fun e => nomatch e
+  left_inv := fun p => fin_zero_elim p.1
+  right_inv := fun e => nomatch e
+
 /--
 Finite table for a subtype.  A table owns the explicit values plus the evidence
 that the list is duplicate-free, sound for the predicate, and complete.
@@ -205,8 +223,7 @@ private theorem get_injective_of_nodup {α : Type u} :
     ∀ (xs : List α), xs.Nodup →
       Function.Injective fun i : Fin xs.length => xs.get i
   | [], _hnodup, i, _j, _h => by
-      cases i with
-      | mk val isLt => exact False.elim (Nat.not_lt_zero val isLt)
+      exact fin_zero_elim i
   | x :: xs, hnodup, i, j, h => by
       have hsplit : x ∉ xs ∧ xs.Nodup := by
         simpa using hnodup

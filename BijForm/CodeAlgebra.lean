@@ -491,18 +491,17 @@ def finProdNatOrNat (k : Nat) : ((Fin k × Nat) ⊕ Nat) ≃ᵢ Nat := by
   else
     exact
       { toFun
-          | Sum.inl p => False.elim (Nat.not_lt_zero p.1.val (by
+          | Sum.inl p =>
               have hzero : k = 0 := Nat.eq_zero_of_not_pos h
-              simpa [hzero] using p.1.isLt))
+              fin_zero_elim (hzero ▸ p.1)
           | Sum.inr n => n
         invFun := Sum.inr
         left_inv := by
           intro x
           cases x with
           | inl p =>
-              exact False.elim (Nat.not_lt_zero p.1.val (by
-                have hzero : k = 0 := Nat.eq_zero_of_not_pos h
-                simpa [hzero] using p.1.isLt))
+              have hzero : k = 0 := Nat.eq_zero_of_not_pos h
+              exact fin_zero_elim (hzero ▸ p.1)
           | inr n => rfl
         right_inv := by
           intro n
@@ -518,9 +517,8 @@ theorem finProdNatOrNat_inl_snd_le (k : Nat) (p : Fin k × Nat) :
   · rw [finProdNatOrNat_eq_toNatSum_of_pos h]
     exact toNatSum_inl_le_of_le (finProdNat k h) (Iso.refl Nat)
       (finProdNat_toFun_snd_le k h p)
-  · exact False.elim (Nat.not_lt_zero p.1.val (by
-      have hzero : k = 0 := Nat.eq_zero_of_not_pos h
-      simpa [hzero] using p.1.isLt))
+  · have hzero : k = 0 := Nat.eq_zero_of_not_pos h
+    exact fin_zero_elim (hzero ▸ p.1)
 
 theorem finProdNatOrNat_inr_le (k n : Nat) :
     n ≤ (finProdNatOrNat k).toFun (Sum.inr n) := by
