@@ -321,26 +321,23 @@ theorem IsoRelated.firstPendingStepSearch?_connect
     ⟨rightMateEdge', hstep⟩
   exact ⟨rightMateEdge', hstep⟩
 
-theorem IsoRelated.firstPendingConnectSearch?_none
+theorem firstPendingConnectSearch?_none_preserved
     {G H : OpenPortHypergraph Sig boundary}
-    {e : PortHypergraphIso G.raw H.raw}
-    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
-    {left : SearchState G (activeLabel :: restLabels)}
-    {right : SearchState H (activeLabel :: restLabels)}
-    (_hr : IsoRelated e left right)
+    (e : PortHypergraphIso G.raw H.raw)
+    (leftSeen : Fin G.raw.nodeCount → Prop)
+    (rightSeen : Fin H.raw.nodeCount → Prop)
     {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
-    (_hpending : left.pending = active :: rest)
     (hconnect :
-      firstPendingConnectSearch? G left.seenNode active rest = none) :
-    firstPendingConnectSearch? H right.seenNode (e.endpointEquiv.toFun active)
+      firstPendingConnectSearch? G leftSeen active rest = none) :
+    firstPendingConnectSearch? H rightSeen (e.endpointEquiv.toFun active)
         (rest.map e.endpointEquiv.toFun) = none := by
   cases hright :
-      firstPendingConnectSearch? H right.seenNode
+      firstPendingConnectSearch? H rightSeen
         (e.endpointEquiv.toFun active) (rest.map e.endpointEquiv.toFun) with
   | none => rfl
   | some step =>
       rcases firstPendingConnectSearch?_some_connect
-          H right.seenNode hright with
+          H rightSeen hright with
         ⟨rightMate, hmateRight, _hstepEq⟩
       let leftMate : Fin rest.length :=
         listMapPreimageIndex e.endpointEquiv.toFun rest rightMate
@@ -352,7 +349,7 @@ theorem IsoRelated.firstPendingConnectSearch?_none
           simpa [leftMate, listMapPreimageIndex_get] using hmateRight
         simpa using PortHypergraphIso.edgeMate_reflected e hmateMapped
       rcases firstPendingConnectSearch?_exists_of_witness
-          G left.seenNode leftMate hmateLeft with
+          G leftSeen leftMate hmateLeft with
         ⟨leftStep, hleftStep⟩
       rw [hconnect] at hleftStep
       cases hleftStep
@@ -430,7 +427,7 @@ theorem IsoRelated.firstPendingStepSearch?_bud
     {right : SearchState H (activeLabel :: restLabels)}
     (hr : IsoRelated e left right)
     {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
-    (hpending : left.pending = active :: rest)
+    (_hpending : left.pending = active :: rest)
     (hconnect :
       firstPendingConnectSearch? G left.seenNode active rest = none)
     (node : Fin G.raw.nodeCount)
@@ -465,7 +462,8 @@ theorem IsoRelated.firstPendingStepSearch?_bud
     have hpre := hr.seen_mem_reflected hseen
     exact hunseen (by simpa [rightNode, seenNode] using hpre)
   have hconnectRight :=
-    hr.firstPendingConnectSearch?_none hpending hconnect
+    firstPendingConnectSearch?_none_preserved e left.seenNode right.seenNode
+      hconnect
   rcases right.firstPendingStepSearch?_some_bud_exact_of_witness
       hconnectRight rightNode rightSlot rightMateEdge rightUnseen with
     ⟨rightMateEdge', rightUnseen', hstep⟩
