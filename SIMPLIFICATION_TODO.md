@@ -483,13 +483,17 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
   - Validation: bridge files compose these facts instead of owning duplicate
     hypergraph reasoning.
 
-- [ ] Reduce duplicated preserved/reflected fields in `PortHypergraphIso`.
+- [x] Reduce duplicated preserved/reflected fields in `PortHypergraphIso`.
   - Owner: `BijForm.StringDiagram.Hypergraph.PortHypergraphIso`
   - Evidence: forward and reflected facts are represented and transported in
     parallel in `PortHypergraphIso`.
   - Action: store minimal forward preservation data plus equivalences; derive
     reflected and symmetric facts as namespace theorems.
   - Validation: traversal iso-related proofs consume derived reflected lemmas.
+  - Completed: removed reflected fields from `PortHypergraphIso`; reflected
+    boundary, label, endpoint-edge, node-label, and incidence laws are now
+    derived namespace theorems. `ofPreserved`, `refl`, `symm`, and `trans`
+    provide only forward preservation data.
 
 ## Quotients and Validation Tooling
 
