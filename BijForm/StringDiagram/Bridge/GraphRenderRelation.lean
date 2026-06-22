@@ -2597,22 +2597,11 @@ def GraphRenderRelated.toPortHypergraphIso
     {G : OpenPortHypergraph Sig boundary}
     {st : SearchState G []}
     {rst : RenderState Sig []}
-    (hv : rst.ValidIds)
-    (hp : rst.EndpointPartition)
-    (hn : rst.NodeIncidentNodup)
-    (pref : rst.EndpointPrefix boundary)
-    (ho : rst.OwnerIdPartition boundary)
-    (hall :
-      PortHypergraph.AllConstructorsReachBoundary
-        (RenderState.portHypergraphEvidenceOfInvariants
-          hv hp hn pref ho).toPortHypergraph)
+    (traceEv : RenderState.RenderTraceEvidence rst boundary)
     (hrel : GraphRenderRelated G rst st)
     (hexhausted : st.GraphExhausted) :
-    PortHypergraphIso
-      (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph.raw
-      G.raw := by
-  let R :=
-    (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph.raw
+    PortHypergraphIso traceEv.toOpenPortHypergraph.raw G.raw := by
+  let R := traceEv.toOpenPortHypergraph.raw
   let endpointCover :
       ∀ endpoint : Fin G.raw.endpointCount,
         endpoint ∈ endpointOrder G st :=
@@ -2639,10 +2628,13 @@ def GraphRenderRelated.toPortHypergraphIso
     have hval :
         (R.boundaryPort b).val = b.val := by
       simpa [R, RenderState.OpenPortHypergraphEvidence.toOpenPortHypergraph,
+        RenderState.RenderTraceEvidence.toOpenPortHypergraph,
+        RenderState.RenderTraceEvidence.openEvidence,
+        RenderState.RenderTraceEvidence.graphEvidence,
         RenderState.PortHypergraphEvidence.toPortHypergraph,
-        RenderState.openEvidenceOfInvariants,
         RenderState.portHypergraphEvidenceOfInvariants] using
-        RenderState.boundaryEvidenceOfPrefix_boundaryPort_val pref b
+        RenderState.boundaryEvidenceOfPrefix_boundaryPort_val
+          traceEv.endpointPrefix b
     dsimp [endpointEquiv, Iso.trans, finCastIso, listFinIso]
     have hprefix :=
       list_get_append_left (List.ofFn G.raw.boundaryPort)
@@ -2662,32 +2654,40 @@ def GraphRenderRelated.toPortHypergraphIso
     exact hprefix.trans hboundary
   · intro endpoint
     dsimp [R, endpointEquiv, Iso.trans, finCastIso, listFinIso,
+      RenderState.RenderTraceEvidence.toOpenPortHypergraph,
+      RenderState.RenderTraceEvidence.openEvidence,
+      RenderState.RenderTraceEvidence.graphEvidence,
       RenderState.OpenPortHypergraphEvidence.toOpenPortHypergraph,
       RenderState.PortHypergraphEvidence.toPortHypergraph,
-      RenderState.openEvidenceOfInvariants,
       RenderState.portHypergraphEvidenceOfInvariants]
     exact hrel.endpoint_label endpoint
   · intro edge
     dsimp [R, edgeEquiv, Iso.trans, finCastIso, listFinIso,
+      RenderState.RenderTraceEvidence.toOpenPortHypergraph,
+      RenderState.RenderTraceEvidence.openEvidence,
+      RenderState.RenderTraceEvidence.graphEvidence,
       RenderState.OpenPortHypergraphEvidence.toOpenPortHypergraph,
       RenderState.PortHypergraphEvidence.toPortHypergraph,
-      RenderState.openEvidenceOfInvariants,
       RenderState.portHypergraphEvidenceOfInvariants]
     exact hrel.edge_label edge
   · intro endpoint
     dsimp [R, endpointEquiv, edgeEquiv, Iso.trans, finCastIso, listFinIso,
+      RenderState.RenderTraceEvidence.toOpenPortHypergraph,
+      RenderState.RenderTraceEvidence.openEvidence,
+      RenderState.RenderTraceEvidence.graphEvidence,
       RenderState.OpenPortHypergraphEvidence.toOpenPortHypergraph,
       RenderState.PortHypergraphEvidence.toPortHypergraph,
-      RenderState.openEvidenceOfInvariants,
       RenderState.portHypergraphEvidenceOfInvariants,
       RenderState.edgeEvidenceOfPartition,
       RenderState.endpointEdgeEvidenceOfPartition]
-    let edgeIndex := RenderState.endpointEdgeOfPartition hp endpoint
+    let edgeIndex := RenderState.endpointEdgeOfPartition
+      traceEv.endpointPartition endpoint
     have hside :
         endpoint.val = (rst.edges.get edgeIndex).left ∨
           endpoint.val = (rst.edges.get edgeIndex).right := by
       simpa [edgeIndex] using
-        RenderState.endpointEdgeOfPartition_endpoint hp endpoint
+        RenderState.endpointEdgeOfPartition_endpoint
+          traceEv.endpointPartition endpoint
     rcases hside with hleft | hright
     · change
         G.raw.endpointEdge
@@ -2703,16 +2703,20 @@ def GraphRenderRelated.toPortHypergraphIso
       exact hrel.edge_right_of_endpoint_val hright
   · intro node
     dsimp [R, nodeEquiv, Iso.trans, finCastIso, listFinIso,
+      RenderState.RenderTraceEvidence.toOpenPortHypergraph,
+      RenderState.RenderTraceEvidence.openEvidence,
+      RenderState.RenderTraceEvidence.graphEvidence,
       RenderState.OpenPortHypergraphEvidence.toOpenPortHypergraph,
       RenderState.PortHypergraphEvidence.toPortHypergraph,
-      RenderState.openEvidenceOfInvariants,
       RenderState.portHypergraphEvidenceOfInvariants]
     exact hrel.node_label node
   · intro node
     dsimp [R, endpointEquiv, nodeEquiv, Iso.trans, finCastIso, listFinIso,
+      RenderState.RenderTraceEvidence.toOpenPortHypergraph,
+      RenderState.RenderTraceEvidence.openEvidence,
+      RenderState.RenderTraceEvidence.graphEvidence,
       RenderState.OpenPortHypergraphEvidence.toOpenPortHypergraph,
       RenderState.PortHypergraphEvidence.toPortHypergraph,
-      RenderState.openEvidenceOfInvariants,
       RenderState.portHypergraphEvidenceOfInvariants,
       RenderState.incidenceEvidenceOfValidIds,
       RenderState.incidentOfValidIds]

@@ -103,9 +103,7 @@ theorem OpenPortHypergraph.toOpenPortHypergraph_fromGraph_iso
     Diag.renderTraceFromBoundary_openEvidence,
     Diag.renderTraceFromBoundary_graphEvidence] using
     OpenPortHypergraph.SearchState.GraphRenderRelated.toPortHypergraphIso
-      evidence.validIds evidence.endpointPartition evidence.nodeIncidentNodup
-      evidence.endpointPrefix evidence.ownerIdPartition
-      evidence.allConstructorsReachBoundary hrelFinal hexhausted
+      evidence hrelFinal hexhausted
 
 /--
 Semantic bridge assembly between traversal syntax and open port-hypergraphs up

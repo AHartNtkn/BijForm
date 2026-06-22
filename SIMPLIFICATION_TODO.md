@@ -610,9 +610,9 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     edge mates. `Diag.renderTrace_evidence` and
     `Diag.renderTraceFromBoundary_evidence` produce the package for traces, and
     `Bridge.Quotient` now consumes the package instead of locally rebuilding
-    `RenderState.openEvidenceOfInvariants`. Recursive tuple signatures in
-    `SyntaxRoundTrip` and `GraphRenderRelation.toPortHypergraphIso` remain
-    open.
+    `RenderState.openEvidenceOfInvariants`.
+    `GraphRenderRelation.toPortHypergraphIso` now takes the package directly.
+    Recursive tuple signatures in `SyntaxRoundTrip` remain open.
 
 - [ ] Table-drive finite string-diagram frontier cases.
   - Owner: `BijForm.StringDiagram.FiniteCoding.Syntax`
