@@ -171,6 +171,11 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     through `endpointOrderIndex` and `edgeOrderIndex` for child order lookups.
     The pending relation-field bridge and node/incident-slot preservation
     region remain open.
+  - Partial: routed bud-child node-label and node-incident preservation
+    branches through `nodeOrderIndex` and `endpointOrderIndex` for child order
+    lookups. The remaining raw `hchild*Length` hits are the pending
+    relation-field bridge; dependent incident-slot casts still need a separate
+    helper family.
 
 ## Code Algebra and Rank Descent
 

@@ -2732,7 +2732,8 @@ theorem GraphRenderRelated.budChild
           let childNode :
               Fin (nodeOrder
                 (st.budChild hpending node slot hmate hunseen)).length :=
-            Fin.cast hchildNodeLength renderIdx
+            nodeOrderIndex (st.budChild hpending node slot hmate hunseen)
+              hchildNodeLength renderIdx
           let oldOrderNode : Fin (nodeOrder st).length :=
             Fin.cast hrel.node_length oldNode
           have horder :
@@ -2768,7 +2769,8 @@ theorem GraphRenderRelated.budChild
           let childNode :
               Fin (nodeOrder
                 (st.budChild hpending node slot hmate hunseen)).length :=
-            Fin.cast hchildNodeLength renderIdx
+            nodeOrderIndex (st.budChild hpending node slot hmate hunseen)
+              hchildNodeLength renderIdx
           have horder :
               (nodeOrder (st.budChild hpending node slot hmate hunseen)).get
                   childNode = node := by
@@ -2809,7 +2811,8 @@ theorem GraphRenderRelated.budChild
           let childEndpoint :
               Fin (endpointOrder G
                 (st.budChild hpending node slot hmate hunseen)).length :=
-            Fin.cast hchildEndpointLength
+            endpointOrderIndex (st.budChild hpending node slot hmate hunseen)
+              hchildEndpointLength
               ⟨((Diag.budStep renderNode entry ok rst).nodes.get renderIdx).incident.get
                   renderSlot,
                 hchildNodeIncidentBound renderIdx renderSlot⟩
@@ -2849,7 +2852,8 @@ theorem GraphRenderRelated.budChild
           let childNode :
               Fin (nodeOrder
                 (st.budChild hpending node slot hmate hunseen)).length :=
-            Fin.cast hchildNodeLength renderIdx
+            nodeOrderIndex (st.budChild hpending node slot hmate hunseen)
+              hchildNodeLength renderIdx
           let oldOrderNode : Fin (nodeOrder st).length :=
             Fin.cast hrel.node_length oldNode
           have hnodeOrder :
@@ -2924,7 +2928,8 @@ theorem GraphRenderRelated.budChild
           let childEndpoint :
               Fin (endpointOrder G
                 (st.budChild hpending node slot hmate hunseen)).length :=
-            Fin.cast hchildEndpointLength
+            endpointOrderIndex (st.budChild hpending node slot hmate hunseen)
+              hchildEndpointLength
               ⟨((Diag.budStep renderNode entry ok rst).nodes.get renderIdx).incident.get
                   renderSlot,
                 hchildNodeIncidentBound renderIdx renderSlot⟩
@@ -2994,7 +2999,8 @@ theorem GraphRenderRelated.budChild
           let childNode :
               Fin (nodeOrder
                 (st.budChild hpending node slot hmate hunseen)).length :=
-            Fin.cast hchildNodeLength renderIdx
+            nodeOrderIndex (st.budChild hpending node slot hmate hunseen)
+              hchildNodeLength renderIdx
           have hnodeOrder :
               (nodeOrder (st.budChild hpending node slot hmate hunseen)).get
                   childNode = node := by
