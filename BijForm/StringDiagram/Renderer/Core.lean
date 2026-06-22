@@ -136,6 +136,21 @@ structure ValidIds {Sig : Signature} {frontier : List Sig.Port}
         Sig.port node.label
           (Fin.cast (node_incident_length node hmem) slot)
 
+structure EdgeEndpointBounds {Sig : Signature} {frontier : List Sig.Port}
+    (st : RenderState Sig frontier) : Prop where
+  left :
+    ∀ edge : Fin st.edges.length,
+      (st.edges.get edge).left < st.endpoints.length
+  right :
+    ∀ edge : Fin st.edges.length,
+      (st.edges.get edge).right < st.endpoints.length
+
+def ValidIds.edgeEndpointBounds {Sig : Signature} {frontier : List Sig.Port}
+    {st : RenderState Sig frontier} (hv : st.ValidIds) :
+    st.EdgeEndpointBounds where
+  left edge := hv.edge_left_bound (st.edges.get edge) (List.get_mem st.edges edge)
+  right edge := hv.edge_right_bound (st.edges.get edge) (List.get_mem st.edges edge)
+
 def edgeEndpointIds {Sig : Signature} {frontier : List Sig.Port}
     (st : RenderState Sig frontier) : List Nat :=
   st.edges.flatMap fun edge => [edge.left, edge.right]

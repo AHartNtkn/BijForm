@@ -430,6 +430,10 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     child rest-plus-fresh-endpoint frontier/pending relation-field update; the
     main `budChild` constructor proof no longer locally assembles the
     left/right `IndexedListRel` append-and-erase bridge.
+  - Partial: `RenderState.EdgeEndpointBounds` now packages weak indexed
+    rendered-edge endpoint bounds, and
+    `GraphRenderRelated.connectChild_edgeEndpointBounds` owns the connect child
+    edge-bound update consumed by the main `connectChild` proof.
 
 - [ ] Introduce declarative render deltas for connect and bud.
   - Owner: `BijForm.StringDiagram.Renderer.Steps`
