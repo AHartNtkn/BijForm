@@ -1450,6 +1450,135 @@ theorem nodeOrder_budChild
       nodeOrder st ++ [node] := by
   simp [nodeOrder, SearchState.budChild]
 
+theorem endpointOrder_budChild_get_old
+    {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {frontier : List Sig.Port}
+    (st : SearchState G (activeLabel :: frontier))
+    {active : Fin G.raw.endpointCount}
+    {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest)
+    (node : Fin G.raw.nodeCount)
+    (slot : Fin (G.raw.incident node).length)
+    (hmate :
+      PortHypergraph.EdgeMate G.raw active ((G.raw.incident node).get slot))
+    (hunseen : node ∉ st.seenNodes)
+    (endpoint :
+      Fin (endpointOrder G (st.budChild hpending node slot hmate hunseen)).length)
+    (oldEndpoint : Fin (endpointOrder G st).length)
+    (hval : endpoint.val = oldEndpoint.val) :
+    (endpointOrder G (st.budChild hpending node slot hmate hunseen)).get
+        endpoint =
+      (endpointOrder G st).get oldEndpoint := by
+  exact list_get_of_eq_append_left_of_val_eq
+    (endpointOrder_budChild st hpending node slot hmate hunseen)
+    endpoint oldEndpoint hval
+
+theorem endpointOrder_budChild_get_new
+    {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {frontier : List Sig.Port}
+    (st : SearchState G (activeLabel :: frontier))
+    {active : Fin G.raw.endpointCount}
+    {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest)
+    (node : Fin G.raw.nodeCount)
+    (slot : Fin (G.raw.incident node).length)
+    (hmate :
+      PortHypergraph.EdgeMate G.raw active ((G.raw.incident node).get slot))
+    (hunseen : node ∉ st.seenNodes)
+    (endpoint :
+      Fin (endpointOrder G (st.budChild hpending node slot hmate hunseen)).length)
+    (nodeEndpoint : Fin (G.raw.incident node).length)
+    (hnew : (endpointOrder G st).length ≤ endpoint.val)
+    (hval : endpoint.val - (endpointOrder G st).length = nodeEndpoint.val) :
+    (endpointOrder G (st.budChild hpending node slot hmate hunseen)).get
+        endpoint =
+      (G.raw.incident node).get nodeEndpoint := by
+  exact list_get_of_eq_append_right_of_val_eq
+    (endpointOrder_budChild st hpending node slot hmate hunseen)
+    endpoint nodeEndpoint hnew hval
+
+theorem edgeOrder_budChild_get_old
+    {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {frontier : List Sig.Port}
+    (st : SearchState G (activeLabel :: frontier))
+    {active : Fin G.raw.endpointCount}
+    {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest)
+    (node : Fin G.raw.nodeCount)
+    (slot : Fin (G.raw.incident node).length)
+    (hmate :
+      PortHypergraph.EdgeMate G.raw active ((G.raw.incident node).get slot))
+    (hunseen : node ∉ st.seenNodes)
+    (edge : Fin (edgeOrder (st.budChild hpending node slot hmate hunseen)).length)
+    (oldEdge : Fin (edgeOrder st).length)
+    (hval : edge.val = oldEdge.val) :
+    (edgeOrder (st.budChild hpending node slot hmate hunseen)).get edge =
+      (edgeOrder st).get oldEdge := by
+  exact list_get_of_eq_append_left_of_val_eq
+    (edgeOrder_budChild st hpending node slot hmate hunseen)
+    edge oldEdge hval
+
+theorem edgeOrder_budChild_get_new
+    {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {frontier : List Sig.Port}
+    (st : SearchState G (activeLabel :: frontier))
+    {active : Fin G.raw.endpointCount}
+    {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest)
+    (node : Fin G.raw.nodeCount)
+    (slot : Fin (G.raw.incident node).length)
+    (hmate :
+      PortHypergraph.EdgeMate G.raw active ((G.raw.incident node).get slot))
+    (hunseen : node ∉ st.seenNodes)
+    (edge : Fin (edgeOrder (st.budChild hpending node slot hmate hunseen)).length)
+    (hval : edge.val = (edgeOrder st).length) :
+    (edgeOrder (st.budChild hpending node slot hmate hunseen)).get edge =
+      G.raw.endpointEdge active := by
+  exact list_get_of_eq_append_cons_at_length
+    (edgeOrder_budChild st hpending node slot hmate hunseen) edge hval
+
+theorem nodeOrder_budChild_get_old
+    {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {frontier : List Sig.Port}
+    (st : SearchState G (activeLabel :: frontier))
+    {active : Fin G.raw.endpointCount}
+    {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest)
+    (node : Fin G.raw.nodeCount)
+    (slot : Fin (G.raw.incident node).length)
+    (hmate :
+      PortHypergraph.EdgeMate G.raw active ((G.raw.incident node).get slot))
+    (hunseen : node ∉ st.seenNodes)
+    (childNode :
+      Fin (nodeOrder (st.budChild hpending node slot hmate hunseen)).length)
+    (oldNode : Fin (nodeOrder st).length)
+    (hval : childNode.val = oldNode.val) :
+    (nodeOrder (st.budChild hpending node slot hmate hunseen)).get childNode =
+      (nodeOrder st).get oldNode := by
+  exact list_get_of_eq_append_left_of_val_eq
+    (nodeOrder_budChild st hpending node slot hmate hunseen)
+    childNode oldNode hval
+
+theorem nodeOrder_budChild_get_new
+    {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {frontier : List Sig.Port}
+    (st : SearchState G (activeLabel :: frontier))
+    {active : Fin G.raw.endpointCount}
+    {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest)
+    (node : Fin G.raw.nodeCount)
+    (slot : Fin (G.raw.incident node).length)
+    (hmate :
+      PortHypergraph.EdgeMate G.raw active ((G.raw.incident node).get slot))
+    (hunseen : node ∉ st.seenNodes)
+    (childNode :
+      Fin (nodeOrder (st.budChild hpending node slot hmate hunseen)).length)
+    (hval : childNode.val = (nodeOrder st).length) :
+    (nodeOrder (st.budChild hpending node slot hmate hunseen)).get childNode =
+      node := by
+  exact list_get_of_eq_append_cons_at_length
+    (nodeOrder_budChild st hpending node slot hmate hunseen) childNode hval
+
 theorem GraphRenderRelated.budChild
     {G : OpenPortHypergraph Sig boundary}
     {activeLabel : Sig.Port} {frontier : List Sig.Port}
@@ -1526,16 +1655,15 @@ theorem GraphRenderRelated.budChild
               (endpointOrder G st).get
                 (Fin.cast hrel.endpoint_length ⟨raw, hold⟩) := by
         intro raw hold hbound
-        have horder :=
-          endpointOrder_budChild st hpending node slot hmate hunseen
         let childEndpoint :
             Fin (endpointOrder G
               (st.budChild hpending node slot hmate hunseen)).length :=
           Fin.cast hchildEndpointLength ⟨raw, hbound⟩
         let oldEndpoint : Fin (endpointOrder G st).length :=
           Fin.cast hrel.endpoint_length ⟨raw, hold⟩
-        exact list_get_of_eq_append_left_of_val_eq horder
-          childEndpoint oldEndpoint (by simp [childEndpoint, oldEndpoint])
+        exact endpointOrder_budChild_get_old st hpending node slot hmate
+          hunseen childEndpoint oldEndpoint
+          (by simp [childEndpoint, oldEndpoint])
       have endpointAt_new :
           ∀ {raw : Nat}
             (hle : rst.endpoints.length ≤ raw)
@@ -1550,8 +1678,6 @@ theorem GraphRenderRelated.budChild
                   change raw - rst.endpoints.length < Sig.arity renderNode
                   omega⟩ := by
         intro raw hle hbound
-        have horder :=
-          endpointOrder_budChild st hpending node slot hmate hunseen
         let childEndpoint :
             Fin (endpointOrder G
               (st.budChild hpending node slot hmate hunseen)).length :=
@@ -1566,8 +1692,8 @@ theorem GraphRenderRelated.budChild
             rw [hincidentLen]
             change raw - rst.endpoints.length < Sig.arity renderNode
             omega⟩
-        exact list_get_of_eq_append_right_of_val_eq horder
-          childEndpoint newEndpoint hleOrder (by
+        exact endpointOrder_budChild_get_new st hpending node slot hmate
+          hunseen childEndpoint newEndpoint hleOrder (by
             have holdLen :
                 (endpointOrder G st).length = rst.endpoints.length :=
               hrel.endpoint_length.symm
@@ -1581,15 +1707,13 @@ theorem GraphRenderRelated.budChild
               (edgeOrder st).get
                 (Fin.cast hrel.edge_length ⟨raw, hold⟩) := by
         intro raw hold hbound
-        have horder :=
-          edgeOrder_budChild st hpending node slot hmate hunseen
         let childEdge :
             Fin (edgeOrder (st.budChild hpending node slot hmate hunseen)).length :=
           Fin.cast hchildEdgeLength ⟨raw, hbound⟩
         let oldEdge : Fin (edgeOrder st).length :=
           Fin.cast hrel.edge_length ⟨raw, hold⟩
-        exact list_get_of_eq_append_left_of_val_eq horder
-          childEdge oldEdge (by simp [childEdge, oldEdge])
+        exact edgeOrder_budChild_get_old st hpending node slot hmate
+          hunseen childEdge oldEdge (by simp [childEdge, oldEdge])
       have edgeAt_new :
           ∀ {raw : Nat}
             (hnew : raw = rst.edges.length)
@@ -1598,13 +1722,11 @@ theorem GraphRenderRelated.budChild
                 (Fin.cast hchildEdgeLength ⟨raw, hbound⟩) =
               G.raw.endpointEdge active := by
         intro raw hnew hbound
-        have horder :=
-          edgeOrder_budChild st hpending node slot hmate hunseen
         let childEdge :
             Fin (edgeOrder (st.budChild hpending node slot hmate hunseen)).length :=
           Fin.cast hchildEdgeLength ⟨raw, hbound⟩
-        exact list_get_of_eq_append_cons_at_length horder childEdge
-          (by simp [childEdge, hnew, hrel.edge_length])
+        exact edgeOrder_budChild_get_new st hpending node slot hmate
+          hunseen childEdge (by simp [childEdge, hnew, hrel.edge_length])
       have nodeAt_old :
           ∀ {raw : Nat}
             (hold : raw < rst.nodes.length)
@@ -1614,15 +1736,13 @@ theorem GraphRenderRelated.budChild
               (nodeOrder st).get
                 (Fin.cast hrel.node_length ⟨raw, hold⟩) := by
         intro raw hold hbound
-        have horder :=
-          nodeOrder_budChild st hpending node slot hmate hunseen
         let childNode :
             Fin (nodeOrder (st.budChild hpending node slot hmate hunseen)).length :=
           Fin.cast hchildNodeLength ⟨raw, hbound⟩
         let oldNode : Fin (nodeOrder st).length :=
           Fin.cast hrel.node_length ⟨raw, hold⟩
-        exact list_get_of_eq_append_left_of_val_eq horder
-          childNode oldNode (by simp [childNode, oldNode])
+        exact nodeOrder_budChild_get_old st hpending node slot hmate
+          hunseen childNode oldNode (by simp [childNode, oldNode])
       have nodeAt_new :
           ∀ {raw : Nat}
             (hnew : raw = rst.nodes.length)
@@ -1631,13 +1751,11 @@ theorem GraphRenderRelated.budChild
                 (Fin.cast hchildNodeLength ⟨raw, hbound⟩) =
               node := by
         intro raw hnew hbound
-        have horder :=
-          nodeOrder_budChild st hpending node slot hmate hunseen
         let childNode :
             Fin (nodeOrder (st.budChild hpending node slot hmate hunseen)).length :=
           Fin.cast hchildNodeLength ⟨raw, hbound⟩
-        exact list_get_of_eq_append_cons_at_length horder childNode
-          (by simp [childNode, hnew, hrel.node_length])
+        exact nodeOrder_budChild_get_new st hpending node slot hmate
+          hunseen childNode (by simp [childNode, hnew, hrel.node_length])
       have hchildNodeIncidentLength :
           ∀ renderIdx : Fin (Diag.budStep renderNode entry ok rst).nodes.length,
             ((Diag.budStep renderNode entry ok rst).nodes.get renderIdx).incident.length =
@@ -1835,8 +1953,6 @@ theorem GraphRenderRelated.budChild
               exact fin_eq_of_val_eq rfl
             rw [hidx]
             exact hpendingVals.2 ⟨n, hid⟩
-          have horder :=
-            endpointOrder_budChild st hpending node slot hmate hunseen
           let childEndpoint :
               Fin (endpointOrder G
                 (st.budChild hpending node slot hmate hunseen)).length :=
@@ -1849,8 +1965,9 @@ theorem GraphRenderRelated.budChild
               (endpointOrder G (st.budChild hpending node slot hmate hunseen)).get
                   childEndpoint =
                 (endpointOrder G st).get oldEndpoint :=
-            list_get_of_eq_append_left_of_val_eq horder
-              childEndpoint oldEndpoint (by simp [childEndpoint, oldEndpoint])
+            endpointOrder_budChild_get_old st hpending node slot hmate
+              hunseen childEndpoint oldEndpoint
+              (by simp [childEndpoint, oldEndpoint])
           exact hchildOld.trans hold
         have hrightRel :
             ∀ (n : Nat) (hid : n < nodeEndpoints.length)
@@ -1868,8 +1985,6 @@ theorem GraphRenderRelated.budChild
             rw [Diag.budStep_endpoints_length renderNode entry ok rst]
             simpa [nodeEndpoints, renderNode, rv.nextEndpoint_eq] using hfreshLt
           refine ⟨hchildBound, ?_⟩
-          have horder :=
-            endpointOrder_budChild st hpending node slot hmate hunseen
           let childEndpoint :
               Fin (endpointOrder G
                 (st.budChild hpending node slot hmate hunseen)).length :=
@@ -1896,8 +2011,8 @@ theorem GraphRenderRelated.budChild
                 (base := rst.endpoints.length)
                 (arity := Sig.arity renderNode)
                 rv.nextEndpoint_eq ⟨n, hid⟩
-          exact list_get_of_eq_append_right_of_val_eq horder
-            childEndpoint incidentEndpoint hle hsub
+          exact endpointOrder_budChild_get_new st hpending node slot hmate
+            hunseen childEndpoint incidentEndpoint hle hsub
         have herasedRight :=
           eraseFin_pointwise_relation
             (R := R) hnodeEndpointsLen hrightRel entryIdx slot hentryIdxVal
