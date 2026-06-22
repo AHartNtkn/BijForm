@@ -1788,169 +1788,6 @@ inductive RenderPrefixChildStep
           simpa [firstPendingChildFrontier] using
             (hfrontier.symm ▸ Diag.budStep rendererNode entry ok rst))
 
-theorem RenderPrefixRelated.connectChild_of_new_edge
-    {activeLabel : Sig.Port} {frontier : List Sig.Port}
-    {final : RenderState Sig []}
-    {ev : RenderState.RenderTraceEvidence final boundary}
-    {rst : RenderState Sig (activeLabel :: frontier)}
-    {sst : SearchState ev.toOpenPortHypergraph (activeLabel :: frontier)}
-    (hrel : RenderPrefixRelated ev rst sst)
-    {active : Fin ev.toOpenPortHypergraph.raw.endpointCount}
-    {rest : List (Fin ev.toOpenPortHypergraph.raw.endpointCount)}
-    (hpending : sst.pending = active :: rest)
-    (mate : Fin rest.length)
-    (hmate :
-      PortHypergraph.EdgeMate ev.toOpenPortHypergraph.raw active
-        (rest.get mate))
-    (ok :
-      Sig.compatible activeLabel
-        (frontier.get (sst.restLabelIndex hpending mate)))
-    (hactiveEdge :
-      (ev.toOpenPortHypergraph.raw.endpointEdge active).val =
-        rst.edges.length)
-    (hedgesLength :
-      (Diag.connectStep (sst.restLabelIndex hpending mate) ok rst).edges.length =
-        rst.edges.length + 1)
-    (hnodesLength :
-      (Diag.connectStep (sst.restLabelIndex hpending mate) ok rst).nodes.length =
-        rst.nodes.length) :
-    RenderPrefixRelated ev
-      (Diag.connectStep (sst.restLabelIndex hpending mate) ok rst)
-      (sst.connectChild hpending mate hmate) where
-  pending_vals := by
-    cases hidsCase : rst.frontierIds with
-    | nil =>
-        exact False.elim (RenderState.frontierIds_ne_nil rst hidsCase)
-    | cons activeId restIds =>
-        have hids : rst.frontierIds = activeId :: restIds := hidsCase
-        have hvals := hrel.pending_cons_values hpending hids
-        have hrestLen : restIds.length = frontier.length := by
-          exact RenderState.frontierIds_cons_tail_length rst hids
-        rw [Diag.connectStep_frontierIds
-          (sst.restLabelIndex hpending mate) ok rst hids]
-        simp [connectChild]
-        have hmap :
-            (eraseFin rest mate).map (fun endpoint => endpoint.val) =
-              eraseFin (rest.map (fun endpoint => endpoint.val))
-                (listMapIndex (fun endpoint => endpoint.val) rest mate) := by
-          simpa [listMapIndex] using
-            map_eraseFin (fun endpoint => endpoint.val) rest mate
-        rw [hmap]
-        exact eraseFin_eq_of_eq_of_val_eq hvals.2
-          (listMapIndex (fun endpoint => endpoint.val) rest mate)
-          (listIndexCast restIds hrestLen.symm
-            (sst.restLabelIndex hpending mate))
-          (by simp [listMapIndex, restLabelIndex])
-  processed_prefix := by
-    intro edge
-    have hprefix :=
-      fin_cons_prefix_iff hrel.processed_prefix hactiveEdge hedgesLength edge
-    simpa [connectChild] using hprefix
-  seen_prefix := by
-    intro node
-    constructor
-    · intro hmem
-      simp [connectChild] at hmem
-      have hlt := (hrel.seen_prefix node).1 hmem
-      omega
-    · intro hlt
-      simp [connectChild]
-      have hltOld : node.val < rst.nodes.length := by
-        omega
-      exact (hrel.seen_prefix node).2 hltOld
-
-theorem RenderPrefixRelated.budChild_of_new_edge_node
-    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
-    {final : RenderState Sig []}
-    {ev : RenderState.RenderTraceEvidence final boundary}
-    {rst : RenderState Sig (activeLabel :: restLabels)}
-    {sst : SearchState ev.toOpenPortHypergraph (activeLabel :: restLabels)}
-    (hrel : RenderPrefixRelated ev rst sst)
-    {active : Fin ev.toOpenPortHypergraph.raw.endpointCount}
-    {rest : List (Fin ev.toOpenPortHypergraph.raw.endpointCount)}
-    (hpending : sst.pending = active :: rest)
-    (node : Fin ev.toOpenPortHypergraph.raw.nodeCount)
-    (slot : Fin (ev.toOpenPortHypergraph.raw.incident node).length)
-    (hmate :
-      PortHypergraph.EdgeMate ev.toOpenPortHypergraph.raw active
-        ((ev.toOpenPortHypergraph.raw.incident node).get slot))
-    (hunseen : node ∉ sst.seenNodes)
-    (rendererNode : Sig.Node)
-    (entry : Fin (Sig.arity rendererNode))
-    (ok : Sig.compatible activeLabel (Sig.port rendererNode entry))
-    (hfrontier :
-      restLabels ++
-          Sig.nodePortsExcept (ev.toOpenPortHypergraph.raw.nodeLabel node)
-            (budEntry node slot) =
-        restLabels ++ Sig.nodePortsExcept rendererNode entry)
-    (hincidentVals :
-      (ev.toOpenPortHypergraph.raw.incident node).map
-          (fun endpoint => endpoint.val) =
-        Diag.freshNodeEndpoints rst.nextEndpoint (Sig.arity rendererNode))
-    (hslot : slot.val = entry.val)
-    (hactiveEdge :
-      (ev.toOpenPortHypergraph.raw.endpointEdge active).val =
-        rst.edges.length)
-    (hnewNode : node.val = rst.nodes.length)
-    (hedgesLength :
-      (hfrontier.symm ▸ Diag.budStep rendererNode entry ok rst).edges.length =
-        rst.edges.length + 1)
-    (hnodesLength :
-      (hfrontier.symm ▸ Diag.budStep rendererNode entry ok rst).nodes.length =
-        rst.nodes.length + 1) :
-    RenderPrefixRelated ev
-      (hfrontier.symm ▸ Diag.budStep rendererNode entry ok rst)
-      (sst.budChild hpending node slot hmate hunseen) where
-  pending_vals := by
-    have hchildFrontierIds :
-        (sst.budChild hpending node slot hmate hunseen).pending.map
-            (fun endpoint => endpoint.val) =
-          (Diag.budStep rendererNode entry ok rst).frontierIds := by
-      cases hidsCase : rst.frontierIds with
-      | nil =>
-          exact False.elim (RenderState.frontierIds_ne_nil rst hidsCase)
-      | cons activeId restIds =>
-          have hids : rst.frontierIds = activeId :: restIds := hidsCase
-          have hvals := hrel.pending_cons_values hpending hids
-          rw [Diag.budStep_frontierIds rendererNode entry ok rst hids]
-          simp [budChild]
-          rw [hvals.2]
-          have hmap :
-              (eraseFin (ev.toOpenPortHypergraph.raw.incident node) slot).map
-                  (fun endpoint => endpoint.val) =
-                eraseFin
-                  ((ev.toOpenPortHypergraph.raw.incident node).map
-                    (fun endpoint => endpoint.val))
-                  (listMapIndex (fun endpoint => endpoint.val)
-                    (ev.toOpenPortHypergraph.raw.incident node) slot) := by
-            simpa [listMapIndex] using
-              map_eraseFin (fun endpoint => endpoint.val)
-                (ev.toOpenPortHypergraph.raw.incident node) slot
-          rw [hmap]
-          apply congrArg (fun tail => restIds ++ tail)
-          exact eraseFin_eq_of_eq_of_val_eq hincidentVals
-            (listMapIndex (fun endpoint => endpoint.val)
-              (ev.toOpenPortHypergraph.raw.incident node) slot)
-            (listIndexCast
-              (Diag.freshNodeEndpoints rst.nextEndpoint
-                (Sig.arity rendererNode))
-              (by simp [Diag.freshNodeEndpoints]) entry)
-            (by simp [listMapIndex, listIndexCast, hslot])
-    simpa using
-      hchildFrontierIds.trans
-        (RenderState.cast_frontierIds hfrontier.symm
-          (Diag.budStep rendererNode entry ok rst)).symm
-  processed_prefix := by
-    intro edge
-    have hprefix :=
-      fin_cons_prefix_iff hrel.processed_prefix hactiveEdge hedgesLength edge
-    simpa [budChild] using hprefix
-  seen_prefix := by
-    intro candidate
-    have hprefix :=
-      fin_cons_prefix_iff hrel.seen_prefix hnewNode hnodesLength candidate
-    simpa [budChild] using hprefix
-
 theorem RenderPrefixRelated.firstPendingChild
     {activeLabel : Sig.Port} {restLabels : List Sig.Port}
     {final : RenderState Sig []}
@@ -1968,17 +1805,119 @@ theorem RenderPrefixRelated.firstPendingChild
       (sst.firstPendingChildState hpending step) := by
   cases hstep with
   | connect mate hmate ok hactiveEdge hedgesLength hnodesLength =>
-      simpa [firstPendingChildState, firstPendingChildFrontier] using
-        hrel.connectChild_of_new_edge hpending mate hmate ok hactiveEdge
-          hedgesLength hnodesLength
+      have hchild :
+          RenderPrefixRelated ev
+            (Diag.connectStep (sst.restLabelIndex hpending mate) ok rst)
+            (sst.connectChild hpending mate hmate) := by
+        exact {
+        pending_vals := by
+          cases hidsCase : rst.frontierIds with
+          | nil =>
+              exact False.elim (RenderState.frontierIds_ne_nil rst hidsCase)
+          | cons activeId restIds =>
+              have hids : rst.frontierIds = activeId :: restIds := hidsCase
+              have hvals := hrel.pending_cons_values hpending hids
+              have hrestLen : restIds.length = restLabels.length := by
+                exact RenderState.frontierIds_cons_tail_length rst hids
+              rw [Diag.connectStep_frontierIds
+                (sst.restLabelIndex hpending mate) ok rst hids]
+              simp [connectChild]
+              have hmap :
+                  (eraseFin rest mate).map (fun endpoint => endpoint.val) =
+                    eraseFin (rest.map (fun endpoint => endpoint.val))
+                      (listMapIndex (fun endpoint => endpoint.val)
+                        rest mate) := by
+                simpa [listMapIndex] using
+                  map_eraseFin (fun endpoint => endpoint.val) rest mate
+              rw [hmap]
+              exact eraseFin_eq_of_eq_of_val_eq hvals.2
+                (listMapIndex (fun endpoint => endpoint.val) rest mate)
+                (listIndexCast restIds hrestLen.symm
+                  (sst.restLabelIndex hpending mate))
+                (by simp [listMapIndex, restLabelIndex])
+        processed_prefix := by
+          intro edge
+          have hprefix :=
+            fin_cons_prefix_iff hrel.processed_prefix hactiveEdge
+              hedgesLength edge
+          simpa [connectChild] using hprefix
+        seen_prefix := by
+          intro node
+          constructor
+          · intro hmem
+            simp [connectChild] at hmem
+            have hlt := (hrel.seen_prefix node).1 hmem
+            omega
+          · intro hlt
+            simp [connectChild]
+            have hltOld : node.val < rst.nodes.length := by
+              omega
+            exact (hrel.seen_prefix node).2 hltOld }
+      simpa [firstPendingChildState, firstPendingChildFrontier] using hchild
   | bud node slot hmate hunseen rendererNode entry ok hfrontier hincidentVals
       hslot hactiveEdge hnewNode hedgesLength hnodesLength =>
       have hunseenMem : node ∉ sst.seenNodes := by
         simpa [seenNode] using hunseen
+      have hchild :
+          RenderPrefixRelated ev
+            (hfrontier.symm ▸ Diag.budStep rendererNode entry ok rst)
+            (sst.budChild hpending node slot hmate hunseenMem) := by
+        exact {
+        pending_vals := by
+          have hchildFrontierIds :
+              (sst.budChild hpending node slot hmate hunseenMem).pending.map
+                  (fun endpoint => endpoint.val) =
+                (Diag.budStep rendererNode entry ok rst).frontierIds := by
+            cases hidsCase : rst.frontierIds with
+            | nil =>
+                exact False.elim
+                  (RenderState.frontierIds_ne_nil rst hidsCase)
+            | cons activeId restIds =>
+                have hids : rst.frontierIds = activeId :: restIds := hidsCase
+                have hvals := hrel.pending_cons_values hpending hids
+                rw [Diag.budStep_frontierIds rendererNode entry ok rst hids]
+                simp [budChild]
+                rw [hvals.2]
+                have hmap :
+                    (eraseFin (ev.toOpenPortHypergraph.raw.incident node)
+                        slot).map (fun endpoint => endpoint.val) =
+                      eraseFin
+                        ((ev.toOpenPortHypergraph.raw.incident node).map
+                          (fun endpoint => endpoint.val))
+                        (listMapIndex (fun endpoint => endpoint.val)
+                          (ev.toOpenPortHypergraph.raw.incident node)
+                          slot) := by
+                  simpa [listMapIndex] using
+                    map_eraseFin (fun endpoint => endpoint.val)
+                      (ev.toOpenPortHypergraph.raw.incident node) slot
+                rw [hmap]
+                apply congrArg (fun tail => restIds ++ tail)
+                exact eraseFin_eq_of_eq_of_val_eq hincidentVals
+                  (listMapIndex (fun endpoint => endpoint.val)
+                    (ev.toOpenPortHypergraph.raw.incident node) slot)
+                  (listIndexCast
+                    (Diag.freshNodeEndpoints rst.nextEndpoint
+                      (Sig.arity rendererNode))
+                    (by simp [Diag.freshNodeEndpoints]) entry)
+                  (by simp [listMapIndex, listIndexCast, hslot])
+          simpa using
+            hchildFrontierIds.trans
+              (RenderState.cast_frontierIds hfrontier.symm
+                (Diag.budStep rendererNode entry ok rst)).symm
+        processed_prefix := by
+          intro edge
+          have hprefix :=
+            fin_cons_prefix_iff hrel.processed_prefix hactiveEdge
+              hedgesLength edge
+          simpa [budChild] using hprefix
+        seen_prefix := by
+          intro candidate
+          have hprefix :=
+            fin_cons_prefix_iff hrel.seen_prefix hnewNode hnodesLength
+              candidate
+          simpa [budChild] using hprefix }
       simpa [firstPendingChildState, firstPendingChildFrontier, seenNode] using
-        hrel.budChild_of_new_edge_node hpending node slot hmate hunseenMem
-          rendererNode entry ok hfrontier hincidentVals hslot hactiveEdge
-          hnewNode hedgesLength hnodesLength
+        hchild
 
 theorem IsoRelated.connectChild
     {G H : OpenPortHypergraph Sig boundary}

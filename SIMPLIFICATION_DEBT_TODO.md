@@ -266,6 +266,13 @@ is ordered to turn helper additions into actual deletion.
     and `firstPendingChild_remainingEdges_lt`. The item remains open because
     branch order-trace, render-prefix, iso, and graph-relation helper families
     still exist.
+  - Partial: the single-use render-prefix wrappers
+    `RenderPrefixRelated.connectChild_of_new_edge` and
+    `RenderPrefixRelated.budChild_of_new_edge_node` were deleted. Their record
+    proofs now live inside `RenderPrefixRelated.firstPendingChild`, with
+    `RenderPrefixChildStep` carrying the branch evidence. The item remains
+    open because branch order-trace, iso, and graph-relation helper families
+    still exist.
 
 - [x] Delete low-value generated-code and presentation pass-through wrappers.
   - Owners: `BijForm.InitialAlgebra`,
