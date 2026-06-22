@@ -285,46 +285,12 @@ theorem renderTrace_connect_active_endpointEdge_val
       left_label := rfl
       right_label := (Sig.compatible_edge ok).symm
       compatible := ok }
-  have hedgeGet :
-      final.edges.get ⟨st.edges.length, by
-        dsimp [final]
-        rcases renderTrace_edgesPrefix child (connectStep mate ok st) with
-          ⟨suffix, hsuffix⟩
-        have hstep :
-            (connectStep mate ok st).edges = st.edges ++ [edge] := by
-          unfold connectStep
-          split
-          · rename_i hnil
-            exact False.elim (RenderState.frontierIds_ne_nil st hnil)
-          · rename_i activeId' restIds' hids'
-            rw [hids] at hids'
-            injection hids' with hactiveEq hrestEq
-            subst activeId'
-            subst restIds'
-            simp [edge, mateId]
-        rw [renderTrace_connect, hsuffix, hstep]
-        simp⟩ = edge := by
-    simpa [final, mateId, edge] using
-      renderTrace_connect_new_edge_get mate ok child st hids
   let edgeIndex : Fin final.edges.length :=
-    ⟨st.edges.length, by
-      dsimp [final]
-      rcases renderTrace_edgesPrefix child (connectStep mate ok st) with
-        ⟨suffix, hsuffix⟩
-      have hstep :
-          (connectStep mate ok st).edges = st.edges ++ [edge] := by
-        unfold connectStep
-        split
-        · rename_i hnil
-          exact False.elim (RenderState.frontierIds_ne_nil st hnil)
-        · rename_i activeId' restIds' hids'
-          rw [hids] at hids'
-          injection hids' with hactiveEq hrestEq
-          subst activeId'
-          subst restIds'
-          simp [edge, mateId]
-      rw [renderTrace_connect, hsuffix, hstep]
-      simp⟩
+    renderTrace_connect_new_edgeIndex mate ok child st hids
+  have hedgeGet :
+      final.edges.get edgeIndex = edge := by
+    simpa [final, mateId, edge, edgeIndex] using
+      renderTrace_connect_new_edge_get mate ok child st hids
   have hside :
       (⟨activeId, hactive⟩ : Fin final.endpoints.length).val =
         (final.edges.get edgeIndex).left := by
@@ -340,7 +306,8 @@ theorem renderTrace_connect_active_endpointEdge_val
       RenderState.portHypergraphEvidenceOfInvariants,
       RenderState.edgeEvidenceOfPartition,
       RenderState.endpointEdgeEvidenceOfPartition] using heq
-  rw [hraw]
+  exact (congrArg Fin.val hraw).trans (by
+    simp [edgeIndex])
 
 /--
 In a completed render trace whose current step is `bud`, the active frontier
@@ -382,46 +349,12 @@ theorem renderTrace_bud_active_endpointEdge_val
       left_label := rfl
       right_label := (Sig.compatible_edge ok).symm
       compatible := ok }
-  have hedgeGet :
-      final.edges.get ⟨st.edges.length, by
-        dsimp [final]
-        rcases renderTrace_edgesPrefix child (budStep node entry ok st) with
-          ⟨suffix, hsuffix⟩
-        have hstep :
-            (budStep node entry ok st).edges = st.edges ++ [edge] := by
-          unfold budStep
-          split
-          · rename_i hnil
-            exact False.elim (RenderState.frontierIds_ne_nil st hnil)
-          · rename_i activeId' restIds' hids'
-            rw [hids] at hids'
-            injection hids' with hactiveEq hrestEq
-            subst activeId'
-            subst restIds'
-            simp [edge, nodeEndpoints, entryIdx]
-        rw [renderTrace_bud, hsuffix, hstep]
-        simp⟩ = edge := by
-    simpa [final, edge, nodeEndpoints, entryIdx] using
-      renderTrace_bud_new_edge_get node entry ok child st hids
   let edgeIndex : Fin final.edges.length :=
-    ⟨st.edges.length, by
-      dsimp [final]
-      rcases renderTrace_edgesPrefix child (budStep node entry ok st) with
-        ⟨suffix, hsuffix⟩
-      have hstep :
-          (budStep node entry ok st).edges = st.edges ++ [edge] := by
-        unfold budStep
-        split
-        · rename_i hnil
-          exact False.elim (RenderState.frontierIds_ne_nil st hnil)
-        · rename_i activeId' restIds' hids'
-          rw [hids] at hids'
-          injection hids' with hactiveEq hrestEq
-          subst activeId'
-          subst restIds'
-          simp [edge, nodeEndpoints, entryIdx]
-      rw [renderTrace_bud, hsuffix, hstep]
-      simp⟩
+    renderTrace_bud_new_edgeIndex node entry ok child st hids
+  have hedgeGet :
+      final.edges.get edgeIndex = edge := by
+    simpa [final, edge, nodeEndpoints, entryIdx, edgeIndex] using
+      renderTrace_bud_new_edge_get node entry ok child st hids
   have hside :
       (⟨activeId, hactive⟩ : Fin final.endpoints.length).val =
         (final.edges.get edgeIndex).left := by
@@ -437,7 +370,8 @@ theorem renderTrace_bud_active_endpointEdge_val
       RenderState.portHypergraphEvidenceOfInvariants,
       RenderState.edgeEvidenceOfPartition,
       RenderState.endpointEdgeEvidenceOfPartition] using heq
-  rw [hraw]
+  exact (congrArg Fin.val hraw).trans (by
+    simp [edgeIndex])
 
 /--
 Exact arbitrary-prefix recognition for rendered `bud`.  The constructor found
@@ -491,77 +425,23 @@ theorem renderTrace_bud_entry_edgeMate_exact_of_invariants
   let renderNode : RenderNode Sig :=
     { label := node
       incident := nodeEndpoints }
+  let edgeIndex : Fin final.edges.length :=
+    renderTrace_bud_new_edgeIndex node entry ok child st hids
+  let nodeIndexRaw : Fin final.nodes.length :=
+    renderTrace_bud_new_nodeIndex node entry ok child st
   have hedgeGet :
-      final.edges.get ⟨st.edges.length, by
-        dsimp [final]
-        rcases renderTrace_edgesPrefix child (budStep node entry ok st) with
-          ⟨suffix, hsuffix⟩
-        have hstep :
-            (budStep node entry ok st).edges = st.edges ++ [edge] := by
-          unfold budStep
-          split
-          · rename_i hnil
-            exact False.elim (RenderState.frontierIds_ne_nil st hnil)
-          · rename_i activeId' restIds' hids'
-            rw [hids] at hids'
-            injection hids' with hactiveEq hrestEq
-            subst activeId'
-            subst restIds'
-            simp [edge, nodeEndpoints, entryIdx]
-        rw [renderTrace_bud, hsuffix, hstep]
-        simp⟩ = edge := by
-    simpa [final, edge, nodeEndpoints, entryIdx] using
+      final.edges.get edgeIndex = edge := by
+    simpa [final, edge, nodeEndpoints, entryIdx, edgeIndex] using
       renderTrace_bud_new_edge_get node entry ok child st hids
   have hnodeGet :
-      final.nodes.get ⟨st.nodes.length, by
-        dsimp [final]
-        rcases renderTrace_nodesPrefix child (budStep node entry ok st) with
-          ⟨suffix, hsuffix⟩
-        have hstep :
-            (budStep node entry ok st).nodes = st.nodes ++ [renderNode] := by
-          unfold budStep
-          split
-          · rename_i hnil
-            exact False.elim (RenderState.frontierIds_ne_nil st hnil)
-          · simp [renderNode, nodeEndpoints]
-        rw [renderTrace_bud, hsuffix, hstep]
-        simp⟩ = renderNode := by
-    simpa [final, renderNode, nodeEndpoints] using
+      final.nodes.get nodeIndexRaw = renderNode := by
+    simpa [final, renderNode, nodeEndpoints, nodeIndexRaw] using
       renderTrace_bud_new_node_get node entry ok child st
-  let edgeIndex : Fin final.edges.length :=
-    ⟨st.edges.length, by
-      dsimp [final]
-      rcases renderTrace_edgesPrefix child (budStep node entry ok st) with
-        ⟨suffix, hsuffix⟩
-      have hstep :
-          (budStep node entry ok st).edges = st.edges ++ [edge] := by
-        unfold budStep
-        split
-        · rename_i hnil
-          exact False.elim (RenderState.frontierIds_ne_nil st hnil)
-        · rename_i activeId' restIds' hids'
-          rw [hids] at hids'
-          injection hids' with hactiveEq hrestEq
-          subst activeId'
-          subst restIds'
-          simp [edge, nodeEndpoints, entryIdx]
-      rw [renderTrace_bud, hsuffix, hstep]
-      simp⟩
   let nodeIndex : Fin G.nodeCount :=
-    ⟨st.nodes.length, by
+    by
       dsimp [G, final, RenderState.PortHypergraphEvidence.toPortHypergraph,
         RenderState.portHypergraphEvidenceOfInvariants]
-      rcases renderTrace_nodesPrefix child (budStep node entry ok st) with
-        ⟨suffix, hsuffix⟩
-      have hstep :
-          (budStep node entry ok st).nodes = st.nodes ++ [renderNode] := by
-        unfold budStep
-        split
-        · rename_i hnil
-          exact False.elim (RenderState.frontierIds_ne_nil st hnil)
-        · simp [renderNode, nodeEndpoints]
-      rw [renderTrace_bud, hsuffix, hstep]
-      simp⟩
+      exact nodeIndexRaw
   have hleftEq :
       (final.edges.get edgeIndex).left = activeId := by
     have h := congrArg RenderEdge.left hedgeGet
@@ -620,7 +500,9 @@ theorem renderTrace_bud_entry_edgeMate_exact_of_invariants
       exact list_get_map_eq_get_of_val_eq (fun endpoint => endpoint.val)
         hincidentVals slot entryIdx (by simpa [entryIdx] using hslotVal)
     exact hget.trans hrightEq.symm
-  refine ⟨hactiveBound, nodeIndex, slot, rfl, hnodeLabel, hslotVal,
+  have hnodeIndexVal : nodeIndex.val = st.nodes.length := by
+    simp [nodeIndex, nodeIndexRaw]
+  refine ⟨hactiveBound, nodeIndex, slot, hnodeIndexVal, hnodeLabel, hslotVal,
     hincidentVals, ?_⟩
   simpa [G, final] using
     RenderState.edgeMateOfInvariants_of_endpoint_sides

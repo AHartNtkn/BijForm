@@ -395,6 +395,50 @@ theorem budStep_nodes
     exact False.elim (RenderState.frontierIds_ne_nil st hids)
   · rfl
 
+/-- The first edge index allocated by a top-level rendered `connect`. -/
+def renderTrace_connect_new_edgeIndex
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (child : Diag Sig (eraseFin frontier mate))
+    (st : RenderState Sig (active :: frontier))
+    {activeId : Nat} {restIds : List Nat}
+    (hids : st.frontierIds = activeId :: restIds) :
+    Fin (renderTrace (Diag.connect mate ok child) st).edges.length := by
+  let mateId :=
+    restIds.get (Fin.cast (by
+      exact (RenderState.frontierIds_cons_tail_length st hids).symm) mate)
+  let edge : RenderEdge Sig :=
+    { label := Sig.portEdge active
+      leftLabel := active
+      rightLabel := frontier.get mate
+      left := activeId
+      right := mateId
+      left_label := rfl
+      right_label := (Sig.compatible_edge ok).symm
+      compatible := ok }
+  exact ⟨st.edges.length, by
+      rcases renderTrace_edgesPrefix child (connectStep mate ok st) with
+        ⟨suffix, hsuffix⟩
+      have hstep :
+          (connectStep mate ok st).edges = st.edges ++ [edge] := by
+        simpa [edge, mateId] using connectStep_edges mate ok st hids
+      rw [renderTrace_connect, hsuffix, hstep]
+      simp⟩
+
+@[simp]
+theorem renderTrace_connect_new_edgeIndex_val
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (child : Diag Sig (eraseFin frontier mate))
+    (st : RenderState Sig (active :: frontier))
+    {activeId : Nat} {restIds : List Nat}
+    (hids : st.frontierIds = activeId :: restIds) :
+    (renderTrace_connect_new_edgeIndex mate ok child st hids).val =
+      st.edges.length := by
+  simp [renderTrace_connect_new_edgeIndex]
+
 /--
 The edge introduced by a top-level rendered `connect` is at the first edge
 index after the render prefix.  This deterministic index fact is needed to
@@ -421,15 +465,8 @@ theorem renderTrace_connect_new_edge_get
         left_label := rfl
         right_label := (Sig.compatible_edge ok).symm
         compatible := ok }
-    final.edges.get ⟨st.edges.length, by
-      dsimp [final]
-      rcases renderTrace_edgesPrefix child (connectStep mate ok st) with
-        ⟨suffix, hsuffix⟩
-      have hstep :
-          (connectStep mate ok st).edges = st.edges ++ [edge] := by
-        simpa [edge, mateId] using connectStep_edges mate ok st hids
-      rw [renderTrace_connect, hsuffix, hstep]
-      simp⟩ = edge := by
+    final.edges.get
+      (renderTrace_connect_new_edgeIndex mate ok child st hids) = edge := by
   intro final mateId edge
   rcases renderTrace_edgesPrefix child (connectStep mate ok st) with
     ⟨suffix, hsuffix⟩
@@ -441,7 +478,55 @@ theorem renderTrace_connect_new_edge_get
     dsimp [final]
     rw [renderTrace_connect, hsuffix, hstep]
     simp
-  exact list_get_of_eq_append_cons_at_length hfinal _ rfl
+  exact list_get_of_eq_append_cons_at_length hfinal
+    (renderTrace_connect_new_edgeIndex mate ok child st hids) rfl
+
+/-- The first edge index allocated by a top-level rendered `bud`. -/
+def renderTrace_bud_new_edgeIndex
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (child : Diag Sig (frontier ++ Sig.nodePortsExcept node entry))
+    (st : RenderState Sig (active :: frontier))
+    {activeId : Nat} {restIds : List Nat}
+    (hids : st.frontierIds = activeId :: restIds) :
+    Fin (renderTrace (Diag.bud node entry ok child) st).edges.length := by
+  let nodeEndpoints := freshNodeEndpoints st.nextEndpoint (Sig.arity node)
+  let entryIdx : Fin nodeEndpoints.length :=
+    Fin.cast (by simp [nodeEndpoints]) entry
+  let edge : RenderEdge Sig :=
+    { label := Sig.portEdge active
+      leftLabel := active
+      rightLabel := Sig.port node entry
+      left := activeId
+      right := nodeEndpoints.get entryIdx
+      left_label := rfl
+      right_label := (Sig.compatible_edge ok).symm
+      compatible := ok }
+  exact ⟨st.edges.length, by
+      rcases renderTrace_edgesPrefix child (budStep node entry ok st) with
+        ⟨suffix, hsuffix⟩
+      have hstep :
+          (budStep node entry ok st).edges = st.edges ++ [edge] := by
+        simpa [edge, nodeEndpoints, entryIdx] using
+          budStep_edges node entry ok st hids
+      rw [renderTrace_bud, hsuffix, hstep]
+      simp⟩
+
+@[simp]
+theorem renderTrace_bud_new_edgeIndex_val
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (child : Diag Sig (frontier ++ Sig.nodePortsExcept node entry))
+    (st : RenderState Sig (active :: frontier))
+    {activeId : Nat} {restIds : List Nat}
+    (hids : st.frontierIds = activeId :: restIds) :
+    (renderTrace_bud_new_edgeIndex node entry ok child st hids).val =
+      st.edges.length := by
+  simp [renderTrace_bud_new_edgeIndex]
 
 /--
 The edge introduced by a top-level rendered `bud` is at the first edge index
@@ -470,16 +555,8 @@ theorem renderTrace_bud_new_edge_get
         left_label := rfl
         right_label := (Sig.compatible_edge ok).symm
         compatible := ok }
-    final.edges.get ⟨st.edges.length, by
-      dsimp [final]
-      rcases renderTrace_edgesPrefix child (budStep node entry ok st) with
-        ⟨suffix, hsuffix⟩
-      have hstep :
-          (budStep node entry ok st).edges = st.edges ++ [edge] := by
-        simpa [edge, nodeEndpoints, entryIdx] using
-          budStep_edges node entry ok st hids
-      rw [renderTrace_bud, hsuffix, hstep]
-      simp⟩ = edge := by
+    final.edges.get
+      (renderTrace_bud_new_edgeIndex node entry ok child st hids) = edge := by
   intro final nodeEndpoints entryIdx edge
   rcases renderTrace_edgesPrefix child (budStep node entry ok st) with
     ⟨suffix, hsuffix⟩
@@ -492,7 +569,8 @@ theorem renderTrace_bud_new_edge_get
     dsimp [final]
     rw [renderTrace_bud, hsuffix, hstep]
     simp
-  exact list_get_of_eq_append_cons_at_length hfinal _ rfl
+  exact list_get_of_eq_append_cons_at_length hfinal
+    (renderTrace_bud_new_edgeIndex node entry ok child st hids) rfl
 
 theorem connectStep_nodesPrefix
     {active : Sig.Port} {frontier : List Sig.Port}
@@ -549,6 +627,41 @@ theorem renderTrace_nodesPrefix :
       refine ⟨stepSuffix ++ suffix, ?_⟩
       rw [renderTrace_bud, hsuffix, hstep, List.append_assoc]
 
+/-- The first node index allocated by a top-level rendered `bud`. -/
+def renderTrace_bud_new_nodeIndex
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (child : Diag Sig (frontier ++ Sig.nodePortsExcept node entry))
+    (st : RenderState Sig (active :: frontier)) :
+    Fin (renderTrace (Diag.bud node entry ok child) st).nodes.length := by
+  let nodeEndpoints := freshNodeEndpoints st.nextEndpoint (Sig.arity node)
+  let renderNode : RenderNode Sig :=
+    { label := node
+      incident := nodeEndpoints }
+  exact ⟨st.nodes.length, by
+      rcases renderTrace_nodesPrefix child (budStep node entry ok st) with
+        ⟨suffix, hsuffix⟩
+      have hstep :
+          (budStep node entry ok st).nodes = st.nodes ++ [renderNode] := by
+        simpa [renderNode, nodeEndpoints] using
+          budStep_nodes node entry ok st
+      rw [renderTrace_bud, hsuffix, hstep]
+      simp⟩
+
+@[simp]
+theorem renderTrace_bud_new_nodeIndex_val
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (child : Diag Sig (frontier ++ Sig.nodePortsExcept node entry))
+    (st : RenderState Sig (active :: frontier)) :
+    (renderTrace_bud_new_nodeIndex node entry ok child st).val =
+      st.nodes.length := by
+  simp [renderTrace_bud_new_nodeIndex]
+
 /--
 The constructor node introduced by a top-level rendered `bud` is at the first
 node index after the render prefix.  This deterministic index fact is needed
@@ -566,16 +679,8 @@ theorem renderTrace_bud_new_node_get
     let renderNode : RenderNode Sig :=
       { label := node
         incident := nodeEndpoints }
-    final.nodes.get ⟨st.nodes.length, by
-      dsimp [final]
-      rcases renderTrace_nodesPrefix child (budStep node entry ok st) with
-        ⟨suffix, hsuffix⟩
-      have hstep :
-          (budStep node entry ok st).nodes = st.nodes ++ [renderNode] := by
-        simpa [renderNode, nodeEndpoints] using
-          budStep_nodes node entry ok st
-      rw [renderTrace_bud, hsuffix, hstep]
-      simp⟩ = renderNode := by
+    final.nodes.get
+      (renderTrace_bud_new_nodeIndex node entry ok child st) = renderNode := by
   intro final nodeEndpoints renderNode
   rcases renderTrace_nodesPrefix child (budStep node entry ok st) with
     ⟨suffix, hsuffix⟩
@@ -588,7 +693,8 @@ theorem renderTrace_bud_new_node_get
     dsimp [final]
     rw [renderTrace_bud, hsuffix, hstep]
     simp
-  exact list_get_of_eq_append_cons_at_length hfinal _ rfl
+  exact list_get_of_eq_append_cons_at_length hfinal
+    (renderTrace_bud_new_nodeIndex node entry ok child st) rfl
 
 theorem connectStep_edges_length
     {active : Sig.Port} {frontier : List Sig.Port}
