@@ -168,46 +168,32 @@ def NFNormalFamilyCarrierIso (Γ : List NFSort) :
     | inl e => rfl
     | inr body => rfl
 
-def NFAppFamilyToCarrier (Γ : List NFSort) :
-    CtorFamily NFSignature NFCode Γ .appTerm → NFAppCtorCarrier Γ
-  | ⟨.app, h, args⟩ => by
-      cases h
-      exact (args.1, args.2.1)
-  | ⟨.dum, h, _args⟩ => by
-      cases h
-  | ⟨.lam, h, _args⟩ => by
-      cases h
-
-def NFAppFamilyOfCarrier (Γ : List NFSort) :
-    NFAppCtorCarrier Γ → CtorFamily NFSignature NFCode Γ .appTerm
-  | pair =>
-      ⟨.app, rfl, (pair.1, (pair.2, PUnit.unit))⟩
-
-def NFAppFamilyCarrierIso (Γ : List NFSort) :
-    CtorFamily NFSignature NFCode Γ .appTerm ≃ᵢ NFAppCtorCarrier Γ where
-  toFun := NFAppFamilyToCarrier Γ
-  invFun := NFAppFamilyOfCarrier Γ
+def NFAppArgsIso (Γ : List NFSort) :
+    ArgTuple NFSignature NFCode Γ (NFArgs NFCtor.app) ≃ᵢ NFAppCtorCarrier Γ where
+  toFun args := (args.1, args.2.1)
+  invFun pair := (pair.1, (pair.2, PUnit.unit))
   left_inv := by
-    intro family
-    cases family with
-    | mk c h args =>
-        cases c with
-        | dum =>
-            cases h
-        | lam =>
-            cases h
-        | app =>
-            cases h
-            cases args with
-            | mk fn rest =>
-                cases rest with
-                | mk arg restDone =>
-                    cases restDone
-                    rfl
+    intro args
+    cases args with
+    | mk fn rest =>
+        cases rest with
+        | mk arg restDone =>
+            cases restDone
+            rfl
   right_inv := by
     intro pair
     cases pair
     rfl
+
+def NFAppFamilyCarrierIso (Γ : List NFSort) :
+    CtorFamily NFSignature NFCode Γ .appTerm ≃ᵢ NFAppCtorCarrier Γ :=
+  CtorFamily.singleIso (S := NFSignature) (Code := NFCode) Γ
+    NFCtor.app rfl
+    (by
+      intro c h
+      cases c <;> cases h
+      rfl)
+    (NFAppArgsIso Γ)
 
 def NFNormalGeneratedShapeIso (Γ : List NFSort) :
     LayerShape NFSignature NFCode Γ .normalExp ≃ᵢ NFCode (Γ, .normalExp) :=
@@ -383,7 +369,8 @@ theorem NFGeneratedLayer_child_rank_lt :
                           (Sum.inr pair) := by
                     simp [fn, arg, pair, NFGeneratedShapeIso,
                       NFAppGeneratedShapeIso, NFAppFamilyCarrierIso,
-                      NFAppFamilyToCarrier, LayerShape.iso, LayerShape.layerToShape,
+                      NFAppArgsIso, CtorFamily.singleIso,
+                      LayerShape.iso, LayerShape.layerToShape,
                       LayerShape.familyCarrierIso, LayerShape.familyIso,
                       CtorLayer.familyIso, CtorLayer.toFamily,
                       ArgTuple.ofChild, ListPiTuple.ofPi, Iso.trans, Iso.sum]

@@ -450,6 +450,41 @@ structure CtorFamily {Ty : Type} (S : Signature Ty) (Code : Poly.Ix S → Type)
   ret_eq : S.ret ctor = t
   args : ArgTuple S Code Γ (S.args ctor)
 
+namespace CtorFamily
+
+variable {Ty : Type} {S : Signature Ty} {Code : Poly.Ix S → Type}
+
+def singleIso (Γ : List Ty) {t : Ty} {Carrier : Type}
+    (ctor : S.Ctor) (hret : S.ret ctor = t)
+    (only : ∀ c, S.ret c = t → c = ctor)
+    (argIso : ArgTuple S Code Γ (S.args ctor) ≃ᵢ Carrier) :
+    CtorFamily S Code Γ t ≃ᵢ Carrier where
+  toFun family := by
+    cases family with
+    | mk c h args =>
+        have hc : c = ctor := only c h
+        cases hc
+        exact argIso.toFun args
+  invFun z := ⟨ctor, hret, argIso.invFun z⟩
+  left_inv := by
+    intro family
+    cases family with
+    | mk c h args =>
+        have hc : c = ctor := only c h
+        cases hc
+        dsimp
+        rw [CtorFamily.mk.injEq]
+        constructor
+        · rfl
+        · apply heq_of_eq
+          exact argIso.left_inv args
+  right_inv := by
+    intro z
+    dsimp
+    exact argIso.right_inv z
+
+end CtorFamily
+
 namespace CtorLayer
 
 variable {Ty : Type} {S : Signature Ty} {Code : Poly.Ix S → Type}

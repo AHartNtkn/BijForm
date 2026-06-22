@@ -292,6 +292,10 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     sort and public rank lemmas for generated `LayerShape.familyCarrierIso`.
   - Validation: NF rank proof no longer unfolds `LayerShape.iso`,
     `ArgTuple.ofChild`, and codec internals repeatedly.
+  - Partial: added `CtorFamily.singleIso` in `TypedBinding` and routed the NF
+    app-term family carrier through it. The local `NFAppFamilyToCarrier` and
+    `NFAppFamilyOfCarrier` maps are gone. The normal-expression two-constructor
+    carrier and rank proof unfolding remain open.
 
 - [ ] Replace HBT child-swap normal-form boilerplate with quotient helpers.
   - Owner: `BijForm.QuotientPolynomial` and `BijForm.CodeAlgebra`
