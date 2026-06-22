@@ -141,6 +141,11 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     now has no raw `Fin.cast`; `Renderer.Steps` keeps one arity/incident cast
     that is outside the list-owned index-cast shape. `GraphRenderRelation`
     remains the main open cleanup surface.
+  - Partial: added relation-owned `GraphRenderRelated.endpointIndex`,
+    `edgeIndex`, `nodeIndex`, and `pendingIndex` helpers. Direct
+    `GraphRenderRelation` relation-length casts dropped, but the bridge file
+    still needs a broader ordered-trace/list-transport cleanup before this item
+    is complete.
 
 ## Code Algebra and Rank Descent
 
