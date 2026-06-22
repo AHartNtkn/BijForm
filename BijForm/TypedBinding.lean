@@ -441,6 +441,59 @@ def iso (Γ : List Ty) (args : List (Arg Ty)) :
   left_inv := toChild_ofChild Γ
   right_inv := ofChild_toChild Γ
 
+def singleIso (Γ : List Ty) (arg : Arg Ty) :
+    ArgTuple S Code Γ [arg] ≃ᵢ Code (arg.binders ++ Γ, arg.sort) where
+  toFun tuple := tuple.1
+  invFun z := (z, PUnit.unit)
+  left_inv := by
+    intro tuple
+    cases tuple with
+    | mk head tail =>
+        cases tail
+        rfl
+  right_inv := by
+    intro z
+    rfl
+
+@[simp]
+theorem singleIso_ofChild_toFun (Γ : List Ty) (arg : Arg Ty)
+    (child :
+      (q : Fin [arg].length) →
+        Code ((([arg].get q).binders ++ Γ), ([arg].get q).sort)) :
+    (singleIso (S := S) (Code := Code) Γ arg).toFun
+        (ofChild (S := S) (Code := Code) Γ child) =
+      child ⟨0, by simp⟩ := by
+  dsimp [singleIso, ofChild]
+
+def pairIso (Γ : List Ty) (left right : Arg Ty) :
+    ArgTuple S Code Γ [left, right] ≃ᵢ
+      (Code (left.binders ++ Γ, left.sort) ×
+        Code (right.binders ++ Γ, right.sort)) where
+  toFun tuple := (tuple.1, tuple.2.1)
+  invFun pair := (pair.1, (pair.2, PUnit.unit))
+  left_inv := by
+    intro tuple
+    cases tuple with
+    | mk leftArg rest =>
+        cases rest with
+        | mk rightArg done =>
+            cases done
+            rfl
+  right_inv := by
+    intro pair
+    cases pair
+    rfl
+
+@[simp]
+theorem pairIso_ofChild_toFun (Γ : List Ty) (left right : Arg Ty)
+    (child :
+      (q : Fin [left, right].length) →
+        Code ((([left, right].get q).binders ++ Γ), ([left, right].get q).sort)) :
+    (pairIso (S := S) (Code := Code) Γ left right).toFun
+        (ofChild (S := S) (Code := Code) Γ child) =
+      (child ⟨0, by simp⟩, child ⟨1, by simp⟩) := by
+  rfl
+
 end ArgTuple
 
 /-- Generic constructor-family carrier for a same-return typed-binding layer. -/
@@ -482,6 +535,77 @@ def singleIso (Γ : List Ty) {t : Ty} {Carrier : Type}
     intro z
     dsimp
     exact argIso.right_inv z
+
+def sumIso (Γ : List Ty) {t : Ty} {Left Right : Type}
+    (leftCtor rightCtor : S.Ctor)
+    (leftRet : S.ret leftCtor = t)
+    (rightRet : S.ret rightCtor = t)
+    (left_ne_right : leftCtor ≠ rightCtor)
+    (decide_left : (c : S.Ctor) → Decidable (c = leftCtor))
+    (right_of_not_left : ∀ c, S.ret c = t → c ≠ leftCtor → c = rightCtor)
+    (leftIso : ArgTuple S Code Γ (S.args leftCtor) ≃ᵢ Left)
+    (rightIso : ArgTuple S Code Γ (S.args rightCtor) ≃ᵢ Right) :
+    CtorFamily S Code Γ t ≃ᵢ (Left ⊕ Right) where
+  toFun family := by
+    cases family with
+    | mk c h args =>
+        match decide_left c with
+        | isTrue hc =>
+          cases hc
+          exact Sum.inl (leftIso.toFun args)
+        | isFalse hc =>
+          have hr : c = rightCtor := right_of_not_left c h hc
+          cases hr
+          exact Sum.inr (rightIso.toFun args)
+  invFun
+    | Sum.inl left => ⟨leftCtor, leftRet, leftIso.invFun left⟩
+    | Sum.inr right => ⟨rightCtor, rightRet, rightIso.invFun right⟩
+  left_inv := by
+    intro family
+    cases family with
+    | mk c h args =>
+        cases hdec : decide_left c with
+        | isTrue hc =>
+          cases hc
+          dsimp
+          rw [hdec]
+          dsimp
+          rw [CtorFamily.mk.injEq]
+          constructor
+          · rfl
+          · apply heq_of_eq
+            exact leftIso.left_inv args
+        | isFalse hc =>
+          have hr : c = rightCtor := right_of_not_left c h hc
+          cases hr
+          dsimp
+          rw [hdec]
+          dsimp
+          rw [CtorFamily.mk.injEq]
+          constructor
+          · rfl
+          · apply heq_of_eq
+            exact rightIso.left_inv args
+  right_inv := by
+    intro z
+    cases z with
+    | inl left =>
+        dsimp
+        cases hdec : decide_left leftCtor with
+        | isTrue hc =>
+            cases hc
+            dsimp
+            exact congrArg Sum.inl (leftIso.right_inv left)
+        | isFalse hc =>
+            exact False.elim (hc rfl)
+    | inr right =>
+        dsimp
+        cases hdec : decide_left rightCtor with
+        | isTrue hc =>
+            exact False.elim (left_ne_right hc.symm)
+        | isFalse hc =>
+            dsimp
+            exact congrArg Sum.inr (rightIso.right_inv right)
 
 end CtorFamily
 
@@ -615,6 +739,25 @@ def familyCarrierIso (Γ : List Ty) (t : Ty)
     LayerShape S Code Γ t ≃ᵢ (VarCode ⊕ CtorCode) :=
   Iso.trans (familyIso (S := S) (Code := Code) Γ t)
     (Iso.sum varIso ctorIso)
+
+theorem familyCarrierIso_op_toFun (Γ : List Ty)
+    {VarCode CtorCode : Type}
+    (c : S.Ctor)
+    (varIso : Var Γ (S.ret c) ≃ᵢ VarCode)
+    (ctorIso : CtorFamily S Code Γ (S.ret c) ≃ᵢ CtorCode)
+    (child :
+      (q : S.ArgPos c) →
+        Code ((S.arg c q).binders ++ Γ, (S.arg c q).sort)) :
+    (familyCarrierIso (S := S) (Code := Code) Γ (S.ret c) varIso ctorIso).toFun
+        ((iso (S := S) (Code := Code) Γ (S.ret c)).toFun
+          (⟨FiberCode.op c rfl, child⟩ :
+            CodeLayer (PolyOf S) (inversion S) Code (Γ, S.ret c))) =
+      Sum.inr
+        (ctorIso.toFun
+          ⟨c, rfl,
+            ArgTuple.ofChild (S := S) (Code := Code) Γ
+              (args := S.args c) child⟩) :=
+  rfl
 
 end LayerShape
 
