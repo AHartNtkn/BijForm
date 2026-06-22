@@ -86,19 +86,19 @@ theorem ofFin_toFin [DecidableEq Ty] (t : Ty) :
         | mk n hn =>
           cases n with
           | zero =>
-              apply Fin.ext
-              simp [ofFin, toFin, count]
+              exact fin_eq_of_val_eq (by simp [ofFin, toFin, count])
           | succ n =>
-              apply Fin.ext
-              simp [ofFin, toFin, count]
-              exact congrArg Fin.val (ih ⟨n, by
-                simp [count] at hn
-                omega⟩)
-      · apply Fin.ext
+              exact fin_eq_of_val_eq (by
+                simp [ofFin, toFin, count]
+                exact congrArg Fin.val (ih ⟨n, by
+                  simp [count] at hn
+                  omega⟩))
+      ·
         have hi : i.val < count t Γ := by
           simpa [count, h] using i.isLt
-        simp [ofFin, toFin, count, h]
-        exact congrArg Fin.val (ih ⟨i.val, hi⟩)
+        exact fin_eq_of_val_eq (by
+          simp [ofFin, toFin, count, h]
+          exact congrArg Fin.val (ih ⟨i.val, hi⟩))
 
 theorem toFin_ofFin [DecidableEq Ty] :
     ∀ {Γ : List Ty} {t : Ty} (v : Var Γ t), ofFin t (toFin v) = v
@@ -309,10 +309,7 @@ theorem layer_left_inv (i : Poly.Ix S) :
     | mk code child =>
       cases code with
       | var v =>
-          have hchild : (fun q => nomatch q) = child := by
-            child_eta_empty
-          cases hchild
-          rfl
+          child_eta_empty_rfl child
       | op c h =>
           cases h
           refine Sigma.ext rfl ?_
@@ -552,10 +549,7 @@ theorem layerShape_left_inv (Γ : List Ty) (t : Ty) :
   | mk code child =>
       cases code with
       | var v =>
-          have hchild : (fun q => nomatch q) = child := by
-            child_eta_empty
-          cases hchild
-          rfl
+          child_eta_empty_rfl child
       | op c h =>
           cases h
           dsimp [layerToShape, shapeToLayer]

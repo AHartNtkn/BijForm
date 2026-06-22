@@ -142,26 +142,17 @@ def syntaxPresentation (Sig : Signature) :
           | finish =>
               cases param
               cases out_eq
-              have hchild : (fun q => nomatch q) = child := by
-                child_eta_empty
-              cases hchild
-              rfl
+              child_eta_empty_rfl child
           | connect =>
               cases param with
               | mk active frontier mate ok =>
                 cases out_eq
-                have hchild : (fun _ => child ()) = child := by
-                  child_eta_unit
-                cases hchild
-                rfl
+                child_eta_unit_rfl child
           | bud =>
               cases param with
               | mk active frontier node entry ok =>
                 cases out_eq
-                have hchild : (fun _ => child ()) = child := by
-                  child_eta_unit
-                cases hchild
-                rfl)
+                child_eta_unit_rfl child)
     (by
       intro boundary t
       cases t with

@@ -2,6 +2,20 @@ import Std
 
 namespace BijForm
 
+/-- Two `Fin` values are equal once their underlying natural values are equal. -/
+theorem fin_eq_of_val_eq {n : Nat} {i j : Fin n} (h : i.val = j.val) :
+    i = j := by
+  apply Fin.ext
+  exact h
+
+/-- Rebuild a `Fin` value from its value and a fresh bound proof. -/
+theorem fin_mk_val_eq {n : Nat} (i : Fin n) (h : i.val < n) :
+    (⟨i.val, h⟩ : Fin n) = i :=
+  fin_eq_of_val_eq rfl
+
+theorem fin_one_eq (i j : Fin 1) : i = j :=
+  fin_eq_of_val_eq ((Nat.lt_one_iff.mp i.isLt).trans (Nat.lt_one_iff.mp j.isLt).symm)
+
 /-- A concrete bijection, kept local so the project does not need mathlib's
 `Equiv` while the formalization is still dependency-free. -/
 structure Iso (α : Sort u) (β : Sort v) where
@@ -231,9 +245,8 @@ private theorem get_injective_of_nodup {α : Type u} :
                             ⟨jVal, Nat.lt_of_succ_lt_succ jLt⟩ := by
                         apply get_injective_of_nodup xs hsplit.2
                         simpa using h
-                      apply Fin.ext
                       have hval : iVal = jVal := congrArg Fin.val htail
-                      exact congrArg Nat.succ hval
+                      exact fin_eq_of_val_eq (congrArg Nat.succ hval)
 
 def toFin (table : FiniteSubtypeTable α p)
     (x : {a : α // p a}) : Fin table.values.length :=

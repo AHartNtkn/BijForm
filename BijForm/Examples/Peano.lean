@@ -148,36 +148,22 @@ def PeanoSyntaxPresentation : SyntaxPresentation PeanoPoly PeanoInversion PeanoS
               | mk lhs rhs =>
                 dsimp [PeanoPoly, PeanoOut] at out_eq
                 cases out_eq
-                have hchild : (fun q => nomatch q) = child := by
-                  child_eta_empty
-                cases hchild
-                rfl
+                child_eta_empty_rfl child
           | not =>
             change PeanoParam PeanoCtor.not at param
             change Nat at param
             cases out_eq
-            have hchild : (fun _ => child ()) = child := by
-              child_eta_unit
-            cases hchild
-            rfl
+            child_eta_unit_rfl child
           | implies =>
             change PeanoParam PeanoCtor.implies at param
             change Nat at param
             cases out_eq
-            have hchild : child = (fun
-                | false => child false
-                | true => child true) := by
-              child_eta_bool
-            rw [hchild]
-            rfl
+            child_eta_bool_rfl child
           | forallE =>
             change PeanoParam PeanoCtor.forallE at param
             change Nat at param
             cases out_eq
-            have hchild : (fun _ => child ()) = child := by
-              child_eta_unit
-            cases hchild
-            rfl)
+            child_eta_unit_rfl child)
     (by
       intro k e
       cases e <;> simp [PeanoLayerToSyntax, PeanoSyntaxToLayer])
@@ -268,30 +254,19 @@ def PeanoNatLayerShapeLayerPresentation :
               change Nat at param
               cases out_eq
               dsimp [PeanoNatLayerShapeTo, PeanoNatLayerShapeInv]
-              have hchild : (fun _ => child ()) = child := by
-                child_eta_unit
-              cases hchild
-              rfl
+              child_eta_unit_rfl child
           | implies =>
               change PeanoParam PeanoCtor.implies at param
               change Nat at param
               cases out_eq
               dsimp [PeanoNatLayerShapeTo, PeanoNatLayerShapeInv]
-              have hchild : child = (fun
-                  | false => child false
-                  | true => child true) := by
-                child_eta_bool
-              rw [hchild]
-              rfl
+              child_eta_bool_rfl child
           | forallE =>
               change PeanoParam PeanoCtor.forallE at param
               change Nat at param
               cases out_eq
               dsimp [PeanoNatLayerShapeTo, PeanoNatLayerShapeInv]
-              have hchild : (fun _ => child ()) = child := by
-                child_eta_unit
-              cases hchild
-              rfl
+              child_eta_unit_rfl child
     exact hshape x)
     (by
     intro k x

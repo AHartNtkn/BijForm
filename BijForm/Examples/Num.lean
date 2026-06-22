@@ -167,54 +167,35 @@ def NumSyntaxPresentation : SyntaxPresentation NumPoly NumInversion NumSyntax :=
                 dsimp [NumPoly, NumOut] at out_eq
                 cases out_eq.symm
                 cases out_eq
-                have hchild : (fun q => nomatch q) = child := by
-                  child_eta_empty
-                cases hchild
-                rfl
+                child_eta_empty_rfl child
           | zero =>
               change NumParam NumCtor.zero at param
               change Nat at param
               dsimp [NumPoly, NumOut] at out_eq
               cases out_eq.symm
               cases out_eq
-              have hchild : (fun q => nomatch q) = child := by
-                child_eta_empty
-              cases hchild
-              rfl
+              child_eta_empty_rfl child
           | succ =>
               change NumParam NumCtor.succ at param
               change Nat at param
               dsimp [NumPoly, NumOut] at out_eq
               cases out_eq.symm
               cases out_eq
-              have hchild : (fun _ => child ()) = child := by
-                child_eta_unit
-              cases hchild
-              rfl
+              child_eta_unit_rfl child
           | plus =>
               change NumParam NumCtor.plus at param
               change Nat at param
               dsimp [NumPoly, NumOut] at out_eq
               cases out_eq.symm
               cases out_eq
-              have hchild : child = (fun
-                  | false => child false
-                  | true => child true) := by
-                child_eta_bool
-              rw [hchild]
-              rfl
+              child_eta_bool_rfl child
           | times =>
               change NumParam NumCtor.times at param
               change Nat at param
               dsimp [NumPoly, NumOut] at out_eq
               cases out_eq.symm
               cases out_eq
-              have hchild : child = (fun
-                  | false => child false
-                  | true => child true) := by
-                child_eta_bool
-              rw [hchild]
-              rfl)
+              child_eta_bool_rfl child)
     (by
       intro k e
       cases e <;> simp [NumLayerToSyntax, NumSyntaxToLayer])
@@ -338,12 +319,7 @@ def NumNatLayerShapeLayerPresentation :
               cases out_eq.symm
               cases out_eq
               dsimp [NumNatLayerShapeTo, NumNatLayerShapeInv]
-              have hchild : child = (fun
-                  | false => child false
-                  | true => child true) := by
-                child_eta_bool
-              rw [hchild]
-              rfl
+              child_eta_bool_rfl child
             | times =>
               change NumParam NumCtor.times at param
               change Nat at param
@@ -351,12 +327,7 @@ def NumNatLayerShapeLayerPresentation :
               cases out_eq.symm
               cases out_eq
               dsimp [NumNatLayerShapeTo, NumNatLayerShapeInv]
-              have hchild : child = (fun
-                  | false => child false
-                  | true => child true) := by
-                child_eta_bool
-              rw [hchild]
-              rfl
+              child_eta_bool_rfl child
     exact hshape x)
     (by
     intro k x

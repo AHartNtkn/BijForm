@@ -281,11 +281,11 @@ def elemCode : Elem ≃ᵢ Fin 2 where
     cases g <;> simp
   right_inv := by
     intro i
-    apply Fin.ext
-    by_cases h : i.val = 0
-    · simp [h]
-    · have hi : i.val = 1 := by omega
-      simp [hi]
+    exact fin_eq_of_val_eq (by
+      by_cases h : i.val = 0
+      · simp [h]
+      · have hi : i.val = 1 := by omega
+        simp [hi])
 
 def act : Elem → Nat × Nat → Nat × Nat
   | .id, p => p

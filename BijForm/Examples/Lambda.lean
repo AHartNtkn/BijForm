@@ -121,28 +121,17 @@ def LamSyntaxPresentation : SyntaxPresentation LamPoly LamInversion LamSyntax :=
             cases param with
             | mk k' v =>
               cases out_eq
-              have hchild : (fun q => nomatch q) = child := by
-                child_eta_empty
-              cases hchild
-              rfl
+              child_eta_empty_rfl child
           | lam =>
             change LamParam LamCtor.lam at param
             change Nat at param
             cases out_eq
-            have hchild : (fun _ => child ()) = child := by
-              child_eta_unit
-            cases hchild
-            rfl
+            child_eta_unit_rfl child
           | app =>
             change LamParam LamCtor.app at param
             change Nat at param
             cases out_eq
-            have hchild : child = (fun
-                | false => child false
-                | true => child true) := by
-              child_eta_bool
-            rw [hchild]
-            rfl)
+            child_eta_bool_rfl child)
     (by
       intro k t
       cases t <;> simp [LamLayerToSyntax, LamSyntaxToLayer])
@@ -198,28 +187,17 @@ def LamNatLayerShapeLayerPresentation :
             cases param with
             | mk k' v =>
               cases out_eq
-              have hchild : (fun q => nomatch q) = child := by
-                child_eta_empty
-              cases hchild
-              rfl
+              child_eta_empty_rfl child
           | lam =>
             change LamParam LamCtor.lam at param
             change Nat at param
             cases out_eq
-            have hchild : (fun _ => child ()) = child := by
-              child_eta_unit
-            cases hchild
-            rfl
+            child_eta_unit_rfl child
           | app =>
             change LamParam LamCtor.app at param
             change Nat at param
             cases out_eq
-            have hchild : child = (fun
-                | false => child false
-                | true => child true) := by
-              child_eta_bool
-            rw [hchild]
-            rfl)
+            child_eta_bool_rfl child)
     (by
       intro k shape
       cases shape with

@@ -250,9 +250,7 @@ def boundaryEvidenceOfPrefix {Sig : Signature} {st : RenderState Sig []}
   boundaryPort := fun b => listPrefixIndex pref.endpoints_eq b
   boundary_injective := by
     intro left right h
-    apply Fin.ext
-    change left.val = right.val
-    exact congrArg (fun x : Fin st.endpoints.length => x.val) h
+    exact fin_eq_of_val_eq (congrArg (fun x : Fin st.endpoints.length => x.val) h)
   boundary_label := by
     intro b
     exact listPrefixIndex_get pref.endpoints_eq b
@@ -272,8 +270,8 @@ theorem boundaryEvidenceOfPrefix_exists_of_boundary_id {Sig : Signature}
       (boundaryEvidenceOfPrefix pref).boundaryPort b = endpoint := by
   let b : Fin boundary.length := ⟨endpoint.val, List.mem_range.mp hboundary⟩
   refine ⟨b, ?_⟩
-  apply Fin.ext
-  simp [b, boundaryEvidenceOfPrefix_boundaryPort_val pref b]
+  exact fin_eq_of_val_eq (by
+    simp [b, boundaryEvidenceOfPrefix_boundaryPort_val pref b])
 
 theorem initial_validIds {Sig : Signature} (boundary : List Sig.Port) :
     (initial Sig boundary).ValidIds where
@@ -899,8 +897,8 @@ theorem incidentOfValidIds_exists_of_mem_nodeIncidentIds {Sig : Signature}
   let slot : Fin (incidentOfValidIds hv node).length :=
     Fin.cast (by simp [incidentOfValidIds]) rawSlot
   refine ⟨node, slot, ?_⟩
-  apply Fin.ext
-  simpa [incidentOfValidIds, slot] using hrawSlot
+  exact fin_eq_of_val_eq (by
+    simpa [incidentOfValidIds, slot] using hrawSlot)
 
 theorem incidentOfValidIds_length {Sig : Signature}
     {st : RenderState Sig []}
@@ -929,9 +927,9 @@ theorem incidentOfValidIds_injective {Sig : Signature}
     list_get_injective_of_nodup (st.nodes.get node).incident
       (hn.node_incident_nodup (st.nodes.get node)
         (List.get_mem st.nodes node)) hi
-  apply Fin.ext
   have hval := congrArg Fin.val horig
-  simpa using hval
+  exact fin_eq_of_val_eq (by
+    simpa using hval)
 
 theorem incidentOfValidIds_label {Sig : Signature}
     {st : RenderState Sig []}
@@ -1080,10 +1078,9 @@ theorem nodeIncidentIds_get_node_eq_of_nodup {Sig : Signature} :
                           leftTail = rightTail :=
                         nodeIncidentIds_get_node_eq_of_nodup tail htailNodup
                           htail
-                      apply Fin.ext
                       have hval := congrArg (fun idx : Fin tail.length => idx.val)
                         hnodeTail
-                      exact congrArg Nat.succ hval
+                      exact fin_eq_of_val_eq (congrArg Nat.succ hval)
 
 theorem incidentOfValidIds_eq_node_eq {Sig : Signature}
     {st : RenderState Sig []} {boundary : List Sig.Port}

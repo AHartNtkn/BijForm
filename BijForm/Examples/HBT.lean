@@ -128,18 +128,10 @@ def HBTSyntaxPresentation : SyntaxPresentation HBTPoly HBTInversion HBTSyntax :=
               cases param with
               | mk height label =>
                 cases out_eq
-                have hchild : (fun q => nomatch q) = child := by
-                  child_eta_empty
-                cases hchild
-                rfl
+                child_eta_empty_rfl child
           | branch =>
               cases out_eq
-              have hchild : child = (fun
-                  | false => child false
-                  | true => child true) := by
-                child_eta_bool
-              rw [hchild]
-              rfl)
+              child_eta_bool_rfl child)
     (by
       intro i t
       cases t <;> simp [HBTLayerToSyntax, HBTSyntaxToLayer])
@@ -203,10 +195,7 @@ def HBTNatLayerShapeLayerPresentation :
                     cases param with
                     | mk height label =>
                       cases out_eq
-                      have hchild : (fun q => nomatch q) = child := by
-                        child_eta_empty
-                      cases hchild
-                      rfl
+                      child_eta_empty_rfl child
                 | branch => cases out_eq
       | succ m =>
           cases x with
@@ -218,18 +207,10 @@ def HBTNatLayerShapeLayerPresentation :
                     cases param with
                     | mk height label =>
                       cases out_eq
-                      have hchild : (fun q => nomatch q) = child := by
-                        child_eta_empty
-                      cases hchild
-                      rfl
+                      child_eta_empty_rfl child
                 | branch =>
                     cases out_eq
-                    have hchild : child = (fun
-                        | false => child false
-                        | true => child true) := by
-                      child_eta_bool
-                    rw [hchild]
-                    rfl)
+                    child_eta_bool_rfl child)
     (by
       intro i shape
       cases i with

@@ -628,18 +628,18 @@ theorem rawReachesBoundary_to_portReachesBoundaryOfInvariants
           (G.incident nodeIndex).get fromSlot' =
             (⟨(st.nodes.get nodeIndex).incident.get fromSlot, hfromBound⟩ :
               Fin st.endpoints.length) := by
-        apply Fin.ext
-        simp [G, ev, PortHypergraphEvidence.toPortHypergraph,
-          portHypergraphEvidenceOfInvariants, incidenceEvidenceOfValidIds,
-          incidentOfValidIds, fromSlot']
+        exact fin_eq_of_val_eq (by
+          simp [G, ev, PortHypergraphEvidence.toPortHypergraph,
+            portHypergraphEvidenceOfInvariants, incidenceEvidenceOfValidIds,
+            incidentOfValidIds, fromSlot'])
       have hto :
           (G.incident nodeIndex).get toSlot' =
             (⟨(st.nodes.get nodeIndex).incident.get toSlot, htoBound⟩ :
               Fin st.endpoints.length) := by
-        apply Fin.ext
-        simp [G, ev, PortHypergraphEvidence.toPortHypergraph,
-          portHypergraphEvidenceOfInvariants, incidenceEvidenceOfValidIds,
-          incidentOfValidIds, toSlot']
+        exact fin_eq_of_val_eq (by
+          simp [G, ev, PortHypergraphEvidence.toPortHypergraph,
+            portHypergraphEvidenceOfInvariants, incidenceEvidenceOfValidIds,
+            incidentOfValidIds, toSlot'])
       have hreachTo :
           PortHypergraph.PortReachesBoundary G
             (⟨(st.nodes.get nodeIndex).incident.get toSlot, htoBound⟩ :
@@ -778,11 +778,11 @@ theorem renderTrace_allConstructorsReachBoundary
       (G.incident node).get slot =
         (⟨(final.nodes.get node).incident.get rawSlot, hrawBound⟩ :
           Fin final.endpoints.length) := by
-    apply Fin.ext
-    simp [G, ev, RenderState.PortHypergraphEvidence.toPortHypergraph,
-      RenderState.portHypergraphEvidenceOfInvariants,
-      RenderState.incidenceEvidenceOfValidIds,
-      RenderState.incidentOfValidIds, slot]
+    exact fin_eq_of_val_eq (by
+      simp [G, ev, RenderState.PortHypergraphEvidence.toPortHypergraph,
+        RenderState.portHypergraphEvidenceOfInvariants,
+        RenderState.incidenceEvidenceOfValidIds,
+        RenderState.incidentOfValidIds, slot])
   exact hendpoint.symm ▸ hrawReach
 
 theorem renderTraceFromBoundary_allConstructorsReachBoundary

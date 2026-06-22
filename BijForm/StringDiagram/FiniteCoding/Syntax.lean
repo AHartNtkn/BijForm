@@ -462,10 +462,7 @@ def singleSortedFiniteLayerPresentation
                   | finish =>
                       cases param
                       cases out_eq
-                      have hchild : (fun q => nomatch q) = child := by
-                        child_eta_empty
-                      cases hchild
-                      rfl
+                      child_eta_empty_rfl child
                   | connect =>
                       cases param with
                       | mk active frontier mate ok =>
@@ -512,12 +509,10 @@ def singleSortedFiniteLayerPresentation
                                 simp [singleSortedFiniteLayerToShape,
                                   singleSortedFiniteLayerFromShape, hentry]
                                 exact singleSortedFiniteLayer_ext_bud_ok hchild
-                              · have hchild :
-                                    (fun _ => child ()) = child := by
-                                  child_eta_unit
-                                simp [singleSortedFiniteLayerToShape,
+                              · simp [singleSortedFiniteLayerToShape,
                                   singleSortedFiniteLayerFromShape, hentry]
-                                exact singleSortedFiniteLayer_ext_bud_ok hchild
+                                exact singleSortedFiniteLayer_ext_bud_ok (by
+                                  child_eta_unit)
           | cons first rest =>
               cases rest with
               | nil =>
@@ -550,11 +545,10 @@ def singleSortedFiniteLayerPresentation
                               cases param with
                               | mk active' frontier node entry ok =>
                                   cases out_eq
-                                  have hchild : (fun _ => child ()) = child := by
-                                    child_eta_unit
                                   simp [singleSortedFiniteLayerToShape,
                                     singleSortedFiniteLayerFromShape]
-                                  exact singleSortedFiniteLayer_ext_bud_ok hchild
+                                  exact singleSortedFiniteLayer_ext_bud_ok (by
+                                    child_eta_unit)
               | cons second rest =>
                   cases layer with
                   | mk code child =>
@@ -571,21 +565,18 @@ def singleSortedFiniteLayerPresentation
                                   have hne :
                                       eraseFin (first :: second :: rest) mate ≠ [] :=
                                     eraseFin_ne_nil_of_length_gt_one mate (by simp)
-                                  have hchild :
-                                      (fun _ => child ()) = child := by
-                                    child_eta_unit
                                   simp [singleSortedFiniteLayerToShape,
                                     singleSortedFiniteLayerFromShape]
-                                  exact singleSortedFiniteLayer_ext_connect_ok hchild
+                                  exact singleSortedFiniteLayer_ext_connect_ok (by
+                                    child_eta_unit)
                           | bud =>
                               cases param with
                               | mk active' frontier node entry ok =>
                                   cases out_eq
-                                  have hchild : (fun _ => child ()) = child := by
-                                    child_eta_unit
                                   simp [singleSortedFiniteLayerToShape,
                                     singleSortedFiniteLayerFromShape]
-                                  exact singleSortedFiniteLayer_ext_bud_ok hchild)
+                                  exact singleSortedFiniteLayer_ext_bud_ok (by
+                                    child_eta_unit))
     (by
       intro boundary shape
       cases boundary with

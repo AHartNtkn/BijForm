@@ -46,10 +46,10 @@ def finProdNat (k : Nat) (hk : 0 < k) : (Fin k × Nat) ≃ᵢ Nat where
     cases p with
     | mk i n =>
       apply Prod.ext
-      · apply Fin.ext
-        calc
+      · exact fin_eq_of_val_eq (by
+          calc
           (i.val + k * n) % k = i.val % k := Nat.add_mul_mod_self_left i.val k n
-          _ = i.val := Nat.mod_eq_of_lt i.isLt
+          _ = i.val := Nat.mod_eq_of_lt i.isLt)
       · calc
           (i.val + k * n) / k = (i.val + n * k) / k := by rw [Nat.mul_comm k n]
           _ = i.val / k + n := Nat.add_mul_div_right i.val n hk
@@ -113,8 +113,7 @@ def finSum (a b : Nat) : (Fin a ⊕ Fin b) ≃ᵢ Fin (a + b) where
     · simp [h]
     · have hle : a ≤ k.val := Nat.le_of_not_gt h
       simp [h]
-      apply Fin.ext
-      exact Nat.add_sub_of_le hle
+      exact fin_eq_of_val_eq (Nat.add_sub_of_le hle)
 
 /-- Finite products are finite when the right factor is nonempty. -/
 def finProdPos (a b : Nat) (hb : 0 < b) : (Fin a × Fin b) ≃ᵢ Fin (a * b) where
@@ -138,23 +137,23 @@ def finProdPos (a b : Nat) (hb : 0 < b) : (Fin a × Fin b) ≃ᵢ Fin (a * b) wh
     cases p with
     | mk i j =>
       apply Prod.ext
-      · apply Fin.ext
-        calc
+      · exact fin_eq_of_val_eq (by
+          calc
           (i.val * b + j.val) / b = (b * i.val + j.val) / b := by
             rw [Nat.mul_comm i.val b]
           _ = i.val + j.val / b := Nat.mul_add_div hb i.val j.val
-          _ = i.val := by rw [Nat.div_eq_of_lt j.isLt, Nat.add_zero]
-      · apply Fin.ext
-        calc
+          _ = i.val := by rw [Nat.div_eq_of_lt j.isLt, Nat.add_zero])
+      · exact fin_eq_of_val_eq (by
+          calc
           (i.val * b + j.val) % b = j.val % b := Nat.mul_add_mod_self_right i.val b j.val
-          _ = j.val := Nat.mod_eq_of_lt j.isLt
+          _ = j.val := Nat.mod_eq_of_lt j.isLt)
   right_inv := by
     intro k
-    apply Fin.ext
-    calc
+    exact fin_eq_of_val_eq (by
+      calc
       (k.val / b) * b + k.val % b = b * (k.val / b) + k.val % b := by
         rw [Nat.mul_comm]
-      _ = k.val := Nat.div_add_mod k.val b
+      _ = k.val := Nat.div_add_mod k.val b)
 
 /-- Binary sum coding via parity. -/
 def sumNat : (Nat ⊕ Nat) ≃ᵢ Nat where

@@ -45,24 +45,25 @@ def SymmetricInteractionNetSignature : Signature :=
     SymmetricInteractionNetSignature.arity SymmetricInteractionNetNode.cons = 3 := rfl
 
 private abbrev SINEntry :=
-  SymmetricInteractionNetSignature.Entry
+  Σ node : SymmetricInteractionNetNode, Fin (SymmetricInteractionNetArity node)
 
 private def SINEntry.decidableEq : DecidableEq SINEntry
-  | ⟨.dup, left⟩, ⟨.dup, right⟩ =>
-      if h : left = right then isTrue (by cases h; rfl)
-      else isFalse (by intro heq; cases heq; exact h rfl)
-  | ⟨.dup, _⟩, ⟨.erase, _⟩ => isFalse (by intro h; cases h)
-  | ⟨.dup, _⟩, ⟨.cons, _⟩ => isFalse (by intro h; cases h)
-  | ⟨.erase, _⟩, ⟨.dup, _⟩ => isFalse (by intro h; cases h)
-  | ⟨.erase, left⟩, ⟨.erase, right⟩ =>
-      if h : left = right then isTrue (by cases h; rfl)
-      else isFalse (by intro heq; cases heq; exact h rfl)
-  | ⟨.erase, _⟩, ⟨.cons, _⟩ => isFalse (by intro h; cases h)
-  | ⟨.cons, _⟩, ⟨.dup, _⟩ => isFalse (by intro h; cases h)
-  | ⟨.cons, _⟩, ⟨.erase, _⟩ => isFalse (by intro h; cases h)
-  | ⟨.cons, left⟩, ⟨.cons, right⟩ =>
-      if h : left = right then isTrue (by cases h; rfl)
-      else isFalse (by intro heq; cases heq; exact h rfl)
+  | ⟨leftNode, leftSlot⟩, ⟨rightNode, rightSlot⟩ =>
+      if hnode : leftNode = rightNode then
+        by
+          cases hnode
+          exact if hslot : leftSlot = rightSlot then
+            isTrue (by cases hslot; rfl)
+          else
+            isFalse (by
+              intro h
+              cases h
+              exact hslot rfl)
+      else
+        isFalse (by
+          intro h
+          cases h
+          exact hnode rfl)
 
 private instance : DecidableEq SINEntry := SINEntry.decidableEq
 private def SINUnaryEntries : List SINEntry := [⟨SymmetricInteractionNetNode.erase, ⟨0, by decide⟩⟩]
@@ -119,23 +120,9 @@ private def SINNonUnaryEntryTable : FiniteSubtypeTable SINEntry
           simp [SINNonUnaryEntries] at hval
           omega
         rcases hcases with h | h | h | h | h | h
-        · subst val
+        all_goals
+          subst val <;>
           change SymmetricInteractionNetArity SymmetricInteractionNetNode.dup ≠ 1
-          decide
-        · subst val
-          change SymmetricInteractionNetArity SymmetricInteractionNetNode.dup ≠ 1
-          decide
-        · subst val
-          change SymmetricInteractionNetArity SymmetricInteractionNetNode.dup ≠ 1
-          decide
-        · subst val
-          change SymmetricInteractionNetArity SymmetricInteractionNetNode.cons ≠ 1
-          decide
-        · subst val
-          change SymmetricInteractionNetArity SymmetricInteractionNetNode.cons ≠ 1
-          decide
-        · subst val
-          change SymmetricInteractionNetArity SymmetricInteractionNetNode.cons ≠ 1
           decide
   complete := by
     intro entry h

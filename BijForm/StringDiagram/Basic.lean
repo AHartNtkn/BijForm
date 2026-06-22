@@ -5,18 +5,6 @@ namespace StringDiagram
 
 open DepPoly
 
-theorem fin_eq_of_val_eq {n : Nat} {i j : Fin n} (h : i.val = j.val) :
-    i = j := by
-  apply Fin.ext
-  exact h
-
-theorem fin_mk_val_eq {n : Nat} (i : Fin n) (h : i.val < n) :
-    (⟨i.val, h⟩ : Fin n) = i :=
-  fin_eq_of_val_eq rfl
-
-theorem fin_one_eq (i j : Fin 1) : i = j :=
-  fin_eq_of_val_eq (by omega)
-
 /-- Remove the element at a proof-carrying index. -/
 def eraseFin {α : Type} : (xs : List α) → Fin xs.length → List α
   | [], i => nomatch i

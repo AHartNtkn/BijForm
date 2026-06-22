@@ -57,8 +57,7 @@ def BoundedPivotFiniteIso (lower upper : Nat) (h : lower ≤ upper) :
     exact Nat.add_sub_of_le hx.1
   right_inv := by
     intro code
-    apply Fin.ext
-    exact Nat.add_sub_cancel_left lower code.val
+    exact fin_eq_of_val_eq (Nat.add_sub_cancel_left lower code.val)
 
 private theorem sortedFinitePayloadPositive (lower upper : Nat) (_h : lower ≤ upper) :
     0 < upper - lower + 1 := by
@@ -196,20 +195,12 @@ def SortedSyntaxPresentation : SyntaxPresentation SortedPoly SortedInversion Sor
           cases ctor with
           | leaf =>
               cases out_eq
-              have hchild : (fun q => nomatch q) = child := by
-                child_eta_empty
-              cases hchild
-              rfl
+              child_eta_empty_rfl child
           | branch =>
               cases param with
               | mk _i pivot =>
                 cases out_eq
-                have hchild : child = (fun
-                    | false => child false
-                    | true => child true) := by
-                  child_eta_bool
-                rw [hchild]
-                rfl)
+                child_eta_bool_rfl child)
     (by
       intro i t
       cases t with
@@ -324,10 +315,7 @@ private def SortedFiniteConstructorPayloadIso (lower upper : Nat) (h : lower ≤
         cases ctor with
         | leaf =>
             cases out_eq
-            have hchild : (fun q => nomatch q) = child := by
-              child_eta_empty
-            cases hchild
-            rfl
+            child_eta_empty_rfl child
         | branch =>
             cases param with
             | mk _i pivot =>
@@ -358,9 +346,8 @@ private def SortedFiniteConstructorPayloadIso (lower upper : Nat) (h : lower ≤
     intro shape
     cases shape with
     | inl tag =>
-        apply congrArg Sum.inl
-        apply Fin.ext
-        omega
+      apply congrArg Sum.inl
+      exact (fin_one_eq tag ⟨0, by decide⟩).symm
     | inr payload =>
         cases payload with
         | mk pivotCode pair =>
@@ -405,10 +392,7 @@ private def SortedInfiniteConstructorPayloadIso (lower : Nat) :
         cases ctor with
         | leaf =>
             cases out_eq
-            have hchild : (fun q => nomatch q) = child := by
-              child_eta_empty
-            cases hchild
-            rfl
+            child_eta_empty_rfl child
         | branch =>
             cases param with
             | mk _i pivot =>
@@ -439,9 +423,8 @@ private def SortedInfiniteConstructorPayloadIso (lower : Nat) :
     intro shape
     cases shape with
     | inl tag =>
-        apply congrArg Sum.inl
-        apply Fin.ext
-        omega
+      apply congrArg Sum.inl
+      exact (fin_one_eq tag ⟨0, by decide⟩).symm
     | inr payload =>
         cases payload with
         | mk pivotCode pair =>
@@ -518,10 +501,7 @@ private def SortedCarrierLayerIso (i : SortedIx) :
                 | leaf =>
                     cases out_eq
                     simp [h]
-                    have hchild : (fun q => nomatch q) = child := by
-                      child_eta_empty
-                    cases hchild
-                    rfl
+                    child_eta_empty_rfl child
                 | branch =>
                     cases param with
                     | mk _i pivot =>
@@ -543,8 +523,7 @@ private def SortedCarrierLayerIso (i : SortedIx) :
               rw [if_neg h]
               constructor
               intro a b
-              apply Fin.ext
-              omega
+              exact fin_one_eq a b
             exact Subsingleton.elim _ _
 
 def SortedCarrierRank (i : SortedIx) (z : SortedCarrier i) : Nat :=

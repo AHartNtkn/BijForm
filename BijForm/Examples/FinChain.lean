@@ -101,18 +101,12 @@ def FinChainSyntaxPresentation :
           cases ctor with
           | done =>
               cases out_eq
-              have hchild : (fun q => nomatch q) = child := by
-                child_eta_empty
-              cases hchild
-              rfl
+              child_eta_empty_rfl child
           | step =>
               cases param with
               | mk n tag =>
                 cases out_eq
-                have hchild : (fun _ => child ()) = child := by
-                  child_eta_unit
-                cases hchild
-                rfl)
+                child_eta_unit_rfl child)
     (by
       intro i t
       cases t with
@@ -194,10 +188,7 @@ def FinChainLayerShapeLayerPresentation :
               cases ctor with
               | done =>
                   cases out_eq
-                  have hchild : (fun q => nomatch q) = child := by
-                    child_eta_empty
-                  cases hchild
-                  rfl
+                  child_eta_empty_rfl child
               | step =>
                   cases param with
                   | mk _m _tag => cases out_eq
@@ -209,26 +200,20 @@ def FinChainLayerShapeLayerPresentation :
               cases ctor with
               | done =>
                   cases out_eq
-                  have hchild : (fun q => nomatch q) = child := by
-                    child_eta_empty
-                  cases hchild
-                  rfl
+                  child_eta_empty_rfl child
               | step =>
                   cases param with
                   | mk m tag =>
                       have hmn : m = n := Nat.succ.inj out_eq
                       cases hmn
                       cases out_eq
-                      have hchild : (fun _ => child ()) = child := by
-                        child_eta_unit
-                      cases hchild
-                      rfl)
+                      child_eta_unit_rfl child)
     (by
       intro i shape
       cases i with
       | zero =>
           have hcode : shape = ⟨0, by decide⟩ := by
-            apply Fin.ext
+            apply fin_eq_of_val_eq
             have hlt : shape.val < 1 := by
               exact shape.isLt
             exact Nat.lt_one_iff.mp hlt
@@ -237,8 +222,7 @@ def FinChainLayerShapeLayerPresentation :
           cases shape with
           | inl tag =>
               have htag : tag = ⟨0, by decide⟩ := by
-                apply Fin.ext
-                omega
+                exact fin_one_eq tag ⟨0, by decide⟩
               cases htag
               rfl
           | inr pair =>

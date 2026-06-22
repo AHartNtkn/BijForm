@@ -526,8 +526,7 @@ theorem IsoRelated.restLabelIndex {G H : OpenPortHypergraph Sig boundary}
     right.restLabelIndex (hr.pending_cons hpending)
         (listMapIndex e.endpointEquiv.toFun rest mate) =
       left.restLabelIndex hpending mate := by
-  apply Fin.ext
-  rfl
+  exact fin_eq_of_val_eq rfl
 
 theorem constructor_seen_of_pending {G : OpenPortHypergraph Sig boundary}
     {frontier : List Sig.Port}
@@ -1167,8 +1166,8 @@ theorem RenderPrefixRelated.connectChild_of_new_edge
           _ = eraseFin restIds
               (Fin.cast hrestLen.symm (sst.restLabelIndex hpending mate)) := by
               apply congrArg
-              apply Fin.ext
-              simp [restLabelIndex]
+              exact fin_eq_of_val_eq (by
+                simp [restLabelIndex])
   processed_prefix := by
     intro edge
     constructor
@@ -1192,8 +1191,7 @@ theorem RenderPrefixRelated.connectChild_of_new_edge
       · right
         exact (hrel.processed_prefix edge).2 hold
       · left
-        apply Fin.ext
-        exact hnew.trans hactiveEdge.symm
+        exact fin_eq_of_val_eq (hnew.trans hactiveEdge.symm)
   seen_prefix := by
     intro node
     constructor
@@ -1289,8 +1287,7 @@ theorem RenderPrefixRelated.budChild_of_new_edge_node
                   (Sig.arity rendererNode))
                 (Fin.cast (by simp [Diag.freshNodeEndpoints]) entry) := by
                 apply congrArg
-                apply Fin.ext
-                exact hslot
+                exact fin_eq_of_val_eq hslot
     simpa using
       hchildFrontierIds.trans
         (RenderState.cast_frontierIds hfrontier.symm
@@ -1318,8 +1315,7 @@ theorem RenderPrefixRelated.budChild_of_new_edge_node
       · right
         exact (hrel.processed_prefix edge).2 hold
       · left
-        apply Fin.ext
-        exact hnew.trans hactiveEdge.symm
+        exact fin_eq_of_val_eq (hnew.trans hactiveEdge.symm)
   seen_prefix := by
     intro candidate
     constructor
@@ -1343,8 +1339,7 @@ theorem RenderPrefixRelated.budChild_of_new_edge_node
       · right
         exact (hrel.seen_prefix candidate).2 hold
       · left
-        apply Fin.ext
-        exact hnew.trans hnewNode.symm
+        exact fin_eq_of_val_eq (hnew.trans hnewNode.symm)
 
 theorem IsoRelated.connectChild
     {G H : OpenPortHypergraph Sig boundary}
@@ -1435,8 +1430,7 @@ theorem IsoRelated.budChild
           rw [eraseFin_eq_of_eq hincident
             (PortHypergraphIso.incidenceSlotPreserved e node slot)]
           apply congrArg
-          apply Fin.ext
-          rfl
+          exact fin_eq_of_val_eq rfl
       _ = rest.map e.endpointEquiv.toFun ++
           (eraseFin (G.raw.incident node) slot).map e.endpointEquiv.toFun := by
           rw [map_eraseFin]
