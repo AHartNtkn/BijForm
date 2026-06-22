@@ -1641,6 +1641,69 @@ theorem budChild_remainingEdges_lt {G : OpenPortHypergraph Sig boundary}
   simp [remainingEdges, budChild]
   omega
 
+def firstPendingChildFrontier {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
+    (st : SearchState G (activeLabel :: restLabels))
+    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest)
+    (step : FirstPendingStep G st.seenNode active rest) : List Sig.Port :=
+  match step with
+  | FirstPendingStep.connect mate _hmate =>
+      eraseFin restLabels (st.restLabelIndex hpending mate)
+  | FirstPendingStep.bud node slot _hmate _hunseen =>
+      restLabels ++ Sig.nodePortsExcept (G.raw.nodeLabel node)
+        (budEntry node slot)
+
+def firstPendingChildState {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
+    (st : SearchState G (activeLabel :: restLabels))
+    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest)
+    (step : FirstPendingStep G st.seenNode active rest) :
+    SearchState G (st.firstPendingChildFrontier hpending step) :=
+  match step with
+  | FirstPendingStep.connect mate hmate =>
+      st.connectChild hpending mate hmate
+  | FirstPendingStep.bud node slot hmate hunseen =>
+      st.budChild hpending node slot hmate
+        (by simpa [seenNode] using hunseen)
+
+theorem firstPendingChild_frontierComplete
+    {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
+    (st : SearchState G (activeLabel :: restLabels))
+    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest)
+    (step : FirstPendingStep G st.seenNode active rest)
+    (hcomplete : st.FrontierComplete) :
+    (st.firstPendingChildState hpending step).FrontierComplete := by
+  cases step with
+  | connect mate hmate =>
+      simpa [firstPendingChildState, firstPendingChildFrontier] using
+        st.connectChild_frontierComplete hpending mate hmate hcomplete
+  | bud node slot hmate hunseen =>
+      simpa [firstPendingChildState, firstPendingChildFrontier] using
+        st.budChild_frontierComplete hpending node slot hmate
+          (by simpa [seenNode] using hunseen) hcomplete
+
+theorem firstPendingChild_remainingEdges_lt
+    {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
+    (st : SearchState G (activeLabel :: restLabels))
+    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest)
+    (step : FirstPendingStep G st.seenNode active rest) :
+    (st.firstPendingChildState hpending step).remainingEdges <
+      st.remainingEdges := by
+  cases step with
+  | connect mate hmate =>
+      simpa [firstPendingChildState, firstPendingChildFrontier] using
+        st.connectChild_remainingEdges_lt hpending mate hmate
+  | bud node slot hmate hunseen =>
+      simpa [firstPendingChildState, firstPendingChildFrontier] using
+        st.budChild_remainingEdges_lt hpending node slot hmate
+          (by simpa [seenNode] using hunseen)
+
 theorem RenderPrefixRelated.connectChild_of_new_edge
     {activeLabel : Sig.Port} {frontier : List Sig.Port}
     {final : RenderState Sig []}

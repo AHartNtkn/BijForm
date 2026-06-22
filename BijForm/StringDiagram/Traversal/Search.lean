@@ -606,24 +606,27 @@ def toDiag {G : OpenPortHypergraph Sig boundary} :
                     (st.restLabelIndex hpending mate)
                     (st.connect_compatible hpending mate hmate)
                     (toDiag
-                      (st.connectChild hpending mate hmate)
-                      (st.connectChild_frontierComplete hpending mate hmate
-                        hcomplete))
+                      (st.firstPendingChildState hpending
+                        (FirstPendingStep.connect mate hmate))
+                      (st.firstPendingChild_frontierComplete hpending
+                        (FirstPendingStep.connect mate hmate) hcomplete))
               | FirstPendingStep.bud node slot hmate hunseen =>
                   Diag.bud
                     (G.raw.nodeLabel node)
                     (budEntry node slot)
                     (st.bud_compatible hpending node slot hmate)
                     (toDiag
-                      (st.budChild hpending node slot hmate
-                        (by simpa [seenNode] using hunseen))
-                      (st.budChild_frontierComplete hpending node slot hmate
-                        (by simpa [seenNode] using hunseen) hcomplete))
+                      (st.firstPendingChildState hpending
+                        (FirstPendingStep.bud node slot hmate hunseen))
+                      (st.firstPendingChild_frontierComplete hpending
+                        (FirstPendingStep.bud node slot hmate hunseen)
+                        hcomplete))
 termination_by frontier st _hcomplete => st.remainingEdges
 decreasing_by
-  · exact st.connectChild_remainingEdges_lt hpending mate hmate
-  · exact st.budChild_remainingEdges_lt hpending node slot hmate
-      (by simpa [seenNode] using hunseen)
+  · exact st.firstPendingChild_remainingEdges_lt hpending
+      (FirstPendingStep.connect mate hmate)
+  · exact st.firstPendingChild_remainingEdges_lt hpending
+      (FirstPendingStep.bud node slot hmate hunseen)
 
 /-- The owned traversal result is independent of the proof of frontier
 completeness supplied to it. -/
@@ -699,7 +702,7 @@ theorem toDiag_step {G : OpenPortHypergraph Sig boundary}
       rw [hstep] at hstep'
       injection hstep' with hstepEq
       cases hstepEq
-      cases step <;> simp
+      cases step <;> simp [firstPendingChildState]
 
 /-- Connect-branch computation rule for the owned first-pending traversal. -/
 theorem toDiag_connect {G : OpenPortHypergraph Sig boundary}

@@ -575,6 +575,11 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     extensions and routed the connect/bud `RenderPrefixRelated` processed/seen
     prefix updates through it. Branch-facing preservation theorems still need a
     `FirstPendingStep` child-delta owner.
+  - Partial: added `firstPendingChildFrontier`, `firstPendingChildState`,
+    `firstPendingChild_frontierComplete`, and
+    `firstPendingChild_remainingEdges_lt`; `toDiag` now gets recursive child
+    completeness and descent through the first-pending step owner. Generic
+    branch-facing `RenderPrefixRelated`/`IsoRelated` preservation remains open.
 
 - [ ] Generalize first-pending finite search correctness.
   - Owner: `BijForm.StringDiagram.Traversal.Search`
