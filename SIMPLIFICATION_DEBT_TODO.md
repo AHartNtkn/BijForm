@@ -255,19 +255,22 @@ is ordered to turn helper additions into actual deletion.
     `ArgTuple.ofChild` should show generic owner definitions plus direct
     semantic use, not proof-body plumbing.
 
-- [ ] Re-open checked tracker items that are only targeted-slice complete.
+- [x] Delete the old tracker that marked targeted slices as complete.
   - Owner: `SIMPLIFICATION_TODO.md`.
-  - Why this remains open: several checked items contain notes such as
-    `Partial`, `remaining`, `remain`, or describe low-level implementation facts
-    that still exist. Those checkmarks are historical slice status, not proof
-    that the branch is maximally simplified.
-  - Delete: misleading completion wording that implies the whole class is done
-    when residual old-model source remains.
-  - Replace with: links from the old tracker entries to this debt tracker, or
-    split the old entries into "completed slice" and "remaining deletion work".
+  - Original debt: checked entries in the old tracker contained notes such as
+    `Partial`, `remaining`, `remain`, or described low-level implementation
+    facts that still existed. Those checkmarks were historical slice status,
+    not proof that the branch was maximally simplified.
+  - Delete: misleading completion wording that implied the whole class was done
+    when residual old-model source remained.
+  - Replace with: this debt tracker as the single tracked TODO for remaining
+    simplification work on the branch.
   - Validation:
-    `rg -n "Partial|remaining|remain|still|open" SIMPLIFICATION_TODO.md`
-    should not find unchecked debt hidden under checked completion claims.
+    `git ls-files SIMPLIFICATION_TODO.md` should be empty, and
+    `rg --files -g '*TODO*' -g '*TOOD*'` should only report this debt tracker.
+  - Completed: the old `SIMPLIFICATION_TODO.md` was deleted in commit
+    `40b9f0c`; the only tracked TODO-like file is now
+    `SIMPLIFICATION_DEBT_TODO.md`.
 
 ## Branch Exit Criteria
 
@@ -279,5 +282,5 @@ is ordered to turn helper additions into actual deletion.
 - [ ] The item-specific scans above show no old-model proof bodies, duplicate
   construction paths, or obsolete public wrappers outside their owner
   implementation sites.
-- [ ] The original `SIMPLIFICATION_TODO.md` does not present targeted slices as
+- [x] The original `SIMPLIFICATION_TODO.md` does not present targeted slices as
   total simplification when this file still contains corresponding open debt.
