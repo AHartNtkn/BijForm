@@ -45,88 +45,32 @@ def SymmetricInteractionNetSignature : Signature :=
 @[simp] theorem SymmetricInteractionNetSignature_arity_cons :
     SymmetricInteractionNetSignature.arity SymmetricInteractionNetNode.cons = 3 := rfl
 
-private abbrev SINEntry :=
-  Σ node : SymmetricInteractionNetNode, Fin (SymmetricInteractionNetArity node)
+private instance : DecidableEq SymmetricInteractionNetSignature.Node := by
+  change DecidableEq SymmetricInteractionNetNode
+  infer_instance
 
-private def SINEntry.decidableEq : DecidableEq SINEntry
-  | ⟨leftNode, leftSlot⟩, ⟨rightNode, rightSlot⟩ =>
-      if hnode : leftNode = rightNode then
-        by
-          cases hnode
-          exact if hslot : leftSlot = rightSlot then
-            isTrue (by cases hslot; rfl)
-          else
-            isFalse (by
-              intro h
-              cases h
-              exact hslot rfl)
-      else
-        isFalse (by
-          intro h
-          cases h
-          exact hnode rfl)
+private instance :
+    DecidableEq (Signature.Entry SymmetricInteractionNetSignature) :=
+  Signature.entryDecidableEq
 
-private instance : DecidableEq SINEntry := SINEntry.decidableEq
-private def SINUnaryEntries : List SINEntry := [⟨SymmetricInteractionNetNode.erase, ⟨0, by decide⟩⟩]
-private def SINNonUnaryEntries : List SINEntry :=
+private def SINConstructorEntries :
+    List (Signature.Entry SymmetricInteractionNetSignature) :=
   [⟨SymmetricInteractionNetNode.dup, ⟨0, by decide⟩⟩,
    ⟨SymmetricInteractionNetNode.dup, ⟨1, by decide⟩⟩, ⟨SymmetricInteractionNetNode.dup, ⟨2, by decide⟩⟩,
+   ⟨SymmetricInteractionNetNode.erase, ⟨0, by decide⟩⟩,
    ⟨SymmetricInteractionNetNode.cons, ⟨0, by decide⟩⟩,
    ⟨SymmetricInteractionNetNode.cons, ⟨1, by decide⟩⟩, ⟨SymmetricInteractionNetNode.cons, ⟨2, by decide⟩⟩]
 
-private def SINUnaryEntryTable : FiniteSubtypeTable SINEntry
-    (fun entry => SymmetricInteractionNetSignature.arity entry.1 = 1) where
-  values := SINUnaryEntries
+private def SINConstructorEntryTable :
+    FiniteSubtypeTable
+      (Signature.Entry SymmetricInteractionNetSignature) (fun _ => True) where
+  values := SINConstructorEntries
   nodup := by decide
   sound := by
-    intro i
-    cases i with
-    | mk val hval =>
-        have hval0 : val = 0 := by
-          simp [SINUnaryEntries] at hval
-          omega
-        subst val
-        rfl
+    intro _i
+    trivial
   complete := by
-    intro entry h
-    cases entry with
-    | mk node slot =>
-        cases node with
-        | dup =>
-            change SymmetricInteractionNetArity SymmetricInteractionNetNode.dup = 1 at h
-            simp [SymmetricInteractionNetArity] at h
-        | erase =>
-            cases slot with
-            | mk val hval =>
-                have hval0 : val = 0 := by
-                  change val < SymmetricInteractionNetArity SymmetricInteractionNetNode.erase at hval
-                  simp [SymmetricInteractionNetArity] at hval
-                  omega
-                subst val
-                exact ⟨⟨0, by decide⟩, rfl⟩
-        | cons =>
-            change SymmetricInteractionNetArity SymmetricInteractionNetNode.cons = 1 at h
-            simp [SymmetricInteractionNetArity] at h
-
-private def SINNonUnaryEntryTable : FiniteSubtypeTable SINEntry
-    (fun entry => SymmetricInteractionNetSignature.arity entry.1 ≠ 1) where
-  values := SINNonUnaryEntries
-  nodup := by decide
-  sound := by
-    intro i
-    cases i with
-    | mk val hval =>
-        have hcases :
-            val = 0 ∨ val = 1 ∨ val = 2 ∨ val = 3 ∨ val = 4 ∨ val = 5 := by
-          simp [SINNonUnaryEntries] at hval
-          omega
-        rcases hcases with h | h | h | h | h | h
-        all_goals
-          subst val <;>
-          change SymmetricInteractionNetArity SymmetricInteractionNetNode.dup ≠ 1
-          decide
-  complete := by
-    intro entry h
+    intro entry _h
     cases entry with
     | mk node slot =>
         cases node with
@@ -147,42 +91,48 @@ private def SINNonUnaryEntryTable : FiniteSubtypeTable SINEntry
                   subst val
                   exact ⟨⟨2, by decide⟩, rfl⟩
         | erase =>
-            exact False.elim (h rfl)
+            cases slot with
+            | mk val hval =>
+                have hval0 : val = 0 := by
+                  change val < SymmetricInteractionNetArity SymmetricInteractionNetNode.erase at hval
+                  simp [SymmetricInteractionNetArity] at hval
+                  omega
+                subst val
+                exact ⟨⟨3, by decide⟩, rfl⟩
         | cons =>
             cases slot with
             | mk val hval =>
                 if hval0 : val = 0 then
                   subst val
-                  exact ⟨⟨3, by decide⟩, rfl⟩
+                  exact ⟨⟨4, by decide⟩, rfl⟩
                 else if hval1 : val = 1 then
                   subst val
-                  exact ⟨⟨4, by decide⟩, rfl⟩
+                  exact ⟨⟨5, by decide⟩, rfl⟩
                 else
                   have hval2 : val = 2 := by
                     change val < SymmetricInteractionNetArity SymmetricInteractionNetNode.cons at hval
                     simp [SymmetricInteractionNetArity] at hval
                     omega
                   subst val
-                  exact ⟨⟨5, by decide⟩, rfl⟩
+                  exact ⟨⟨6, by decide⟩, rfl⟩
 
 /-- Finite single-sorted coding data for the SIN signature. -/
 def SymmetricInteractionNetCodingData :
-    SingleSortedFiniteCodingData SymmetricInteractionNetSignature where
-  compatibleAll := by
-    intro left right
-    cases left
-    cases right
-    rfl
-  rankScale := 4
-  arity_lt_rankScale := by
-    intro node
-    cases node <;> decide
-  unaryCount := SINUnaryEntryTable.values.length
-  unaryCount_pos := by decide
-  unaryIso := SINUnaryEntryTable.iso
-  nonUnaryCount := SINNonUnaryEntryTable.values.length
-  nonUnaryCount_pos := by decide
-  nonUnaryIso := SINNonUnaryEntryTable.iso
+    SingleSortedFiniteCodingData SymmetricInteractionNetSignature :=
+  SingleSortedFiniteCodingData.ofEntryTable
+    (Sig := SymmetricInteractionNetSignature)
+    SINConstructorEntryTable
+    (by
+      intro left right
+      cases left
+      cases right
+      rfl)
+    4
+    (by
+      intro node
+      cases node <;> decide)
+    (by decide)
+    (by decide)
 
 /-- Ordered-frontier symmetric interaction-net traversal syntax. -/
 abbrev SymmetricInteractionNetDiag

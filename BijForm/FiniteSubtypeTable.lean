@@ -18,6 +18,21 @@ namespace FiniteSubtypeTable
 
 variable {α : Type u} {p : α → Prop}
 
+private def indexOfMem [DecidableEq α] : (xs : List α) → (a : α) → a ∈ xs →
+    {i : Fin xs.length // xs.get i = a}
+  | [], _, h => False.elim (by cases h)
+  | x :: xs, a, h => by
+      if hx : x = a then
+        exact ⟨⟨0, Nat.succ_pos _⟩, by cases hx; rfl⟩
+      else
+        have htail : a ∈ xs := by
+          cases List.mem_cons.mp h with
+          | inl hhead => exact False.elim (hx hhead.symm)
+          | inr htail => exact htail
+        let tail := indexOfMem xs a htail
+        exact ⟨⟨tail.1.val + 1, Nat.succ_lt_succ tail.1.isLt⟩, by
+          simpa using tail.2⟩
+
 private theorem get_injective_of_nodup {α : Type u} :
     ∀ (xs : List α), xs.Nodup →
       Function.Injective fun i : Fin xs.length => xs.get i
@@ -102,6 +117,24 @@ def iso (table : FiniteSubtypeTable α p) :
   invFun := table.ofFin
   left_inv := table.ofFin_toFin
   right_inv := table.toFin_ofFin
+
+def filterAll [DecidableEq α] (table : FiniteSubtypeTable α (fun _ => True))
+    (p : α → Prop) [DecidablePred p] : FiniteSubtypeTable α p where
+  values := table.values.filter fun a => decide (p a)
+  nodup := List.filter_sublist.nodup table.nodup
+  sound := by
+    intro i
+    have hmem := List.get_mem (table.values.filter fun a => decide (p a)) i
+    exact of_decide_eq_true (List.mem_filter.mp hmem).2
+  complete := by
+    intro a hp
+    cases hcomplete : table.complete a True.intro with
+    | mk i hi =>
+        have hmemBase : a ∈ table.values := by
+          exact hi ▸ List.get_mem table.values i
+        have hmemFilter : a ∈ table.values.filter (fun a => decide (p a)) := by
+          exact List.mem_filter.mpr ⟨hmemBase, decide_eq_true hp⟩
+        exact indexOfMem _ a hmemFilter
 
 end FiniteSubtypeTable
 

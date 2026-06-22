@@ -1,4 +1,5 @@
 import BijForm.CodeAlgebra
+import BijForm.FiniteSubtypeTable
 import BijForm.StringDiagram.Polynomial
 
 namespace BijForm
@@ -19,6 +20,39 @@ abbrev Signature.UnaryEntry (Sig : Signature) : Type :=
 branches from a one-port frontier. -/
 abbrev Signature.NonUnaryEntry (Sig : Signature) : Type :=
   { entry : Sig.Entry // Sig.arity entry.1 ≠ 1 }
+
+def Signature.entryDecidableEq {Sig : Signature} [DecidableEq Sig.Node] :
+    DecidableEq Sig.Entry
+  | ⟨leftNode, leftSlot⟩, ⟨rightNode, rightSlot⟩ =>
+      if hnode : leftNode = rightNode then
+        by
+          cases hnode
+          exact if hslot : leftSlot = rightSlot then
+            isTrue (by cases hslot; rfl)
+          else
+            isFalse (by
+              intro h
+              cases h
+              exact hslot rfl)
+      else
+        isFalse (by
+          intro h
+          cases h
+          exact hnode rfl)
+
+def Signature.unaryEntryTable {Sig : Signature} [DecidableEq Sig.Node]
+    (entries : FiniteSubtypeTable Sig.Entry (fun _ => True)) :
+    FiniteSubtypeTable Sig.Entry (fun entry => Sig.arity entry.1 = 1) :=
+  @FiniteSubtypeTable.filterAll Sig.Entry
+    (Signature.entryDecidableEq (Sig := Sig)) entries
+    (fun entry => Sig.arity entry.1 = 1) _
+
+def Signature.nonUnaryEntryTable {Sig : Signature} [DecidableEq Sig.Node]
+    (entries : FiniteSubtypeTable Sig.Entry (fun _ => True)) :
+    FiniteSubtypeTable Sig.Entry (fun entry => Sig.arity entry.1 ≠ 1) :=
+  @FiniteSubtypeTable.filterAll Sig.Entry
+    (Signature.entryDecidableEq (Sig := Sig)) entries
+    (fun entry => Sig.arity entry.1 ≠ 1) _
 
 /--
 Finite/infinite carrier shape for open frontier diagrams: the empty frontier has
@@ -102,6 +136,26 @@ structure SingleSortedFiniteCodingData (Sig : Signature) where
   nonUnaryIso : Sig.NonUnaryEntry ≃ᵢ Fin nonUnaryCount
 
 namespace SingleSortedFiniteCodingData
+
+def ofEntryTable {Sig : Signature} [DecidableEq Sig.Node]
+    (entries : FiniteSubtypeTable Sig.Entry (fun _ => True))
+    (compatibleAll : ∀ left right : Sig.Port, Sig.compatible left right)
+    (rankScale : Nat)
+    (arity_lt_rankScale : ∀ node : Sig.Node, Sig.arity node < rankScale)
+    (unaryCount_pos :
+      0 < (Signature.unaryEntryTable (Sig := Sig) entries).values.length)
+    (nonUnaryCount_pos :
+      0 < (Signature.nonUnaryEntryTable (Sig := Sig) entries).values.length) :
+    SingleSortedFiniteCodingData Sig where
+  compatibleAll := compatibleAll
+  rankScale := rankScale
+  arity_lt_rankScale := arity_lt_rankScale
+  unaryCount := (Signature.unaryEntryTable (Sig := Sig) entries).values.length
+  unaryCount_pos := unaryCount_pos
+  unaryIso := (Signature.unaryEntryTable (Sig := Sig) entries).iso
+  nonUnaryCount := (Signature.nonUnaryEntryTable (Sig := Sig) entries).values.length
+  nonUnaryCount_pos := nonUnaryCount_pos
+  nonUnaryIso := (Signature.nonUnaryEntryTable (Sig := Sig) entries).iso
 
 variable {Sig : Signature} (data : SingleSortedFiniteCodingData Sig)
 
