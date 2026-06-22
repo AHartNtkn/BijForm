@@ -1838,37 +1838,21 @@ theorem GraphRenderRelated.budChild
             exact hpendingVals.2 ⟨n, hid⟩
           have horder :=
             endpointOrder_budChild st hpending node slot hmate hunseen
-          have hchildGet :=
-            list_get_of_eq horder
-              (Fin.cast hchildEndpointLength
-                ⟨restIds.get ⟨n, hid⟩, hchildBound⟩)
           let childEndpoint :
               Fin (endpointOrder G
                 (st.budChild hpending node slot hmate hunseen)).length :=
             Fin.cast hchildEndpointLength
               ⟨restIds.get ⟨n, hid⟩, hchildBound⟩
-          let appendEndpoint :
-              Fin (endpointOrder G st ++ G.raw.incident node).length :=
-            Fin.cast (congrArg List.length horder) childEndpoint
           let oldEndpoint : Fin (endpointOrder G st).length :=
             Fin.cast hrel.endpoint_length
               ⟨restIds.get ⟨n, hid⟩, holdBound⟩
-          have happLeft :
-              (endpointOrder G st ++ G.raw.incident node).get
-                  appendEndpoint =
-                (endpointOrder G st).get oldEndpoint := by
-            have hbefore : appendEndpoint.val < (endpointOrder G st).length := by
-              simpa [appendEndpoint, childEndpoint, oldEndpoint] using
-                oldEndpoint.isLt
-            have hleft :=
-              list_get_append_left (endpointOrder G st)
-                (G.raw.incident node) hbefore appendEndpoint.isLt
-            have hidx :
-                (⟨appendEndpoint.val, hbefore⟩ :
-                  Fin (endpointOrder G st).length) = oldEndpoint := by
-              exact fin_eq_of_val_eq rfl
-            simpa [hidx] using hleft
-          exact hchildGet.trans (happLeft.trans hold)
+          have hchildOld :
+              (endpointOrder G (st.budChild hpending node slot hmate hunseen)).get
+                  childEndpoint =
+                (endpointOrder G st).get oldEndpoint :=
+            list_get_of_eq_append_left_of_val_eq horder
+              childEndpoint oldEndpoint (by simp [childEndpoint, oldEndpoint])
+          exact hchildOld.trans hold
         have hrightRel :
             ∀ (n : Nat) (hid : n < nodeEndpoints.length)
               (hincident : n < (G.raw.incident node).length),
@@ -1887,57 +1871,34 @@ theorem GraphRenderRelated.budChild
           refine ⟨hchildBound, ?_⟩
           have horder :=
             endpointOrder_budChild st hpending node slot hmate hunseen
-          have hchildGet :=
-            list_get_of_eq horder
-              (Fin.cast hchildEndpointLength
-                ⟨nodeEndpoints.get ⟨n, hid⟩, hchildBound⟩)
+          let childEndpoint :
+              Fin (endpointOrder G
+                (st.budChild hpending node slot hmate hunseen)).length :=
+            Fin.cast hchildEndpointLength
+              ⟨nodeEndpoints.get ⟨n, hid⟩, hchildBound⟩
+          let incidentEndpoint : Fin (G.raw.incident node).length :=
+            ⟨n, hincident⟩
           have holdLen :
               (endpointOrder G st).length = rst.endpoints.length :=
             hrel.endpoint_length.symm
-          have happRight :
-              (endpointOrder G st ++ G.raw.incident node).get
-                  (Fin.cast (congrArg List.length horder)
-                    (Fin.cast hchildEndpointLength
-                      ⟨nodeEndpoints.get ⟨n, hid⟩, hchildBound⟩)) =
-                (G.raw.incident node).get ⟨n, hincident⟩ := by
-            have hle :
-                (endpointOrder G st).length ≤
-                  nodeEndpoints.get ⟨n, hid⟩ := by
-              have hfreshGe := Diag.freshNodeEndpoints_mem_ge hfreshMem
-              rw [holdLen]
-              simpa [nodeEndpoints, rv.nextEndpoint_eq] using hfreshGe
-            have happBound :
-                nodeEndpoints.get ⟨n, hid⟩ <
-                  (endpointOrder G st ++ G.raw.incident node).length := by
-              have hbound := hchildBound
-              rw [Diag.budStep_endpoints_length renderNode entry ok rst] at hbound
-              rw [List.length_append, holdLen, G.raw.incident_length node]
-              simpa [renderNode] using hbound
-            have hright :=
-              list_get_append_right (endpointOrder G st) (G.raw.incident node)
-                hle happBound
-            have hidx :
-                (⟨nodeEndpoints.get ⟨n, hid⟩ - (endpointOrder G st).length,
-                  by
-                    have hlen : (endpointOrder G st ++ G.raw.incident node).length =
-                        (endpointOrder G st).length + (G.raw.incident node).length := by
-                      simp
-                    omega⟩ : Fin (G.raw.incident node).length) =
-                  ⟨n, hincident⟩ := by
-              apply Fin.ext
-              have hsub :
-                  nodeEndpoints.get ⟨n, hid⟩ -
-                      (endpointOrder G st).length = n := by
-                rw [holdLen]
-                simpa [nodeEndpoints] using
-                  Diag.freshNodeEndpoints_get_sub_of_eq
-                    (start := rst.nextEndpoint)
-                    (base := rst.endpoints.length)
-                    (arity := Sig.arity renderNode)
-                    rv.nextEndpoint_eq ⟨n, hid⟩
-              exact hsub
-            exact hright.trans (by rw [hidx])
-          exact hchildGet.trans happRight
+          have hle :
+              (endpointOrder G st).length ≤ childEndpoint.val := by
+            have hfreshGe := Diag.freshNodeEndpoints_mem_ge hfreshMem
+            rw [holdLen]
+            simpa [childEndpoint, nodeEndpoints, rv.nextEndpoint_eq] using
+              hfreshGe
+          have hsub :
+              childEndpoint.val - (endpointOrder G st).length =
+                incidentEndpoint.val := by
+            rw [holdLen]
+            simpa [childEndpoint, incidentEndpoint, nodeEndpoints] using
+              Diag.freshNodeEndpoints_get_sub_of_eq
+                (start := rst.nextEndpoint)
+                (base := rst.endpoints.length)
+                (arity := Sig.arity renderNode)
+                rv.nextEndpoint_eq ⟨n, hid⟩
+          exact list_get_of_eq_append_right_of_val_eq horder
+            childEndpoint incidentEndpoint hle hsub
         have herasedRight :=
           eraseFin_pointwise_relation
             (R := R) hnodeEndpointsLen hrightRel entryIdx slot hentryIdxVal
