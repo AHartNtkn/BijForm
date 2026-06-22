@@ -54,15 +54,8 @@ theorem Diag.fromGraph_toOpenPortHypergraph
     OpenPortHypergraph.SearchState.initial_frontierComplete ev.toOpenPortHypergraph
   have hreplay :=
     Diag.toDiag_of_renderPrefixRelated d (RenderState.initial Sig boundary)
-      (RenderState.initial_validIds boundary)
-      (RenderState.initial_endpointPartition boundary)
-      (RenderState.initial_nodeIncidentNodup boundary)
-      (RenderState.initial_endpointPrefix boundary)
-      (RenderState.initial_ownerIdPartition boundary)
-      (RenderState.initial_reachability boundary)
-      evidence.validIds evidence.endpointPartition evidence.nodeIncidentNodup
-      evidence.endpointPrefix evidence.ownerIdPartition
-      evidence.allConstructorsReachBoundary
+      (RenderState.RenderTraceEvidence.initial boundary)
+      evidence
       (OpenPortHypergraph.SearchState.initial ev.toOpenPortHypergraph)
       hrel hcomplete
   simpa [OpenPortHypergraph.fromGraph, Diag.toOpenPortHypergraph, ev,

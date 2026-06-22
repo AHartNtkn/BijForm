@@ -157,26 +157,20 @@ render trace is viewed through semantic graph evidence, the edge introduced by
 the current top-level `connect` makes the active frontier endpoint and selected
 mate endpoint edge-mates in that semantic graph.
 -/
-theorem renderTrace_connect_edgeMate_of_invariants
+theorem renderTrace_connect_edgeMate_of_evidence
     {active : Sig.Port} {frontier : List Sig.Port}
     (mate : Fin frontier.length)
     (ok : Sig.compatible active (frontier.get mate))
     (child : Diag Sig (eraseFin frontier mate))
     (st : RenderState Sig (active :: frontier))
     {boundary : List Sig.Port}
-    (hv : (renderTrace (Diag.connect mate ok child) st).ValidIds)
-    (hp : (renderTrace (Diag.connect mate ok child) st).EndpointPartition)
-    (hn : (renderTrace (Diag.connect mate ok child) st).NodeIncidentNodup)
-    (pref :
-      (renderTrace (Diag.connect mate ok child) st).EndpointPrefix boundary)
-    (ho :
-      (renderTrace (Diag.connect mate ok child) st).OwnerIdPartition boundary)
+    (traceEv :
+      RenderState.RenderTraceEvidence
+        (renderTrace (Diag.connect mate ok child) st) boundary)
     {activeId : Nat} {restIds : List Nat}
     (hids : st.frontierIds = activeId :: restIds) :
     let final := renderTrace (Diag.connect mate ok child) st
-    let G :=
-      (RenderState.portHypergraphEvidenceOfInvariants
-        hv hp hn pref ho).toPortHypergraph
+    let G := traceEv.toPortHypergraph
     let mateId :=
       restIds.get (listIndexCast restIds (by
         exact (RenderState.frontierIds_cons_tail_length st hids).symm) mate)
@@ -215,13 +209,13 @@ theorem renderTrace_connect_edgeMate_of_invariants
     simpa [final] using hrightEq
   have hactiveBound :
       activeId < final.endpoints.length := by
-    have h := hv.edge_left_bound (final.edges.get edgeIndex)
+    have h := traceEv.validIds.edge_left_bound (final.edges.get edgeIndex)
       (List.get_mem final.edges edgeIndex)
     rw [hleftEqRaw] at h
     simpa [final] using h
   have hmateBound :
       mateId < final.endpoints.length := by
-    have h := hv.edge_right_bound (final.edges.get edgeIndex)
+    have h := traceEv.validIds.edge_right_bound (final.edges.get edgeIndex)
       (List.get_mem final.edges edgeIndex)
     rw [hrightEqRaw] at h
     simpa [final] using h
@@ -235,8 +229,7 @@ theorem renderTrace_connect_edgeMate_of_invariants
         (final.edges.get edgeIndex).right :=
     hrightEq.symm
   simpa [G, final] using
-    RenderState.edgeMateOfInvariants_of_endpoint_sides
-      hv hp hn pref ho
+    traceEv.edgeMate_of_endpoint_sides
       (⟨activeId, hactiveBound⟩ : Fin final.endpoints.length)
       (⟨mateId, hmateBound⟩ : Fin final.endpoints.length)
       edgeIndex hactiveVal hmateVal
@@ -251,20 +244,14 @@ theorem renderTrace_connect_active_endpointEdge_val
     (ok : Sig.compatible active (frontier.get mate))
     (child : Diag Sig (eraseFin frontier mate))
     (st : RenderState Sig (active :: frontier))
-    (hv : (renderTrace (Diag.connect mate ok child) st).ValidIds)
-    (hp : (renderTrace (Diag.connect mate ok child) st).EndpointPartition)
-    (hn : (renderTrace (Diag.connect mate ok child) st).NodeIncidentNodup)
-    (pref :
-      (renderTrace (Diag.connect mate ok child) st).EndpointPrefix boundary)
-    (ho :
-      (renderTrace (Diag.connect mate ok child) st).OwnerIdPartition boundary)
+    (traceEv :
+      RenderState.RenderTraceEvidence
+        (renderTrace (Diag.connect mate ok child) st) boundary)
     {activeId : Nat} {restIds : List Nat}
     (hids : st.frontierIds = activeId :: restIds)
     (hactive : activeId <
       (renderTrace (Diag.connect mate ok child) st).endpoints.length) :
-    let G :=
-      (RenderState.portHypergraphEvidenceOfInvariants
-        hv hp hn pref ho).toPortHypergraph
+    let G := traceEv.toPortHypergraph
     (G.endpointEdge ⟨activeId, hactive⟩).val = st.edges.length := by
   intro G
   let final := renderTrace (Diag.connect mate ok child) st
@@ -291,13 +278,16 @@ theorem renderTrace_connect_active_endpointEdge_val
         (final.edges.get edgeIndex).left := by
     exact (congrArg RenderEdge.left hedgeGet).symm
   have heq :=
-    RenderState.endpointEdgeOfPartition_eq_of_endpoint_side hp
+    RenderState.endpointEdgeOfPartition_eq_of_endpoint_side
+      traceEv.endpointPartition
       (⟨activeId, hactive⟩ : Fin final.endpoints.length)
       edgeIndex (Or.inl hside)
   have hraw :
       G.endpointEdge ⟨activeId, hactive⟩ =
         edgeIndex := by
     simpa [G, RenderState.PortHypergraphEvidence.toPortHypergraph,
+      RenderState.RenderTraceEvidence.toPortHypergraph,
+      RenderState.RenderTraceEvidence.graphEvidence,
       RenderState.portHypergraphEvidenceOfInvariants,
       RenderState.edgeEvidenceOfPartition,
       RenderState.endpointEdgeEvidenceOfPartition] using heq
@@ -315,20 +305,14 @@ theorem renderTrace_bud_active_endpointEdge_val
     (ok : Sig.compatible active (Sig.port node entry))
     (child : Diag Sig (frontier ++ Sig.nodePortsExcept node entry))
     (st : RenderState Sig (active :: frontier))
-    (hv : (renderTrace (Diag.bud node entry ok child) st).ValidIds)
-    (hp : (renderTrace (Diag.bud node entry ok child) st).EndpointPartition)
-    (hn : (renderTrace (Diag.bud node entry ok child) st).NodeIncidentNodup)
-    (pref :
-      (renderTrace (Diag.bud node entry ok child) st).EndpointPrefix boundary)
-    (ho :
-      (renderTrace (Diag.bud node entry ok child) st).OwnerIdPartition boundary)
+    (traceEv :
+      RenderState.RenderTraceEvidence
+        (renderTrace (Diag.bud node entry ok child) st) boundary)
     {activeId : Nat} {restIds : List Nat}
     (hids : st.frontierIds = activeId :: restIds)
     (hactive : activeId <
       (renderTrace (Diag.bud node entry ok child) st).endpoints.length) :
-    let G :=
-      (RenderState.portHypergraphEvidenceOfInvariants
-        hv hp hn pref ho).toPortHypergraph
+    let G := traceEv.toPortHypergraph
     (G.endpointEdge ⟨activeId, hactive⟩).val = st.edges.length := by
   intro G
   let final := renderTrace (Diag.bud node entry ok child) st
@@ -355,13 +339,16 @@ theorem renderTrace_bud_active_endpointEdge_val
         (final.edges.get edgeIndex).left := by
     exact (congrArg RenderEdge.left hedgeGet).symm
   have heq :=
-    RenderState.endpointEdgeOfPartition_eq_of_endpoint_side hp
+    RenderState.endpointEdgeOfPartition_eq_of_endpoint_side
+      traceEv.endpointPartition
       (⟨activeId, hactive⟩ : Fin final.endpoints.length)
       edgeIndex (Or.inl hside)
   have hraw :
       G.endpointEdge ⟨activeId, hactive⟩ =
         edgeIndex := by
     simpa [G, RenderState.PortHypergraphEvidence.toPortHypergraph,
+      RenderState.RenderTraceEvidence.toPortHypergraph,
+      RenderState.RenderTraceEvidence.graphEvidence,
       RenderState.portHypergraphEvidenceOfInvariants,
       RenderState.edgeEvidenceOfPartition,
       RenderState.endpointEdgeEvidenceOfPartition] using heq
@@ -373,7 +360,7 @@ Exact arbitrary-prefix recognition for rendered `bud`.  The constructor found
 by the first-pending search is the node allocated by the current render step,
 with the original entry slot and ordered incident endpoint IDs.
 -/
-theorem renderTrace_bud_entry_edgeMate_exact_of_invariants
+theorem renderTrace_bud_entry_edgeMate_exact_of_evidence
     {active : Sig.Port} {frontier : List Sig.Port}
     (node : Sig.Node)
     (entry : Fin (Sig.arity node))
@@ -381,19 +368,13 @@ theorem renderTrace_bud_entry_edgeMate_exact_of_invariants
     (child : Diag Sig (frontier ++ Sig.nodePortsExcept node entry))
     (st : RenderState Sig (active :: frontier))
     {boundary : List Sig.Port}
-    (hv : (renderTrace (Diag.bud node entry ok child) st).ValidIds)
-    (hp : (renderTrace (Diag.bud node entry ok child) st).EndpointPartition)
-    (hn : (renderTrace (Diag.bud node entry ok child) st).NodeIncidentNodup)
-    (pref :
-      (renderTrace (Diag.bud node entry ok child) st).EndpointPrefix boundary)
-    (ho :
-      (renderTrace (Diag.bud node entry ok child) st).OwnerIdPartition boundary)
+    (traceEv :
+      RenderState.RenderTraceEvidence
+        (renderTrace (Diag.bud node entry ok child) st) boundary)
     {activeId : Nat} {restIds : List Nat}
     (hids : st.frontierIds = activeId :: restIds) :
     let final := renderTrace (Diag.bud node entry ok child) st
-    let G :=
-      (RenderState.portHypergraphEvidenceOfInvariants
-        hv hp hn pref ho).toPortHypergraph
+    let G := traceEv.toPortHypergraph
     ∃ (hactive : activeId < final.endpoints.length)
       (nodeIndex : Fin G.nodeCount)
       (slot : Fin (G.incident nodeIndex).length),
@@ -451,7 +432,7 @@ theorem renderTrace_bud_entry_edgeMate_exact_of_invariants
     simpa [final] using hleftEq
   have hactiveBound :
       activeId < final.endpoints.length := by
-    have h := hv.edge_left_bound (final.edges.get edgeIndex)
+    have h := traceEv.validIds.edge_left_bound (final.edges.get edgeIndex)
       (List.get_mem final.edges edgeIndex)
     rw [hleftEqRaw] at h
     simpa [final] using h
@@ -473,11 +454,11 @@ theorem renderTrace_bud_entry_edgeMate_exact_of_invariants
       (G.incident nodeIndex).map (fun endpoint => endpoint.val) =
         nodeEndpoints := by
     have hmap :
-        (RenderState.incidentOfValidIds hv
+        (RenderState.incidentOfValidIds traceEv.validIds
             (show Fin final.nodes.length from nodeIndex)).map
             (fun endpoint => endpoint.val) =
           (final.nodes.get (show Fin final.nodes.length from nodeIndex)).incident :=
-      RenderState.incidentOfValidIds_map_val hv
+      RenderState.incidentOfValidIds_map_val traceEv.validIds
         (show Fin final.nodes.length from nodeIndex)
     have hraw :
         (final.nodes.get (show Fin final.nodes.length from nodeIndex)).incident =
@@ -500,8 +481,7 @@ theorem renderTrace_bud_entry_edgeMate_exact_of_invariants
   refine ⟨hactiveBound, nodeIndex, slot, hnodeIndexVal, hnodeLabel, hslotVal,
     hincidentVals, ?_⟩
   simpa [G, final] using
-    RenderState.edgeMateOfInvariants_of_endpoint_sides
-      hv hp hn pref ho
+    traceEv.edgeMate_of_endpoint_sides
       (⟨activeId, hactiveBound⟩ : Fin final.endpoints.length)
       ((G.incident nodeIndex).get slot)
       edgeIndex hleftEqRaw.symm hincidentVal
@@ -515,34 +495,21 @@ theorem toDiag_of_renderPrefixRelated :
     ∀ {frontier boundary : List Sig.Port}
       (d : Diag Sig frontier)
       (rst : RenderState Sig frontier)
-      (_rhv : rst.ValidIds)
-      (_rhp : rst.EndpointPartition)
-      (_rhn : rst.NodeIncidentNodup)
-      (_rpref : rst.EndpointPrefix boundary)
-      (_rho : rst.OwnerIdPartition boundary)
-      (_rhr : rst.Reachability boundary)
-      (hv : (renderTrace d rst).ValidIds)
-      (hp : (renderTrace d rst).EndpointPartition)
-      (hn : (renderTrace d rst).NodeIncidentNodup)
-      (pref : (renderTrace d rst).EndpointPrefix boundary)
-      (ho : (renderTrace d rst).OwnerIdPartition boundary)
-      (hall :
-        PortHypergraph.AllConstructorsReachBoundary
-          (RenderState.portHypergraphEvidenceOfInvariants hv hp hn pref ho).toPortHypergraph)
+      (_rstEv : RenderState.RenderTraceEvidence rst boundary)
+      (traceEv : RenderState.RenderTraceEvidence (renderTrace d rst) boundary)
       (sst : OpenPortHypergraph.SearchState
-        (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph
-        frontier)
+        traceEv.openEvidence.toOpenPortHypergraph frontier)
       (_hrel : OpenPortHypergraph.SearchState.RenderPrefixRelated
-        (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall) rst sst)
+        traceEv.openEvidence rst sst)
       (hcomplete : sst.FrontierComplete),
       sst.toDiag hcomplete = d := by
   intro frontier boundary d
   induction d with
   | finish =>
-      intro rst _rhv _rhp _rhn _rpref _rho _rhr hv hp hn pref ho hall sst _hrel hcomplete
+      intro rst rstEv traceEv sst _hrel hcomplete
       rw [OpenPortHypergraph.SearchState.toDiag_empty]
   | connect mate ok child ih =>
-      intro rst rhv rhp rhn rpref rho rhr hv hp hn pref ho hall sst hrel hcomplete
+      intro rst rstEv traceEv sst hrel hcomplete
       rename_i activeLabel frontier
       cases hpendingCase : sst.pending with
       | nil =>
@@ -574,11 +541,11 @@ theorem toDiag_of_renderPrefixRelated :
                     restIds.get renderMateInRestIds := by
                 have hget :=
                   list_get_map_eq_get (fun endpoint =>
-                    (endpoint : Fin (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph.raw.endpointCount).val)
+                    (endpoint : Fin (traceEv.openEvidence).toOpenPortHypergraph.raw.endpointCount).val)
                     hvals.2 searchMate
                 simpa [searchMate, renderMateInRestIds] using hget
-              rcases renderTrace_connect_edgeMate_of_invariants
-                  mate ok child rst hv hp hn pref ho hids with
+              rcases renderTrace_connect_edgeMate_of_evidence
+                  mate ok child rst traceEv hids with
                 ⟨hactiveBound, hmateBound, hmateRendered⟩
               have hactiveEq :
                   activeEndpoint =
@@ -591,11 +558,11 @@ theorem toDiag_of_renderPrefixRelated :
                       Fin (renderTrace (Diag.connect mate ok child) rst).endpoints.length) := by
                 exact fin_eq_of_val_eq hmateVal
               have hmateSearch :
-                  PortHypergraph.EdgeMate (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph.raw
+                  PortHypergraph.EdgeMate (traceEv.openEvidence).toOpenPortHypergraph.raw
                     activeEndpoint (rest.get searchMate) := by
                 rw [hactiveEq, hmateEq]
                 change
-                  PortHypergraph.EdgeMate (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).graph.toPortHypergraph
+                  PortHypergraph.EdgeMate (traceEv.openEvidence).graph.toPortHypergraph
                     (⟨activeId, hactiveBound⟩ :
                       Fin (renderTrace (Diag.connect mate ok child) rst).endpoints.length)
                     (⟨restIds.get renderMateInRestIds, hmateBound⟩ :
@@ -613,12 +580,12 @@ theorem toDiag_of_renderPrefixRelated :
                     searchMate])
               have hactiveEdgeRaw :=
                 renderTrace_connect_active_endpointEdge_val
-                  mate ok child rst hv hp hn pref ho hids hactiveBound
+                  mate ok child rst traceEv hids hactiveBound
               have hactiveEdge :
-                  ((RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph.raw.endpointEdge activeEndpoint).val =
+                  ((traceEv.openEvidence).toOpenPortHypergraph.raw.endpointEdge activeEndpoint).val =
                     rst.edges.length := by
                 exact openEvidence_endpointEdge_val_of_endpoint_eq
-                  (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall)
+                  (traceEv.openEvidence)
                   hactiveEq hactiveEdgeRaw
               have hchildComplete :
                   (sst.connectChild hpending searchMate hmateSearch').FrontierComplete :=
@@ -626,7 +593,7 @@ theorem toDiag_of_renderPrefixRelated :
                   hmateSearch' hcomplete
               have hchildRel :
                   OpenPortHypergraph.SearchState.RenderPrefixRelated
-                    (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall) (connectStep mate ok rst)
+                    (traceEv.openEvidence) (connectStep mate ok rst)
                     (sst.connectChild hpending searchMate hmateSearch') := by
                 cases hidx
                 simpa [OpenPortHypergraph.SearchState.firstPendingChildState] using
@@ -639,13 +606,8 @@ theorem toDiag_of_renderPrefixRelated :
                         exact congrArg List.length hnodes))
               have hchild :=
                 ih (connectStep mate ok rst)
-                  (connectStep_validIds mate ok rst rhv)
-                  (connectStep_endpointPartition mate ok rst rhv rhp)
-                  (connectStep_nodeIncidentNodup mate ok rst rhn)
-                  (connectStep_endpointPrefix mate ok rst rpref)
-                  (connectStep_ownerIdPartition mate ok rst rho)
-                  (connectStep_reachability mate ok rst rhr)
-                  hv hp hn pref ho hall
+                  (connectStep_evidence mate ok rst rstEv)
+                  traceEv
                   (sst.connectChild hpending searchMate hmateSearch')
                   hchildRel
                   hchildComplete
@@ -657,7 +619,7 @@ theorem toDiag_of_renderPrefixRelated :
               cases hidx
               rfl
   | bud node entry ok child ih =>
-      intro rst rhv rhp rhn rpref rho rhr hv hp hn pref ho hall sst hrel hcomplete
+      intro rst rstEv traceEv sst hrel hcomplete
       rename_i activeLabel frontier
       cases hpendingCase : sst.pending with
       | nil =>
@@ -679,8 +641,8 @@ theorem toDiag_of_renderPrefixRelated :
               have hrestLenVals : rest.length = restIds.length := by
                 have hlen := congrArg List.length hvals.2
                 simpa using hlen
-              rcases renderTrace_bud_entry_edgeMate_exact_of_invariants
-                  node entry ok child rst hv hp hn pref ho hids with
+              rcases renderTrace_bud_entry_edgeMate_exact_of_evidence
+                  node entry ok child rst traceEv hids with
                 ⟨hactiveBound, nodeIndex, slot, hnewNode, hnodeLabel,
                   hslotVal, hincidentVals, hmateRendered⟩
               have hactiveEq :
@@ -689,44 +651,44 @@ theorem toDiag_of_renderPrefixRelated :
                       Fin (renderTrace (Diag.bud node entry ok child) rst).endpoints.length) := by
                 exact fin_eq_of_val_eq hvals.1
               have hmateSearch :
-                  PortHypergraph.EdgeMate (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph.raw
-                    activeEndpoint (((RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph.raw.incident nodeIndex).get slot) := by
+                  PortHypergraph.EdgeMate (traceEv.openEvidence).toOpenPortHypergraph.raw
+                    activeEndpoint (((traceEv.openEvidence).toOpenPortHypergraph.raw.incident nodeIndex).get slot) := by
                 rw [hactiveEq]
                 change
-                  PortHypergraph.EdgeMate (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).graph.toPortHypergraph
+                  PortHypergraph.EdgeMate (traceEv.openEvidence).graph.toPortHypergraph
                     (⟨activeId, hactiveBound⟩ :
                       Fin (renderTrace (Diag.bud node entry ok child) rst).endpoints.length)
-                    (((RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).graph.toPortHypergraph.incident nodeIndex).get slot)
+                    (((traceEv.openEvidence).graph.toPortHypergraph.incident nodeIndex).get slot)
                 simpa using hmateRendered
               have hunseen : ¬ sst.seenNode nodeIndex := by
                 intro hseen
                 have hlt := (hrel.seen_prefix nodeIndex).1 hseen
                 omega
               have hentryFreshVal :
-                  (((RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph.raw.incident nodeIndex).get slot).val =
+                  (((traceEv.openEvidence).toOpenPortHypergraph.raw.incident nodeIndex).get slot).val =
                     (freshNodeEndpoints rst.nextEndpoint (Sig.arity node)).get
                       (listIndexCast
                         (freshNodeEndpoints rst.nextEndpoint (Sig.arity node))
                         (by simp [freshNodeEndpoints]) entry) := by
                 exact list_get_map_eq_get_of_val_eq (fun endpoint =>
-                  (endpoint : Fin (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph.raw.endpointCount).val)
+                  (endpoint : Fin (traceEv.openEvidence).toOpenPortHypergraph.raw.endpointCount).val)
                   hincidentVals slot
                   (listIndexCast
                     (freshNodeEndpoints rst.nextEndpoint (Sig.arity node))
                     (by simp [freshNodeEndpoints]) entry)
                   hslotVal
               have hconnectNone :
-                  OpenPortHypergraph.firstPendingConnectSearch? (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph
+                  OpenPortHypergraph.firstPendingConnectSearch? (traceEv.openEvidence).toOpenPortHypergraph
                     sst.seenNode activeEndpoint rest = none := by
                 exact OpenPortHypergraph.firstPendingConnectSearch?_none_of_forall_not_edgeMate
-                  (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph
+                  (traceEv.openEvidence).toOpenPortHypergraph
                   sst.seenNode (by
                     intro tailMate htailMate
                     have htailEq :
                         rest.get tailMate =
-                          ((RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph.raw.incident nodeIndex).get slot := by
+                          ((traceEv.openEvidence).toOpenPortHypergraph.raw.incident nodeIndex).get slot := by
                       exact PortHypergraph.edgeMate_eq_of_same_endpoint
-                        (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph.raw
+                        (traceEv.openEvidence).toOpenPortHypergraph.raw
                         htailMate hmateSearch
                     let tailRestIdx : Fin restIds.length :=
                       listIndexCast restIds hrestLenVals tailMate
@@ -735,17 +697,18 @@ theorem toDiag_of_renderPrefixRelated :
                           restIds.get tailRestIdx := by
                       have hget :=
                         list_get_map_eq_get (fun endpoint =>
-                          (endpoint : Fin (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph.raw.endpointCount).val)
+                          (endpoint : Fin (traceEv.openEvidence).toOpenPortHypergraph.raw.endpointCount).val)
                           hvals.2 tailMate
                       simpa [tailRestIdx] using hget
                     have holdLt :
                         restIds.get tailRestIdx < rst.nextEndpoint := by
                       have hbound :=
-                        rhv.frontier_bound (restIds.get tailRestIdx) (by
+                        rstEv.validIds.frontier_bound
+                          (restIds.get tailRestIdx) (by
                           rw [hids]
                           right
                           exact List.get_mem restIds tailRestIdx)
-                      rw [rhv.nextEndpoint_eq]
+                      rw [rstEv.validIds.nextEndpoint_eq]
                       exact hbound
                     have hfreshMem :
                         (freshNodeEndpoints rst.nextEndpoint (Sig.arity node)).get
@@ -782,17 +745,17 @@ theorem toDiag_of_renderPrefixRelated :
                 hpending nodeIndex slot hmateSearch' hunseen' hstep]
               have hentryVal :
                   (OpenPortHypergraph.SearchState.budEntry
-                    (G := (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph)
+                    (G := (traceEv.openEvidence).toOpenPortHypergraph)
                     nodeIndex slot).val =
                     entry.val := by
                 simpa [OpenPortHypergraph.SearchState.budEntry] using hslotVal
               have hfrontier :
                   frontier ++
                       Sig.nodePortsExcept
-                        ((RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph.raw.nodeLabel
+                        ((traceEv.openEvidence).toOpenPortHypergraph.raw.nodeLabel
                           nodeIndex)
                         (OpenPortHypergraph.SearchState.budEntry
-                          (G := (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph)
+                          (G := (traceEv.openEvidence).toOpenPortHypergraph)
                           nodeIndex slot) =
                     frontier ++ Sig.nodePortsExcept node entry := by
                 exact congrArg (fun tail => frontier ++ tail)
@@ -802,23 +765,22 @@ theorem toDiag_of_renderPrefixRelated :
                 sst.budChild hpending nodeIndex slot hmateSearch' hunseen'
               have hactiveEdgeRaw :=
                 renderTrace_bud_active_endpointEdge_val
-                  node entry ok child rst hv hp hn pref ho hids hactiveBound
+                  node entry ok child rst traceEv hids hactiveBound
               have hactiveEdge :
-                  ((RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph.raw.endpointEdge
+                  ((traceEv.openEvidence).toOpenPortHypergraph.raw.endpointEdge
                       activeEndpoint).val = rst.edges.length := by
                 exact openEvidence_endpointEdge_val_of_endpoint_eq
-                  (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall)
+                  (traceEv.openEvidence)
                   hactiveEq hactiveEdgeRaw
               have hchildRelB :
                   OpenPortHypergraph.SearchState.RenderPrefixRelated
-                    (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall)
+                    (traceEv.openEvidence)
                     (hfrontier.symm ▸ budStep node entry ok rst) searchChildB := by
                 simpa [OpenPortHypergraph.SearchState.firstPendingChildState,
                   searchChildB] using
                   hrel.firstPendingChild hpending
                     (OpenPortHypergraph.SearchState.RenderPrefixChildStep.bud
-                      (ev := RenderState.openEvidenceOfInvariants hv hp hn
-                        pref ho hall)
+                      (ev := traceEv.openEvidence)
                       (rst := rst)
                       (sst := sst)
                       nodeIndex slot hmateSearch' hunseen' node entry ok
@@ -838,12 +800,12 @@ theorem toDiag_of_renderPrefixRelated :
                         simpa [hlen] using
                           budStep_nodes_length node entry ok rst))
               let searchChildA : OpenPortHypergraph.SearchState
-                  (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph
+                  (traceEv.openEvidence).toOpenPortHypergraph
                   (frontier ++ Sig.nodePortsExcept node entry) :=
                 hfrontier ▸ searchChildB
               have hchildRelA :
                   OpenPortHypergraph.SearchState.RenderPrefixRelated
-                    (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall)
+                    (traceEv.openEvidence)
                     (budStep node entry ok rst) searchChildA := by
                 simpa [searchChildA] using
                   OpenPortHypergraph.SearchState.RenderPrefixRelated.cast_cancel_left
@@ -857,13 +819,8 @@ theorem toDiag_of_renderPrefixRelated :
                   hfrontier searchChildB hchildCompleteB
               have hchildA :=
                 ih (budStep node entry ok rst)
-                  (budStep_validIds node entry ok rst rhv)
-                  (budStep_endpointPartition node entry ok rst rhv rhp)
-                  (budStep_nodeIncidentNodup node entry ok rst rhn)
-                  (budStep_endpointPrefix node entry ok rst rpref)
-                  (budStep_ownerIdPartition node entry ok rst rhv rho)
-                  (budStep_reachability node entry ok rst rhr)
-                  hv hp hn pref ho hall searchChildA hchildRelA
+                  (budStep_evidence node entry ok rst rstEv)
+                  traceEv searchChildA hchildRelA
                   hchildCompleteA
               have hdiagCast :
                   searchChildA.toDiag hchildCompleteA =

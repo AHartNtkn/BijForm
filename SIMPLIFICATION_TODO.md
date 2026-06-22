@@ -597,22 +597,23 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     instead of separately unfolding `firstPendingStepSearch?`; the redundant
     intermediate combined-search witness helpers were removed.
 
-- [ ] Package render trace evidence.
+- [x] Package render trace evidence.
   - Owner: `BijForm.StringDiagram.Hypergraph`
   - Evidence: callers manually thread evidence tuples like `hv hp hn pref ho
     hall` through `Hypergraph`, `SyntaxRoundTrip`, and `Quotient`.
   - Action: add `RenderTraceEvidence` with projections for graph evidence, open
     evidence, endpoint prefix, owner partition, and reachability.
   - Validation: bridge files no longer assemble the invariant tuple manually.
-  - Partial: added `RenderState.RenderTraceEvidence` with projections for
-    graph evidence, open evidence, semantic graph/open graph values,
-    reachability conversion, all-constructors reachability, and endpoint-side
-    edge mates. `Diag.renderTrace_evidence` and
-    `Diag.renderTraceFromBoundary_evidence` produce the package for traces, and
-    `Bridge.Quotient` now consumes the package instead of locally rebuilding
-    `RenderState.openEvidenceOfInvariants`.
-    `GraphRenderRelation.toPortHypergraphIso` now takes the package directly.
-    Recursive tuple signatures in `SyntaxRoundTrip` remain open.
+  - Completed: `RenderState.RenderTraceEvidence` owns graph evidence, open
+    evidence, semantic graph/open graph values, reachability conversion,
+    all-constructors reachability, and endpoint-side edge mates.
+    `Diag.renderTrace_evidence`, `Diag.renderTraceFromBoundary_evidence`,
+    `Diag.connectStep_evidence`, and `Diag.budStep_evidence` produce or
+    transform the package. `Bridge.Quotient`,
+    `GraphRenderRelation.toPortHypergraphIso`, and
+    `SyntaxRoundTrip.toDiag_of_renderPrefixRelated` now consume package
+    evidence instead of locally rebuilding `RenderState.openEvidenceOfInvariants`
+    or threading raw `hv hp hn pref ho hall` tuples.
 
 - [ ] Table-drive finite string-diagram frontier cases.
   - Owner: `BijForm.StringDiagram.FiniteCoding.Syntax`
