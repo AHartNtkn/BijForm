@@ -83,39 +83,6 @@ theorem eraseFin_ne_nil_of_length_gt_one
   simp [eraseFin_length] at hlen
   omega
 
-namespace ConnectParam
-
-theorem eq_of_mate {Sig : Signature}
-    {active : Sig.Port} {frontier : List Sig.Port}
-    {mate mate' : Fin frontier.length}
-    {ok : Sig.compatible active (frontier.get mate)}
-    {ok' : Sig.compatible active (frontier.get mate')}
-    (hmate : mate' = mate) :
-    ({ active := active, frontier := frontier, mate := mate', ok := ok' } :
-      ConnectParam Sig) =
-      { active := active, frontier := frontier, mate := mate, ok := ok } := by
-  cases hmate
-  apply ConnectParam.eq_of_ok
-
-end ConnectParam
-
-namespace BudParam
-
-theorem eq_of_entry {Sig : Signature}
-    {active : Sig.Port} {frontier : List Sig.Port}
-    {entry entry' : Sig.Entry}
-    {ok : Sig.compatible active (Sig.port entry.1 entry.2)}
-    {ok' : Sig.compatible active (Sig.port entry'.1 entry'.2)}
-    (hentry : entry' = entry) :
-    ({ active := active, frontier := frontier, node := entry'.1, entry := entry'.2,
-        ok := ok' } : BudParam Sig) =
-      { active := active, frontier := frontier, node := entry.1, entry := entry.2,
-        ok := ok } := by
-  cases hentry
-  apply BudParam.eq_of_ok
-
-end BudParam
-
 /--
 Reusable finite data for single-sorted string-diagram coding.
 
@@ -668,14 +635,6 @@ def singleSortedFiniteLayerPresentation
                   | inr tagged =>
                       simp [singleSortedFiniteLayerToShape,
                         singleSortedFiniteLayerFromShape])
-
-def singleSortedFiniteCarrierLayer
-    {Sig : Signature} (data : SingleSortedFiniteCodingData Sig) :
-    CodeLayerPresentation (poly Sig) (inversion Sig)
-      (fun boundary => (openFrontierShape Sig boundary).Carrier)
-      (fun boundary => (openFrontierShape Sig boundary).Carrier) :=
-  (singleSortedFiniteLayerPresentation data).transCarrier
-    (singleSortedFiniteLayerShapeCarrierIso data)
 
 private theorem singleSortedFiniteLayer_shape_child_rank_lt
     {Sig : Signature} (data : SingleSortedFiniteCodingData Sig) :
