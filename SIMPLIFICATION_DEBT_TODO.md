@@ -29,22 +29,27 @@ is ordered to turn helper additions into actual deletion.
 
 - [x] Table-drive finite string-diagram frontier cases.
   - Owner: `BijForm.StringDiagram.FiniteCoding.Syntax`.
-  - Why this remains open: the original tracker still has this unchecked, and
-    the file still contains repeated frontier and rest destructuring:
-    `cases frontier with`, `cases rest with`, and `by_cases hentry`.
+  - Original debt: the original tracker still had this unchecked, and
+    finite layer definitions repeated frontier cardinality classification
+    across the shape carrier, carrier iso, maps, inverse proofs, and rank proof.
   - Delete: repeated frontier cardinality splits across layer shape, carrier
     iso, to/from shape maps, inverse proofs, and rank proofs.
   - Replace with: one `FrontierCase` table or eliminator that stores the
     allowed constructor case, carrier iso, child carrier, and rank contribution.
   - Validation:
-    `rg -n "cases frontier with|cases rest with|by_cases hentry" BijForm/StringDiagram/FiniteCoding/Syntax.lean`
-    should have no old-model proof-body hits after the table owner is in use.
+    `lake env lean BijForm/StringDiagram/FiniteCoding/Syntax.lean`, `lake build`,
+    `git diff --check`, and a scoped source scan over
+    `singleSortedFiniteLayerShape`, `singleSortedFiniteLayerShapeCarrierIso`,
+    `singleSortedFiniteLayerToShape`, `singleSortedFiniteLayerFromShape`,
+    `singleSortedFiniteLayer_left_inv`, `singleSortedFiniteLayer_right_inv`, and
+    `singleSortedFiniteLayer_shape_child_rank_lt` that requires
+    `openBoundaryCases` in each block and rejects direct list-boundary equation
+    clauses or local `cases boundary/frontier/rest` classification.
   - Completed: `BijForm.StringDiagram.FiniteCoding.Syntax` now owns boundary
-    classification through `openBoundaryCases` and one-frontier entry arity
-    dispatch through `singleSortedFiniteOneFrontierBudShape`. The layer
-    presentation uses shared left/right inverse helpers and the rank proof
-    consumes the same boundary classifier. Focused Lean check passes, and the
-    old-model source scan has no hits in `FiniteCoding/Syntax.lean`.
+    classification through `openBoundaryCases` for the layer shape, carrier
+    iso, layer-to-shape map, shape-to-layer map, inverse proofs, and child-rank
+    proof. One-frontier entry arity dispatch remains isolated in
+    `singleSortedFiniteOneFrontierBudShape` and is not a frontier classifier.
 
 - [ ] Finish deleting raw string-diagram index transport scaffolding.
   - Owners: `BijForm.StringDiagram.Basic`,
