@@ -747,6 +747,48 @@ theorem ready {G : OpenPortHypergraph Sig boundary}
   | bud node slot hmate unseen =>
       exact Or.inr ⟨node, slot, hmate, unseen⟩
 
+/--
+A right first-pending step is the image of a left first-pending step under a
+graph isomorphism.  The constructors hold only the branch-specific evidence;
+generic child-state preservation lives on `SearchState.IsoRelated`.
+-/
+inductive IsoImage {G H : OpenPortHypergraph Sig boundary}
+    (e : PortHypergraphIso G.raw H.raw)
+    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
+    {left : SearchState G (activeLabel :: restLabels)}
+    {right : SearchState H (activeLabel :: restLabels)}
+    {active : Fin G.raw.endpointCount}
+    {rest : List (Fin G.raw.endpointCount)} :
+    FirstPendingStep G left.seenNode active rest →
+    FirstPendingStep H right.seenNode (e.endpointEquiv.toFun active)
+      (rest.map e.endpointEquiv.toFun) → Prop where
+  | connect (mate : Fin rest.length)
+      (hmate : PortHypergraph.EdgeMate G.raw active (rest.get mate))
+      (rightMateEdge :
+        PortHypergraph.EdgeMate H.raw (e.endpointEquiv.toFun active)
+          ((rest.map e.endpointEquiv.toFun).get
+            (listMapIndex e.endpointEquiv.toFun rest mate))) :
+      IsoImage e
+        (FirstPendingStep.connect mate hmate)
+        (FirstPendingStep.connect
+          (listMapIndex e.endpointEquiv.toFun rest mate) rightMateEdge)
+  | bud (node : Fin G.raw.nodeCount)
+      (slot : Fin (G.raw.incident node).length)
+      (hmate :
+        PortHypergraph.EdgeMate G.raw active
+          ((G.raw.incident node).get slot))
+      (hunseen : ¬ left.seenNode node)
+      (rightMateEdge :
+        PortHypergraph.EdgeMate H.raw (e.endpointEquiv.toFun active)
+          ((H.raw.incident (e.nodeEquiv.toFun node)).get
+            (PortHypergraphIso.incidenceSlotPreserved e node slot)))
+      (rightUnseen : ¬ right.seenNode (e.nodeEquiv.toFun node)) :
+      IsoImage e
+        (FirstPendingStep.bud node slot hmate hunseen)
+        (FirstPendingStep.bud (e.nodeEquiv.toFun node)
+          (PortHypergraphIso.incidenceSlotPreserved e node slot)
+          rightMateEdge rightUnseen)
+
 end FirstPendingStep
 
 namespace SearchState
@@ -1988,6 +2030,67 @@ theorem IsoRelated.budChild
         e.edgeEquiv.toFun
     rw [e.endpoint_edge_preserved active, hr.processedEdges_eq]
     rfl
+
+theorem IsoRelated.firstPendingChildFrontier_eq
+    {G H : OpenPortHypergraph Sig boundary}
+    {e : PortHypergraphIso G.raw H.raw}
+    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
+    {left : SearchState G (activeLabel :: restLabels)}
+    {right : SearchState H (activeLabel :: restLabels)}
+    (hr : IsoRelated e left right)
+    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
+    (hpending : left.pending = active :: rest)
+    {leftStep : FirstPendingStep G left.seenNode active rest}
+    {rightStep :
+      FirstPendingStep H right.seenNode (e.endpointEquiv.toFun active)
+        (rest.map e.endpointEquiv.toFun)}
+    (himage : FirstPendingStep.IsoImage e leftStep rightStep) :
+    right.firstPendingChildFrontier (hr.pending_cons hpending) rightStep =
+      left.firstPendingChildFrontier hpending leftStep := by
+  cases himage with
+  | connect mate _hmate _rightMateEdge =>
+      exact congrArg (fun idx => eraseFin restLabels idx)
+        (hr.restLabelIndex hpending mate)
+  | bud node slot _hmate _hunseen _rightMateEdge _rightUnseen =>
+      exact congrArg (fun tail => restLabels ++ tail)
+        (Signature.nodePortsExcept_eq_of_val (Sig := Sig)
+          (e.node_label_preserved node).symm
+          (budEntry_val_preserved e node slot))
+
+theorem IsoRelated.firstPendingChild
+    {G H : OpenPortHypergraph Sig boundary}
+    {e : PortHypergraphIso G.raw H.raw}
+    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
+    {left : SearchState G (activeLabel :: restLabels)}
+    {right : SearchState H (activeLabel :: restLabels)}
+    (hr : IsoRelated e left right)
+    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
+    (hpending : left.pending = active :: rest)
+    {leftStep : FirstPendingStep G left.seenNode active rest}
+    {rightStep :
+      FirstPendingStep H right.seenNode (e.endpointEquiv.toFun active)
+        (rest.map e.endpointEquiv.toFun)}
+    (himage : FirstPendingStep.IsoImage e leftStep rightStep) :
+    let hfrontier := hr.firstPendingChildFrontier_eq hpending himage
+    IsoRelated e
+      (left.firstPendingChildState hpending leftStep)
+      (hfrontier ▸
+        right.firstPendingChildState (hr.pending_cons hpending)
+          rightStep) := by
+  cases himage with
+  | connect mate hmate rightMateEdge =>
+      simpa [firstPendingChildState, firstPendingChildFrontier,
+        firstPendingChildFrontier_eq] using
+        hr.connectChild hpending mate hmate rightMateEdge
+  | bud node slot hmate hunseen rightMateEdge rightUnseen =>
+      have leftUnseen : node ∉ left.seenNodes := by
+        simpa [seenNode] using hunseen
+      have rightUnseenMem : e.nodeEquiv.toFun node ∉ right.seenNodes := by
+        simpa [seenNode] using rightUnseen
+      simpa [firstPendingChildState, firstPendingChildFrontier,
+        firstPendingChildFrontier_eq, seenNode] using
+        hr.budChild hpending node slot hmate leftUnseen rightMateEdge
+          rightUnseenMem
 
 end SearchState
 

@@ -580,6 +580,12 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     `firstPendingChild_remainingEdges_lt`; `toDiag` now gets recursive child
     completeness and descent through the first-pending step owner. Generic
     branch-facing `RenderPrefixRelated`/`IsoRelated` preservation remains open.
+  - Partial: added `FirstPendingStep.IsoImage`,
+    `IsoRelated.firstPendingChildFrontier_eq`, and
+    `IsoRelated.firstPendingChild`; `toDiag_isoRelated` now recurses through
+    the first-pending iso-preservation theorem instead of directly invoking
+    connect/bud child relation lemmas. Generic `RenderPrefixRelated`
+    preservation and a full child-delta owner remain open.
 
 - [ ] Generalize first-pending finite search correctness.
   - Owner: `BijForm.StringDiagram.Traversal.Search`

@@ -776,8 +776,20 @@ theorem toDiag_isoRelated
       let rightMate := listMapIndex e.endpointEquiv.toFun rest mate
       rcases hrel.firstPendingStepSearch?_connect hpending mate hmate with
         ⟨rightMateEdge, hrightStep⟩
-      have hchildRel :=
-        hrel.connectChild hpending mate hmate rightMateEdge
+      let leftStep : FirstPendingStep G st.seenNode active rest :=
+        FirstPendingStep.connect mate hmate
+      let rightStep :
+          FirstPendingStep H right.seenNode (e.endpointEquiv.toFun active)
+            (rest.map e.endpointEquiv.toFun) :=
+        FirstPendingStep.connect rightMate rightMateEdge
+      have himage : FirstPendingStep.IsoImage e leftStep rightStep :=
+        FirstPendingStep.IsoImage.connect mate hmate rightMateEdge
+      have hchildRel :
+          IsoRelated e
+            (st.connectChild hpending mate hmate)
+            (right.connectChild hrightPending rightMate rightMateEdge) := by
+        simpa [leftStep, rightStep, firstPendingChildState] using
+          hrel.firstPendingChild hpending himage
       have hchild :=
         ih (right.connectChild hrightPending rightMate
               rightMateEdge) hchildRel
@@ -810,6 +822,17 @@ theorem toDiag_isoRelated
         simpa [rightNode, seenNode] using rightUnseen
       have leftUnseenMem : node ∉ st.seenNodes := by
         simpa [seenNode] using hunseen
+      let leftStep : FirstPendingStep G st.seenNode active rest :=
+        FirstPendingStep.bud node slot hmate hunseen
+      let rightStep :
+          FirstPendingStep H right.seenNode (e.endpointEquiv.toFun active)
+            (rest.map e.endpointEquiv.toFun) :=
+        FirstPendingStep.bud rightNode rightSlot rightMateEdge rightUnseen
+      have himage : FirstPendingStep.IsoImage e leftStep rightStep :=
+        FirstPendingStep.IsoImage.bud node slot hmate hunseen
+          rightMateEdge rightUnseen
+      have hfrontierStep :=
+        hrel.firstPendingChildFrontier_eq hpending himage
       have hfrontier :
           restLabels ++
               Sig.nodePortsExcept (H.raw.nodeLabel rightNode)
@@ -817,10 +840,8 @@ theorem toDiag_isoRelated
             restLabels ++
               Sig.nodePortsExcept (G.raw.nodeLabel node)
                 (budEntry (G := G) node slot) := by
-        have hentryVal := budEntry_val_preserved e node slot
-        exact congrArg (fun tail => restLabels ++ tail)
-          (Signature.nodePortsExcept_eq_of_val (Sig := Sig)
-            (e.node_label_preserved node).symm hentryVal)
+        simpa [leftStep, rightStep, rightNode, rightSlot,
+          firstPendingChildFrontier] using hfrontierStep
       let rightChild :=
         hfrontier ▸
           right.budChild hrightPending rightNode rightSlot rightMateEdge
@@ -829,9 +850,10 @@ theorem toDiag_isoRelated
           IsoRelated e
             (st.budChild hpending node slot hmate leftUnseenMem)
             rightChild := by
-        dsimp [rightChild, rightNode, rightSlot, hfrontier]
-        exact hrel.budChild hpending node slot hmate leftUnseenMem
-          rightMateEdge rightUnseenMem
+        dsimp [rightChild, hfrontier, hfrontierStep]
+        simpa [leftStep, rightStep, rightNode, rightSlot,
+          firstPendingChildState, firstPendingChildFrontier, seenNode] using
+          hrel.firstPendingChild hpending himage
       have hrightChildCompleteUncast :
           (right.budChild hrightPending rightNode rightSlot rightMateEdge
             rightUnseenMem).FrontierComplete :=
