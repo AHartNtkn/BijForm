@@ -808,14 +808,17 @@ theorem GraphRenderRelated.connectChild
             ((Diag.connectStep rendererMate ok rst).nodes.get node).incident.length =
               (G.raw.incident
                 ((nodeOrder (st.connectChild hpending mate hmate)).get
-                  (Fin.cast hchildNodeLength node))).length := by
+                  (nodeOrderIndex
+                    (st.connectChild hpending mate hmate)
+                    hchildNodeLength node))).length := by
         intro node
         let oldNode : Fin rst.nodes.length :=
           Fin.cast (congrArg List.length
             (Diag.connectStep_nodes rendererMate ok rst)) node
         let childNode : Fin
             (nodeOrder (st.connectChild hpending mate hmate)).length :=
-          Fin.cast hchildNodeLength node
+          nodeOrderIndex (st.connectChild hpending mate hmate)
+            hchildNodeLength node
         let oldOrderNode : Fin (nodeOrder st).length :=
           Fin.cast hrel.node_length oldNode
         have hnodeGet :=
@@ -1023,27 +1026,20 @@ theorem GraphRenderRelated.connectChild
             Diag.connectStep_edges_get_old rendererMate ok rst hids edge hold
           let childEdge :
               Fin (edgeOrder (st.connectChild hpending mate hmate)).length :=
-            Fin.cast
-              (by
-                rw [Diag.connectStep_edges_length rendererMate ok rst,
-                  edgeOrder_connectChild st hpending mate hmate]
-                simp [hrel.edge_length])
-              edge
+            edgeOrderIndex (st.connectChild hpending mate hmate)
+              hchildEdgeLength edge
           have hedgeOrder :
               (edgeOrder (st.connectChild hpending mate hmate)).get
-                  (Fin.cast
-                    (by
-                      rw [Diag.connectStep_edges_length rendererMate ok rst,
-                        edgeOrder_connectChild st hpending mate hmate]
-                      simp [hrel.edge_length])
-                    edge) =
+                  childEdge =
                 (edgeOrder st).get (hrel.edgeIndex oldEdge) := by
             have hget :=
               edgeOrder_connectChild_get_old st hpending mate hmate
                 childEdge (by simpa [hrel.edge_length] using hold)
             simpa [childEdge, oldEdge] using hget
-          rw [hedgeEq, hedgeOrder]
-          exact hrel.edge_label oldEdge
+          rw [hedgeEq]
+          simpa [childEdge] using
+            (hrel.edge_label oldEdge).trans
+              (congrArg G.raw.edgeLabel hedgeOrder.symm)
         · have hnewVal : edge.val = rst.edges.length := by
             have hlen : edge.val < rst.edges.length + 1 := by
               exact Nat.lt_of_lt_of_eq edge.isLt
@@ -1066,31 +1062,25 @@ theorem GraphRenderRelated.connectChild
               simpa [idx] using hnew
           let childEdge :
               Fin (edgeOrder (st.connectChild hpending mate hmate)).length :=
-            Fin.cast
-              (by
-                rw [Diag.connectStep_edges_length rendererMate ok rst,
-                  edgeOrder_connectChild st hpending mate hmate]
-                simp [hrel.edge_length])
-              edge
+            edgeOrderIndex (st.connectChild hpending mate hmate)
+              hchildEdgeLength edge
           have hnewOrder :
               (edgeOrder (st.connectChild hpending mate hmate)).get
-                  (Fin.cast
-                    (by
-                      rw [Diag.connectStep_edges_length rendererMate ok rst,
-                        edgeOrder_connectChild st hpending mate hmate]
-                      simp [hrel.edge_length])
-                    edge) =
+                  childEdge =
                 G.raw.endpointEdge active := by
             have hget :=
               edgeOrder_connectChild_get_new st hpending mate hmate
                 childEdge (by simp [childEdge, hnewVal, hrel.edge_length])
             simpa [childEdge] using hget
-          rw [hnewEdge, hnewOrder]
           have hactiveLabel := (st.pending_labels_cons hpending).1
-          change Sig.portEdge activeLabel =
-            G.raw.edgeLabel (G.raw.endpointEdge active)
-          rw [← hactiveLabel]
-          exact G.raw.endpoint_edge_label active
+          have hlabelNew :
+              Sig.portEdge activeLabel =
+                G.raw.edgeLabel (G.raw.endpointEdge active) := by
+            rw [← hactiveLabel]
+            exact G.raw.endpoint_edge_label active
+          rw [hnewEdge]
+          simpa [childEdge] using
+            hlabelNew.trans (congrArg G.raw.edgeLabel hnewOrder.symm)
       · exact hchildEdgeLeftBound
       · exact hchildEdgeRightBound
       · intro edge
@@ -1124,7 +1114,8 @@ theorem GraphRenderRelated.connectChild
           let childEndpoint :
               Fin (endpointOrder G
                 (st.connectChild hpending mate hmate)).length :=
-            Fin.cast hchildEndpointLength
+            endpointOrderIndex (st.connectChild hpending mate hmate)
+              hchildEndpointLength
               ⟨((Diag.connectStep rendererMate ok rst).edges.get edge).left,
                 hchildEdgeLeftBound edge⟩
           let oldEndpoint :
@@ -1151,7 +1142,7 @@ theorem GraphRenderRelated.connectChild
                 hrel.edge_left oldEdge
             _ =
               (edgeOrder (st.connectChild hpending mate hmate)).get
-                  (Fin.cast hchildEdgeLength edge) := by
+                  childEdge := by
                 exact hedgeOrder.symm
         · have hnewVal : edge.val = rst.edges.length := by
             have hlen : edge.val < rst.edges.length + 1 := by
@@ -1175,20 +1166,11 @@ theorem GraphRenderRelated.connectChild
               simpa [idx] using hnew
           let childEdge :
               Fin (edgeOrder (st.connectChild hpending mate hmate)).length :=
-            Fin.cast
-              (by
-                rw [Diag.connectStep_edges_length rendererMate ok rst,
-                  edgeOrder_connectChild st hpending mate hmate]
-                simp [hrel.edge_length])
-              edge
+            edgeOrderIndex (st.connectChild hpending mate hmate)
+              hchildEdgeLength edge
           have hnewOrder :
               (edgeOrder (st.connectChild hpending mate hmate)).get
-                  (Fin.cast
-                    (by
-                      rw [Diag.connectStep_edges_length rendererMate ok rst,
-                        edgeOrder_connectChild st hpending mate hmate]
-                      simp [hrel.edge_length])
-                    edge) =
+                  childEdge =
                 G.raw.endpointEdge active := by
             have hget :=
               edgeOrder_connectChild_get_new st hpending mate hmate
@@ -1197,7 +1179,8 @@ theorem GraphRenderRelated.connectChild
           let childEndpoint :
               Fin (endpointOrder G
                 (st.connectChild hpending mate hmate)).length :=
-            Fin.cast hchildEndpointLength
+            endpointOrderIndex (st.connectChild hpending mate hmate)
+              hchildEndpointLength
               ⟨((Diag.connectStep rendererMate ok rst).edges.get edge).left,
                 hchildEdgeLeftBound edge⟩
           let oldEndpoint :
@@ -1227,7 +1210,7 @@ theorem GraphRenderRelated.connectChild
                 exact congrArg G.raw.endpointEdge hpendingVals.1
             _ =
               (edgeOrder (st.connectChild hpending mate hmate)).get
-                  (Fin.cast hchildEdgeLength edge) := by
+                  childEdge := by
                 exact hnewOrder.symm
       · intro edge
         by_cases hold : edge.val < rst.edges.length
@@ -1238,20 +1221,11 @@ theorem GraphRenderRelated.connectChild
             Diag.connectStep_edges_get_old rendererMate ok rst hids edge hold
           let childEdge :
               Fin (edgeOrder (st.connectChild hpending mate hmate)).length :=
-            Fin.cast
-              (by
-                rw [Diag.connectStep_edges_length rendererMate ok rst,
-                  edgeOrder_connectChild st hpending mate hmate]
-                simp [hrel.edge_length])
-              edge
+            edgeOrderIndex (st.connectChild hpending mate hmate)
+              hchildEdgeLength edge
           have hedgeOrder :
               (edgeOrder (st.connectChild hpending mate hmate)).get
-                  (Fin.cast
-                    (by
-                      rw [Diag.connectStep_edges_length rendererMate ok rst,
-                        edgeOrder_connectChild st hpending mate hmate]
-                      simp [hrel.edge_length])
-                    edge) =
+                  childEdge =
                 (edgeOrder st).get (Fin.cast hrel.edge_length oldEdge) := by
             have hget :=
               edgeOrder_connectChild_get_old st hpending mate hmate
@@ -1260,7 +1234,8 @@ theorem GraphRenderRelated.connectChild
           let childEndpoint :
               Fin (endpointOrder G
                 (st.connectChild hpending mate hmate)).length :=
-            Fin.cast hchildEndpointLength
+            endpointOrderIndex (st.connectChild hpending mate hmate)
+              hchildEndpointLength
               ⟨((Diag.connectStep rendererMate ok rst).edges.get edge).right,
                 hchildEdgeRightBound edge⟩
           let oldEndpoint :
@@ -1287,7 +1262,7 @@ theorem GraphRenderRelated.connectChild
                 hrel.edge_right oldEdge
             _ =
               (edgeOrder (st.connectChild hpending mate hmate)).get
-                  (Fin.cast hchildEdgeLength edge) := by
+                  childEdge := by
                 exact hedgeOrder.symm
         · have hnewVal : edge.val = rst.edges.length := by
             have hlen : edge.val < rst.edges.length + 1 := by
@@ -1311,20 +1286,11 @@ theorem GraphRenderRelated.connectChild
               simpa [idx] using hnew
           let childEdge :
               Fin (edgeOrder (st.connectChild hpending mate hmate)).length :=
-            Fin.cast
-              (by
-                rw [Diag.connectStep_edges_length rendererMate ok rst,
-                  edgeOrder_connectChild st hpending mate hmate]
-                simp [hrel.edge_length])
-              edge
+            edgeOrderIndex (st.connectChild hpending mate hmate)
+              hchildEdgeLength edge
           have hnewOrder :
               (edgeOrder (st.connectChild hpending mate hmate)).get
-                  (Fin.cast
-                    (by
-                      rw [Diag.connectStep_edges_length rendererMate ok rst,
-                        edgeOrder_connectChild st hpending mate hmate]
-                      simp [hrel.edge_length])
-                    edge) =
+                  childEdge =
                 G.raw.endpointEdge active := by
             have hget :=
               edgeOrder_connectChild_get_new st hpending mate hmate
@@ -1344,7 +1310,8 @@ theorem GraphRenderRelated.connectChild
           let childEndpoint :
               Fin (endpointOrder G
                 (st.connectChild hpending mate hmate)).length :=
-            Fin.cast hchildEndpointLength
+            endpointOrderIndex (st.connectChild hpending mate hmate)
+              hchildEndpointLength
               ⟨((Diag.connectStep rendererMate ok rst).edges.get edge).right,
                 hchildEdgeRightBound edge⟩
           let oldEndpoint :
@@ -1375,7 +1342,7 @@ theorem GraphRenderRelated.connectChild
                   hmate.2.symm
             _ =
               (edgeOrder (st.connectChild hpending mate hmate)).get
-                  (Fin.cast hchildEdgeLength edge) := by
+                  childEdge := by
                 exact hnewOrder.symm
       · intro node
         let oldNode : Fin rst.nodes.length :=
@@ -1383,7 +1350,8 @@ theorem GraphRenderRelated.connectChild
             (Diag.connectStep_nodes rendererMate ok rst)) node
         let childNode : Fin
             (nodeOrder (st.connectChild hpending mate hmate)).length :=
-          Fin.cast hchildNodeLength node
+          nodeOrderIndex (st.connectChild hpending mate hmate)
+            hchildNodeLength node
         let oldOrderNode : Fin (nodeOrder st).length :=
           hrel.nodeIndex oldNode
         have hnodeGet :=
@@ -1421,7 +1389,8 @@ theorem GraphRenderRelated.connectChild
             (Diag.connectStep_nodes rendererMate ok rst)) node
         let childNode : Fin
             (nodeOrder (st.connectChild hpending mate hmate)).length :=
-          Fin.cast hchildNodeLength node
+          nodeOrderIndex (st.connectChild hpending mate hmate)
+            hchildNodeLength node
         let oldOrderNode : Fin (nodeOrder st).length :=
           Fin.cast hrel.node_length oldNode
         have hnodeGet :=
@@ -1448,7 +1417,8 @@ theorem GraphRenderRelated.connectChild
         let childEndpoint :
             Fin (endpointOrder G
               (st.connectChild hpending mate hmate)).length :=
-          Fin.cast hchildEndpointLength
+          endpointOrderIndex (st.connectChild hpending mate hmate)
+            hchildEndpointLength
             ⟨((Diag.connectStep rendererMate ok rst).nodes.get node).incident.get slot,
               hchildNodeIncidentBound node slot⟩
         let oldEndpoint : Fin (endpointOrder G st).length :=

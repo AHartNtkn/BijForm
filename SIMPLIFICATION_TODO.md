@@ -153,6 +153,10 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     `nodeOrderIndex` helpers beside the order-list definitions and routed one
     bud-child preservation block through them. Raw child-step casts remain in
     connect-child, later bud-child, and incident-slot proof regions.
+  - Partial: routed the connect-child edge-label, edge-endpoint, node-label,
+    and node-incident proof regions through the order-list helpers where the
+    cast was pure order-index transport. Later bud-child and dependent
+    incident-slot transports remain open.
 
 ## Code Algebra and Rank Descent
 
