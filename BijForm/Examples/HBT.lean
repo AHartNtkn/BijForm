@@ -242,10 +242,18 @@ def HBTNatLayerPresentation : NatLayerPresentation HBTPoly HBTInversion :=
         | inr pair =>
             intro q
             cases q
-            · exact CodeAlgebra.toNatSum_inr_lt_of_le (Iso.refl Nat)
-                CodeAlgebra.prodNat (CodeAlgebra.prodNat_toFun_fst_le pair)
-            · exact CodeAlgebra.toNatSum_inr_lt_of_le (Iso.refl Nat)
-                CodeAlgebra.prodNat (CodeAlgebra.prodNat_toFun_snd_le pair))
+            · have hpath :
+                  CodeAlgebra.SubcodeLt CodeAlgebra.sumProdNat
+                    (fun p : Nat × Nat => Sum.inr p) Prod.fst := by
+                exact CodeAlgebra.SubcodeLe.toNatSum_inr_lt
+                  (left := Iso.refl Nat) CodeAlgebra.subcode_prodNat_fst
+              exact hpath pair
+            · have hpath :
+                  CodeAlgebra.SubcodeLt CodeAlgebra.sumProdNat
+                    (fun p : Nat × Nat => Sum.inr p) Prod.snd := by
+                exact CodeAlgebra.SubcodeLe.toNatSum_inr_lt
+                  (left := Iso.refl Nat) CodeAlgebra.subcode_prodNat_snd
+              exact hpath pair)
 
 /-- Generated Nat coding data for height-bounded trees. The recursive encoder
 and decoder are produced by `GeneratedNatCode`, not by an example-specific

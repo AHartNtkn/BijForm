@@ -204,7 +204,7 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     `natOrProdOrProdNat_toFun`, `prodOrNatOrProdOrNat_toFun`, and
     `sumProdNat_toFun` in examples and string-diagram modules has no matches.
 
-- [ ] Add generic child-bound propagation through codec combinators.
+- [x] Add generic child-bound propagation through codec combinators.
   - Owner: `BijForm.CodeAlgebra`
   - Evidence: repeated `toNatSum_*`, `toNatProd_*`,
     `finPrefixNat_toFun_inr_*`, and `finSumProdNat_*` proofs.
@@ -220,6 +220,10 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
   - Partial: `PeanoNat_layer_child_lt` now uses `SubcodeLt` propagation facts
     for its four-way Nat sum branches instead of direct `toNatSum4` branch
     lemma applications.
+  - Completed: added finite-product and nested-product `SubcodeLe` helpers.
+    HBT, Lambda, and Sorted rank/descent proofs now use `SubcodeLt` paths; a
+    source scan over examples and finite string-diagram syntax reports no
+    remaining direct low-level child-bound lemma uses.
 
 - [ ] Move generic scaled-rank payload lemmas out of finite string diagrams.
   - Owner: `BijForm.CodeAlgebra`

@@ -483,6 +483,14 @@ theorem SubcodeLe.toNatProd_right {α : Type u} {β : Type v} {γ : Type w}
     SubcodeLe (toNatProd left right) (fun x => (fill x, embed x)) rank :=
   fun x => Nat.le_trans (h x) (toNatProd_rightCode_le left right (fill x, embed x))
 
+theorem SubcodeLe.toNatFinProd_payload {α : Type u} {β : Type v}
+    (k : Nat) (hk : 0 < k) {payload : α ≃ᵢ Nat}
+    {fill : β → Fin k} {embed : β → α} {rank : β → Nat}
+    (h : SubcodeLe payload embed rank) :
+    SubcodeLe (toNatFinProd k hk payload) (fun x => (fill x, embed x)) rank :=
+  fun x => Nat.le_trans (h x)
+    (toNatFinProd_payloadCode_le k hk payload (fill x, embed x))
+
 def sumProdNat : (Nat ⊕ (Nat × Nat)) ≃ᵢ Nat :=
   toNatSum (Iso.refl Nat) prodNat
 
@@ -654,30 +662,46 @@ def finProdProdNat (k : Nat) (hk : 0 < k) :
     (Fin k × (Nat × Nat)) ≃ᵢ Nat :=
   toNatFinProd k hk prodNat
 
+theorem subcode_finProdProdNat_snd_fst (k : Nat) (hk : 0 < k) :
+    SubcodeLe (finProdProdNat k hk) id (fun p : Fin k × (Nat × Nat) => p.2.1) :=
+  fun p => Nat.le_trans (prodNat_toFun_fst_le p.2)
+    (toNatFinProd_payloadCode_le k hk prodNat p)
+
+theorem subcode_finProdProdNat_snd_snd (k : Nat) (hk : 0 < k) :
+    SubcodeLe (finProdProdNat k hk) id (fun p : Fin k × (Nat × Nat) => p.2.2) :=
+  fun p => Nat.le_trans (prodNat_toFun_snd_le p.2)
+    (toNatFinProd_payloadCode_le k hk prodNat p)
+
 theorem finProdProdNat_toFun_snd_fst_le (k : Nat) (hk : 0 < k)
     (p : Fin k × (Nat × Nat)) :
     p.2.1 ≤ (finProdProdNat k hk).toFun p := by
-  exact Nat.le_trans (prodNat_toFun_fst_le p.2)
-    (toNatFinProd_payloadCode_le k hk prodNat p)
+  exact subcode_finProdProdNat_snd_fst k hk p
 
 theorem finProdProdNat_toFun_snd_snd_le (k : Nat) (hk : 0 < k)
     (p : Fin k × (Nat × Nat)) :
     p.2.2 ≤ (finProdProdNat k hk).toFun p := by
-  exact Nat.le_trans (prodNat_toFun_snd_le p.2)
-    (toNatFinProd_payloadCode_le k hk prodNat p)
+  exact subcode_finProdProdNat_snd_snd k hk p
 
 def natProdProdNat : (Nat × (Nat × Nat)) ≃ᵢ Nat :=
   toNatProd (Iso.refl Nat) prodNat
 
+theorem subcode_natProdProdNat_snd_fst :
+    SubcodeLe natProdProdNat id (fun p : Nat × (Nat × Nat) => p.2.1) :=
+  fun p => Nat.le_trans (prodNat_toFun_fst_le p.2)
+    (toNatProd_rightCode_le (Iso.refl Nat) prodNat p)
+
+theorem subcode_natProdProdNat_snd_snd :
+    SubcodeLe natProdProdNat id (fun p : Nat × (Nat × Nat) => p.2.2) :=
+  fun p => Nat.le_trans (prodNat_toFun_snd_le p.2)
+    (toNatProd_rightCode_le (Iso.refl Nat) prodNat p)
+
 theorem natProdProdNat_toFun_snd_fst_le (p : Nat × (Nat × Nat)) :
     p.2.1 ≤ natProdProdNat.toFun p := by
-  exact Nat.le_trans (prodNat_toFun_fst_le p.2)
-    (toNatProd_rightCode_le (Iso.refl Nat) prodNat p)
+  exact subcode_natProdProdNat_snd_fst p
 
 theorem natProdProdNat_toFun_snd_snd_le (p : Nat × (Nat × Nat)) :
     p.2.2 ≤ natProdProdNat.toFun p := by
-  exact Nat.le_trans (prodNat_toFun_snd_le p.2)
-    (toNatProd_rightCode_le (Iso.refl Nat) prodNat p)
+  exact subcode_natProdProdNat_snd_snd p
 
 /--
 Code a possibly empty finite-tagged product together with a plain `Nat` tail.

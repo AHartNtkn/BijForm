@@ -285,11 +285,13 @@ theorem LamNat_layer_child_rank_lt :
                 (LamNatLayerShapeTo param
                   ⟨⟨LamCtor.app, (param : Nat), rfl⟩, child⟩))
           have hchild_lt_parent :=
-            CodeAlgebra.finPrefixNat_toFun_inr_lt_of_lt param CodeAlgebra.sumProdNat
-              (a := Sum.inr (child false, child true))
-              (CodeAlgebra.toNatSum_inr_lt_of_le (Iso.refl Nat)
-                CodeAlgebra.prodNat
-                (CodeAlgebra.prodNat_toFun_fst_le (child false, child true)))
+            have htail :
+                CodeAlgebra.SubcodeLt CodeAlgebra.sumProdNat
+                  (fun p : Nat × Nat => Sum.inr p) Prod.fst := by
+              exact CodeAlgebra.SubcodeLe.toNatSum_inr_lt
+                (left := Iso.refl Nat) CodeAlgebra.subcode_prodNat_fst
+            (CodeAlgebra.SubcodeLt.finPrefixNat_inr param htail)
+              (child false, child true)
           dsimp [LamNatRank]
           by_cases hk : param = 0
           · simpa [hk, LamNatLayerShapeTo] using hchild_lt_parent
@@ -300,11 +302,13 @@ theorem LamNat_layer_child_rank_lt :
                 (LamNatLayerShapeTo param
                   ⟨⟨LamCtor.app, (param : Nat), rfl⟩, child⟩))
           have hchild_lt_parent :=
-            CodeAlgebra.finPrefixNat_toFun_inr_lt_of_lt param CodeAlgebra.sumProdNat
-              (a := Sum.inr (child false, child true))
-              (CodeAlgebra.toNatSum_inr_lt_of_le (Iso.refl Nat)
-                CodeAlgebra.prodNat
-                (CodeAlgebra.prodNat_toFun_snd_le (child false, child true)))
+            have htail :
+                CodeAlgebra.SubcodeLt CodeAlgebra.sumProdNat
+                  (fun p : Nat × Nat => Sum.inr p) Prod.snd := by
+              exact CodeAlgebra.SubcodeLe.toNatSum_inr_lt
+                (left := Iso.refl Nat) CodeAlgebra.subcode_prodNat_snd
+            (CodeAlgebra.SubcodeLt.finPrefixNat_inr param htail)
+              (child false, child true)
           dsimp [LamNatRank]
           by_cases hk : param = 0
           · simpa [hk, LamNatLayerShapeTo] using hchild_lt_parent
