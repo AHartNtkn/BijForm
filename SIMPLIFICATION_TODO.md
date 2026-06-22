@@ -455,6 +455,10 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     child old/new left-endpoint incidence update; the main `connectChild`
     proof consumes that field instead of rebuilding endpoint and edge-order
     transport locally.
+  - Partial: `GraphRenderRelated.connectChild_edgeRight` now owns the connect
+    child old/new right-endpoint incidence update, including mate/rest frontier
+    endpoint reconstruction; the main `connectChild` proof consumes that field
+    instead of rebuilding the case split locally.
 
 - [ ] Introduce declarative render deltas for connect and bud.
   - Owner: `BijForm.StringDiagram.Renderer.Steps`
