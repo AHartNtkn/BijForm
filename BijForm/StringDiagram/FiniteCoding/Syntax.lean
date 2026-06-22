@@ -21,6 +21,48 @@ branches from a one-port frontier. -/
 abbrev Signature.NonUnaryEntry (Sig : Signature) : Type :=
   { entry : Sig.Entry // Sig.arity entry.1 ≠ 1 }
 
+def Signature.entryValues (Sig : Signature) (nodes : List Sig.Node) :
+    List Sig.Entry :=
+  nodes.flatMap fun node =>
+    List.ofFn fun slot : Fin (Sig.arity node) => ⟨node, slot⟩
+
+theorem Signature.mem_entryValues {Sig : Signature}
+    {nodes : List Sig.Node} {entry : Sig.Entry} :
+    entry ∈ Sig.entryValues nodes ↔ entry.1 ∈ nodes := by
+  rw [Signature.entryValues, List.mem_flatMap]
+  constructor
+  · intro h
+    rcases h with ⟨node, hnode, hentry⟩
+    rcases List.mem_ofFn.mp hentry with ⟨slot, hslot⟩
+    cases hslot
+    exact hnode
+  · intro h
+    exact ⟨entry.1, h, by
+      rw [List.mem_ofFn]
+      exact ⟨entry.2, rfl⟩⟩
+
+theorem Signature.entryValues_nodup {Sig : Signature} :
+    ∀ nodes : List Sig.Node, nodes.Nodup → (Sig.entryValues nodes).Nodup
+  | [], _hnodup => by
+      simp [Signature.entryValues]
+  | node :: nodes, hnodup => by
+      have hsplit : node ∉ nodes ∧ nodes.Nodup := by
+        simpa using hnodup
+      change
+        ((List.ofFn fun slot : Fin (Sig.arity node) =>
+              (⟨node, slot⟩ : Sig.Entry)) ++ Sig.entryValues nodes).Nodup
+      rw [List.nodup_append]
+      refine ⟨?_, Signature.entryValues_nodup nodes hsplit.2, ?_⟩
+      · apply list_nodup_ofFn_injective
+        intro left right h
+        cases h
+        rfl
+      · intro entry hentry rest hrest heq
+        rcases List.mem_ofFn.mp hentry with ⟨slot, hslot⟩
+        cases hslot
+        cases heq
+        exact hsplit.1 (Signature.mem_entryValues.mp hrest)
+
 def Signature.entryDecidableEq {Sig : Signature} [DecidableEq Sig.Node] :
     DecidableEq Sig.Entry
   | ⟨leftNode, leftSlot⟩, ⟨rightNode, rightSlot⟩ =>
@@ -39,6 +81,26 @@ def Signature.entryDecidableEq {Sig : Signature} [DecidableEq Sig.Node] :
           intro h
           cases h
           exact hnode rfl)
+
+def Signature.entryTable {Sig : Signature} [DecidableEq Sig.Node]
+    (nodes : FiniteSubtypeTable Sig.Node (fun _ => True)) :
+    FiniteSubtypeTable Sig.Entry (fun _ => True) where
+  values := Sig.entryValues nodes.values
+  nodup := Signature.entryValues_nodup nodes.values nodes.nodup
+  sound := by
+    intro _i
+    trivial
+  complete := by
+    intro entry _h
+    have hnodeMem : entry.1 ∈ nodes.values := by
+      cases hcomplete : nodes.complete entry.1 True.intro with
+      | mk i hi =>
+          exact hi ▸ List.get_mem nodes.values i
+    have hentryMem : entry ∈ Sig.entryValues nodes.values :=
+      Signature.mem_entryValues.mpr hnodeMem
+    exact @FiniteSubtypeTable.indexOfMem Sig.Entry
+      (Signature.entryDecidableEq (Sig := Sig))
+      (Sig.entryValues nodes.values) entry hentryMem
 
 def Signature.unaryEntryTable {Sig : Signature} [DecidableEq Sig.Node]
     (entries : FiniteSubtypeTable Sig.Entry (fun _ => True)) :
@@ -156,6 +218,27 @@ def ofEntryTable {Sig : Signature} [DecidableEq Sig.Node]
   nonUnaryCount := (Signature.nonUnaryEntryTable (Sig := Sig) entries).values.length
   nonUnaryCount_pos := nonUnaryCount_pos
   nonUnaryIso := (Signature.nonUnaryEntryTable (Sig := Sig) entries).iso
+
+def ofNodeTable {Sig : Signature} [DecidableEq Sig.Node]
+    (nodes : FiniteSubtypeTable Sig.Node (fun _ => True))
+    (compatibleAll : ∀ left right : Sig.Port, Sig.compatible left right)
+    (rankScale : Nat)
+    (arity_lt_rankScale : ∀ node : Sig.Node, Sig.arity node < rankScale)
+    (unaryCount_pos :
+      0 < (Signature.unaryEntryTable (Sig := Sig)
+        (Signature.entryTable (Sig := Sig) nodes)).values.length)
+    (nonUnaryCount_pos :
+      0 < (Signature.nonUnaryEntryTable (Sig := Sig)
+        (Signature.entryTable (Sig := Sig) nodes)).values.length) :
+    SingleSortedFiniteCodingData Sig :=
+  ofEntryTable
+    (Sig := Sig)
+    (Signature.entryTable (Sig := Sig) nodes)
+    compatibleAll
+    rankScale
+    arity_lt_rankScale
+    unaryCount_pos
+    nonUnaryCount_pos
 
 variable {Sig : Signature} (data : SingleSortedFiniteCodingData Sig)
 

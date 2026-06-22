@@ -18,7 +18,8 @@ namespace FiniteSubtypeTable
 
 variable {α : Type u} {p : α → Prop}
 
-private def indexOfMem [DecidableEq α] : (xs : List α) → (a : α) → a ∈ xs →
+/-- Return the first proof-carrying index of an element known to occur in a list. -/
+def indexOfMem [DecidableEq α] : (xs : List α) → (a : α) → a ∈ xs →
     {i : Fin xs.length // xs.get i = a}
   | [], _, h => False.elim (by cases h)
   | x :: xs, a, h => by

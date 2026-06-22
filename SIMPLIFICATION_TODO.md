@@ -365,7 +365,7 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     generic normalizer helper. The broader generic binary child-swap descent
     abstraction remains open.
 
-- [ ] Generate finite string-diagram entry tables for finite signatures.
+- [x] Generate finite string-diagram entry tables for finite signatures.
   - Owner: `BijForm.StringDiagram.FiniteCoding.Syntax`
   - Evidence: the SIN example used to own local entry equality plus separate
     unary and non-unary entry tables.
@@ -373,12 +373,13 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     enumeration and arity data.
   - Validation: source search for the old local entry-equality and split-table
     identifiers has no tracked matches.
-  - Partial: added `FiniteSubtypeTable.filterAll`,
-    `Signature.entryDecidableEq`, `Signature.unaryEntryTable`,
-    `Signature.nonUnaryEntryTable`, and
-    `SingleSortedFiniteCodingData.ofEntryTable`. The SIN example now supplies
-    one complete constructor-entry table and derives unary/non-unary tables
-    generically. Full table generation from node enumeration remains open.
+  - Completed: added `FiniteSubtypeTable.filterAll`,
+    `Signature.entryDecidableEq`, `Signature.entryTable`,
+    `Signature.unaryEntryTable`, `Signature.nonUnaryEntryTable`,
+    `SingleSortedFiniteCodingData.ofEntryTable`, and
+    `SingleSortedFiniteCodingData.ofNodeTable`. The SIN example now supplies
+    only a finite node table; the dependent constructor-entry table and its
+    unary/non-unary refinements are generated generically.
 
 - [ ] Review low-value generated-code pass-through wrappers.
   - Owner: example modules and `BijForm.DependentPolynomial.GeneratedCode`

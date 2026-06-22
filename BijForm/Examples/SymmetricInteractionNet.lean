@@ -49,79 +49,31 @@ private instance : DecidableEq SymmetricInteractionNetSignature.Node := by
   change DecidableEq SymmetricInteractionNetNode
   infer_instance
 
-private instance :
-    DecidableEq (Signature.Entry SymmetricInteractionNetSignature) :=
-  Signature.entryDecidableEq
+private def SINNodes : List SymmetricInteractionNetSignature.Node :=
+  [SymmetricInteractionNetNode.dup,
+   SymmetricInteractionNetNode.erase,
+   SymmetricInteractionNetNode.cons]
 
-private def SINConstructorEntries :
-    List (Signature.Entry SymmetricInteractionNetSignature) :=
-  [⟨SymmetricInteractionNetNode.dup, ⟨0, by decide⟩⟩,
-   ⟨SymmetricInteractionNetNode.dup, ⟨1, by decide⟩⟩, ⟨SymmetricInteractionNetNode.dup, ⟨2, by decide⟩⟩,
-   ⟨SymmetricInteractionNetNode.erase, ⟨0, by decide⟩⟩,
-   ⟨SymmetricInteractionNetNode.cons, ⟨0, by decide⟩⟩,
-   ⟨SymmetricInteractionNetNode.cons, ⟨1, by decide⟩⟩, ⟨SymmetricInteractionNetNode.cons, ⟨2, by decide⟩⟩]
-
-private def SINConstructorEntryTable :
-    FiniteSubtypeTable
-      (Signature.Entry SymmetricInteractionNetSignature) (fun _ => True) where
-  values := SINConstructorEntries
+private def SINNodeTable :
+    FiniteSubtypeTable SymmetricInteractionNetSignature.Node (fun _ => True) where
+  values := SINNodes
   nodup := by decide
   sound := by
     intro _i
     trivial
   complete := by
-    intro entry _h
-    cases entry with
-    | mk node slot =>
-        cases node with
-        | dup =>
-            cases slot with
-            | mk val hval =>
-                if hval0 : val = 0 then
-                  subst val
-                  exact ⟨⟨0, by decide⟩, rfl⟩
-                else if hval1 : val = 1 then
-                  subst val
-                  exact ⟨⟨1, by decide⟩, rfl⟩
-                else
-                  have hval2 : val = 2 := by
-                    change val < SymmetricInteractionNetArity SymmetricInteractionNetNode.dup at hval
-                    simp [SymmetricInteractionNetArity] at hval
-                    omega
-                  subst val
-                  exact ⟨⟨2, by decide⟩, rfl⟩
-        | erase =>
-            cases slot with
-            | mk val hval =>
-                have hval0 : val = 0 := by
-                  change val < SymmetricInteractionNetArity SymmetricInteractionNetNode.erase at hval
-                  simp [SymmetricInteractionNetArity] at hval
-                  omega
-                subst val
-                exact ⟨⟨3, by decide⟩, rfl⟩
-        | cons =>
-            cases slot with
-            | mk val hval =>
-                if hval0 : val = 0 then
-                  subst val
-                  exact ⟨⟨4, by decide⟩, rfl⟩
-                else if hval1 : val = 1 then
-                  subst val
-                  exact ⟨⟨5, by decide⟩, rfl⟩
-                else
-                  have hval2 : val = 2 := by
-                    change val < SymmetricInteractionNetArity SymmetricInteractionNetNode.cons at hval
-                    simp [SymmetricInteractionNetArity] at hval
-                    omega
-                  subst val
-                  exact ⟨⟨6, by decide⟩, rfl⟩
+    intro node _h
+    cases node with
+    | dup => exact ⟨⟨0, by decide⟩, rfl⟩
+    | erase => exact ⟨⟨1, by decide⟩, rfl⟩
+    | cons => exact ⟨⟨2, by decide⟩, rfl⟩
 
 /-- Finite single-sorted coding data for the SIN signature. -/
 def SymmetricInteractionNetCodingData :
     SingleSortedFiniteCodingData SymmetricInteractionNetSignature :=
-  SingleSortedFiniteCodingData.ofEntryTable
+  SingleSortedFiniteCodingData.ofNodeTable
     (Sig := SymmetricInteractionNetSignature)
-    SINConstructorEntryTable
+    SINNodeTable
     (by
       intro left right
       cases left
