@@ -787,7 +787,7 @@ def SortedSyntaxShapeIso (i : SortedIx) : SortedSyntax i ≃ᵢ SortedCarrier i 
 
 def SortedSyntaxNatIsoOfBound (i : SortedIx) (h : Bound.le i.1 i.2) :
     SortedSyntax i ≃ᵢ Nat :=
-  CodeShape.sourceNatIso (SortedSyntaxShapeIso i) (by
+  GeneratedCode.shapeNatIso SortedGeneratedCode SortedGeneratedShapeCode i (by
     cases i with
     | mk lower upper =>
         cases upper with
@@ -799,7 +799,7 @@ def SortedSyntaxNatIsoOfBound (i : SortedIx) (h : Bound.le i.1 i.2) :
 
 def SortedSyntaxFinOneIsoOfNotBound (i : SortedIx) (h : ¬Bound.le i.1 i.2) :
     SortedSyntax i ≃ᵢ Fin 1 :=
-  CodeShape.sourceFinIso (SortedSyntaxShapeIso i) (by
+  GeneratedCode.shapeFinIso SortedGeneratedCode SortedGeneratedShapeCode i (by
     cases i with
     | mk lower upper =>
         cases upper with

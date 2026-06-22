@@ -830,15 +830,20 @@ def singleSortedFiniteSyntaxShapeIso
 def singleSortedFiniteSyntaxEmptyFinOneIso
     (Sig : Signature) (data : SingleSortedFiniteCodingData Sig) :
     Diag Sig [] ≃ᵢ Fin 1 :=
-  CodeShape.sourceFinIso (singleSortedFiniteSyntaxShapeIso Sig data []) rfl
+  GeneratedCode.shapeFinIso
+    (generatedCode Sig)
+    (singleSortedFiniteGeneratedShapeCode Sig data)
+    [] rfl
 
 /-- Nonempty-frontier syntax is generated as a natural-number carrier. -/
 def singleSortedFiniteSyntaxNonemptyNatIso
     (Sig : Signature) (data : SingleSortedFiniteCodingData Sig)
     (active : Sig.Port) (frontier : List Sig.Port) :
     Diag Sig (active :: frontier) ≃ᵢ Nat :=
-  CodeShape.sourceNatIso
-    (singleSortedFiniteSyntaxShapeIso Sig data (active :: frontier)) rfl
+  GeneratedCode.shapeNatIso
+    (generatedCode Sig)
+    (singleSortedFiniteGeneratedShapeCode Sig data)
+    (active :: frontier) rfl
 
 end StringDiagram
 end BijForm
