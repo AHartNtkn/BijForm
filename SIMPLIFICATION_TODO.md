@@ -281,7 +281,9 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
   - Partial: added fixed-index `CodeLayer.canonical_left_inv_at_by_fiber`.
     `sortedConstructorPayloadIso` and the nontrivial fixed branch of
     `SortedCarrierLayerIso` now use the shared fixed-fiber layer/fiber
-    destructuring helper. Remaining surfaces are typed-binding internals and
+    destructuring helper. Remaining direct child-eta closers in Num, Peano,
+    and Sorted are branch-local payload cases after shared scaffold removal;
+    remaining layer/fiber scaffold surfaces are typed-binding internals and
     finite string-diagram frontier-case proofs.
 
 - [x] Factor finite and infinite sorted branch payload coding.
