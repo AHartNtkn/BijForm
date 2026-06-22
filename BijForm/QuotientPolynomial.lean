@@ -74,6 +74,33 @@ inductive Rel (Q : QuotientPresentation P) :
 
 namespace Rel
 
+theorem respects_of_layer_congr
+    (Q : QuotientPresentation P)
+    {Out : ι → Type w}
+    (normalize : ∀ i, Mu P i → Out i)
+    (layer_respects :
+      ∀ {i : ι} {x y : Obj P (Mu P) i},
+        Q.LayerRel i x y →
+          normalize i (Mu.inn x) = normalize i (Mu.inn y))
+    (congr_respects :
+      ∀ {i : ι} {c : P.Ctor} {p : P.Param c}
+        {h : P.out c p = i}
+        {child child' : (q : P.Pos c p) → Mu P (P.input p q)},
+        (∀ q,
+          normalize (P.input p q) (child q) =
+            normalize (P.input p q) (child' q)) →
+          normalize i (Mu.sup c p h child) =
+            normalize i (Mu.sup c p h child')) :
+    ∀ {i : ι} {x y : Mu P i}, Rel Q i x y →
+      normalize i x = normalize i y := by
+  intro i x y hxy
+  induction hxy with
+  | refl x => rfl
+  | layer h => exact layer_respects h
+  | congr hchild ih => exact congr_respects ih
+  | symm _ ih => exact ih.symm
+  | trans _ _ ihxy ihyz => exact ihxy.trans ihyz
+
 theorem unorderedPair_decode_encode_repair
     (Q : QuotientPresentation P)
     {childIndex outIndex : ι}

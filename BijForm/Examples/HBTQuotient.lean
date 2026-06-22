@@ -227,15 +227,16 @@ theorem HBTChildSwap_norm_respects :
     ∀ {i : Nat} {x y : Mu HBTPoly i},
       QuotientPresentation.Rel HBTChildSwapQuotient i x y →
         HBTChildSwapNorm i x = HBTChildSwapNorm i y := by
-  intro i x y hxy
-  induction hxy with
-  | refl x => rfl
-  | layer h =>
+  exact QuotientPresentation.Rel.respects_of_layer_congr
+    HBTChildSwapQuotient HBTChildSwapNorm
+    (by
+      intro i x y h
       cases h with
       | branch lhs rhs =>
           simp [Mu.inn, HBTChildSwapNorm,
-            CodeAlgebra.unorderedPairCode_comm]
-  | @congr i c p h child child' _ ih =>
+            CodeAlgebra.unorderedPairCode_comm])
+    (by
+      intro i c p h child child' ih
       cases c with
       | leaf =>
           cases i <;> rfl
@@ -252,11 +253,7 @@ theorem HBTChildSwap_norm_respects :
                   HBTChildSwapNorm p (child true) =
                     HBTChildSwapNorm p (child' true) := by
                 simpa [HBTPoly, HBTInput] using ih true
-              rw [hfalse, htrue]
-  | symm _ ih =>
-      exact ih.symm
-  | trans _ _ ihxy ihyz =>
-      exact ihxy.trans ihyz
+              rw [hfalse, htrue])
 
 /-- Concrete descent of the generated HBT Nat code through the branch-swap
 quotient relation. -/

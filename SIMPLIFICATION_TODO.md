@@ -366,9 +366,12 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     `QuotientPresentation.Rel.unorderedPair_decode_encode_repair`; HBT now
     routes branch-pair coding through `CodeAlgebra.unorderedPairCode` and
     `CodeAlgebra.unorderedPairNat` directly instead of the `TupleAction`
-    binary-swap wrapper. The broader generic binary child-swap descent
-    abstraction that eliminates the domain-specific recursive
-    normalizer/denormalizer remains open.
+    binary-swap wrapper. Extracted
+    `QuotientPresentation.Rel.respects_of_layer_congr`, so HBT normalizer
+    respect supplies only branch-swap layer and constructor-congruence cases
+    instead of manually traversing `Rel.refl`, `Rel.symm`, and `Rel.trans`.
+    The broader generic binary child-swap descent abstraction that eliminates
+    the domain-specific recursive normalizer/denormalizer remains open.
 
 - [x] Generate finite string-diagram entry tables for finite signatures.
   - Owner: `BijForm.StringDiagram.FiniteCoding.Syntax`
