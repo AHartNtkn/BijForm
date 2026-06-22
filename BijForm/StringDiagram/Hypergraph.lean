@@ -462,6 +462,38 @@ def toPortHypergraph {st : RenderState Sig []} {boundary : List Sig.Port}
 
 end PortHypergraphEvidence
 
+theorem edgeMateOfInvariants_of_endpoint_sides
+    {st : RenderState Sig []} {boundary : List Sig.Port}
+    (hv : st.ValidIds) (hp : st.EndpointPartition)
+    (hn : st.NodeIncidentNodup)
+    (pref : st.EndpointPrefix boundary)
+    (ho : st.OwnerIdPartition boundary)
+    (left right : Fin st.endpoints.length)
+    (edgeIndex : Fin st.edges.length)
+    (hleft : left.val = (st.edges.get edgeIndex).left)
+    (hright : right.val = (st.edges.get edgeIndex).right) :
+    PortHypergraph.EdgeMate
+      (portHypergraphEvidenceOfInvariants hv hp hn pref ho).toPortHypergraph
+      left right := by
+  constructor
+  · intro hsame
+    have hval := congrArg (fun endpoint : Fin st.endpoints.length => endpoint.val) hsame
+    have hne := edge_left_ne_right_of_partition hp edgeIndex
+    exact hne (by
+      calc
+        (st.edges.get edgeIndex).left = left.val := hleft.symm
+        _ = right.val := hval
+        _ = (st.edges.get edgeIndex).right := hright)
+  · have hleftEdge :=
+      endpointEdgeOfPartition_eq_of_endpoint_side hp
+        left edgeIndex (Or.inl hleft)
+    have hrightEdge :=
+      endpointEdgeOfPartition_eq_of_endpoint_side hp
+        right edgeIndex (Or.inr hright)
+    simpa [PortHypergraphEvidence.toPortHypergraph,
+      portHypergraphEvidenceOfInvariants, edgeEvidenceOfPartition,
+      endpointEdgeEvidenceOfPartition] using hleftEdge.trans hrightEdge.symm
+
 theorem rawReachesBoundary_to_portReachesBoundaryOfInvariants
     {st : RenderState Sig []} {boundary : List Sig.Port}
     (hv : st.ValidIds) (hp : st.EndpointPartition)
@@ -882,31 +914,17 @@ theorem toOpenPortHypergraph_connect_boundary_edgeMate
         ⟨mate.val + 1, by simp⟩
     rw [hboundaryVal]
     simp [restIds]
-  constructor
-  · intro hsame
-    have hval := congrArg (fun endpoint => endpoint.val) hsame
-    have hne := RenderState.edge_left_ne_right_of_partition hp edgeIndex
-    exact hne (by
-      calc
-        (st.edges.get edgeIndex).left =
-            (G.raw.boundaryPort ⟨0, by simp⟩).val := hactiveVal.symm
-        _ = (G.raw.boundaryPort ⟨mate.val + 1, by
-              simp⟩).val := hval
-        _ = (st.edges.get edgeIndex).right := hmateVal)
-  · have hleft :=
-      RenderState.endpointEdgeOfPartition_eq_of_endpoint_side hp
-        (G.raw.boundaryPort ⟨0, by simp⟩) edgeIndex (Or.inl hactiveVal)
-    have hright :=
-      RenderState.endpointEdgeOfPartition_eq_of_endpoint_side hp
-        (G.raw.boundaryPort ⟨mate.val + 1, by
-          simp⟩) edgeIndex (Or.inr hmateVal)
-    simpa [G, Diag.toOpenPortHypergraph,
-      RenderState.OpenPortHypergraphEvidence.toOpenPortHypergraph,
-      renderTraceFromBoundary_openEvidence, renderTraceFromBoundary_graphEvidence,
-      RenderState.PortHypergraphEvidence.toPortHypergraph,
-      RenderState.portHypergraphEvidenceOfInvariants,
-      RenderState.edgeEvidenceOfPartition,
-      RenderState.endpointEdgeEvidenceOfPartition] using hleft.trans hright.symm
+  simpa [G, Diag.toOpenPortHypergraph,
+    RenderState.OpenPortHypergraphEvidence.toOpenPortHypergraph,
+    renderTraceFromBoundary_openEvidence, renderTraceFromBoundary_graphEvidence] using
+    RenderState.edgeMateOfInvariants_of_endpoint_sides
+      (renderTraceFromBoundary_validIds d) hp
+      (renderTraceFromBoundary_nodeIncidentNodup d)
+      (renderTraceFromBoundary_endpointPrefix d)
+      (renderTraceFromBoundary_ownerIdPartition d)
+      (G.raw.boundaryPort ⟨0, by simp⟩)
+      (G.raw.boundaryPort ⟨mate.val + 1, by simp⟩)
+      edgeIndex hactiveVal hmateVal
 
 /--
 Bridge support for the syntax round-trip: a rendered top-level `bud` creates a
@@ -1026,29 +1044,17 @@ theorem toOpenPortHypergraph_bud_boundary_entry_edgeMate
         RenderState.incidentOfValidIds, edge, slot, renderNode,
         nodeEndpoints, entryIdx]
       simpa [entryIdx] using hentryGet.trans hedgeRight.symm
-    constructor
-    · intro hsame
-      have hval := congrArg (fun endpoint => endpoint.val) hsame
-      have hne := RenderState.edge_left_ne_right_of_partition hp edgeIndex
-      exact hne (by
-        calc
-          (st.edges.get edgeIndex).left =
-              (G.raw.boundaryPort ⟨0, by simp⟩).val := hactiveVal.symm
-          _ = ((G.raw.incident nodeIndex).get slot).val := hval
-          _ = (st.edges.get edgeIndex).right := hincidentVal)
-    · have hleft :=
-        RenderState.endpointEdgeOfPartition_eq_of_endpoint_side hp
-          (G.raw.boundaryPort ⟨0, by simp⟩) edgeIndex (Or.inl hactiveVal)
-      have hright :=
-        RenderState.endpointEdgeOfPartition_eq_of_endpoint_side hp
-          ((G.raw.incident nodeIndex).get slot) edgeIndex (Or.inr hincidentVal)
-      simpa [G, Diag.toOpenPortHypergraph,
-        RenderState.OpenPortHypergraphEvidence.toOpenPortHypergraph,
-        renderTraceFromBoundary_openEvidence, renderTraceFromBoundary_graphEvidence,
-        RenderState.PortHypergraphEvidence.toPortHypergraph,
-        RenderState.portHypergraphEvidenceOfInvariants,
-        RenderState.edgeEvidenceOfPartition,
-        RenderState.endpointEdgeEvidenceOfPartition] using hleft.trans hright.symm
+    simpa [G, Diag.toOpenPortHypergraph,
+      RenderState.OpenPortHypergraphEvidence.toOpenPortHypergraph,
+      renderTraceFromBoundary_openEvidence, renderTraceFromBoundary_graphEvidence] using
+      RenderState.edgeMateOfInvariants_of_endpoint_sides
+        hv hp
+        (renderTraceFromBoundary_nodeIncidentNodup d)
+        (renderTraceFromBoundary_endpointPrefix d)
+        (renderTraceFromBoundary_ownerIdPartition d)
+        (G.raw.boundaryPort ⟨0, by simp⟩)
+        ((G.raw.incident nodeIndex).get slot)
+        edgeIndex hactiveVal hincidentVal
 
 end Diag
 
