@@ -185,9 +185,6 @@ def SymmetricInteractionNetCodingData :
     cases left
     cases right
     rfl
-  arity_pos := by
-    intro node
-    cases node <;> decide
   rankScale := 4
   arity_lt_rankScale := by
     intro node

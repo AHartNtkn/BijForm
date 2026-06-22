@@ -125,7 +125,6 @@ is used by the generic rank measure for bud branches.
 -/
 structure SingleSortedFiniteCodingData (Sig : Signature) where
   compatibleAll : ∀ left right : Sig.Port, Sig.compatible left right
-  arity_pos : ∀ node : Sig.Node, 0 < Sig.arity node
   rankScale : Nat
   arity_lt_rankScale : ∀ node : Sig.Node, Sig.arity node < rankScale
   unaryCount : Nat
@@ -350,7 +349,7 @@ def singleSortedFiniteLayerToShape
           · exact Sum.inl ⟨⟨node, entry⟩, hentry⟩
           · have hne : Sig.nodePortsExcept node entry ≠ [] :=
               Signature.nodePortsExcept_ne_nil_of_arity_ne_one
-                (data.arity_pos node) hentry
+                (Nat.lt_of_le_of_lt (Nat.zero_le entry.val) entry.isLt) hentry
             exact Sum.inr
               (⟨⟨node, entry⟩, hentry⟩,
                 (openFrontierNonemptyIso (Sig := Sig) hne).toFun (child ()))
@@ -403,7 +402,8 @@ def singleSortedFiniteLayerFromShape
       let entry := tagged.1.val
       have hne : Sig.nodePortsExcept entry.1 entry.2 ≠ [] :=
         Signature.nodePortsExcept_ne_nil_of_arity_ne_one
-          (data.arity_pos entry.1) tagged.1.property
+          (Nat.lt_of_le_of_lt (Nat.zero_le entry.2.val) entry.2.isLt)
+          tagged.1.property
       ⟨⟨.bud,
           ⟨active, [], entry.1, entry.2, data.compatibleAll active _⟩,
           rfl⟩,
