@@ -540,10 +540,10 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     node, and frontier append facts; the public one-step get/length/prefix facts
     are step-owned and `Renderer.Trace` no longer reconstructs them. Old/new
     membership facts now use `RenderDelta` and generic `AppendStep` membership
-    projections. `connectStep_validIds`, unchanged-node, and owner invariant
-    proofs now use public step facts instead of unfolding the step. The connect
-    endpoint partition and bud invariant families still need to be derived
-    through the delta model before this item is complete.
+    projections. `connectStep_validIds`, endpoint partition, unchanged-node, and
+    owner invariant proofs now use public step facts instead of unfolding the
+    step. The bud invariant families still need to be derived through the delta
+    model before this item is complete.
 
 - [ ] Factor render trace prefix/index proofs.
   - Owner: `BijForm.StringDiagram.Renderer.Trace`

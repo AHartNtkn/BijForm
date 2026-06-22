@@ -1480,11 +1480,10 @@ theorem connectStep_endpointPartition {active : Sig.Port}
     (st : RenderState Sig (active :: frontier))
     (hv : st.ValidIds) (hp : st.EndpointPartition) :
     (connectStep mate ok st).EndpointPartition := by
-  unfold connectStep
-  split
-  · rename_i hids
-    exact False.elim (RenderState.frontierIds_ne_nil st hids)
-  · rename_i activeId restIds hids
+  cases hids : st.frontierIds with
+  | nil =>
+      exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  | cons activeId restIds =>
     have hrest : restIds.length = frontier.length := by
       exact RenderState.frontierIds_cons_tail_length st hids
     let idx : Fin restIds.length := listIndexCast restIds hrest.symm mate
@@ -1510,37 +1509,18 @@ theorem connectStep_endpointPartition {active : Sig.Port}
       rw [hids]
       right
       exact List.get_mem restIds idx
-    dsimp
-    let newEdge : RenderEdge Sig :=
-      { label := Sig.portEdge active
-        leftLabel := active
-        rightLabel := frontier.get mate
-        left := activeId
-        right := restIds.get idx
-        left_label := rfl
-        right_label := (Sig.compatible_edge ok).symm
-        compatible := ok }
-    let child : RenderState Sig (eraseFin frontier mate) :=
-      { nextEndpoint := st.nextEndpoint
-        endpoints := st.endpoints
-        edges := st.edges ++ [newEdge]
-        nodes := st.nodes
-        frontierIds := eraseFin restIds idx
-        frontierIds_length := by
-          dsimp [idx]
-          simp [eraseFin_length, hrest] }
-    change child.EndpointPartition
     have childConsumed_eq :
-        child.edgeEndpointIds =
+        (connectStep mate ok st).edgeEndpointIds =
           st.edgeEndpointIds ++ [activeId, restIds.get idx] := by
-      simp [child, newEdge, RenderState.edgeEndpointIds]
+      simp [RenderState.edgeEndpointIds, connectStep_edges mate ok st hids, idx]
     refine
       { frontier_nodup := ?_
         consumed_nodup := ?_
         consumed_bound := ?_
         frontier_consumed_disjoint := ?_
         endpoint_covered := ?_ }
-    · exact nodup_eraseFin restIds idx rest_nodup
+    · rw [connectStep_frontierIds mate ok st hids]
+      exact nodup_eraseFin restIds idx rest_nodup
     · have hnodup :
           (st.edgeEndpointIds ++ [activeId, restIds.get idx]).Nodup := by
         apply nodup_append_of_nodup_disjoint
@@ -1562,31 +1542,37 @@ theorem connectStep_endpointPartition {active : Sig.Port}
       rw [childConsumed_eq] at hmem
       simp at hmem
       rcases hmem with hold | hnew
-      · exact hp.consumed_bound id hold
+      · have hbound := hp.consumed_bound id hold
+        simpa [connectStep_endpoints mate ok st] using hbound
       · rcases hnew with hactive | hmate
         · have hbound := hv.frontier_bound activeId active_old_frontier
-          simpa [hactive] using hbound
+          simpa [hactive, connectStep_endpoints mate ok st] using hbound
         · have hbound := hv.frontier_bound (restIds.get idx) mate_old_frontier
-          simpa [hmate] using hbound
+          simpa [hmate, connectStep_endpoints mate ok st] using hbound
     · intro id hfrontier hconsumed
+      have hfrontierErase : id ∈ eraseFin restIds idx := by
+        rw [connectStep_frontierIds mate ok st hids] at hfrontier
+        simpa [idx] using hfrontier
       rw [childConsumed_eq] at hconsumed
       simp at hconsumed
       rcases hconsumed with hold | hnew
       · have oldFrontier : id ∈ st.frontierIds := by
           rw [hids]
           right
-          exact mem_of_mem_eraseFin restIds idx hfrontier
+          exact mem_of_mem_eraseFin restIds idx hfrontierErase
         exact hp.frontier_consumed_disjoint id oldFrontier hold
       · rcases hnew with hactive | hmate
         · have hrestMem : id ∈ restIds :=
-            mem_of_mem_eraseFin restIds idx hfrontier
+            mem_of_mem_eraseFin restIds idx hfrontierErase
           exact active_not_rest (by simpa [hactive] using hrestMem)
         · have hnotMate :
             restIds.get idx ∉ eraseFin restIds idx :=
             get_not_mem_eraseFin_of_nodup restIds idx rest_nodup
-          exact hnotMate (by simpa [hmate] using hfrontier)
+          exact hnotMate (by simpa [hmate] using hfrontierErase)
     · intro id hid
-      rcases hp.endpoint_covered id hid with holdFrontier | holdConsumed
+      have holdBound : id < st.endpoints.length := by
+        simpa [connectStep_endpoints mate ok st] using hid
+      rcases hp.endpoint_covered id holdBound with holdFrontier | holdConsumed
       · rw [hids] at holdFrontier
         simp at holdFrontier
         rcases holdFrontier with hactive | hrestMem
@@ -1598,6 +1584,7 @@ theorem connectStep_endpointPartition {active : Sig.Port}
             rw [childConsumed_eq]
             simp [hmate]
           · left
+            rw [connectStep_frontierIds mate ok st hids]
             exact mem_eraseFin_of_mem_ne_get restIds idx hrestMem hmate
       · right
         rw [childConsumed_eq]
