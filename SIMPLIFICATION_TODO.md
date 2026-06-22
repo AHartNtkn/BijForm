@@ -402,7 +402,7 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
 
 ## String Diagrams, Rendering, and Traversal
 
-- [ ] Factor graph-render relation into ordered trace machinery.
+- [x] Factor graph-render relation into ordered trace machinery.
   - Owner: `BijForm.StringDiagram.Bridge.GraphRenderRelation` plus shared order
     helpers.
   - Evidence: `GraphRenderRelated.connectChild` and `.budChild` manually
@@ -519,6 +519,12 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
   - Partial: `GraphRenderRelated.connectChild_nodeLabel` now consumes
     `AppendTraceRelation` for the empty-suffix node trace, removing bespoke
     unchanged-node label transport from that helper.
+  - Completed: `AppendTrace`, `AppendTraceRelation`, and `IndexedListRel` now
+    own the reusable append/frontier traversal paths. `GraphRenderRelated`
+    connect and bud field helpers consume those witnesses for labels, endpoint
+    bounds, edge incidence, node labels, frontier/pending updates, and node
+    incident transport; `GraphRenderRelation` has no local full old/new
+    `by_cases` dispatch or direct render-step old/new getter calls left.
 
 - [ ] Introduce declarative render deltas for connect and bud.
   - Owner: `BijForm.StringDiagram.Renderer.Steps`
