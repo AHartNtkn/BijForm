@@ -66,14 +66,19 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
   - Completed: `child_eta_cases` is the single primitive tactic, and
     `child_eta_rfl child` is the only close-by-rfl wrapper.
 
-- [ ] Add generic `CodeLayer` child equality/extensionality lemmas.
-  - Owner: `DepPoly.CodeLayer`
+- [x] Add generic `CodeLayer` child equality/extensionality lemmas.
+  - Owner: `BijForm.InitialAlgebra`, namespace `DepPoly.CodeLayer`
   - Evidence: repeated `Sigma.ext`, `heq_of_eq`, `funext`, and child transport
     proof bodies in `TypedBinding`, examples, and `DependentPolynomial`.
   - Action: package dependent-pair child equality and heterogeneous child
     transport behind reusable lemmas.
   - Validation: source search for manual `Sigma.ext rfl`, `heq_of_eq`, and
     child eta proof bodies drops in examples.
+  - Completed: `CodeLayer.ext`, `CodeLayer.ext_rfl`, and
+    `CodeLayer.ext_layer` now own dependent-pair reconstruction. Targeted
+    `TypedBinding`, `Num`, `Peano`, and `Sorted` proofs now route layer
+    equality through those helpers; remaining local `heq_of_eq` occurrences are
+    child-equality witnesses or non-`CodeLayer` tuple proofs.
 
 - [ ] Move generic dependent argument tuple machinery out of typed binding.
   - Owner: new finite-arity/dependent tuple boundary, or `DepPoly`.

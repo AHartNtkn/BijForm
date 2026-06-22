@@ -339,9 +339,7 @@ private def SortedFiniteConstructorPayloadIso (lower upper : Nat) (h : lower ≤
                       pivot.property.1 (child false)).symm
                   · exact (SortedCarrier.ofNat_toNat (i := (pivot.1, some upper))
                       pivot.property.2 (child true)).symm
-                apply Sigma.ext
-                · rfl
-                · exact heq_of_eq hchild.symm
+                exact CodeLayer.ext_rfl hchild.symm
   right_inv := by
     intro shape
     cases shape with
@@ -416,9 +414,7 @@ private def SortedInfiniteConstructorPayloadIso (lower : Nat) :
                       pivot.property.1 (child false)).symm
                   · exact (SortedCarrier.ofNat_toNat (i := (pivot.1, none))
                       pivot.property.2 (child true)).symm
-                apply Sigma.ext
-                · rfl
-                · exact heq_of_eq hchild.symm
+                exact CodeLayer.ext_rfl hchild.symm
   right_inv := by
     intro shape
     cases shape with

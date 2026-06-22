@@ -281,9 +281,11 @@ def NumNatLayerShapeLayerPresentation :
                   have hchild : (fun q => nomatch q) = child := by
                     child_eta_cases
                   cases hchild
-                  refine Sigma.ext rfl ?_
-                  apply heq_of_eq
-                  child_eta_cases
+                  apply CodeLayer.ext_layer
+                    (P := NumPoly) (H := NumInversion) (Code := fun _ => Nat) (i := k)
+                  · rfl
+                  · apply heq_of_eq
+                    child_eta_cases
             | zero =>
               change NumParam NumCtor.zero at param
               change Nat at param
@@ -296,9 +298,11 @@ def NumNatLayerShapeLayerPresentation :
               have hchild : (fun q => nomatch q) = child := by
                 child_eta_cases
               cases hchild
-              refine Sigma.ext rfl ?_
-              apply heq_of_eq
-              child_eta_cases
+              apply CodeLayer.ext_layer
+                (P := NumPoly) (H := NumInversion) (Code := fun _ => Nat) (i := k)
+              · rfl
+              · apply heq_of_eq
+                child_eta_cases
             | succ =>
               change NumParam NumCtor.succ at param
               change Nat at param
@@ -309,9 +313,11 @@ def NumNatLayerShapeLayerPresentation :
               have hchild : (fun _ => child ()) = child := by
                 child_eta_cases
               cases hchild
-              refine Sigma.ext rfl ?_
-              apply heq_of_eq
-              child_eta_cases
+              apply CodeLayer.ext_layer
+                (P := NumPoly) (H := NumInversion) (Code := fun _ => Nat) (i := k)
+              · rfl
+              · apply heq_of_eq
+                child_eta_cases
             | plus =>
               change NumParam NumCtor.plus at param
               change Nat at param

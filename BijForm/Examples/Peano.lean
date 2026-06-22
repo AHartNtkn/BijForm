@@ -242,7 +242,9 @@ def PeanoNatLayerShapeLayerPresentation :
                 have hchild : (fun q => nomatch q) = child := by
                   child_eta_cases
                 cases hchild
-                refine Sigma.ext ?_ ?_
+                refine CodeLayer.ext_layer
+                  (P := PeanoPoly) (H := PeanoInversion) (Code := fun _ => Nat)
+                  (i := k) ?_ ?_
                 · apply congrArg
                     (fun h =>
                       (⟨PeanoCtor.eq, ⟨k, (lhs, rhs)⟩, h⟩ : Fiber PeanoPoly k))

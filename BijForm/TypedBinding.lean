@@ -312,10 +312,11 @@ theorem layer_left_inv (i : Poly.Ix S) :
           child_eta_rfl child
       | op c h =>
           cases h
-          refine Sigma.ext rfl ?_
-          apply heq_of_eq
-          funext q
-          rfl
+          apply CodeLayer.ext_layer
+          · rfl
+          · apply heq_of_eq
+            funext q
+            rfl
 
 theorem layer_right_inv (i : Poly.Ix S) :
     Function.RightInverse
@@ -553,10 +554,11 @@ theorem layerShape_left_inv (Γ : List Ty) (t : Ty) :
       | op c h =>
           cases h
           dsimp [layerToShape, shapeToLayer]
-          refine Sigma.ext rfl ?_
-          apply heq_of_eq
-          funext q
-          rfl
+          apply CodeLayer.ext_layer
+          · rfl
+          · apply heq_of_eq
+            funext q
+            rfl
 
 theorem layerShape_right_inv (Γ : List Ty) (t : Ty) :
     Function.RightInverse (shapeToLayer (S := S) (Code := Code) Γ t)

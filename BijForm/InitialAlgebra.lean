@@ -107,6 +107,37 @@ theorem canonical_ext_param {P : DepPoly ι} {Code : ι → Type v} {i : ι}
   · exact Fiber.eq_mk_of_param_eq hparam
   · exact hchild
 
+theorem ext {P : DepPoly ι} {H : OutputIndexInversion P}
+    {Code : ι → Type v} {i : ι}
+    {c c' : H.Code i}
+    {child : (q : P.Pos (H.decode i c).ctor (H.decode i c).param) →
+      Code (P.input (H.decode i c).param q)}
+    {child' : (q : P.Pos (H.decode i c').ctor (H.decode i c').param) →
+      Code (P.input (H.decode i c').param q)}
+    (hc : c = c') (hchild : child ≍ child') :
+    (⟨c, child⟩ : CodeLayer P H Code i) = ⟨c', child'⟩ := by
+  cases hc
+  cases hchild
+  rfl
+
+theorem ext_rfl {P : DepPoly ι} {H : OutputIndexInversion P}
+    {Code : ι → Type v} {i : ι} {c : H.Code i}
+    {child child' :
+      (q : P.Pos (H.decode i c).ctor (H.decode i c).param) →
+        Code (P.input (H.decode i c).param q)}
+    (hchild : child = child') :
+    (⟨c, child⟩ : CodeLayer P H Code i) = ⟨c, child'⟩ :=
+  ext rfl (heq_of_eq hchild)
+
+theorem ext_layer {P : DepPoly ι} {H : OutputIndexInversion P}
+    {Code : ι → Type v} {i : ι} {x y : CodeLayer P H Code i}
+    (hcode : x.1 = y.1) (hchild : x.2 ≍ y.2) : x = y := by
+  cases x with
+  | mk c child =>
+    cases y with
+    | mk c' child' =>
+      exact ext hcode hchild
+
 end CodeLayer
 
 /-- Prove child-function eta facts by splitting the child-position type. -/
