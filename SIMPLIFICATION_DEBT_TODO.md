@@ -66,6 +66,14 @@ is ordered to turn helper additions into actual deletion.
   - Validation:
     `rg -n "Fin\\.cast" BijForm/StringDiagram/Bridge BijForm/StringDiagram/Renderer BijForm/StringDiagram/Traversal BijForm/StringDiagram/Hypergraph.lean`
     should be empty outside owner helper implementations.
+  - Partial: `GraphRenderRelated`, `FrontierPendingFields`, and
+    `NodeIncidentFields` now expose `listIndexCast` in their field statements
+    instead of raw relation-boundary casts. The connect/bud child label proofs
+    also use append-trace right indices plus `listIndexCast` instead of local
+    `childIndex := Fin.cast ...` boilerplate. Focused bridge check passes and
+    `GraphRenderRelation.lean` direct `Fin.cast` hits dropped from `103` to
+    `56`. The item remains open because edge-left/right, bud incident, and
+    non-bridge renderer/traversal/hypergraph casts still remain.
 
 - [ ] Collapse the graph-render relation helper volume into schemas.
   - Owners: `BijForm.StringDiagram.Bridge.GraphRenderRelation`,

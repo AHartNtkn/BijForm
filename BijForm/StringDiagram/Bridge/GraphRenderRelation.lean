@@ -32,19 +32,20 @@ structure GraphRenderRelated (G : OpenPortHypergraph Sig boundary)
   pending_id :
     ∀ id : Fin rst.frontierIds.length,
       (endpointOrder G st).get
-          (Fin.cast endpoint_length
+          (listIndexCast (endpointOrder G st) endpoint_length
             ⟨rst.frontierIds.get id, frontier_id_bound id⟩) =
-        st.pending.get (Fin.cast pending_length id)
+        st.pending.get (listIndexCast st.pending pending_length id)
   endpoint_label :
     ∀ endpoint : Fin rst.endpoints.length,
       rst.endpoints.get endpoint =
         G.raw.endpointLabel
-          ((endpointOrder G st).get (Fin.cast endpoint_length endpoint))
+          ((endpointOrder G st).get
+            (listIndexCast (endpointOrder G st) endpoint_length endpoint))
   edge_label :
     ∀ edge : Fin rst.edges.length,
       (rst.edges.get edge).label =
         G.raw.edgeLabel
-          ((edgeOrder st).get (Fin.cast edge_length edge))
+          ((edgeOrder st).get (listIndexCast (edgeOrder st) edge_length edge))
   edge_left_bound :
     ∀ edge : Fin rst.edges.length,
       (rst.edges.get edge).left < rst.endpoints.length
@@ -55,26 +56,27 @@ structure GraphRenderRelated (G : OpenPortHypergraph Sig boundary)
     ∀ edge : Fin rst.edges.length,
       G.raw.endpointEdge
           ((endpointOrder G st).get
-            (Fin.cast endpoint_length
+            (listIndexCast (endpointOrder G st) endpoint_length
               ⟨(rst.edges.get edge).left, edge_left_bound edge⟩)) =
-        (edgeOrder st).get (Fin.cast edge_length edge)
+        (edgeOrder st).get (listIndexCast (edgeOrder st) edge_length edge)
   edge_right :
     ∀ edge : Fin rst.edges.length,
       G.raw.endpointEdge
           ((endpointOrder G st).get
-            (Fin.cast endpoint_length
+            (listIndexCast (endpointOrder G st) endpoint_length
               ⟨(rst.edges.get edge).right, edge_right_bound edge⟩)) =
-        (edgeOrder st).get (Fin.cast edge_length edge)
+        (edgeOrder st).get (listIndexCast (edgeOrder st) edge_length edge)
   node_label :
     ∀ node : Fin rst.nodes.length,
       (rst.nodes.get node).label =
         G.raw.nodeLabel
-          ((nodeOrder st).get (Fin.cast node_length node))
+          ((nodeOrder st).get (listIndexCast (nodeOrder st) node_length node))
   node_incident_length :
     ∀ node : Fin rst.nodes.length,
       (rst.nodes.get node).incident.length =
         (G.raw.incident
-          ((nodeOrder st).get (Fin.cast node_length node))).length
+          ((nodeOrder st).get
+            (listIndexCast (nodeOrder st) node_length node))).length
   node_incident_bound :
     ∀ (node : Fin rst.nodes.length)
       (slot : Fin (rst.nodes.get node).incident.length),
@@ -83,12 +85,17 @@ structure GraphRenderRelated (G : OpenPortHypergraph Sig boundary)
     ∀ (node : Fin rst.nodes.length)
       (slot : Fin (rst.nodes.get node).incident.length),
       (endpointOrder G st).get
-          (Fin.cast endpoint_length
+          (listIndexCast (endpointOrder G st) endpoint_length
             ⟨(rst.nodes.get node).incident.get slot,
               node_incident_bound node slot⟩) =
         (G.raw.incident
-          ((nodeOrder st).get (Fin.cast node_length node))).get
-            (Fin.cast (node_incident_length node) slot)
+          ((nodeOrder st).get
+            (listIndexCast (nodeOrder st) node_length node))).get
+            (listIndexCast
+              (G.raw.incident
+                ((nodeOrder st).get
+                  (listIndexCast (nodeOrder st) node_length node)))
+              (node_incident_length node) slot)
 
 namespace GraphRenderRelated
 
@@ -190,9 +197,9 @@ structure FrontierPendingFields (G : OpenPortHypergraph Sig boundary)
   pending_id :
     ∀ id : Fin rst.frontierIds.length,
       (endpointOrder G st).get
-          (Fin.cast endpoint_length
+          (listIndexCast (endpointOrder G st) endpoint_length
             ⟨rst.frontierIds.get id, frontier_id_bound id⟩) =
-        st.pending.get (Fin.cast pending_length id)
+        st.pending.get (listIndexCast st.pending pending_length id)
 
 structure NodeIncidentFields (G : OpenPortHypergraph Sig boundary)
     {frontier : List Sig.Port}
@@ -202,7 +209,8 @@ structure NodeIncidentFields (G : OpenPortHypergraph Sig boundary)
     ∀ node : Fin rst.nodes.length,
       (rst.nodes.get node).incident.length =
         (G.raw.incident
-          ((nodeOrder st).get (Fin.cast node_length node))).length
+          ((nodeOrder st).get
+            (listIndexCast (nodeOrder st) node_length node))).length
   node_incident_bound :
     ∀ (node : Fin rst.nodes.length)
       (slot : Fin (rst.nodes.get node).incident.length),
@@ -482,14 +490,16 @@ theorem GraphRenderRelated.connectChild_frontierPending
       exact hmemRest)
   have haligned :
       ∃ hbound :
-          (Diag.connectStep rendererMate ok rst).frontierIds.get id <
+        (Diag.connectStep rendererMate ok rst).frontierIds.get id <
             rst.endpoints.length,
         (endpointOrder G st).get
-            (Fin.cast hrel.endpoint_length
+            (hrel.endpointIndex
               ⟨(Diag.connectStep rendererMate ok rst).frontierIds.get id,
                 hbound⟩) =
           (st.connectChild hpending mate hmate).pending.get
-            (Fin.cast hchildPendingLen id) := by
+            (listIndexCast
+              (st.connectChild hpending mate hmate).pending
+              hchildPendingLen id) := by
     have hrestRel :
         IndexedListRel
           (fun raw endpoint =>
@@ -506,7 +516,7 @@ theorem GraphRenderRelated.connectChild_frontierPending
         exact List.get_mem restIds ⟨n, hid⟩
       · have hidx :
             (⟨n, hrest⟩ : Fin rest.length) =
-              Fin.cast htailLen ⟨n, hid⟩ := by
+              listIndexCast rest htailLen ⟨n, hid⟩ := by
           exact fin_eq_of_val_eq rfl
         rw [hidx]
         exact hpendingVals.2 ⟨n, hid⟩
@@ -646,13 +656,14 @@ theorem GraphRenderRelated.connectChild_nodeIncidentFields
   refine { node_incident_length := ?_, node_incident_bound := ?_ }
   · intro node
     let oldNode : Fin rst.nodes.length :=
-      Fin.cast (congrArg List.length
-        (Diag.connectStep_nodes rendererMate ok rst)) node
+      listIndexCast rst.nodes
+        (congrArg List.length (Diag.connectStep_nodes rendererMate ok rst)) node
     let childNode : Fin
         (nodeOrder (st.connectChild hpending mate hmate)).length :=
-      Fin.cast hchildNodeLength node
+      listIndexCast (nodeOrder (st.connectChild hpending mate hmate))
+        hchildNodeLength node
     let oldOrderNode : Fin (nodeOrder st).length :=
-      Fin.cast hrel.node_length oldNode
+      hrel.nodeIndex oldNode
     have hnodeGet :=
       Diag.connectStep_nodes_get rendererMate ok rst node
     have hnodeOrder :
@@ -674,13 +685,13 @@ theorem GraphRenderRelated.connectChild_nodeIncidentFields
             hnodeOrder.symm
   · intro node slot
     let oldNode : Fin rst.nodes.length :=
-      Fin.cast (congrArg List.length
-        (Diag.connectStep_nodes rendererMate ok rst)) node
+      listIndexCast rst.nodes
+        (congrArg List.length (Diag.connectStep_nodes rendererMate ok rst)) node
     have hnodeGet :=
       Diag.connectStep_nodes_get rendererMate ok rst node
     let oldSlot : Fin (rst.nodes.get oldNode).incident.length :=
-      Fin.cast (congrArg (fun renderNode => renderNode.incident.length)
-        hnodeGet) slot
+      listIndexCast (rst.nodes.get oldNode).incident
+        (congrArg (fun renderNode => renderNode.incident.length) hnodeGet) slot
     have hincidentGet :
         ((Diag.connectStep rendererMate ok rst).nodes.get node).incident.get slot =
           (rst.nodes.get oldNode).incident.get oldSlot := by
@@ -724,14 +735,24 @@ theorem GraphRenderRelated.connectChild_nodeIncident
         Fin (((Diag.connectStep (st.restLabelIndex hpending mate)
           (st.connect_compatible hpending mate hmate) rst).nodes.get node).incident.length)),
       (endpointOrder G (st.connectChild hpending mate hmate)).get
-          (Fin.cast hchildEndpointLength
+          (listIndexCast
+            (endpointOrder G (st.connectChild hpending mate hmate))
+            hchildEndpointLength
             ⟨((Diag.connectStep (st.restLabelIndex hpending mate)
                 (st.connect_compatible hpending mate hmate) rst).nodes.get node).incident.get slot,
               hnodeIncidentFields.node_incident_bound node slot⟩) =
         (G.raw.incident
           ((nodeOrder (st.connectChild hpending mate hmate)).get
-            (Fin.cast hchildNodeLength node))).get
-          (Fin.cast (hnodeIncidentFields.node_incident_length node) slot) := by
+            (listIndexCast
+              (nodeOrder (st.connectChild hpending mate hmate))
+              hchildNodeLength node))).get
+          (listIndexCast
+            (G.raw.incident
+              ((nodeOrder (st.connectChild hpending mate hmate)).get
+                (listIndexCast
+                  (nodeOrder (st.connectChild hpending mate hmate))
+                  hchildNodeLength node)))
+            (hnodeIncidentFields.node_incident_length node) slot) := by
   let rendererMate := st.restLabelIndex hpending mate
   let ok := st.connect_compatible hpending mate hmate
   let horderTrace :=
@@ -739,18 +760,19 @@ theorem GraphRenderRelated.connectChild_nodeIncident
       hrel.endpoint_length hrel.edge_length hrel.node_length
   intro node slot
   let oldNode : Fin rst.nodes.length :=
-    Fin.cast (congrArg List.length
-      (Diag.connectStep_nodes rendererMate ok rst)) node
+    listIndexCast rst.nodes
+      (congrArg List.length (Diag.connectStep_nodes rendererMate ok rst)) node
   let childNode : Fin
       (nodeOrder (st.connectChild hpending mate hmate)).length :=
-    Fin.cast hchildNodeLength node
+    listIndexCast (nodeOrder (st.connectChild hpending mate hmate))
+      hchildNodeLength node
   let oldOrderNode : Fin (nodeOrder st).length :=
-    Fin.cast hrel.node_length oldNode
+    hrel.nodeIndex oldNode
   have hnodeGet :=
     Diag.connectStep_nodes_get rendererMate ok rst node
   let oldSlot : Fin (rst.nodes.get oldNode).incident.length :=
-    Fin.cast (congrArg (fun renderNode => renderNode.incident.length)
-      hnodeGet) slot
+    listIndexCast (rst.nodes.get oldNode).incident
+      (congrArg (fun renderNode => renderNode.incident.length) hnodeGet) slot
   have hincidentGet :
       ((Diag.connectStep rendererMate ok rst).nodes.get node).incident.get slot =
         (rst.nodes.get oldNode).incident.get oldSlot := by
@@ -763,11 +785,12 @@ theorem GraphRenderRelated.connectChild_nodeIncident
   let childEndpoint :
       Fin (endpointOrder G
         (st.connectChild hpending mate hmate)).length :=
-    Fin.cast hchildEndpointLength
+    listIndexCast (endpointOrder G (st.connectChild hpending mate hmate))
+      hchildEndpointLength
       ⟨((Diag.connectStep rendererMate ok rst).nodes.get node).incident.get slot,
         hnodeIncidentFields.node_incident_bound node slot⟩
   let oldEndpoint : Fin (endpointOrder G st).length :=
-    Fin.cast hrel.endpoint_length
+    hrel.endpointIndex
       ⟨(rst.nodes.get oldNode).incident.get oldSlot,
         hrel.node_incident_bound oldNode oldSlot⟩
   have hendpointGet :=
@@ -790,7 +813,10 @@ theorem GraphRenderRelated.connectChild_nodeIncident
       Fin (G.raw.incident
         ((nodeOrder (st.connectChild hpending mate hmate)).get
           childNode)).length :=
-    Fin.cast (hnodeIncidentFields.node_incident_length node) slot
+    listIndexCast
+      (G.raw.incident
+        ((nodeOrder (st.connectChild hpending mate hmate)).get childNode))
+      (hnodeIncidentFields.node_incident_length node) slot
   let oldGraphSlot :
       Fin (G.raw.incident ((nodeOrder st).get oldOrderNode)).length :=
     hrel.nodeIncidentIndex oldNode oldSlot
@@ -846,7 +872,9 @@ theorem GraphRenderRelated.connectChild_nodeLabel
         (st.connect_compatible hpending mate hmate) rst).nodes.get node).label =
         G.raw.nodeLabel
           ((nodeOrder (st.connectChild hpending mate hmate)).get
-            (Fin.cast hchildNodeLength node)) := by
+            (listIndexCast
+              (nodeOrder (st.connectChild hpending mate hmate))
+              hchildNodeLength node)) := by
   let horderTrace :=
     connectChild_orderTrace rst st hpending mate hmate hids
       hrel.endpoint_length hrel.edge_length hrel.node_length
@@ -862,12 +890,13 @@ theorem GraphRenderRelated.connectChild_nodeLabel
     · intro renderNodeIdx _graphNode _hval
       exact fin_zero_elim renderNodeIdx
   intro node
-  let childNode : Fin
-      (nodeOrder (st.connectChild hpending mate hmate)).length :=
-    Fin.cast hchildNodeLength node
-  have hidx : horderTrace.node.rightIndex node = childNode := by
+  have hidx :
+      horderTrace.node.rightIndex node =
+        listIndexCast
+          (nodeOrder (st.connectChild hpending mate hmate))
+          hchildNodeLength node := by
     exact fin_eq_of_val_eq rfl
-  simpa [childNode, hidx] using AppendTraceRelation.get hlabelRel node
+  simpa [hidx] using AppendTraceRelation.get hlabelRel node
 
 theorem GraphRenderRelated.connectChild_edgeLabel
     {G : OpenPortHypergraph Sig boundary}
@@ -892,7 +921,9 @@ theorem GraphRenderRelated.connectChild_edgeLabel
         (st.connect_compatible hpending mate hmate) rst).edges.get edge).label =
         G.raw.edgeLabel
           ((edgeOrder (st.connectChild hpending mate hmate)).get
-            (Fin.cast hchildEdgeLength edge)) := by
+            (listIndexCast
+              (edgeOrder (st.connectChild hpending mate hmate))
+              hchildEdgeLength edge)) := by
   let rendererMate := st.restLabelIndex hpending mate
   let ok := st.connect_compatible hpending mate hmate
   let horderTrace :=
@@ -916,12 +947,12 @@ theorem GraphRenderRelated.connectChild_edgeLabel
     · intro renderEdge graphEdge _hval
       simpa [horderTrace, connectChild_orderTrace] using hlabelNew
   intro edge
-  let childEdge :
-      Fin (edgeOrder (st.connectChild hpending mate hmate)).length :=
-    Fin.cast hchildEdgeLength edge
-  have hidx : horderTrace.edge.rightIndex edge = childEdge := by
+  have hidx :
+      horderTrace.edge.rightIndex edge =
+        listIndexCast (edgeOrder (st.connectChild hpending mate hmate))
+          hchildEdgeLength edge := by
     exact fin_eq_of_val_eq rfl
-  simpa [childEdge, hidx] using AppendTraceRelation.get hlabelRel edge
+  simpa [hidx] using AppendTraceRelation.get hlabelRel edge
 
 theorem GraphRenderRelated.connectChild_edgeLeft
     {G : OpenPortHypergraph Sig boundary}
@@ -1536,14 +1567,20 @@ theorem GraphRenderRelated.budChild_frontierPending
     hchildFrontierBound id
   have hpendingIndex :
       (st.budChild hpending node slot hmate hunseen).pending.get
-          (Fin.cast hchildPendingLen id) =
+          (listIndexCast
+            (st.budChild hpending node slot hmate hunseen).pending
+            hchildPendingLen id) =
         (rest ++ eraseFin (G.raw.incident node) slot).get pendingIndex := by
-    simp [SearchState.budChild, pendingIndex]
+    simp [listIndexCast, SearchState.budChild, pendingIndex]
   have hendpointIndex :
-      Fin.cast hchildEndpointLength
+      listIndexCast
+          (endpointOrder G (st.budChild hpending node slot hmate hunseen))
+          hchildEndpointLength
           ⟨(Diag.budStep renderNode entry ok rst).frontierIds.get id,
             htargetBound⟩ =
-        Fin.cast hchildEndpointLength
+        listIndexCast
+          (endpointOrder G (st.budChild hpending node slot hmate hunseen))
+          hchildEndpointLength
           ⟨(restIds ++ eraseFin nodeEndpoints entryIdx).get appendIndex,
             hbound⟩ := by
     exact fin_eq_of_val_eq hrawEq.symm
@@ -1844,7 +1881,10 @@ theorem GraphRenderRelated.budChild_endpointLabel
         G.raw.endpointLabel
           ((endpointOrder G
             (st.budChild hpending node slot hmate hunseen)).get
-              (Fin.cast hchildEndpointLength endpoint)) := by
+              (listIndexCast
+                (endpointOrder G
+                  (st.budChild hpending node slot hmate hunseen))
+                hchildEndpointLength endpoint)) := by
   let renderNode := G.raw.nodeLabel node
   let entry := SearchState.budEntry (G := G) node slot
   let ok := st.bud_compatible hpending node slot hmate
@@ -1864,13 +1904,13 @@ theorem GraphRenderRelated.budChild_endpointLabel
       have hinc := G.raw.incidence_label node suffixEndpoint
       simpa [Signature.nodePorts, renderNode, hval] using hinc.symm
   intro endpoint
-  let childEndpoint :
-      Fin (endpointOrder G
-        (st.budChild hpending node slot hmate hunseen)).length :=
-    Fin.cast hchildEndpointLength endpoint
-  have hidx : horderTrace.endpoint.rightIndex endpoint = childEndpoint := by
+  have hidx :
+      horderTrace.endpoint.rightIndex endpoint =
+        listIndexCast
+          (endpointOrder G (st.budChild hpending node slot hmate hunseen))
+          hchildEndpointLength endpoint := by
     exact fin_eq_of_val_eq rfl
-  simpa [childEndpoint, hidx] using AppendTraceRelation.get hendpointRel endpoint
+  simpa [hidx] using AppendTraceRelation.get hendpointRel endpoint
 
 theorem GraphRenderRelated.budChild_edgeLabel
     {G : OpenPortHypergraph Sig boundary}
@@ -1901,7 +1941,9 @@ theorem GraphRenderRelated.budChild_edgeLabel
         (st.bud_compatible hpending node slot hmate) rst).edges.get edge).label =
         G.raw.edgeLabel
           ((edgeOrder (st.budChild hpending node slot hmate hunseen)).get
-            (Fin.cast hchildEdgeLength edge)) := by
+            (listIndexCast
+              (edgeOrder (st.budChild hpending node slot hmate hunseen))
+              hchildEdgeLength edge)) := by
   let renderNode := G.raw.nodeLabel node
   let entry := SearchState.budEntry (G := G) node slot
   let ok := st.bud_compatible hpending node slot hmate
@@ -1926,12 +1968,13 @@ theorem GraphRenderRelated.budChild_edgeLabel
     · intro renderEdge graphEdge _hval
       simpa [horderTrace, budChild_orderTrace] using hlabelNew
   intro edge
-  let childEdge :
-      Fin (edgeOrder (st.budChild hpending node slot hmate hunseen)).length :=
-    Fin.cast hchildEdgeLength edge
-  have hidx : horderTrace.edge.rightIndex edge = childEdge := by
+  have hidx :
+      horderTrace.edge.rightIndex edge =
+        listIndexCast
+          (edgeOrder (st.budChild hpending node slot hmate hunseen))
+          hchildEdgeLength edge := by
     exact fin_eq_of_val_eq rfl
-  simpa [childEdge, hidx] using AppendTraceRelation.get hlabelRel edge
+  simpa [hidx] using AppendTraceRelation.get hlabelRel edge
 
 theorem GraphRenderRelated.budChild_edgeLeft
     {G : OpenPortHypergraph Sig boundary}
@@ -2301,7 +2344,9 @@ theorem GraphRenderRelated.budChild_nodeLabel
         (st.bud_compatible hpending node slot hmate) rst).nodes.get renderIdx).label =
         G.raw.nodeLabel
           ((nodeOrder (st.budChild hpending node slot hmate hunseen)).get
-            (Fin.cast hchildNodeLength renderIdx)) := by
+            (listIndexCast
+              (nodeOrder (st.budChild hpending node slot hmate hunseen))
+              hchildNodeLength renderIdx)) := by
   let renderNode := G.raw.nodeLabel node
   let entry := SearchState.budEntry (G := G) node slot
   let ok := st.bud_compatible hpending node slot hmate
@@ -2320,13 +2365,13 @@ theorem GraphRenderRelated.budChild_nodeLabel
     · intro renderNodeIdx graphNode _hval
       simp [horderTrace, budChild_orderTrace]
   intro renderIdx
-  let childNode :
-      Fin (nodeOrder
-        (st.budChild hpending node slot hmate hunseen)).length :=
-    Fin.cast hchildNodeLength renderIdx
-  have hidx : horderTrace.node.rightIndex renderIdx = childNode := by
+  have hidx :
+      horderTrace.node.rightIndex renderIdx =
+        listIndexCast
+          (nodeOrder (st.budChild hpending node slot hmate hunseen))
+          hchildNodeLength renderIdx := by
     exact fin_eq_of_val_eq rfl
-  simpa [childNode, hidx] using AppendTraceRelation.get hlabelRel renderIdx
+  simpa [hidx] using AppendTraceRelation.get hlabelRel renderIdx
 
 theorem GraphRenderRelated.budChild
     {G : OpenPortHypergraph Sig boundary}
