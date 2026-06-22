@@ -927,24 +927,14 @@ theorem connectStep_endpoints_get
     (endpoint : Fin (connectStep mate ok st).endpoints.length) :
     (connectStep mate ok st).endpoints.get endpoint =
       st.endpoints.get
-        (Fin.cast
+        (listIndexCast st.endpoints
           (congrArg List.length (connectStep_endpoints mate ok st))
           endpoint) := by
-  let oldEndpoint :=
-    Fin.cast (congrArg List.length (connectStep_endpoints mate ok st))
-      endpoint
-  let i := endpoint.val
-  have hchildSome :
-      (connectStep mate ok st).endpoints[i]? =
-        some ((connectStep mate ok st).endpoints.get endpoint) :=
-    by simp [i]
-  have holdSome :
-      (connectStep mate ok st).endpoints[i]? =
-        some (st.endpoints.get oldEndpoint) := by
-    rw [connectStep_endpoints mate ok st]
-    exact List.getElem?_eq_getElem oldEndpoint.isLt
-  rw [hchildSome] at holdSome
-  injection holdSome with hget
+  exact list_get_of_eq_of_val_eq (connectStep_endpoints mate ok st)
+    endpoint
+    (listIndexCast st.endpoints
+      (congrArg List.length (connectStep_endpoints mate ok st)) endpoint)
+    rfl
 
 theorem connectStep_nodes_get
     {active : Sig.Port} {frontier : List Sig.Port}
@@ -954,24 +944,14 @@ theorem connectStep_nodes_get
     (node : Fin (connectStep mate ok st).nodes.length) :
     (connectStep mate ok st).nodes.get node =
       st.nodes.get
-        (Fin.cast
+        (listIndexCast st.nodes
           (congrArg List.length (connectStep_nodes mate ok st))
           node) := by
-  let oldNode :=
-    Fin.cast (congrArg List.length (connectStep_nodes mate ok st))
-      node
-  let i := node.val
-  have hchildSome :
-      (connectStep mate ok st).nodes[i]? =
-        some ((connectStep mate ok st).nodes.get node) :=
-    by simp [i]
-  have holdSome :
-      (connectStep mate ok st).nodes[i]? =
-        some (st.nodes.get oldNode) := by
-    rw [connectStep_nodes mate ok st]
-    exact List.getElem?_eq_getElem oldNode.isLt
-  rw [hchildSome] at holdSome
-  injection holdSome with hget
+  exact list_get_of_eq_of_val_eq (connectStep_nodes mate ok st)
+    node
+    (listIndexCast st.nodes
+      (congrArg List.length (connectStep_nodes mate ok st)) node)
+    rfl
 
 theorem budStep_endpoints
     {active : Sig.Port} {frontier : List Sig.Port}

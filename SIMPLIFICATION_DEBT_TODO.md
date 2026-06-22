@@ -84,7 +84,10 @@ is ordered to turn helper additions into actual deletion.
     `PortHypergraphIso` incidence-slot transport helper implementations. The
     renderer trace rest/fresh-node edge expressions now use `listIndexCast`,
     so `Renderer/Trace.lean` direct `Fin.cast` hits dropped to `0`. The item
-    remains open because renderer step/core owner internals and traversal casts
+    renderer `connectStep_*_get` lemmas now delegate to
+    `list_get_of_eq_of_val_eq`, leaving `Renderer/Steps.lean` direct
+    `Fin.cast` hits only in the old-node incident-label proof cluster. The item
+    remains open because renderer core owner internals and traversal casts
     still remain.
 
 - [ ] Collapse the graph-render relation helper volume into schemas.
