@@ -28,28 +28,7 @@ macro "finish_rank_descent " "[" defs:Lean.Parser.Tactic.simpLemma,* "]" : tacti
          (first | cases q | skip) <;>
          simp_all! [$defs,*, BijForm.DepPoly.OutputIndexInversion.canonical] <;>
          first
-         | exact CodeAlgebra.finPrefixNat_sumProdNat_toFun_inr_inl_lt_rankOffset _ _
-         | simpa only [Prod.fst, Prod.snd] using CodeAlgebra.sumProdNat_toFun_inr_fst_pair_lt _ _
-         | simpa only [Prod.fst, Prod.snd] using CodeAlgebra.sumProdNat_toFun_inr_snd_pair_lt _ _
-         | simpa only [Prod.fst, Prod.snd] using CodeAlgebra.finPrefixNat_sumProdNat_toFun_inr_inr_fst_pair_lt _ _ _
-         | simpa only [Prod.fst, Prod.snd] using CodeAlgebra.finPrefixNat_sumProdNat_toFun_inr_inr_snd_pair_lt _ _ _
-         | simpa only [Prod.fst, Prod.snd] using CodeAlgebra.finPrefixNat_natOrProdOrProdNat_toFun_inr_inl_lt_add_two _ _
-         | simpa only [Prod.fst, Prod.snd] using CodeAlgebra.finPrefixNat_natOrProdOrProdNat_toFun_inr_inr_inl_fst_pair_lt _ _ _
-         | simpa only [Prod.fst, Prod.snd] using CodeAlgebra.finPrefixNat_natOrProdOrProdNat_toFun_inr_inr_inl_snd_pair_lt _ _ _
-         | simpa only [Prod.fst, Prod.snd] using CodeAlgebra.finPrefixNat_natOrProdOrProdNat_toFun_inr_inr_inr_fst_pair_lt _ _ _
-         | simpa only [Prod.fst, Prod.snd] using CodeAlgebra.finPrefixNat_natOrProdOrProdNat_toFun_inr_inr_inr_snd_pair_lt _ _ _
-         | simpa only [Prod.fst, Prod.snd] using CodeAlgebra.prodOrNatOrProdOrNat_toFun_inr_inl_lt _
-         | simpa only [Prod.fst, Prod.snd] using CodeAlgebra.prodOrNatOrProdOrNat_toFun_inr_inr_inl_fst_pair_lt _ _
-         | simpa only [Prod.fst, Prod.snd] using CodeAlgebra.prodOrNatOrProdOrNat_toFun_inr_inr_inl_snd_pair_lt _ _
-         | simpa only [Prod.fst, Prod.snd] using CodeAlgebra.prodOrNatOrProdOrNat_toFun_inr_inr_inr_lt _
-         | (apply Nat.add_lt_add_right
-            first
-            | simpa only [Prod.fst, Prod.snd] using CodeAlgebra.finPrefixNat_sumProdNat_toFun_inr_inr_fst_pair_lt _ _ _
-            | simpa only [Prod.fst, Prod.snd] using CodeAlgebra.finPrefixNat_sumProdNat_toFun_inr_inr_snd_pair_lt _ _ _
-            | simpa only [Prod.fst, Prod.snd] using CodeAlgebra.finPrefixNat_natOrProdOrProdNat_toFun_inr_inr_inl_fst_pair_lt _ _ _
-            | simpa only [Prod.fst, Prod.snd] using CodeAlgebra.finPrefixNat_natOrProdOrProdNat_toFun_inr_inr_inl_snd_pair_lt _ _ _
-            | simpa only [Prod.fst, Prod.snd] using CodeAlgebra.finPrefixNat_natOrProdOrProdNat_toFun_inr_inr_inr_fst_pair_lt _ _ _
-            | simpa only [Prod.fst, Prod.snd] using CodeAlgebra.finPrefixNat_natOrProdOrProdNat_toFun_inr_inr_inr_snd_pair_lt _ _ _)
+         | (apply Nat.add_lt_add_right; simp_all!)
          | omega
        done)
     | (rintro idx layer q <;>
@@ -61,28 +40,7 @@ macro "finish_rank_descent " "[" defs:Lean.Parser.Tactic.simpLemma,* "]" : tacti
          (first | cases q | skip) <;>
          simp_all! [$defs,*, BijForm.DepPoly.OutputIndexInversion.canonical] <;>
          first
-         | exact CodeAlgebra.finPrefixNat_sumProdNat_toFun_inr_inl_lt_rankOffset _ _
-         | simpa only [Prod.fst, Prod.snd] using CodeAlgebra.sumProdNat_toFun_inr_fst_pair_lt _ _
-         | simpa only [Prod.fst, Prod.snd] using CodeAlgebra.sumProdNat_toFun_inr_snd_pair_lt _ _
-         | simpa only [Prod.fst, Prod.snd] using CodeAlgebra.finPrefixNat_sumProdNat_toFun_inr_inr_fst_pair_lt _ _ _
-         | simpa only [Prod.fst, Prod.snd] using CodeAlgebra.finPrefixNat_sumProdNat_toFun_inr_inr_snd_pair_lt _ _ _
-         | simpa only [Prod.fst, Prod.snd] using CodeAlgebra.finPrefixNat_natOrProdOrProdNat_toFun_inr_inl_lt_add_two _ _
-         | simpa only [Prod.fst, Prod.snd] using CodeAlgebra.finPrefixNat_natOrProdOrProdNat_toFun_inr_inr_inl_fst_pair_lt _ _ _
-         | simpa only [Prod.fst, Prod.snd] using CodeAlgebra.finPrefixNat_natOrProdOrProdNat_toFun_inr_inr_inl_snd_pair_lt _ _ _
-         | simpa only [Prod.fst, Prod.snd] using CodeAlgebra.finPrefixNat_natOrProdOrProdNat_toFun_inr_inr_inr_fst_pair_lt _ _ _
-         | simpa only [Prod.fst, Prod.snd] using CodeAlgebra.finPrefixNat_natOrProdOrProdNat_toFun_inr_inr_inr_snd_pair_lt _ _ _
-         | simpa only [Prod.fst, Prod.snd] using CodeAlgebra.prodOrNatOrProdOrNat_toFun_inr_inl_lt _
-         | simpa only [Prod.fst, Prod.snd] using CodeAlgebra.prodOrNatOrProdOrNat_toFun_inr_inr_inl_fst_pair_lt _ _
-         | simpa only [Prod.fst, Prod.snd] using CodeAlgebra.prodOrNatOrProdOrNat_toFun_inr_inr_inl_snd_pair_lt _ _
-         | simpa only [Prod.fst, Prod.snd] using CodeAlgebra.prodOrNatOrProdOrNat_toFun_inr_inr_inr_lt _
-         | (apply Nat.add_lt_add_right
-            first
-            | simpa only [Prod.fst, Prod.snd] using CodeAlgebra.finPrefixNat_sumProdNat_toFun_inr_inr_fst_pair_lt _ _ _
-            | simpa only [Prod.fst, Prod.snd] using CodeAlgebra.finPrefixNat_sumProdNat_toFun_inr_inr_snd_pair_lt _ _ _
-            | simpa only [Prod.fst, Prod.snd] using CodeAlgebra.finPrefixNat_natOrProdOrProdNat_toFun_inr_inr_inl_fst_pair_lt _ _ _
-            | simpa only [Prod.fst, Prod.snd] using CodeAlgebra.finPrefixNat_natOrProdOrProdNat_toFun_inr_inr_inl_snd_pair_lt _ _ _
-            | simpa only [Prod.fst, Prod.snd] using CodeAlgebra.finPrefixNat_natOrProdOrProdNat_toFun_inr_inr_inr_fst_pair_lt _ _ _
-            | simpa only [Prod.fst, Prod.snd] using CodeAlgebra.finPrefixNat_natOrProdOrProdNat_toFun_inr_inr_inr_snd_pair_lt _ _ _)
+         | (apply Nat.add_lt_add_right; simp_all!)
          | omega
        done))
 
