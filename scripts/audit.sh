@@ -44,7 +44,7 @@ if git grep -n -E '(^|[^A-Za-z0-9_])sorry([^A-Za-z0-9_]|$)' -- '*.lean' >"$sorry
   done <"$sorry_hits"
 fi
 
-if git grep -n -E 'QuotientPresentation\.inn($|[^R[:alnum:]_])|QuotientPresentation\.inn_layer_sound|HBTChildSwap_inn_branch_sound' -- README.md BijForm; then
+if git grep -n -E 'QuotientPresentation\.inn($|[^R[:alnum:]_])|QuotientPresentation\.inn_layer_sound|HBTChildSwap_inn_branch_sound' -- BijForm; then
   fail "stale quotient declaration name found"
 fi
 
@@ -60,7 +60,7 @@ if git grep -n 'OutputIndexInversion\.ofIso' -- BijForm/Examples; then
   fail "examples must not use low-level opaque output-index inversion"
 fi
 
-if git grep -n '\.toWellFoundedCode' -- BijForm/Examples README.md; then
+if git grep -n '\.toWellFoundedCode' -- BijForm/Examples; then
   fail "examples must expose generated-code APIs instead of WellFoundedCode backend conversion"
 fi
 

@@ -542,7 +542,7 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     `mktemp -d` directory and cleans it up on exit. Declaration-level proof-gap
     inventory remains open.
 
-- [ ] Remove README declaration inventory as a second source of truth.
+- [x] Remove README declaration inventory as a second source of truth.
   - Owner: README/docs.
   - Evidence: README manually lists large declaration inventories, and audit
     tooling then protects pieces of that list with stale-name greps.
@@ -550,3 +550,6 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     declaration inventories from source state.
   - Validation: no audit grep exists solely to keep README declaration names
     current.
+  - Completed: README now gives module-level orientation and example summaries
+    without a hand-written declaration inventory; audit greps no longer include
+    README as a stale declaration-name surface.
