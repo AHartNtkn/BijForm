@@ -454,6 +454,9 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
   - Partial: `GraphRenderRelated.budChild_nodeIncident` now owns the old/fresh
     dependent endpoint/graph incident-slot transport for bud children; the main
     `budChild` proof no longer carries that cast-reconstruction block.
+  - Partial: `GraphRenderRelated.budChild_nodeIncident` now consumes a
+    slot-quantified `AppendTraceRelation`; the full-node old/fresh dispatch is
+    gone from the theorem body.
   - Partial: `GraphRenderRelated.connectChild_edgeLabel` now owns the connect
     child old/new edge-label update; the main `connectChild` proof consumes the
     edge-label field instead of splitting on old versus appended edges there.
