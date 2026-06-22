@@ -137,6 +137,10 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     indices, erased indices, casts, and `get` equalities.
   - Validation: source search for `Fin.cast` and low-level list get transport
     drops sharply in renderer and bridge files.
+  - Partial: added `listIndexCast` in `StringDiagram.Basic`. `SyntaxRoundTrip`
+    now has no raw `Fin.cast`; `Renderer.Steps` keeps one arity/incident cast
+    that is outside the list-owned index-cast shape. `GraphRenderRelation`
+    remains the main open cleanup surface.
 
 ## Code Algebra and Rank Descent
 

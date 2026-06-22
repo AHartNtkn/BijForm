@@ -39,13 +39,13 @@ theorem toOpenPortHypergraph_connect_initial_search
           simp [i.isLt]⟩
     ∃ hmate : PortHypergraph.EdgeMate G.raw
         (G.raw.boundaryPort ⟨0, by simp⟩)
-        (rest.get (Fin.cast (by dsimp [rest]; simp) mate)),
+        (rest.get (listIndexCast rest (by dsimp [rest]; simp) mate)),
       st.firstPendingStepSearch?
           (G.raw.boundaryPort ⟨0, by simp⟩) rest =
         some (OpenPortHypergraph.FirstPendingStep.connect
-          (Fin.cast (by dsimp [rest]; simp) mate) hmate) := by
+          (listIndexCast rest (by dsimp [rest]; simp) mate) hmate) := by
   intro d G st rest
-  let mateTail : Fin rest.length := Fin.cast (by simp [rest]) mate
+  let mateTail : Fin rest.length := listIndexCast rest (by simp [rest]) mate
   have hpending :
       st.pending = G.raw.boundaryPort ⟨0, by simp⟩ :: rest := by
     dsimp [st, OpenPortHypergraph.SearchState.initial, rest]
@@ -178,7 +178,7 @@ theorem renderTrace_connect_edgeMate_of_invariants
       (RenderState.portHypergraphEvidenceOfInvariants
         hv hp hn pref ho).toPortHypergraph
     let mateId :=
-      restIds.get (Fin.cast (by
+      restIds.get (listIndexCast restIds (by
         exact (RenderState.frontierIds_cons_tail_length st hids).symm) mate)
     ∃ (hactive : activeId < final.endpoints.length)
       (hmateBound : mateId < final.endpoints.length),
@@ -269,7 +269,7 @@ theorem renderTrace_connect_active_endpointEdge_val
   intro G
   let final := renderTrace (Diag.connect mate ok child) st
   let mateId :=
-    restIds.get (Fin.cast (by
+    restIds.get (listIndexCast restIds (by
       exact (RenderState.frontierIds_cons_tail_length st hids).symm) mate)
   let edge : RenderEdge Sig :=
     { label := Sig.portEdge active
@@ -334,7 +334,7 @@ theorem renderTrace_bud_active_endpointEdge_val
   let final := renderTrace (Diag.bud node entry ok child) st
   let nodeEndpoints := freshNodeEndpoints st.nextEndpoint (Sig.arity node)
   let entryIdx : Fin nodeEndpoints.length :=
-    Fin.cast (by simp [nodeEndpoints]) entry
+    listIndexCast nodeEndpoints (by simp [nodeEndpoints]) entry
   let edge : RenderEdge Sig :=
     { label := Sig.portEdge active
       leftLabel := active
@@ -407,7 +407,7 @@ theorem renderTrace_bud_entry_edgeMate_exact_of_invariants
   intro final G
   let nodeEndpoints := freshNodeEndpoints st.nextEndpoint (Sig.arity node)
   let entryIdx : Fin nodeEndpoints.length :=
-    Fin.cast (by simp [nodeEndpoints]) entry
+    listIndexCast nodeEndpoints (by simp [nodeEndpoints]) entry
   let edge : RenderEdge Sig :=
     { label := Sig.portEdge active
       leftLabel := active
@@ -461,7 +461,7 @@ theorem renderTrace_bud_entry_edgeMate_exact_of_invariants
       RenderState.portHypergraphEvidenceOfInvariants, nodeIndex,
       renderNode, nodeEndpoints] using hlabel
   let slot : Fin (G.incident nodeIndex).length :=
-    Fin.cast (by
+    listIndexCast (G.incident nodeIndex) (by
       calc
         Sig.arity node = Sig.arity (G.nodeLabel nodeIndex) := by
           rw [hnodeLabel]
@@ -566,9 +566,9 @@ theorem toDiag_of_renderPrefixRelated :
                 simpa using hlen
               have hrestLen : rest.length = frontier.length :=
                 hrestLenVals.trans hrestIdsLen
-              let searchMate : Fin rest.length := Fin.cast hrestLen.symm mate
+              let searchMate : Fin rest.length := listIndexCast rest hrestLen.symm mate
               let renderMateInRestIds : Fin restIds.length :=
-                Fin.cast hrestIdsLen.symm mate
+                listIndexCast restIds hrestIdsLen.symm mate
               have hmateVal :
                   (rest.get searchMate).val =
                     restIds.get renderMateInRestIds := by
@@ -703,11 +703,15 @@ theorem toDiag_of_renderPrefixRelated :
               have hentryFreshVal :
                   (((RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph.raw.incident nodeIndex).get slot).val =
                     (freshNodeEndpoints rst.nextEndpoint (Sig.arity node)).get
-                      (Fin.cast (by simp [freshNodeEndpoints]) entry) := by
+                      (listIndexCast
+                        (freshNodeEndpoints rst.nextEndpoint (Sig.arity node))
+                        (by simp [freshNodeEndpoints]) entry) := by
                 exact list_get_map_eq_get_of_val_eq (fun endpoint =>
                   (endpoint : Fin (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph.raw.endpointCount).val)
                   hincidentVals slot
-                  (Fin.cast (by simp [freshNodeEndpoints]) entry)
+                  (listIndexCast
+                    (freshNodeEndpoints rst.nextEndpoint (Sig.arity node))
+                    (by simp [freshNodeEndpoints]) entry)
                   hslotVal
               have hconnectNone :
                   OpenPortHypergraph.firstPendingConnectSearch? (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph
@@ -723,7 +727,7 @@ theorem toDiag_of_renderPrefixRelated :
                         (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph.raw
                         htailMate hmateSearch
                     let tailRestIdx : Fin restIds.length :=
-                      Fin.cast hrestLenVals tailMate
+                      listIndexCast restIds hrestLenVals tailMate
                     have htailVal :
                         (rest.get tailMate).val =
                           restIds.get tailRestIdx := by
@@ -743,20 +747,28 @@ theorem toDiag_of_renderPrefixRelated :
                       exact hbound
                     have hfreshMem :
                         (freshNodeEndpoints rst.nextEndpoint (Sig.arity node)).get
-                            (Fin.cast (by simp [freshNodeEndpoints]) entry) ∈
+                            (listIndexCast
+                              (freshNodeEndpoints rst.nextEndpoint (Sig.arity node))
+                              (by simp [freshNodeEndpoints]) entry) ∈
                           freshNodeEndpoints rst.nextEndpoint (Sig.arity node) :=
                       List.get_mem
                         (freshNodeEndpoints rst.nextEndpoint (Sig.arity node))
-                        (Fin.cast (by simp [freshNodeEndpoints]) entry)
+                        (listIndexCast
+                          (freshNodeEndpoints rst.nextEndpoint (Sig.arity node))
+                          (by simp [freshNodeEndpoints]) entry)
                     have hfreshGe :
                         rst.nextEndpoint ≤
                           (freshNodeEndpoints rst.nextEndpoint (Sig.arity node)).get
-                            (Fin.cast (by simp [freshNodeEndpoints]) entry) :=
+                            (listIndexCast
+                              (freshNodeEndpoints rst.nextEndpoint (Sig.arity node))
+                              (by simp [freshNodeEndpoints]) entry) :=
                       freshNodeEndpoints_mem_ge hfreshMem
                     have heqVal :
                         restIds.get tailRestIdx =
                           (freshNodeEndpoints rst.nextEndpoint (Sig.arity node)).get
-                            (Fin.cast (by simp [freshNodeEndpoints]) entry) := by
+                            (listIndexCast
+                              (freshNodeEndpoints rst.nextEndpoint (Sig.arity node))
+                              (by simp [freshNodeEndpoints]) entry) := by
                       exact htailVal.symm.trans
                         ((congrArg (fun endpoint => endpoint.val) htailEq).trans
                           hentryFreshVal)

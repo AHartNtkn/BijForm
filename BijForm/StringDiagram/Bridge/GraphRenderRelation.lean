@@ -584,7 +584,7 @@ theorem GraphRenderRelated.connectChild
         have hlen := hrel.pending_length
         rw [hids, hpending] at hlen
         exact Nat.succ.inj hlen
-      let idx : Fin restIds.length := Fin.cast hrestIdsLen.symm rendererMate
+      let idx : Fin restIds.length := listIndexCast restIds hrestIdsLen.symm rendererMate
       have hidxVal : idx.val = mate.val := by
         simp [idx, rendererMate, SearchState.restLabelIndex]
       have hpendingVals := hrel.pending_cons_values hpending hids
@@ -1615,7 +1615,8 @@ theorem GraphRenderRelated.budChild
       let nodeEndpoints := Diag.freshNodeEndpoints rst.nextEndpoint
         (Sig.arity renderNode)
       let entryIdx : Fin nodeEndpoints.length :=
-        Fin.cast (by simp [nodeEndpoints, Diag.freshNodeEndpoints, renderNode]) entry
+        listIndexCast nodeEndpoints
+          (by simp [nodeEndpoints, Diag.freshNodeEndpoints, renderNode]) entry
       have hpendingVals := hrel.pending_cons_values hpending hids
       have hseenChildNodup :
           (node :: st.seenNodes).Nodup := by

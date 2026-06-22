@@ -112,11 +112,13 @@ theorem freshNodeEndpoints_label_append
         ⟨(freshNodeEndpoints st.nextEndpoint (Sig.arity node)).get i,
           hbound⟩ =
       (Sig.nodePorts node).get
-        (Fin.cast (by simp [freshNodeEndpoints, Signature.nodePorts]) i) := by
+        (listIndexCast (Sig.nodePorts node)
+          (by simp [freshNodeEndpoints, Signature.nodePorts]) i) := by
   let endpoint : Fin (st.endpoints ++ Sig.nodePorts node).length :=
     ⟨(freshNodeEndpoints st.nextEndpoint (Sig.arity node)).get i, hbound⟩
   let nodePort : Fin (Sig.nodePorts node).length :=
-    Fin.cast (by simp [freshNodeEndpoints, Signature.nodePorts]) i
+    listIndexCast (Sig.nodePorts node)
+      (by simp [freshNodeEndpoints, Signature.nodePorts]) i
   have hright :
       st.endpoints.length ≤ endpoint.val := by
     have hget :=
@@ -158,8 +160,8 @@ def connectStep {active : Sig.Port} {frontier : List Sig.Port}
   | activeId :: restIds =>
       have hrest : restIds.length = frontier.length := by
         exact RenderState.frontierIds_cons_tail_length st hids
-      let mateId := restIds.get (Fin.cast hrest.symm mate)
-      let childIds := eraseFin restIds (Fin.cast hrest.symm mate)
+      let mateId := restIds.get (listIndexCast restIds hrest.symm mate)
+      let childIds := eraseFin restIds (listIndexCast restIds hrest.symm mate)
       { nextEndpoint := st.nextEndpoint
         endpoints := st.endpoints
         edges := st.edges ++
@@ -199,9 +201,9 @@ def budStep {active : Sig.Port} {frontier : List Sig.Port}
         exact RenderState.frontierIds_cons_tail_length st hids
       let nodeEndpoints := freshNodeEndpoints st.nextEndpoint (Sig.arity node)
       let entryId := nodeEndpoints.get
-        (Fin.cast (by simp [nodeEndpoints]) entry)
+        (listIndexCast nodeEndpoints (by simp [nodeEndpoints]) entry)
       let childIds := restIds ++
-        eraseFin nodeEndpoints (Fin.cast (by simp [nodeEndpoints]) entry)
+        eraseFin nodeEndpoints (listIndexCast nodeEndpoints (by simp [nodeEndpoints]) entry)
       { nextEndpoint := st.nextEndpoint + Sig.arity node
         endpoints := st.endpoints ++ Sig.nodePorts node
         edges := st.edges ++
@@ -276,7 +278,7 @@ theorem connectStep_new_edge_mem
        rightLabel := frontier.get mate
        left := activeId
        right :=
-        restIds.get (Fin.cast (by
+        restIds.get (listIndexCast restIds (by
           exact (RenderState.frontierIds_cons_tail_length st hids).symm) mate)
        left_label := rfl
        right_label := (Sig.compatible_edge ok).symm
@@ -307,7 +309,7 @@ theorem connectStep_edges
            rightLabel := frontier.get mate
            left := activeId
            right :=
-            restIds.get (Fin.cast (by
+            restIds.get (listIndexCast restIds (by
               exact (RenderState.frontierIds_cons_tail_length st hids).symm) mate)
            left_label := rfl
            right_label := (Sig.compatible_edge ok).symm
@@ -352,7 +354,7 @@ theorem connectStep_edges_get_new
         rightLabel := frontier.get mate
         left := activeId
         right :=
-          restIds.get (Fin.cast (by
+          restIds.get (listIndexCast restIds (by
             exact (RenderState.frontierIds_cons_tail_length st hids).symm) mate)
         left_label := rfl
         right_label := (Sig.compatible_edge ok).symm
@@ -363,7 +365,7 @@ theorem connectStep_edges_get_new
       rightLabel := frontier.get mate
       left := activeId
       right :=
-        restIds.get (Fin.cast (by
+        restIds.get (listIndexCast restIds (by
           exact (RenderState.frontierIds_cons_tail_length st hids).symm) mate)
       left_label := rfl
       right_label := (Sig.compatible_edge ok).symm
@@ -391,7 +393,7 @@ theorem connectStep_frontierIds
     {activeId : Nat} {restIds : List Nat}
     (hids : st.frontierIds = activeId :: restIds) :
     (connectStep mate ok st).frontierIds =
-      eraseFin restIds (Fin.cast (by
+      eraseFin restIds (listIndexCast restIds (by
         exact (RenderState.frontierIds_cons_tail_length st hids).symm) mate) := by
   unfold connectStep
   split
@@ -421,7 +423,7 @@ theorem connectStep_frontier_mem_old
       exact RenderState.frontierIds_cons_tail_length st hids
     rw [hids]
     right
-    exact mem_of_mem_eraseFin restIds (Fin.cast hrest.symm mate) hmem
+    exact mem_of_mem_eraseFin restIds (listIndexCast restIds hrest.symm mate) hmem
 
 theorem connectStep_rawReachesBoundary_of_old
     {active : Sig.Port} {frontier : List Sig.Port}
@@ -538,7 +540,8 @@ theorem budStep_frontier_mem_old_or_new
     id ∈ st.frontierIds ∨
       id ∈
         eraseFin (freshNodeEndpoints st.nextEndpoint (Sig.arity node))
-          (Fin.cast (by simp [freshNodeEndpoints]) entry) := by
+          (listIndexCast (freshNodeEndpoints st.nextEndpoint (Sig.arity node))
+            (by simp [freshNodeEndpoints]) entry) := by
   unfold budStep at hmem
   split at hmem
   · rename_i hids
@@ -568,7 +571,8 @@ theorem budStep_new_edge_mem
        left := activeId
        right :=
         (freshNodeEndpoints st.nextEndpoint (Sig.arity node)).get
-          (Fin.cast (by simp [freshNodeEndpoints]) entry)
+          (listIndexCast (freshNodeEndpoints st.nextEndpoint (Sig.arity node))
+            (by simp [freshNodeEndpoints]) entry)
        left_label := rfl
        right_label := (Sig.compatible_edge ok).symm
        compatible := ok } : RenderEdge Sig) ∈
@@ -595,7 +599,8 @@ theorem budStep_frontierIds
     (budStep node entry ok st).frontierIds =
       restIds ++
         eraseFin (freshNodeEndpoints st.nextEndpoint (Sig.arity node))
-          (Fin.cast (by simp [freshNodeEndpoints]) entry) := by
+          (listIndexCast (freshNodeEndpoints st.nextEndpoint (Sig.arity node))
+            (by simp [freshNodeEndpoints]) entry) := by
   unfold budStep
   split
   · rename_i hidsNil
@@ -635,9 +640,11 @@ theorem budStep_entry_rawReachesBoundary
     (hids : st.frontierIds = activeId :: restIds) :
     (budStep node entry ok st).RawReachesBoundary boundary.length
       ((freshNodeEndpoints st.nextEndpoint (Sig.arity node)).get
-        (Fin.cast (by simp [freshNodeEndpoints]) entry)) := by
+        (listIndexCast (freshNodeEndpoints st.nextEndpoint (Sig.arity node))
+          (by simp [freshNodeEndpoints]) entry)) := by
   let entryIdx : Fin (freshNodeEndpoints st.nextEndpoint (Sig.arity node)).length :=
-    Fin.cast (by simp [freshNodeEndpoints]) entry
+    listIndexCast (freshNodeEndpoints st.nextEndpoint (Sig.arity node))
+      (by simp [freshNodeEndpoints]) entry
   let entryId := (freshNodeEndpoints st.nextEndpoint (Sig.arity node)).get entryIdx
   let newEdge : RenderEdge Sig :=
     { label := Sig.portEdge active
@@ -680,7 +687,7 @@ theorem budStep_fresh_rawReachesBoundary
     (budStep node entry ok st).RawReachesBoundary boundary.length id := by
   let nodeEndpoints := freshNodeEndpoints st.nextEndpoint (Sig.arity node)
   let entryIdx : Fin nodeEndpoints.length :=
-    Fin.cast (by simp [nodeEndpoints, freshNodeEndpoints]) entry
+    listIndexCast nodeEndpoints (by simp [nodeEndpoints, freshNodeEndpoints]) entry
   rcases list_exists_get_of_mem nodeEndpoints hfresh with ⟨toSlot, hto⟩
   let newNode : RenderNode Sig := { label := node, incident := nodeEndpoints }
   have hentryReach :
@@ -722,7 +729,8 @@ theorem budStep_reachability {active : Sig.Port}
         · exact budStep_fresh_rawReachesBoundary node entry ok st hr hids
             (mem_of_mem_eraseFin
               (freshNodeEndpoints st.nextEndpoint (Sig.arity node))
-              (Fin.cast (by simp [freshNodeEndpoints]) entry)
+              (listIndexCast (freshNodeEndpoints st.nextEndpoint (Sig.arity node))
+                (by simp [freshNodeEndpoints]) entry)
               hnew)
       · intro renderNode hmem
         rcases budStep_node_mem_old_or_new node entry ok st hmem with
@@ -732,7 +740,7 @@ theorem budStep_reachability {active : Sig.Port}
         · subst renderNode
           let nodeEndpoints := freshNodeEndpoints st.nextEndpoint (Sig.arity node)
           let entryIdx : Fin nodeEndpoints.length :=
-            Fin.cast (by simp [nodeEndpoints, freshNodeEndpoints]) entry
+            listIndexCast nodeEndpoints (by simp [nodeEndpoints, freshNodeEndpoints]) entry
           refine ⟨entryIdx, ?_⟩
           dsimp [nodeEndpoints, entryIdx]
           exact budStep_entry_rawReachesBoundary node entry ok st hr hids
@@ -767,9 +775,9 @@ theorem connectStep_validIds {active : Sig.Port} {frontier : List Sig.Port}
         rw [hids]
         right
         exact mem_of_mem_eraseFin restIds
-          (Fin.cast hrest.symm mate) hid)
+          (listIndexCast restIds hrest.symm mate) hid)
     · intro n hid hfrontier
-      let idx : Fin restIds.length := Fin.cast hrest.symm mate
+      let idx : Fin restIds.length := listIndexCast restIds hrest.symm mate
       have hrel :
           ∀ (n : Nat) (hx : n < restIds.length)
             (hy : n < frontier.length),
@@ -804,10 +812,10 @@ theorem connectStep_validIds {active : Sig.Port} {frontier : List Sig.Port}
       · exact hv.edge_right_bound edge hold
       · cases hnew
         exact hv.frontier_bound
-          (restIds.get (Fin.cast hrest.symm mate)) (by
+          (restIds.get (listIndexCast restIds hrest.symm mate)) (by
             rw [hids]
             right
-            exact List.get_mem restIds (Fin.cast hrest.symm mate))
+            exact List.get_mem restIds (listIndexCast restIds hrest.symm mate))
     · intro edge hmem
       simp at hmem
       rcases hmem with hold | hnew
@@ -819,7 +827,7 @@ theorem connectStep_validIds {active : Sig.Port} {frontier : List Sig.Port}
       rcases hmem with hold | hnew
       · exact hv.edge_right_label edge hold
       · cases hnew
-        exact hv.frontier_tail_label hids hrest (Fin.cast hrest.symm mate)
+        exact hv.frontier_tail_label hids hrest (listIndexCast restIds hrest.symm mate)
 
 theorem connectStep_endpointPartition {active : Sig.Port}
     {frontier : List Sig.Port}
@@ -835,7 +843,7 @@ theorem connectStep_endpointPartition {active : Sig.Port}
   · rename_i activeId restIds hids
     have hrest : restIds.length = frontier.length := by
       exact RenderState.frontierIds_cons_tail_length st hids
-    let idx : Fin restIds.length := Fin.cast hrest.symm mate
+    let idx : Fin restIds.length := listIndexCast restIds hrest.symm mate
     have oldFrontierNodup : (activeId :: restIds).Nodup := by
       simpa [hids] using hp.frontier_nodup
     have active_not_rest : activeId ∉ restIds := by
@@ -1006,7 +1014,7 @@ theorem budStep_validIds {active : Sig.Port} {frontier : List Sig.Port}
     dsimp
     let nodeEndpoints := freshNodeEndpoints st.nextEndpoint (Sig.arity node)
     let entryIdx : Fin nodeEndpoints.length :=
-      Fin.cast (by simp [nodeEndpoints]) entry
+      listIndexCast nodeEndpoints (by simp [nodeEndpoints]) entry
     have nodeEndpoints_length :
         nodeEndpoints.length = Sig.arity node := by
       simp [nodeEndpoints]
@@ -1060,7 +1068,7 @@ theorem budStep_validIds {active : Sig.Port} {frontier : List Sig.Port}
         exact fresh_bound_of_mem hmem
     · intro n hid hfrontier
       let portEntry : Fin (Sig.nodePorts node).length :=
-        Fin.cast (by simp [Signature.nodePorts]) entry
+        listIndexCast (Sig.nodePorts node) (by simp [Signature.nodePorts]) entry
       have hleft :
           ∀ (n : Nat) (hid : n < restIds.length)
             (hlabel : n < frontier.length),
@@ -1240,7 +1248,7 @@ theorem budStep_endpointPartition {active : Sig.Port}
       exact RenderState.frontierIds_cons_tail_length st hids
     let nodeEndpoints := freshNodeEndpoints st.nextEndpoint (Sig.arity node)
     let entryIdx : Fin nodeEndpoints.length :=
-      Fin.cast (by simp [nodeEndpoints]) entry
+      listIndexCast nodeEndpoints (by simp [nodeEndpoints]) entry
     have oldFrontierNodup : (activeId :: restIds).Nodup := by
       simpa [hids] using hp.frontier_nodup
     have active_not_rest : activeId ∉ restIds := by
@@ -1463,7 +1471,7 @@ theorem budStep_ownerIdPartition {active : Sig.Port}
       exact RenderState.frontierIds_cons_tail_length st hids
     let nodeEndpoints := freshNodeEndpoints st.nextEndpoint (Sig.arity node)
     let entryIdx : Fin nodeEndpoints.length :=
-      Fin.cast (by simp [nodeEndpoints]) entry
+      listIndexCast nodeEndpoints (by simp [nodeEndpoints]) entry
     let child : RenderState Sig (frontier ++ Sig.nodePortsExcept node entry) :=
       { nextEndpoint := st.nextEndpoint + Sig.arity node
         endpoints := st.endpoints ++ Sig.nodePorts node

@@ -194,6 +194,16 @@ theorem list_get_of_eq_append_cons_at_length {α : Type}
   rw [hidx]
   exact list_get_append_single_at_length pref suffix x
 
+def listIndexCast {α : Type} (xs : List α) {n : Nat}
+    (h : n = xs.length) (i : Fin n) : Fin xs.length :=
+  Fin.cast h i
+
+@[simp]
+theorem listIndexCast_val {α : Type} (xs : List α) {n : Nat}
+    (h : n = xs.length) (i : Fin n) :
+    (listIndexCast xs h i).val = i.val :=
+  rfl
+
 theorem list_get_of_eq {α : Type} {xs ys : List α}
     (h : xs = ys) (i : Fin xs.length) :
     xs.get i = ys.get (Fin.cast (congrArg List.length h) i) := by
