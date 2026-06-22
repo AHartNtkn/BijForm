@@ -631,7 +631,8 @@ def SortedLayerPresentation :
 
 def SortedShapeLayerPresentation :
     ShapeLayerPresentation SortedPoly SortedInversion :=
-  ShapeLayerPresentation.ofLayerPresentation SortedShape SortedLayerPresentation
+  { shape := SortedShape
+    presentation := SortedLayerPresentation }
 
 def SortedGeneratedShapeCode : GeneratedShapeCode SortedPoly :=
   SortedShapeLayerPresentation.generatedCode

@@ -233,10 +233,10 @@ is ordered to turn helper additions into actual deletion.
     should show the generic first-pending surface as the public path and no
     duplicate connect/bud preservation families at call sites.
 
-- [ ] Delete low-value generated-code and presentation pass-through wrappers.
+- [x] Delete low-value generated-code and presentation pass-through wrappers.
   - Owners: `BijForm.InitialAlgebra`,
     `BijForm.DependentPolynomial`, and examples using generated codes.
-  - Why this remains open: the branch moved major machinery into
+  - Original debt: the branch moved major machinery into
     `InitialAlgebra.lean` and added views around canonical generated code, but
     line count still increased. Public views that only preserve old naming are
     remaining debt.
@@ -248,6 +248,16 @@ is ordered to turn helper additions into actual deletion.
   - Validation:
     `rg -n "toGeneratedCode|GeneratedShapeCode|GeneratedRankedNatCode|GeneratedNatCode|NatLayerPresentation|RankedNatLayerPresentation|ShapeLayerPresentation" BijForm --glob '*.lean'`
     should justify each remaining public name as canonical, not transitional.
+  - Completed: forwarding methods in the `GeneratedNatCode`,
+    `GeneratedRankedNatCode`, `NatLayerPresentation`,
+    `RankedNatLayerPresentation`, and `ShapeLayerPresentation` namespaces were
+    deleted, as were `GeneratedCode.natCodeIso` and
+    `GeneratedCode.rankedNatCodeIso`; the redundant `GeneratedRankedNatCode`
+    alias was also deleted. Examples now use `LayerPresentation.generatedCode`,
+    `GeneratedCode.codeIso`, and direct `ShapeLayerPresentation` records. The
+    remaining broad-scan names are canonical data types, real constructors such
+    as Nat/ranked layer presentation constructors and typed-binding
+    `toGeneratedCode`, or example-level generated-code deliverables.
 
 - [ ] Revisit `ListPiTuple` and typed-binding tuple helper placement for
   maximal visibility.

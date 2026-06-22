@@ -246,13 +246,13 @@ def HBTNatLayerPresentation : NatLayerPresentation HBTPoly HBTInversion :=
 and decoder are produced by `GeneratedNatCode`, not by an example-specific
 recursive function. -/
 def HBTNatGeneratedCode : GeneratedNatCode HBTPoly :=
-  HBTNatLayerPresentation.generatedCode
+  LayerPresentation.generatedCode HBTNatLayerPresentation
 
 def HBTNatIso (i : Nat) : Mu HBTPoly i ≃ᵢ Nat :=
   HBTNatGeneratedCode.iso i
 
 def HBTSyntaxNatIso (i : Nat) : HBTSyntax i ≃ᵢ Nat :=
-  GeneratedCode.natCodeIso HBTGeneratedCode HBTNatGeneratedCode i
+  GeneratedCode.codeIso HBTGeneratedCode HBTNatGeneratedCode i
 
 end Examples
 end BijForm

@@ -357,13 +357,13 @@ def PeanoNatLayerPresentation : NatLayerPresentation PeanoPoly PeanoInversion :=
     exact PeanoNat_layer_child_lt layer q)
 
 def PeanoNatGeneratedCode : GeneratedNatCode PeanoPoly :=
-  PeanoNatLayerPresentation.generatedCode
+  LayerPresentation.generatedCode PeanoNatLayerPresentation
 
 def PeanoNatIso (k : Nat) : Mu PeanoPoly k ≃ᵢ Nat :=
   PeanoNatGeneratedCode.iso k
 
 def PeanoSyntaxNatIso (k : Nat) : PeanoSyntax k ≃ᵢ Nat :=
-  GeneratedCode.natCodeIso PeanoGeneratedCode PeanoNatGeneratedCode k
+  GeneratedCode.codeIso PeanoGeneratedCode PeanoNatGeneratedCode k
 
 end Examples
 end BijForm

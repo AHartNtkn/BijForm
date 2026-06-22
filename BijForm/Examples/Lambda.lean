@@ -305,14 +305,14 @@ def LamNatLayerPresentation : RankedNatLayerPresentation LamPoly LamInversion :=
     intro k layer q
     exact LamNat_layer_child_rank_lt layer q)
 
-def LamNatGeneratedCode : GeneratedRankedNatCode LamPoly :=
-  LamNatLayerPresentation.generatedCode
+def LamNatGeneratedCode : GeneratedNatCode LamPoly :=
+  LayerPresentation.generatedCode LamNatLayerPresentation
 
 def LamNatIso (k : Nat) : Mu LamPoly k ≃ᵢ Nat :=
   LamNatGeneratedCode.iso k
 
 def LamSyntaxNatIso (k : Nat) : LamSyntax k ≃ᵢ Nat :=
-  GeneratedCode.rankedNatCodeIso LamGeneratedCode LamNatGeneratedCode k
+  GeneratedCode.codeIso LamGeneratedCode LamNatGeneratedCode k
 
 def ClosedLamSyntaxNatIso : LamSyntax 0 ≃ᵢ Nat :=
   LamSyntaxNatIso 0

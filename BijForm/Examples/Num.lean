@@ -416,13 +416,13 @@ def NumNatLayerPresentation : NatLayerPresentation NumPoly NumInversion :=
     exact NumNat_layer_child_lt layer q)
 
 def NumNatGeneratedCode : GeneratedNatCode NumPoly :=
-  NumNatLayerPresentation.generatedCode
+  LayerPresentation.generatedCode NumNatLayerPresentation
 
 def NumNatIso (k : Nat) : Mu NumPoly k ≃ᵢ Nat :=
   NumNatGeneratedCode.iso k
 
 def NumSyntaxNatIso (k : Nat) : NumSyntax k ≃ᵢ Nat :=
-  GeneratedCode.natCodeIso NumGeneratedCode NumNatGeneratedCode k
+  GeneratedCode.codeIso NumGeneratedCode NumNatGeneratedCode k
 
 end Examples
 end BijForm

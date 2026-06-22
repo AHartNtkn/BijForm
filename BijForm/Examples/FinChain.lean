@@ -236,7 +236,8 @@ def FinChainLayerPresentation :
 
 def FinChainShapeLayerPresentation :
     ShapeLayerPresentation FinChainPoly FinChainInversion :=
-  ShapeLayerPresentation.ofLayerPresentation FinChainShape FinChainLayerPresentation
+  { shape := FinChainShape
+    presentation := FinChainLayerPresentation }
 
 def FinChainGeneratedShapeCode : GeneratedShapeCode FinChainPoly :=
   FinChainShapeLayerPresentation.generatedCode

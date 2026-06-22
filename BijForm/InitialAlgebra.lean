@@ -551,81 +551,12 @@ def finIso (C : GeneratedShapeCode P) (i : ι) {k : Nat}
 end GeneratedShapeCode
 
 /--
-Generated Nat coding data with a caller-supplied well-founded rank. This covers
-Nat-carrier examples whose decoder decreases because the index changes, even
-when a recursive child has the same numeric code as its parent.
--/
-abbrev GeneratedRankedNatCode (P : DepPoly ι) :=
-  GeneratedCode P (fun _ => Nat)
-
-namespace GeneratedRankedNatCode
-
-variable {P : DepPoly ι}
-
-/-- Layer-local constructor for ranked Nat generated data. -/
-def ofLayerChildRank
-    (inversion : OutputIndexInversion P)
-    (layer : ∀ i, CodeLayer P inversion (fun _ => Nat) i ≃ᵢ Nat)
-    (rank : ι → Nat → Nat)
-    (layer_child_rank_lt :
-      ∀ {i : ι} (x : CodeLayer P inversion (fun _ => Nat) i)
-        (q : P.Pos (inversion.decode i x.1).ctor
-            (inversion.decode i x.1).param),
-        rank (P.input (inversion.decode i x.1).param q) (x.2 q) <
-          rank i ((layer i).toFun x)) :
-    GeneratedRankedNatCode P :=
-  GeneratedCode.ofLayerChildRank inversion layer rank layer_child_rank_lt
-
-end GeneratedRankedNatCode
-
-/--
 Generated Nat coding data.  A local Nat layer decoder must produce recursive
 child codes that are strictly smaller than the parent code, so the generic
 decoder is well-founded with the identity rank on `Nat`.
 -/
 abbrev GeneratedNatCode (P : DepPoly ι) :=
   GeneratedCode P (fun _ => Nat)
-
-namespace GeneratedNatCode
-
-variable {P : DepPoly ι}
-
-/-- Layer-local constructor for Nat generated data with identity rank. -/
-def ofLayerChildLt
-    (inversion : OutputIndexInversion P)
-    (layer : ∀ i, CodeLayer P inversion (fun _ => Nat) i ≃ᵢ Nat)
-    (layer_child_lt :
-      ∀ {i : ι} (x : CodeLayer P inversion (fun _ => Nat) i)
-        (q : P.Pos (inversion.decode i x.1).ctor
-            (inversion.decode i x.1).param),
-        x.2 q < (layer i).toFun x) :
-    GeneratedNatCode P :=
-  GeneratedCode.ofLayerChildRank inversion layer (fun _ n => n) (by
-    intro i x q
-    exact layer_child_lt x q)
-
-def iso (C : GeneratedNatCode P) (i : ι) : Mu P i ≃ᵢ Nat :=
-  GeneratedCode.iso C i
-
-def encode (C : GeneratedNatCode P) (i : ι) (x : Mu P i) : Nat :=
-  GeneratedCode.encode C i x
-
-def decode (C : GeneratedNatCode P) (i : ι) (n : Nat) : Mu P i :=
-  GeneratedCode.decode C i n
-
-theorem decode_encode (C : GeneratedNatCode P) (i : ι) (x : Mu P i) :
-    C.decode i (C.encode i x) = x :=
-  GeneratedCode.decode_encode C i x
-
-theorem encode_decode (C : GeneratedNatCode P) (i : ι) (n : Nat) :
-    C.encode i (C.decode i n) = n :=
-  GeneratedCode.encode_decode C i n
-
-theorem noSubsingletonFiber (C : GeneratedNatCode P) (i : ι)
-    [Subsingleton (Mu P i)] : False := by
-  exact Iso.noNatIsoOfSubsingleton (C.iso i)
-
-end GeneratedNatCode
 
 namespace GeneratedCode
 
@@ -638,18 +569,6 @@ def codeIso {Source : ι → Type v} {Target : ι → Type w}
     (source : GeneratedCode P Source) (target : GeneratedCode P Target) (i : ι) :
     Source i ≃ᵢ Target i :=
   Iso.trans (Iso.symm (source.iso i)) (target.iso i)
-
-/-- Compose a generated source coding with a generated Nat coding. -/
-def natCodeIso {Source : ι → Type v}
-    (source : GeneratedCode P Source) (target : GeneratedNatCode P) (i : ι) :
-    Source i ≃ᵢ Nat :=
-  codeIso source target i
-
-/-- Compose a generated source coding with a generated ranked-Nat coding. -/
-def rankedNatCodeIso {Source : ι → Type v}
-    (source : GeneratedCode P Source) (target : GeneratedRankedNatCode P) (i : ι) :
-    Source i ≃ᵢ Nat :=
-  codeIso source target i
 
 /-- Compose a generated source coding with a generated shape-coded carrier. -/
 def shapeCodeIso {Source : ι → Type v}
@@ -948,12 +867,6 @@ def ofLayerChildLt
     intro i x q
     exact child_lt x q)
 
-def generatedCode (D : NatLayerPresentation P H) : GeneratedNatCode P :=
-  LayerPresentation.generatedCode D
-
-def iso (D : NatLayerPresentation P H) (i : ι) : Mu P i ≃ᵢ Nat :=
-  D.generatedCode.iso i
-
 end NatLayerPresentation
 
 /-- Ranked Nat-carrier presentation as a view of canonical layer presentations. -/
@@ -977,13 +890,6 @@ def ofLayerChildRank
     RankedNatLayerPresentation P H :=
   LayerPresentation.ofLayerChildRank layer rank layer_child_rank_lt
 
-def generatedCode (D : RankedNatLayerPresentation P H) :
-    GeneratedRankedNatCode P :=
-  LayerPresentation.generatedCode D
-
-def iso (D : RankedNatLayerPresentation P H) (i : ι) : Mu P i ≃ᵢ Nat :=
-  D.generatedCode.iso i
-
 end RankedNatLayerPresentation
 
 /-- Shape-coded presentation stores shape metadata and one canonical layer
@@ -998,20 +904,9 @@ namespace ShapeLayerPresentation
 
 variable {P : DepPoly ι} {H : OutputIndexInversion P}
 
-def ofLayerPresentation
-    (shape : ι → CodeShape)
-    (presentation : LayerPresentation P H (fun i => (shape i).Carrier)) :
-    ShapeLayerPresentation P H where
-  shape := shape
-  presentation := presentation
-
 def generatedCode (D : ShapeLayerPresentation P H) : GeneratedShapeCode P where
   shape := D.shape
   code := D.presentation.generatedCode
-
-def iso (D : ShapeLayerPresentation P H) (i : ι) :
-    Mu P i ≃ᵢ (D.shape i).Carrier :=
-  D.generatedCode.iso i
 
 end ShapeLayerPresentation
 
