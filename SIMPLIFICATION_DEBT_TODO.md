@@ -70,10 +70,11 @@ is ordered to turn helper additions into actual deletion.
     `NodeIncidentFields` now expose `listIndexCast` in their field statements
     instead of raw relation-boundary casts. The connect/bud child label proofs
     also use append-trace right indices plus `listIndexCast` instead of local
-    `childIndex := Fin.cast ...` boilerplate. Focused bridge check passes and
+    `childIndex := Fin.cast ...` boilerplate. A follow-up edge-left/right and
+    bud node-incident pass removed the remaining bridge-local raw casts, so
     `GraphRenderRelation.lean` direct `Fin.cast` hits dropped from `103` to
-    `56`. The item remains open because edge-left/right, bud incident, and
-    non-bridge renderer/traversal/hypergraph casts still remain.
+    `0`. The item remains open because non-bridge renderer, traversal, and
+    hypergraph casts still remain.
 
 - [ ] Collapse the graph-render relation helper volume into schemas.
   - Owners: `BijForm.StringDiagram.Bridge.GraphRenderRelation`,
