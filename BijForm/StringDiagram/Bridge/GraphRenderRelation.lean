@@ -648,6 +648,177 @@ theorem GraphRenderRelated.nodeLabel_of_appendTrace
   intro node
   exact AppendTraceRelation.get_listIndexCast hlabelRel hchildNodeLength node
 
+theorem GraphRenderRelated.nodeIncidentFields_of_appendTrace
+    {G : OpenPortHypergraph Sig boundary}
+    {frontier childFrontier : List Sig.Port}
+    {rst : RenderState Sig frontier} {st : SearchState G frontier}
+    {childRst : RenderState Sig childFrontier}
+    {childSt : SearchState G childFrontier}
+    (hrel : GraphRenderRelated G rst st)
+    {newRenderNodes : List (RenderNode Sig)}
+    {newGraphNodes : List (Fin G.raw.nodeCount)}
+    (nodeTrace : AppendTrace rst.nodes childRst.nodes newRenderNodes
+      (nodeOrder st) (nodeOrder childSt) newGraphNodes)
+    (hchildNodeLength :
+      childRst.nodes.length = (nodeOrder childSt).length)
+    (hchildIncidentBound :
+      ∀ (node : Fin childRst.nodes.length)
+        (slot : Fin ((childRst.nodes.get node).incident.length)),
+        (childRst.nodes.get node).incident.get slot <
+          childRst.endpoints.length)
+    (hnewLength :
+      ∀ (renderNode : Fin newRenderNodes.length)
+        (graphNode : Fin newGraphNodes.length),
+        renderNode.val = graphNode.val →
+        (newRenderNodes.get renderNode).incident.length =
+          (G.raw.incident (newGraphNodes.get graphNode)).length) :
+    GraphRenderRelated.NodeIncidentFields G childRst childSt
+      hchildNodeLength := by
+  have hlengthRel :
+      AppendTraceRelation nodeTrace
+        (fun renderNode graphNode =>
+          renderNode.incident.length =
+            (G.raw.incident graphNode).length) := by
+    refine { prefix_rel := ?_, suffix_rel := ?_ }
+    · intro prefixNode graphNode hval
+      have hidx : graphNode = hrel.nodeIndex prefixNode := by
+        exact fin_eq_of_val_eq hval.symm
+      simpa [hidx, nodeIndex] using hrel.node_incident_length prefixNode
+    · intro renderNode graphNode hval
+      exact hnewLength renderNode graphNode hval
+  refine { node_incident_length := ?_, node_incident_bound := ?_ }
+  · intro renderIdx
+    exact AppendTraceRelation.get_listIndexCast hlengthRel hchildNodeLength
+      renderIdx
+  · exact hchildIncidentBound
+
+theorem GraphRenderRelated.nodeIncident_of_appendTrace
+    {G : OpenPortHypergraph Sig boundary}
+    {frontier childFrontier : List Sig.Port}
+    {rst : RenderState Sig frontier} {st : SearchState G frontier}
+    {childRst : RenderState Sig childFrontier}
+    {childSt : SearchState G childFrontier}
+    (hrel : GraphRenderRelated G rst st)
+    {newRenderEndpoints : List Sig.Port}
+    {newGraphEndpoints : List (Fin G.raw.endpointCount)}
+    (endpointTrace :
+      AppendTrace rst.endpoints childRst.endpoints newRenderEndpoints
+        (endpointOrder G st) (endpointOrder G childSt) newGraphEndpoints)
+    {newRenderNodes : List (RenderNode Sig)}
+    {newGraphNodes : List (Fin G.raw.nodeCount)}
+    (nodeTrace : AppendTrace rst.nodes childRst.nodes newRenderNodes
+      (nodeOrder st) (nodeOrder childSt) newGraphNodes)
+    (hchildEndpointLength :
+      childRst.endpoints.length = (endpointOrder G childSt).length)
+    (hchildNodeLength :
+      childRst.nodes.length = (nodeOrder childSt).length)
+    (hnodeIncidentFields :
+      GraphRenderRelated.NodeIncidentFields G childRst childSt
+        hchildNodeLength)
+    (hnewIncident :
+      ∀ (renderNode : Fin newRenderNodes.length)
+        (graphNode : Fin newGraphNodes.length),
+        renderNode.val = graphNode.val →
+        ∀ (renderSlot :
+            Fin ((newRenderNodes.get renderNode).incident.length))
+          (hbound :
+            (newRenderNodes.get renderNode).incident.get renderSlot <
+              childRst.endpoints.length)
+          (hlen :
+            (newRenderNodes.get renderNode).incident.length =
+              (G.raw.incident (newGraphNodes.get graphNode)).length),
+          (endpointOrder G childSt).get
+              (listIndexCast (endpointOrder G childSt)
+                hchildEndpointLength
+                ⟨(newRenderNodes.get renderNode).incident.get renderSlot,
+                  hbound⟩) =
+            (G.raw.incident (newGraphNodes.get graphNode)).get
+              (listIndexCast
+                (G.raw.incident (newGraphNodes.get graphNode))
+                hlen renderSlot)) :
+    ∀ (renderIdx : Fin childRst.nodes.length)
+      (renderSlot :
+        Fin ((childRst.nodes.get renderIdx).incident.length)),
+      (endpointOrder G childSt).get
+          (listIndexCast (endpointOrder G childSt)
+            hchildEndpointLength
+            ⟨(childRst.nodes.get renderIdx).incident.get renderSlot,
+              hnodeIncidentFields.node_incident_bound renderIdx renderSlot⟩) =
+        (G.raw.incident
+          ((nodeOrder childSt).get
+            (listIndexCast (nodeOrder childSt) hchildNodeLength
+              renderIdx))).get
+          (listIndexCast
+            (G.raw.incident
+              ((nodeOrder childSt).get
+                (listIndexCast (nodeOrder childSt) hchildNodeLength
+                  renderIdx)))
+            (hnodeIncidentFields.node_incident_length renderIdx)
+            renderSlot) := by
+  have hincidentRel :
+      AppendTraceRelation nodeTrace
+        (fun rendered graphNode =>
+          ∀ (renderSlot : Fin rendered.incident.length)
+            (hbound : rendered.incident.get renderSlot <
+              childRst.endpoints.length)
+            (hlen :
+              rendered.incident.length =
+                (G.raw.incident graphNode).length),
+            (endpointOrder G childSt).get
+                (listIndexCast (endpointOrder G childSt)
+                  hchildEndpointLength
+                  ⟨rendered.incident.get renderSlot, hbound⟩) =
+              (G.raw.incident graphNode).get
+                (listIndexCast (G.raw.incident graphNode)
+                  hlen renderSlot)) := by
+    refine { prefix_rel := ?_, suffix_rel := ?_ }
+    · intro prefixNode graphNode hval renderSlot hbound hlen
+      have hidx : graphNode = hrel.nodeIndex prefixNode := by
+        exact fin_eq_of_val_eq hval.symm
+      let childEndpoint : Fin (endpointOrder G childSt).length :=
+        listIndexCast (endpointOrder G childSt)
+          hchildEndpointLength
+          ⟨(rst.nodes.get prefixNode).incident.get renderSlot, hbound⟩
+      let prefixEndpoint : Fin (endpointOrder G st).length :=
+        hrel.endpointIndex
+          ⟨(rst.nodes.get prefixNode).incident.get renderSlot,
+            hrel.node_incident_bound prefixNode renderSlot⟩
+      have hendpoint :
+          (endpointOrder G childSt).get childEndpoint =
+            (endpointOrder G st).get prefixEndpoint := by
+        exact endpointTrace.get_prefix_at_right_of_val_eq
+          childEndpoint prefixEndpoint
+          (by simp [childEndpoint, prefixEndpoint])
+      calc
+        (endpointOrder G childSt).get childEndpoint =
+          (endpointOrder G st).get prefixEndpoint := hendpoint
+        _ =
+          (G.raw.incident
+            ((nodeOrder st).get (hrel.nodeIndex prefixNode))).get
+              (hrel.nodeIncidentIndex prefixNode renderSlot) := by
+            simpa [nodeIndex] using hrel.node_incident prefixNode renderSlot
+        _ =
+          (G.raw.incident ((nodeOrder st).get graphNode)).get
+              (listIndexCast (G.raw.incident ((nodeOrder st).get graphNode))
+                hlen renderSlot) := by
+            simp [hidx, nodeIndex, nodeIncidentIndex]
+    · intro renderNode graphNode hval renderSlot hbound hlen
+      exact hnewIncident renderNode graphNode hval renderSlot hbound hlen
+  intro renderIdx renderSlot
+  have hlen :
+      (childRst.nodes.get renderIdx).incident.length =
+        (G.raw.incident
+          ((nodeOrder childSt).get
+            (listIndexCast (nodeOrder childSt) hchildNodeLength
+              renderIdx))).length :=
+    hnodeIncidentFields.node_incident_length renderIdx
+  exact
+    (AppendTraceRelation.get_listIndexCast hincidentRel hchildNodeLength
+      renderIdx)
+      renderSlot
+      (hnodeIncidentFields.node_incident_bound renderIdx renderSlot)
+      hlen
+
 theorem GraphRenderRelated.frontier_id_bound_of_mem
     {G : OpenPortHypergraph Sig boundary}
     {frontier : List Sig.Port}
@@ -890,67 +1061,48 @@ theorem GraphRenderRelated.connectChild
                 hstepEndpointLength
             simpa [horderTrace, connectChild_orderTrace, idx, rendererMate]
               using hbound)
-      have hnodeIncidentFields :
-          GraphRenderRelated.NodeIncidentFields G
-            (Diag.connectStep rendererMate ok rst)
-            (st.connectChild hpending mate hmate)
-            hchildNodeLength := by
-        refine { node_incident_length := ?_, node_incident_bound := ?_ }
-        · intro node
-          let oldNode : Fin rst.nodes.length :=
-            listIndexCast rst.nodes
-              (congrArg List.length
-                (Diag.connectStep_nodes rendererMate ok rst)) node
-          let childNode : Fin
-              (nodeOrder (st.connectChild hpending mate hmate)).length :=
-            listIndexCast (nodeOrder (st.connectChild hpending mate hmate))
-              hchildNodeLength node
-          let oldOrderNode : Fin (nodeOrder st).length :=
-            hrel.nodeIndex oldNode
-          have hnodeGet :=
-            Diag.connectStep_nodes_get rendererMate ok rst node
-          have hnodeOrder :
-              (nodeOrder (st.connectChild hpending mate hmate)).get
-                  childNode =
-                (nodeOrder st).get oldOrderNode := by
-            exact horderTrace.node.get_prefix_at_right_of_val_eq
-              childNode oldOrderNode rfl
-          calc
+      have hchildNodeIncidentBound :
+          ∀ (node : Fin (Diag.connectStep rendererMate ok rst).nodes.length)
+            (slot :
+              Fin (((Diag.connectStep rendererMate ok rst).nodes.get
+                node).incident.length)),
             ((Diag.connectStep rendererMate ok rst).nodes.get
-                node).incident.length =
-                (rst.nodes.get oldNode).incident.length := by
-              exact congrArg (fun renderNode => renderNode.incident.length)
-                hnodeGet
-            _ = (G.raw.incident ((nodeOrder st).get oldOrderNode)).length :=
-                hrel.node_incident_length oldNode
-            _ =
-              (G.raw.incident
-                ((nodeOrder (st.connectChild hpending mate hmate)).get
-                  childNode)).length := by
-                exact congrArg
-                  (fun graphNode => (G.raw.incident graphNode).length)
-                  hnodeOrder.symm
-        · intro node slot
-          let oldNode : Fin rst.nodes.length :=
-            listIndexCast rst.nodes
-              (congrArg List.length
-                (Diag.connectStep_nodes rendererMate ok rst)) node
-          have hnodeGet :=
-            Diag.connectStep_nodes_get rendererMate ok rst node
-          let oldSlot : Fin (rst.nodes.get oldNode).incident.length :=
-            listIndexCast (rst.nodes.get oldNode).incident
-              (congrArg (fun renderNode => renderNode.incident.length)
-                hnodeGet) slot
-          have hincidentGet :
-              ((Diag.connectStep rendererMate ok rst).nodes.get
-                  node).incident.get slot =
-                (rst.nodes.get oldNode).incident.get oldSlot := by
-            exact list_get_of_eq (congrArg RenderNode.incident hnodeGet) slot
-          rw [hincidentGet]
-          exact Nat.lt_of_lt_of_eq
-            (hrel.node_incident_bound oldNode oldSlot)
+                node).incident.get slot <
+              (Diag.connectStep rendererMate ok rst).endpoints.length := by
+        intro node slot
+        let oldNode : Fin rst.nodes.length :=
+          listIndexCast rst.nodes
             (congrArg List.length
-              (Diag.connectStep_endpoints rendererMate ok rst)).symm
+              (Diag.connectStep_nodes rendererMate ok rst)) node
+        have hnodeGet :=
+          Diag.connectStep_nodes_get rendererMate ok rst node
+        let oldSlot : Fin (rst.nodes.get oldNode).incident.length :=
+          listIndexCast (rst.nodes.get oldNode).incident
+            (congrArg (fun renderNode => renderNode.incident.length)
+              hnodeGet) slot
+        have hincidentGet :
+            ((Diag.connectStep rendererMate ok rst).nodes.get
+                node).incident.get slot =
+              (rst.nodes.get oldNode).incident.get oldSlot := by
+          exact list_get_of_eq (congrArg RenderNode.incident hnodeGet) slot
+        rw [hincidentGet]
+        exact Nat.lt_of_lt_of_eq
+          (hrel.node_incident_bound oldNode oldSlot)
+          (congrArg List.length
+            (Diag.connectStep_endpoints rendererMate ok rst)).symm
+      let hnodeIncidentFields :=
+        hrel.nodeIncidentFields_of_appendTrace horderTrace.node
+          hchildNodeLength hchildNodeIncidentBound
+          (by
+            intro renderNodeIdx _graphNode _hval
+            exact fin_zero_elim renderNodeIdx)
+      let hnodeIncident :=
+        hrel.nodeIncident_of_appendTrace horderTrace.endpoint
+          horderTrace.node hchildEndpointLength hchildNodeLength
+          hnodeIncidentFields
+          (by
+            intro renderNodeIdx _graphNode _hval _renderSlot _hbound _hlen
+            exact fin_zero_elim renderNodeIdx)
       refine
         { endpoint_nodup := ?_
           edge_nodup := ?_
@@ -1137,86 +1289,7 @@ theorem GraphRenderRelated.connectChild
         exact hnodeIncidentFields.node_incident_length node
       · intro node slot
         exact hnodeIncidentFields.node_incident_bound node slot
-      · intro node slot
-        let oldNode : Fin rst.nodes.length :=
-          listIndexCast rst.nodes
-            (congrArg List.length
-              (Diag.connectStep_nodes rendererMate ok rst)) node
-        let childNode : Fin
-            (nodeOrder (st.connectChild hpending mate hmate)).length :=
-          listIndexCast (nodeOrder (st.connectChild hpending mate hmate))
-            hchildNodeLength node
-        let oldOrderNode : Fin (nodeOrder st).length :=
-          hrel.nodeIndex oldNode
-        have hnodeGet :=
-          Diag.connectStep_nodes_get rendererMate ok rst node
-        let oldSlot : Fin (rst.nodes.get oldNode).incident.length :=
-          listIndexCast (rst.nodes.get oldNode).incident
-            (congrArg (fun renderNode => renderNode.incident.length)
-              hnodeGet) slot
-        have hincidentGet :
-            ((Diag.connectStep rendererMate ok rst).nodes.get
-                node).incident.get slot =
-              (rst.nodes.get oldNode).incident.get oldSlot := by
-          exact list_get_of_eq (congrArg RenderNode.incident hnodeGet) slot
-        have hnodeOrder :
-            (nodeOrder (st.connectChild hpending mate hmate)).get childNode =
-              (nodeOrder st).get oldOrderNode := by
-          exact horderTrace.node.get_prefix_at_right_of_val_eq
-            childNode oldOrderNode rfl
-        let childEndpoint :
-            Fin (endpointOrder G
-              (st.connectChild hpending mate hmate)).length :=
-          listIndexCast
-            (endpointOrder G (st.connectChild hpending mate hmate))
-            hchildEndpointLength
-            ⟨((Diag.connectStep rendererMate ok rst).nodes.get
-                node).incident.get slot,
-              hnodeIncidentFields.node_incident_bound node slot⟩
-        let oldEndpoint : Fin (endpointOrder G st).length :=
-          hrel.endpointIndex
-            ⟨(rst.nodes.get oldNode).incident.get oldSlot,
-              hrel.node_incident_bound oldNode oldSlot⟩
-        have hendpoint :
-            (endpointOrder G (st.connectChild hpending mate hmate)).get
-                childEndpoint =
-              (endpointOrder G st).get oldEndpoint := by
-          exact list_get_of_eq_of_val_eq
-            (endpointOrder_connectChild st hpending mate hmate)
-            childEndpoint oldEndpoint
-            (by simpa [childEndpoint, oldEndpoint] using hincidentGet)
-        let childGraphSlot :
-            Fin (G.raw.incident
-              ((nodeOrder (st.connectChild hpending mate hmate)).get
-                childNode)).length :=
-          listIndexCast
-            (G.raw.incident
-              ((nodeOrder (st.connectChild hpending mate hmate)).get
-                childNode))
-            (hnodeIncidentFields.node_incident_length node) slot
-        let oldGraphSlot :
-            Fin (G.raw.incident ((nodeOrder st).get oldOrderNode)).length :=
-          hrel.nodeIncidentIndex oldNode oldSlot
-        have hgraphIncident :
-            (G.raw.incident ((nodeOrder st).get oldOrderNode)).get
-                oldGraphSlot =
-              (G.raw.incident
-                ((nodeOrder (st.connectChild hpending mate hmate)).get
-                  childNode)).get childGraphSlot := by
-          exact (list_get_of_eq_of_val_eq
-            (congrArg G.raw.incident hnodeOrder)
-            childGraphSlot oldGraphSlot rfl).symm
-        calc
-          (endpointOrder G (st.connectChild hpending mate hmate)).get
-              childEndpoint =
-            (endpointOrder G st).get oldEndpoint := hendpoint
-          _ =
-            (G.raw.incident ((nodeOrder st).get oldOrderNode)).get
-                oldGraphSlot := hrel.node_incident oldNode oldSlot
-          _ =
-            (G.raw.incident
-              ((nodeOrder (st.connectChild hpending mate hmate)).get
-                childNode)).get childGraphSlot := hgraphIncident
+      · exact hnodeIncident
 
 theorem GraphRenderRelated.budChild_frontierPending
     {G : OpenPortHypergraph Sig boundary}
@@ -1456,280 +1529,6 @@ theorem GraphRenderRelated.budChild_frontierPending
   rw [hpendingIndex]
   exact hget
 
-theorem GraphRenderRelated.budChild_nodeIncidentFields
-    {G : OpenPortHypergraph Sig boundary}
-    {activeLabel : Sig.Port} {frontier : List Sig.Port}
-    {rst : RenderState Sig (activeLabel :: frontier)}
-    {st : SearchState G (activeLabel :: frontier)}
-    (hrel : GraphRenderRelated G rst st)
-    (rv : rst.ValidIds)
-    {active : Fin G.raw.endpointCount}
-    {rest : List (Fin G.raw.endpointCount)}
-    (hpending : st.pending = active :: rest)
-    (node : Fin G.raw.nodeCount)
-    (slot : Fin (G.raw.incident node).length)
-    (hmate :
-      PortHypergraph.EdgeMate G.raw active ((G.raw.incident node).get slot))
-    (hunseen : node ∉ st.seenNodes)
-    {activeId : Nat} {restIds : List Nat}
-    (hids : rst.frontierIds = activeId :: restIds)
-    (hchildNodeLength :
-      (Diag.budStep (G.raw.nodeLabel node)
-        (SearchState.budEntry (G := G) node slot)
-        (st.bud_compatible hpending node slot hmate) rst).nodes.length =
-        (nodeOrder (st.budChild hpending node slot hmate hunseen)).length) :
-    GraphRenderRelated.NodeIncidentFields G
-      (Diag.budStep (G.raw.nodeLabel node)
-        (SearchState.budEntry (G := G) node slot)
-        (st.bud_compatible hpending node slot hmate) rst)
-      (st.budChild hpending node slot hmate hunseen)
-      hchildNodeLength := by
-  let renderNode := G.raw.nodeLabel node
-  let entry := SearchState.budEntry (G := G) node slot
-  let ok := st.bud_compatible hpending node slot hmate
-  have hchildValid :
-      (Diag.budStep renderNode entry ok rst).ValidIds :=
-    Diag.budStep_validIds renderNode entry ok rst rv
-  let horderTrace :=
-    budChild_orderTrace rst st hpending node slot hmate hunseen hids
-      hrel.endpoint_length hrel.edge_length hrel.node_length
-  have hlengthRel :
-      AppendTraceRelation horderTrace.node
-        (fun renderNode graphNode =>
-          renderNode.incident.length =
-            (G.raw.incident graphNode).length) := by
-    refine { prefix_rel := ?_, suffix_rel := ?_ }
-    · intro prefixNode graphNode hval
-      have hidx : graphNode = hrel.nodeIndex prefixNode := by
-        exact fin_eq_of_val_eq hval.symm
-      simpa [hidx, nodeIndex] using hrel.node_incident_length prefixNode
-    · intro suffixNode graphNode hval
-      simpa [horderTrace, budChild_orderTrace, Diag.freshNodeEndpoints,
-        renderNode] using (G.raw.incident_length node).symm
-  refine { node_incident_length := ?_, node_incident_bound := ?_ }
-  · intro renderIdx
-    exact AppendTraceRelation.get_listIndexCast hlengthRel hchildNodeLength
-      renderIdx
-  · intro renderIdx renderSlot
-    exact hchildValid.node_incident_bound
-      ((Diag.budStep renderNode entry ok rst).nodes.get renderIdx)
-      (List.get_mem (Diag.budStep renderNode entry ok rst).nodes renderIdx)
-      renderSlot
-
-theorem GraphRenderRelated.budChild_nodeIncident
-    {G : OpenPortHypergraph Sig boundary}
-    {activeLabel : Sig.Port} {frontier : List Sig.Port}
-    {rst : RenderState Sig (activeLabel :: frontier)}
-    {st : SearchState G (activeLabel :: frontier)}
-    (hrel : GraphRenderRelated G rst st)
-    (rv : rst.ValidIds)
-    {active : Fin G.raw.endpointCount}
-    {rest : List (Fin G.raw.endpointCount)}
-    (hpending : st.pending = active :: rest)
-    (node : Fin G.raw.nodeCount)
-    (slot : Fin (G.raw.incident node).length)
-    (hmate :
-      PortHypergraph.EdgeMate G.raw active ((G.raw.incident node).get slot))
-    (hunseen : node ∉ st.seenNodes)
-    {activeId : Nat} {restIds : List Nat}
-    (hids : rst.frontierIds = activeId :: restIds)
-    (hchildEndpointLength :
-      (Diag.budStep (G.raw.nodeLabel node)
-        (SearchState.budEntry (G := G) node slot)
-        (st.bud_compatible hpending node slot hmate) rst).endpoints.length =
-        (endpointOrder G
-          (st.budChild hpending node slot hmate hunseen)).length)
-    (hchildNodeLength :
-      (Diag.budStep (G.raw.nodeLabel node)
-        (SearchState.budEntry (G := G) node slot)
-        (st.bud_compatible hpending node slot hmate) rst).nodes.length =
-        (nodeOrder (st.budChild hpending node slot hmate hunseen)).length)
-    (hnodeIncidentFields :
-      GraphRenderRelated.NodeIncidentFields G
-        (Diag.budStep (G.raw.nodeLabel node)
-          (SearchState.budEntry (G := G) node slot)
-          (st.bud_compatible hpending node slot hmate) rst)
-        (st.budChild hpending node slot hmate hunseen)
-        hchildNodeLength) :
-    ∀ (renderIdx :
-        Fin (Diag.budStep (G.raw.nodeLabel node)
-          (SearchState.budEntry (G := G) node slot)
-          (st.bud_compatible hpending node slot hmate) rst).nodes.length)
-      (renderSlot :
-        Fin (((Diag.budStep (G.raw.nodeLabel node)
-          (SearchState.budEntry (G := G) node slot)
-          (st.bud_compatible hpending node slot hmate) rst).nodes.get renderIdx).incident.length)),
-      (endpointOrder G (st.budChild hpending node slot hmate hunseen)).get
-          (listIndexCast
-            (endpointOrder G (st.budChild hpending node slot hmate hunseen))
-            hchildEndpointLength
-            ⟨((Diag.budStep (G.raw.nodeLabel node)
-                (SearchState.budEntry (G := G) node slot)
-                (st.bud_compatible hpending node slot hmate) rst).nodes.get
-                  renderIdx).incident.get renderSlot,
-              hnodeIncidentFields.node_incident_bound renderIdx renderSlot⟩) =
-        (G.raw.incident
-          ((nodeOrder (st.budChild hpending node slot hmate hunseen)).get
-            (listIndexCast
-              (nodeOrder (st.budChild hpending node slot hmate hunseen))
-              hchildNodeLength renderIdx))).get
-          (listIndexCast
-            (G.raw.incident
-              ((nodeOrder (st.budChild hpending node slot hmate hunseen)).get
-                (listIndexCast
-                  (nodeOrder (st.budChild hpending node slot hmate hunseen))
-                  hchildNodeLength renderIdx)))
-            (hnodeIncidentFields.node_incident_length renderIdx) renderSlot) := by
-  let renderNode := G.raw.nodeLabel node
-  let entry := SearchState.budEntry (G := G) node slot
-  let ok := st.bud_compatible hpending node slot hmate
-  let nodeEndpoints := Diag.freshNodeEndpoints rst.nextEndpoint
-    (Sig.arity renderNode)
-  let horderTrace :=
-    budChild_orderTrace rst st hpending node slot hmate hunseen hids
-      hrel.endpoint_length hrel.edge_length hrel.node_length
-  have hincidentRel :
-      AppendTraceRelation horderTrace.node
-        (fun rendered graphNode =>
-          ∀ (renderSlot : Fin rendered.incident.length)
-            (hbound :
-              rendered.incident.get renderSlot <
-                (Diag.budStep renderNode entry ok rst).endpoints.length)
-            (hlen :
-              rendered.incident.length =
-                (G.raw.incident graphNode).length),
-            (endpointOrder G
-              (st.budChild hpending node slot hmate hunseen)).get
-                (listIndexCast
-                  (endpointOrder G (st.budChild hpending node slot hmate hunseen))
-                  hchildEndpointLength
-                  ⟨rendered.incident.get renderSlot, hbound⟩) =
-              (G.raw.incident graphNode).get
-                (listIndexCast (G.raw.incident graphNode)
-                  hlen renderSlot)) := by
-    refine { prefix_rel := ?_, suffix_rel := ?_ }
-    · intro prefixNode graphNode hval renderSlot hbound hlen
-      have hidx : graphNode = hrel.nodeIndex prefixNode := by
-        exact fin_eq_of_val_eq hval.symm
-      let childEndpoint :
-          Fin (endpointOrder G
-            (st.budChild hpending node slot hmate hunseen)).length :=
-        listIndexCast
-          (endpointOrder G (st.budChild hpending node slot hmate hunseen))
-          hchildEndpointLength
-          ⟨(rst.nodes.get prefixNode).incident.get renderSlot, hbound⟩
-      let prefixEndpoint : Fin (endpointOrder G st).length :=
-        hrel.endpointIndex
-          ⟨(rst.nodes.get prefixNode).incident.get renderSlot,
-            hrel.node_incident_bound prefixNode renderSlot⟩
-      have hendpoint :
-          (endpointOrder G
-            (st.budChild hpending node slot hmate hunseen)).get
-              childEndpoint =
-            (endpointOrder G st).get prefixEndpoint := by
-        exact horderTrace.endpoint.get_prefix_at_right_of_val_eq
-          childEndpoint prefixEndpoint
-          (by simp [childEndpoint, prefixEndpoint])
-      calc
-        (endpointOrder G
-          (st.budChild hpending node slot hmate hunseen)).get
-            childEndpoint =
-          (endpointOrder G st).get prefixEndpoint := hendpoint
-        _ =
-          (G.raw.incident
-            ((nodeOrder st).get (hrel.nodeIndex prefixNode))).get
-              (hrel.nodeIncidentIndex prefixNode renderSlot) := by
-            simpa [nodeIndex] using hrel.node_incident prefixNode renderSlot
-        _ =
-          (G.raw.incident ((nodeOrder st).get graphNode)).get
-              (listIndexCast (G.raw.incident ((nodeOrder st).get graphNode))
-                hlen renderSlot) := by
-            simp [hidx, nodeIndex, nodeIncidentIndex]
-    · intro suffixNode graphNode hval renderSlot hbound hlen
-      let freshSlot : Fin nodeEndpoints.length :=
-        listIndexCast nodeEndpoints (by
-          simp [nodeEndpoints, renderNode])
-          renderSlot
-      have hnodeBound :
-          nodeEndpoints.get freshSlot <
-            (Diag.budStep renderNode entry ok rst).endpoints.length := by
-        simpa [freshSlot, horderTrace, budChild_orderTrace, nodeEndpoints,
-          renderNode] using hbound
-      let childEndpoint :
-          Fin (endpointOrder G
-            (st.budChild hpending node slot hmate hunseen)).length :=
-        listIndexCast
-          (endpointOrder G (st.budChild hpending node slot hmate hunseen))
-          hchildEndpointLength
-          ⟨nodeEndpoints.get freshSlot, hnodeBound⟩
-      have hrawGe : rst.endpoints.length ≤ nodeEndpoints.get freshSlot := by
-        have hfreshMem :
-            nodeEndpoints.get freshSlot ∈ nodeEndpoints :=
-          List.get_mem nodeEndpoints freshSlot
-        have hfreshGe := Diag.freshNodeEndpoints_mem_ge hfreshMem
-        simpa [nodeEndpoints, renderNode, rv.nextEndpoint_eq] using hfreshGe
-      let graphSlot : Fin (G.raw.incident node).length :=
-        ⟨freshSlot.val, by
-          have hslot : freshSlot.val < Sig.arity renderNode := by
-            simpa [nodeEndpoints, Diag.freshNodeEndpoints] using
-              freshSlot.isLt
-          rw [G.raw.incident_length node]
-          exact hslot⟩
-      have hendpointRaw :
-          (endpointOrder G
-            (st.budChild hpending node slot hmate hunseen)).get
-              childEndpoint =
-            (G.raw.incident node).get graphSlot := by
-        exact horderTrace.endpoint.get_suffix_at_right_of_val_eq
-          childEndpoint graphSlot
-          (by
-            have holdLen :
-                (endpointOrder G st).length = rst.endpoints.length :=
-              hrel.endpoint_length.symm
-            rw [holdLen]
-            simpa [childEndpoint] using hrawGe)
-          (by
-            have holdLen :
-                (endpointOrder G st).length = rst.endpoints.length :=
-              hrel.endpoint_length.symm
-            rw [holdLen]
-            exact (Diag.freshNodeEndpoints_get_sub_of_eq
-              (start := rst.nextEndpoint)
-              (base := rst.endpoints.length)
-              (arity := Sig.arity renderNode)
-              rv.nextEndpoint_eq freshSlot).trans rfl)
-      have hgraphSlotGet :
-          (G.raw.incident node).get graphSlot =
-            (G.raw.incident ([node].get graphNode)).get
-              (listIndexCast (G.raw.incident ([node].get graphNode))
-                hlen renderSlot) := by
-        cases graphNode with
-        | mk graphNodeVal graphNodeLt =>
-            have hlt : graphNodeVal < 1 := by
-              simpa using graphNodeLt
-            have hval : graphNodeVal = 0 := by
-              omega
-            subst graphNodeVal
-            simp [freshSlot, graphSlot]
-      simpa [horderTrace, budChild_orderTrace, nodeEndpoints, renderNode,
-        freshSlot, childEndpoint] using hendpointRaw.trans hgraphSlotGet
-  intro renderIdx renderSlot
-  have hlen :
-      ((Diag.budStep renderNode entry ok rst).nodes.get renderIdx).incident.length =
-        (G.raw.incident
-          ((nodeOrder
-            (st.budChild hpending node slot hmate hunseen)).get
-              (listIndexCast
-                (nodeOrder (st.budChild hpending node slot hmate hunseen))
-                hchildNodeLength renderIdx))).length :=
-    hnodeIncidentFields.node_incident_length renderIdx
-  exact
-    (AppendTraceRelation.get_listIndexCast hincidentRel hchildNodeLength
-      renderIdx)
-      renderSlot
-      (hnodeIncidentFields.node_incident_bound renderIdx renderSlot)
-      hlen
-
 theorem GraphRenderRelated.budChild
     {G : OpenPortHypergraph Sig boundary}
     {activeLabel : Sig.Port} {frontier : List Sig.Port}
@@ -1791,12 +1590,6 @@ theorem GraphRenderRelated.budChild
       let hfrontierPending :=
         hrel.budChild_frontierPending rv hpending node slot hmate hunseen hids
           hchildEndpointLength
-      let hnodeIncidentFields :=
-        hrel.budChild_nodeIncidentFields rv hpending node slot hmate hunseen hids
-          hchildNodeLength
-      let hnodeIncident :=
-        hrel.budChild_nodeIncident rv hpending node slot hmate hunseen hids
-          hchildEndpointLength hchildNodeLength hnodeIncidentFields
       let horderTrace :=
         budChild_orderTrace rst st hpending node slot hmate hunseen hids
           hrel.endpoint_length hrel.edge_length hrel.node_length
@@ -1806,6 +1599,96 @@ theorem GraphRenderRelated.budChild
       let entryIdx : Fin nodeEndpoints.length :=
         listIndexCast nodeEndpoints
           (by simp [nodeEndpoints, Diag.freshNodeEndpoints, renderNode]) entry
+      let hnodeIncidentFields :=
+        hrel.nodeIncidentFields_of_appendTrace horderTrace.node
+          hchildNodeLength
+          (by
+            intro renderIdx renderSlot
+            exact hchildValid.node_incident_bound
+              ((Diag.budStep renderNode entry ok rst).nodes.get renderIdx)
+              (List.get_mem (Diag.budStep renderNode entry ok rst).nodes
+                renderIdx)
+              renderSlot)
+          (by
+            intro suffixNode graphNode hval
+            simpa [horderTrace, budChild_orderTrace, Diag.freshNodeEndpoints,
+              renderNode] using (G.raw.incident_length node).symm)
+      let hnodeIncident :=
+        hrel.nodeIncident_of_appendTrace horderTrace.endpoint horderTrace.node
+          hchildEndpointLength hchildNodeLength hnodeIncidentFields
+          (by
+            intro suffixNode graphNode hval renderSlot hbound hlen
+            let freshSlot : Fin nodeEndpoints.length :=
+              listIndexCast nodeEndpoints (by
+                simp [nodeEndpoints, renderNode])
+                renderSlot
+            have hnodeBound :
+                nodeEndpoints.get freshSlot <
+                  (Diag.budStep renderNode entry ok rst).endpoints.length := by
+              simpa [freshSlot, horderTrace, budChild_orderTrace,
+                nodeEndpoints, renderNode] using hbound
+            let childEndpoint :
+                Fin (endpointOrder G
+                  (st.budChild hpending node slot hmate hunseen)).length :=
+              listIndexCast
+                (endpointOrder G
+                  (st.budChild hpending node slot hmate hunseen))
+                hchildEndpointLength
+                ⟨nodeEndpoints.get freshSlot, hnodeBound⟩
+            have hrawGe :
+                rst.endpoints.length ≤ nodeEndpoints.get freshSlot := by
+              have hfreshMem :
+                  nodeEndpoints.get freshSlot ∈ nodeEndpoints :=
+                List.get_mem nodeEndpoints freshSlot
+              have hfreshGe := Diag.freshNodeEndpoints_mem_ge hfreshMem
+              simpa [nodeEndpoints, renderNode, rv.nextEndpoint_eq] using
+                hfreshGe
+            let graphSlot : Fin (G.raw.incident node).length :=
+              ⟨freshSlot.val, by
+                have hslot : freshSlot.val < Sig.arity renderNode := by
+                  simpa [nodeEndpoints, Diag.freshNodeEndpoints] using
+                    freshSlot.isLt
+                rw [G.raw.incident_length node]
+                exact hslot⟩
+            have hendpointRaw :
+                (endpointOrder G
+                  (st.budChild hpending node slot hmate hunseen)).get
+                    childEndpoint =
+                  (G.raw.incident node).get graphSlot := by
+              exact horderTrace.endpoint.get_suffix_at_right_of_val_eq
+                childEndpoint graphSlot
+                (by
+                  have holdLen :
+                      (endpointOrder G st).length = rst.endpoints.length :=
+                    hrel.endpoint_length.symm
+                  rw [holdLen]
+                  simpa [childEndpoint] using hrawGe)
+                (by
+                  have holdLen :
+                      (endpointOrder G st).length = rst.endpoints.length :=
+                    hrel.endpoint_length.symm
+                  rw [holdLen]
+                  exact (Diag.freshNodeEndpoints_get_sub_of_eq
+                    (start := rst.nextEndpoint)
+                    (base := rst.endpoints.length)
+                    (arity := Sig.arity renderNode)
+                    rv.nextEndpoint_eq freshSlot).trans rfl)
+            have hgraphSlotGet :
+                (G.raw.incident node).get graphSlot =
+                  (G.raw.incident ([node].get graphNode)).get
+                    (listIndexCast (G.raw.incident ([node].get graphNode))
+                      hlen renderSlot) := by
+              cases graphNode with
+              | mk graphNodeVal graphNodeLt =>
+                  have hlt : graphNodeVal < 1 := by
+                    simpa using graphNodeLt
+                  have hval : graphNodeVal = 0 := by
+                    omega
+                  subst graphNodeVal
+                  simp [freshSlot, graphSlot]
+            simpa [horderTrace, budChild_orderTrace, nodeEndpoints,
+              renderNode, freshSlot, childEndpoint] using
+              hendpointRaw.trans hgraphSlotGet)
       refine
         { endpoint_nodup := ?_
           edge_nodup := ?_

@@ -130,19 +130,25 @@ is ordered to turn helper additions into actual deletion.
     `connectChild_nodeIncidentFields` and `connectChild_nodeIncident` helper
     theorem surfaces were deleted; their proof work is local to
     `connectChild` assembly now. The item remains open because
-    pending/frontier alignment, bud node incident preservation, and final
-    connect/bud record assembly are still separate helper families.
+    pending/frontier alignment and final connect/bud record assembly are still
+    separate helper families.
   - Partial: single-use `connectChild_edgeEndpointBounds` was deleted; connect
     child assembly now uses the branch-independent
     `GraphRenderRelated.edgeEndpointBounds_of_appendTrace` schema. The item
-    remains open for pending/frontier alignment, bud node incidents, and final
-    connect/bud record assembly.
+    remains open for pending/frontier alignment and final connect/bud record
+    assembly.
   - Partial: branch-specific edge-side theorem surfaces
     `connectChild_edgeLeft`, `connectChild_edgeRight`, `budChild_edgeLeft`,
     and `budChild_edgeRight` were deleted. Connect and bud assembly now use
     `GraphRenderRelated.edgeEndpointSide_of_appendTrace` with branch-local
     suffix endpoint witnesses. The item remains open for pending/frontier
-    alignment, bud node incidents, and final connect/bud record assembly.
+    alignment and final connect/bud record assembly.
+  - Partial: bud-specific node-incident wrappers
+    `budChild_nodeIncidentFields` and `budChild_nodeIncident` were deleted.
+    Connect and bud assembly now use
+    `GraphRenderRelated.nodeIncidentFields_of_appendTrace` and
+    `GraphRenderRelated.nodeIncident_of_appendTrace`. The item remains open
+    for pending/frontier alignment and final connect/bud record assembly.
 
 - [x] Finish payload-local inverse boilerplate removal in coding examples.
   - Owners: `BijForm.InitialAlgebra`,
