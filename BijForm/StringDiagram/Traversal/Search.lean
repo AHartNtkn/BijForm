@@ -61,6 +61,23 @@ theorem firstPendingConnectSearch?_some_connect
       injection hcandidate with hstepEq
       exact ⟨mate, data.proof, hstepEq.symm⟩
 
+theorem firstPendingConnectSearch?_none_of_forall_not_edgeMate
+    (G : OpenPortHypergraph Sig boundary)
+    (seenNode : Fin G.raw.nodeCount → Prop)
+    {active : Fin G.raw.endpointCount}
+    {rest : List (Fin G.raw.endpointCount)}
+    (hno :
+      ∀ mate : Fin rest.length,
+        ¬ PortHypergraph.EdgeMate G.raw active (rest.get mate)) :
+    firstPendingConnectSearch? G seenNode active rest = none := by
+  cases hconnect :
+      firstPendingConnectSearch? G seenNode active rest with
+  | none => rfl
+  | some step =>
+      rcases firstPendingConnectSearch?_some_connect G seenNode hconnect with
+        ⟨mate, hmate, _hstepEq⟩
+      exact False.elim (hno mate hmate)
+
 namespace SearchState
 
 /--

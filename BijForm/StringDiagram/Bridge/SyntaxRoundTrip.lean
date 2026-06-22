@@ -129,13 +129,9 @@ theorem toOpenPortHypergraph_bud_initial_search
   have hconnect :
       OpenPortHypergraph.firstPendingConnectSearch? G st.seenNode
         (G.raw.boundaryPort ⟨0, by simp⟩) rest = none := by
-    cases hcase :
-        OpenPortHypergraph.firstPendingConnectSearch? G st.seenNode
-          (G.raw.boundaryPort ⟨0, by simp⟩) rest with
-    | none => rfl
-    | some step =>
-        rcases OpenPortHypergraph.firstPendingConnectSearch?_some_connect
-            G st.seenNode hcase with ⟨tailMate, htailMate, _hstep⟩
+    exact OpenPortHypergraph.firstPendingConnectSearch?_none_of_forall_not_edgeMate
+      G st.seenNode (by
+        intro tailMate htailMate
         have hsameMate :
             rest.get tailMate = (G.raw.incident nodeIndex).get slot := by
           exact PortHypergraph.edgeMate_eq_of_same_endpoint G.raw
@@ -149,8 +145,7 @@ theorem toOpenPortHypergraph_bud_initial_search
         have hrestBoundary :
             rest.get tailMate = G.raw.boundaryPort b := by
           simp [rest, b]
-        exact False.elim
-          (hboundary_constructor_ne b (hrestBoundary.symm.trans hsameMate))
+        exact hboundary_constructor_ne b (hrestBoundary.symm.trans hsameMate))
   rcases st.firstPendingStepSearch?_some_bud_exact_of_witness
       hconnect nodeIndex slot hmate hunseen with
     ⟨hmate', hunseen', hstep⟩
@@ -734,14 +729,10 @@ theorem toDiag_of_renderPrefixRelated :
               have hconnectNone :
                   OpenPortHypergraph.firstPendingConnectSearch? (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph
                     sst.seenNode activeEndpoint rest = none := by
-                cases hconnect :
-                    OpenPortHypergraph.firstPendingConnectSearch? (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph
-                      sst.seenNode activeEndpoint rest with
-                | none => rfl
-                | some step =>
-                    rcases OpenPortHypergraph.firstPendingConnectSearch?_some_connect
-                       (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph sst.seenNode hconnect with
-                      ⟨tailMate, htailMate, _hstepEq⟩
+                exact OpenPortHypergraph.firstPendingConnectSearch?_none_of_forall_not_edgeMate
+                  (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph
+                  sst.seenNode (by
+                    intro tailMate htailMate
                     have htailEq :
                         rest.get tailMate =
                           ((RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph.raw.incident nodeIndex).get slot := by
@@ -786,7 +777,7 @@ theorem toDiag_of_renderPrefixRelated :
                       exact htailVal.symm.trans
                         ((congrArg (fun endpoint => endpoint.val) htailEq).trans
                           hentryFreshVal)
-                    omega
+                    omega)
               rcases sst.firstPendingStepSearch?_some_bud_exact_of_witness
                   hconnectNone nodeIndex slot hmateSearch hunseen with
                 ⟨hmateSearch', hunseen', hstep⟩
