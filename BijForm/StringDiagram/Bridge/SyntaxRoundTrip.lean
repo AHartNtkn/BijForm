@@ -9,6 +9,17 @@ namespace Diag
 
 variable {Sig : Signature}
 
+theorem openEvidence_endpointEdge_val_of_endpoint_eq
+    {st : RenderState Sig []} {boundary : List Sig.Port}
+    (ev : RenderState.OpenPortHypergraphEvidence st boundary)
+    {left right : Fin st.endpoints.length} {edge : Nat}
+    (h : left = right)
+    (hedge : (ev.graph.toPortHypergraph.endpointEdge right).val = edge) :
+    (ev.toOpenPortHypergraph.raw.endpointEdge left).val = edge := by
+  change (ev.graph.toPortHypergraph.endpointEdge left).val = edge
+  cases h
+  exact hedge
+
 /--
 Bridge support for the syntax round-trip: in the semantic graph rendered from
 a top-level `connect`, the executable first-pending search on the initial
@@ -729,13 +740,9 @@ theorem toDiag_of_renderPrefixRelated :
               have hactiveEdge :
                   ((RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph.raw.endpointEdge activeEndpoint).val =
                     rst.edges.length := by
-                rw [hactiveEq]
-                change
-                  ((RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).graph.toPortHypergraph.endpointEdge
-                    (⟨activeId, hactiveBound⟩ :
-                      Fin (renderTrace (Diag.connect mate ok child) rst).endpoints.length)).val =
-                    rst.edges.length
-                simpa using hactiveEdgeRaw
+                exact openEvidence_endpointEdge_val_of_endpoint_eq
+                  (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall)
+                  hactiveEq hactiveEdgeRaw
               have hpendingVals :
                   (sst.connectChild hpending searchMate hmateSearch').pending.map
                       (fun endpoint => endpoint.val) =
@@ -951,13 +958,9 @@ theorem toDiag_of_renderPrefixRelated :
               have hactiveEdge :
                   ((RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph.raw.endpointEdge
                       activeEndpoint).val = rst.edges.length := by
-                rw [hactiveEq]
-                change
-                  ((RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).graph.toPortHypergraph.endpointEdge
-                    (⟨activeId, hactiveBound⟩ :
-                      Fin (renderTrace (Diag.bud node entry ok child) rst).endpoints.length)).val =
-                    rst.edges.length
-                simpa using hactiveEdgeRaw
+                exact openEvidence_endpointEdge_val_of_endpoint_eq
+                  (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall)
+                  hactiveEq hactiveEdgeRaw
               have hchildRelB :
                   OpenPortHypergraph.SearchState.RenderPrefixRelated
                     (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall)
