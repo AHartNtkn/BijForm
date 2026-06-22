@@ -970,7 +970,9 @@ theorem GraphRenderRelated.connectChild_frontierPending
   have hendpointOrder :
       endpointOrder G (st.connectChild hpending mate hmate) =
         endpointOrder G st :=
-    endpointOrder_connectChild st hpending mate hmate
+    by
+      simpa using endpointOrder_firstPendingChild st hpending
+        (FirstPendingStep.connect mate hmate)
   simpa [hendpointOrder, Diag.connectStep_endpoints rendererMate ok rst,
     hfin] using hget
 
@@ -999,25 +1001,29 @@ theorem GraphRenderRelated.connectChild
           (Diag.connectStep rendererMate ok rst).endpoints.length =
             (endpointOrder G (st.connectChild hpending mate hmate)).length := by
         rw [Diag.connectStep_endpoints rendererMate ok rst,
-          endpointOrder_connectChild st hpending mate hmate]
-        exact hrel.endpoint_length
+          endpointOrder_firstPendingChild st hpending
+            (FirstPendingStep.connect mate hmate)]
+        simpa using hrel.endpoint_length
       have hchildEdgeLength :
           (Diag.connectStep rendererMate ok rst).edges.length =
             (edgeOrder (st.connectChild hpending mate hmate)).length := by
         rw [Diag.connectStep_edges_length rendererMate ok rst,
-          edgeOrder_connectChild st hpending mate hmate]
+          edgeOrder_firstPendingChild st hpending
+            (FirstPendingStep.connect mate hmate)]
         simp [hrel.edge_length]
       have hchildNodeLength :
           (Diag.connectStep rendererMate ok rst).nodes.length =
             (nodeOrder (st.connectChild hpending mate hmate)).length := by
         rw [Diag.connectStep_nodes rendererMate ok rst,
-          nodeOrder_connectChild st hpending mate hmate]
-        exact hrel.node_length
+          nodeOrder_firstPendingChild st hpending
+            (FirstPendingStep.connect mate hmate)]
+        simpa using hrel.node_length
       let hfrontierPending :=
         hrel.connectChild_frontierPending hpending mate hmate hids
           hchildEndpointLength
       let horderTrace :=
-        connectChild_orderTrace rst st hpending mate hmate hids
+        firstPendingChild_orderTrace rst st hpending
+          (FirstPendingStep.connect mate hmate) hids
           hrel.endpoint_length hrel.edge_length hrel.node_length
       have hpendingVals := hrel.pending_cons_values hpending hids
       have hstepEndpointLength :
@@ -1045,7 +1051,7 @@ theorem GraphRenderRelated.connectChild
                         rw [hids]
                         simp))
                 hstepEndpointLength
-            simpa [horderTrace, connectChild_orderTrace] using hbound)
+            simpa [horderTrace, firstPendingChild_orderTrace] using hbound)
           (by
             intro renderEdge graphEdge hval
             have hbound :
@@ -1059,7 +1065,7 @@ theorem GraphRenderRelated.connectChild
                       right
                       exact List.get_mem restIds idx))
                 hstepEndpointLength
-            simpa [horderTrace, connectChild_orderTrace, idx, rendererMate]
+            simpa [horderTrace, firstPendingChild_orderTrace, idx, rendererMate]
               using hbound)
       have hchildNodeIncidentBound :
           ∀ (node : Fin (Diag.connectStep rendererMate ok rst).nodes.length)
@@ -1123,11 +1129,14 @@ theorem GraphRenderRelated.connectChild
           node_incident_length := ?_
           node_incident_bound := ?_
           node_incident := ?_ }
-      · simpa [endpointOrder_connectChild st hpending mate hmate] using
+      · simpa [endpointOrder_firstPendingChild st hpending
+          (FirstPendingStep.connect mate hmate)] using
           hrel.endpoint_nodup
-      · rw [edgeOrder_connectChild st hpending mate hmate]
+      · rw [edgeOrder_firstPendingChild st hpending
+          (FirstPendingStep.connect mate hmate)]
         exact edgeOrder_append_active_nodup st (by rw [hpending]; simp)
-      · simpa [nodeOrder_connectChild st hpending mate hmate] using
+      · simpa [nodeOrder_firstPendingChild st hpending
+          (FirstPendingStep.connect mate hmate)] using
           hrel.node_nodup
       · exact hchildEndpointLength
       · exact hchildEdgeLength
@@ -1148,7 +1157,7 @@ theorem GraphRenderRelated.connectChild
         exact hrel.edgeLabel_of_appendTrace horderTrace.edge
           hchildEdgeLength (by
             intro renderEdge graphEdge _hval
-            simpa [horderTrace, connectChild_orderTrace] using hlabelNew)
+            simpa [horderTrace, firstPendingChild_orderTrace] using hlabelNew)
       · exact hchildEdgeBounds.left
       · exact hchildEdgeBounds.right
       · exact hrel.edgeEndpointSide_of_appendTrace horderTrace.endpoint
@@ -1168,7 +1177,7 @@ theorem GraphRenderRelated.connectChild
                       (endpointOrder G (st.connectChild hpending mate hmate))
                       hchildEndpointLength
                       ⟨activeId, by
-                        simpa [horderTrace, connectChild_orderTrace] using
+                        simpa [horderTrace, firstPendingChild_orderTrace] using
                           hbound⟩) =
                   (endpointOrder G st).get activeEndpoint := by
               exact horderTrace.endpoint.get_prefix_at_right_of_val_eq
@@ -1176,7 +1185,7 @@ theorem GraphRenderRelated.connectChild
                   (endpointOrder G (st.connectChild hpending mate hmate))
                   hchildEndpointLength
                   ⟨activeId, by
-                    simpa [horderTrace, connectChild_orderTrace] using
+                    simpa [horderTrace, firstPendingChild_orderTrace] using
                       hbound⟩)
                 activeEndpoint
                 (by simp [activeEndpoint])
@@ -1189,7 +1198,7 @@ theorem GraphRenderRelated.connectChild
                             (st.connectChild hpending mate hmate))
                           hchildEndpointLength
                           ⟨activeId, by
-                            simpa [horderTrace, connectChild_orderTrace]
+                            simpa [horderTrace, firstPendingChild_orderTrace]
                               using hbound⟩)) =
                   G.raw.endpointEdge active := by
               calc
@@ -1201,13 +1210,13 @@ theorem GraphRenderRelated.connectChild
                             (st.connectChild hpending mate hmate))
                           hchildEndpointLength
                           ⟨activeId, by
-                            simpa [horderTrace, connectChild_orderTrace]
+                            simpa [horderTrace, firstPendingChild_orderTrace]
                               using hbound⟩)) =
                   G.raw.endpointEdge ((endpointOrder G st).get activeEndpoint) := by
                     exact congrArg G.raw.endpointEdge hendpoint
                 _ = G.raw.endpointEdge active := by
                     exact congrArg G.raw.endpointEdge hpendingVals.1
-            simpa [horderTrace, connectChild_orderTrace] using hcalc)
+            simpa [horderTrace, firstPendingChild_orderTrace] using hcalc)
       · exact hrel.edgeEndpointSide_of_appendTrace horderTrace.endpoint
           horderTrace.edge (fun edge => edge.right) hrel.edge_right_bound
           hrel.edge_right hchildEndpointLength hchildEdgeLength
@@ -1239,7 +1248,7 @@ theorem GraphRenderRelated.connectChild
                       (endpointOrder G (st.connectChild hpending mate hmate))
                       hchildEndpointLength
                       ⟨restIds.get idx, by
-                        simpa [horderTrace, connectChild_orderTrace, idx,
+                        simpa [horderTrace, firstPendingChild_orderTrace, idx,
                           rendererMate] using hbound⟩) =
                   (endpointOrder G st).get restEndpoint := by
               exact horderTrace.endpoint.get_prefix_at_right_of_val_eq
@@ -1247,7 +1256,7 @@ theorem GraphRenderRelated.connectChild
                   (endpointOrder G (st.connectChild hpending mate hmate))
                   hchildEndpointLength
                   ⟨restIds.get idx, by
-                    simpa [horderTrace, connectChild_orderTrace, idx,
+                    simpa [horderTrace, firstPendingChild_orderTrace, idx,
                       rendererMate] using hbound⟩)
                 restEndpoint
                 (by simp [restEndpoint])
@@ -1260,7 +1269,7 @@ theorem GraphRenderRelated.connectChild
                             (st.connectChild hpending mate hmate))
                           hchildEndpointLength
                           ⟨restIds.get idx, by
-                            simpa [horderTrace, connectChild_orderTrace, idx,
+                            simpa [horderTrace, firstPendingChild_orderTrace, idx,
                               rendererMate] using hbound⟩)) =
                   G.raw.endpointEdge active := by
               calc
@@ -1272,14 +1281,14 @@ theorem GraphRenderRelated.connectChild
                             (st.connectChild hpending mate hmate))
                           hchildEndpointLength
                           ⟨restIds.get idx, by
-                            simpa [horderTrace, connectChild_orderTrace, idx,
+                            simpa [horderTrace, firstPendingChild_orderTrace, idx,
                               rendererMate] using hbound⟩)) =
                   G.raw.endpointEdge ((endpointOrder G st).get restEndpoint) := by
                     exact congrArg G.raw.endpointEdge hendpoint
                 _ = G.raw.endpointEdge (rest.get mate) := by
                     exact congrArg G.raw.endpointEdge hrightEndpoint
                 _ = G.raw.endpointEdge active := hmate.2.symm
-            simpa [horderTrace, connectChild_orderTrace, idx, rendererMate]
+            simpa [horderTrace, firstPendingChild_orderTrace, idx, rendererMate]
               using hcalc)
       · exact hrel.nodeLabel_of_appendTrace horderTrace.node hchildNodeLength
           (by
@@ -1334,7 +1343,8 @@ theorem GraphRenderRelated.budChild_frontierPending
       (by simp [nodeEndpoints, Diag.freshNodeEndpoints, renderNode]) entry
   have hpendingVals := hrel.pending_cons_values hpending hids
   let horderTrace :=
-    budChild_orderTrace rst st hpending node slot hmate hunseen hids
+    firstPendingChild_orderTrace rst st hpending
+      (FirstPendingStep.bud node slot hmate hunseen) hids
       hrel.endpoint_length hrel.edge_length hrel.node_length
   have hchildIds :=
     Diag.budStep_frontierIds renderNode entry ok rst hids
@@ -1567,20 +1577,23 @@ theorem GraphRenderRelated.budChild
             (endpointOrder G
               (st.budChild hpending node slot hmate hunseen)).length := by
         rw [Diag.budStep_endpoints_length renderNode entry ok rst,
-          endpointOrder_budChild st hpending node slot hmate hunseen]
+          endpointOrder_firstPendingChild st hpending
+            (FirstPendingStep.bud node slot hmate hunseen)]
         have hincidentLen := G.raw.incident_length node
         simp [hrel.endpoint_length, hincidentLen, renderNode]
       have hchildEdgeLength :
           (Diag.budStep renderNode entry ok rst).edges.length =
             (edgeOrder (st.budChild hpending node slot hmate hunseen)).length := by
         rw [Diag.budStep_edges_length renderNode entry ok rst,
-          edgeOrder_budChild st hpending node slot hmate hunseen]
+          edgeOrder_firstPendingChild st hpending
+            (FirstPendingStep.bud node slot hmate hunseen)]
         simp [hrel.edge_length]
       have hchildNodeLength :
           (Diag.budStep renderNode entry ok rst).nodes.length =
             (nodeOrder (st.budChild hpending node slot hmate hunseen)).length := by
         rw [Diag.budStep_nodes_length renderNode entry ok rst,
-          nodeOrder_budChild st hpending node slot hmate hunseen]
+          nodeOrder_firstPendingChild st hpending
+            (FirstPendingStep.bud node slot hmate hunseen)]
         simp [hrel.node_length]
       have hchildValid :
           (Diag.budStep renderNode entry ok rst).ValidIds :=
@@ -1591,7 +1604,8 @@ theorem GraphRenderRelated.budChild
         hrel.budChild_frontierPending rv hpending node slot hmate hunseen hids
           hchildEndpointLength
       let horderTrace :=
-        budChild_orderTrace rst st hpending node slot hmate hunseen hids
+        firstPendingChild_orderTrace rst st hpending
+          (FirstPendingStep.bud node slot hmate hunseen) hids
           hrel.endpoint_length hrel.edge_length hrel.node_length
       have hpendingVals := hrel.pending_cons_values hpending hids
       let nodeEndpoints := Diag.freshNodeEndpoints rst.nextEndpoint
@@ -1611,7 +1625,7 @@ theorem GraphRenderRelated.budChild
               renderSlot)
           (by
             intro suffixNode graphNode hval
-            simpa [horderTrace, budChild_orderTrace, Diag.freshNodeEndpoints,
+            simpa [horderTrace, firstPendingChild_orderTrace, Diag.freshNodeEndpoints,
               renderNode] using (G.raw.incident_length node).symm)
       let hnodeIncident :=
         hrel.nodeIncident_of_appendTrace horderTrace.endpoint horderTrace.node
@@ -1625,7 +1639,7 @@ theorem GraphRenderRelated.budChild
             have hnodeBound :
                 nodeEndpoints.get freshSlot <
                   (Diag.budStep renderNode entry ok rst).endpoints.length := by
-              simpa [freshSlot, horderTrace, budChild_orderTrace,
+              simpa [freshSlot, horderTrace, firstPendingChild_orderTrace,
                 nodeEndpoints, renderNode] using hbound
             let childEndpoint :
                 Fin (endpointOrder G
@@ -1686,7 +1700,7 @@ theorem GraphRenderRelated.budChild
                     omega
                   subst graphNodeVal
                   simp [freshSlot, graphSlot]
-            simpa [horderTrace, budChild_orderTrace, nodeEndpoints,
+            simpa [horderTrace, firstPendingChild_orderTrace, nodeEndpoints,
               renderNode, freshSlot, childEndpoint] using
               hendpointRaw.trans hgraphSlotGet)
       refine
@@ -1710,7 +1724,8 @@ theorem GraphRenderRelated.budChild
           node_incident_bound := ?_
           node_incident := ?_ }
       · exact endpointOrder_nodup_of_seenNodes_nodup hseenChildNodup
-      · rw [edgeOrder_budChild st hpending node slot hmate hunseen]
+      · rw [edgeOrder_firstPendingChild st hpending
+          (FirstPendingStep.bud node slot hmate hunseen)]
         exact edgeOrder_append_active_nodup st (by rw [hpending]; simp)
       · exact nodeOrder_nodup_of_seenNodes_nodup hseenChildNodup
       · exact hchildEndpointLength
@@ -1733,7 +1748,7 @@ theorem GraphRenderRelated.budChild
         exact hrel.edgeLabel_of_appendTrace horderTrace.edge
           hchildEdgeLength (by
             intro renderEdge graphEdge _hval
-            simpa [horderTrace, budChild_orderTrace] using hlabelNew)
+            simpa [horderTrace, firstPendingChild_orderTrace] using hlabelNew)
       · intro edge
         exact hchildEdgeBounds.left edge
       · intro edge
@@ -1757,7 +1772,7 @@ theorem GraphRenderRelated.budChild
                         (st.budChild hpending node slot hmate hunseen))
                       hchildEndpointLength
                       ⟨activeId, by
-                        simpa [horderTrace, budChild_orderTrace] using
+                        simpa [horderTrace, firstPendingChild_orderTrace] using
                           hbound⟩) =
                   (endpointOrder G st).get activeEndpoint := by
               exact horderTrace.endpoint.get_prefix_at_right_of_val_eq
@@ -1766,7 +1781,7 @@ theorem GraphRenderRelated.budChild
                     (st.budChild hpending node slot hmate hunseen))
                   hchildEndpointLength
                   ⟨activeId, by
-                    simpa [horderTrace, budChild_orderTrace] using hbound⟩)
+                    simpa [horderTrace, firstPendingChild_orderTrace] using hbound⟩)
                 activeEndpoint
                 (by simp [activeEndpoint])
             have hcalc :
@@ -1778,7 +1793,7 @@ theorem GraphRenderRelated.budChild
                             (st.budChild hpending node slot hmate hunseen))
                           hchildEndpointLength
                           ⟨activeId, by
-                            simpa [horderTrace, budChild_orderTrace] using
+                            simpa [horderTrace, firstPendingChild_orderTrace] using
                               hbound⟩)) =
                   G.raw.endpointEdge active := by
               calc
@@ -1790,13 +1805,13 @@ theorem GraphRenderRelated.budChild
                             (st.budChild hpending node slot hmate hunseen))
                           hchildEndpointLength
                           ⟨activeId, by
-                            simpa [horderTrace, budChild_orderTrace] using
+                            simpa [horderTrace, firstPendingChild_orderTrace] using
                               hbound⟩)) =
                   G.raw.endpointEdge ((endpointOrder G st).get activeEndpoint) := by
                     exact congrArg G.raw.endpointEdge hendpoint
                 _ = G.raw.endpointEdge active := by
                     exact congrArg G.raw.endpointEdge hpendingVals.1
-            simpa [horderTrace, budChild_orderTrace] using hcalc)
+            simpa [horderTrace, firstPendingChild_orderTrace] using hcalc)
       · exact hrel.edgeEndpointSide_of_appendTrace horderTrace.endpoint
           horderTrace.edge (fun edge => edge.right) hrel.edge_right_bound
           hrel.edge_right hchildEndpointLength hchildEdgeLength
@@ -1805,7 +1820,7 @@ theorem GraphRenderRelated.budChild
             have hnodeBound :
                 nodeEndpoints.get entryIdx <
                   (Diag.budStep renderNode entry ok rst).endpoints.length := by
-              simpa [horderTrace, budChild_orderTrace, nodeEndpoints,
+              simpa [horderTrace, firstPendingChild_orderTrace, nodeEndpoints,
                 entryIdx, renderNode] using hbound
             let childEndpoint :
                 Fin (endpointOrder G
@@ -1894,7 +1909,7 @@ theorem GraphRenderRelated.budChild
                   G.raw.endpointEdge ((G.raw.incident node).get slot) := by
                     exact congrArg G.raw.endpointEdge hendpoint
                 _ = G.raw.endpointEdge active := hmate.2.symm
-            simpa [horderTrace, budChild_orderTrace, nodeEndpoints, entryIdx,
+            simpa [horderTrace, firstPendingChild_orderTrace, nodeEndpoints, entryIdx,
               renderNode, childEndpoint] using hcalc)
       · exact hrel.nodeLabel_of_appendTrace horderTrace.node hchildNodeLength
           (by

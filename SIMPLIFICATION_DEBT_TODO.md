@@ -252,59 +252,21 @@ is ordered to turn helper additions into actual deletion.
 
 ## Second-Pass Simplification Work
 
-- [ ] Collapse remaining traversal connect/bud branch facts into first-pending
+- [x] Collapse remaining traversal connect/bud branch facts into first-pending
   schemas.
   - Owners: `BijForm.StringDiagram.Traversal.State` and
     `BijForm.StringDiagram.Traversal.Search`.
-  - Why this remains open: the completed tracker item says branch connect/bud
-    lemmas remain as low-level implementation facts. That is slice-complete,
-    not maximal simplification.
-  - Delete: branch-specific wrappers that repeat pending, seen, processed,
-    frontier-completeness, remaining-edge descent, and iso-preservation facts.
-  - Replace with: first-pending child schemas whose connect and bud cases are
-    small data constructors, not duplicated proof families.
-  - Validation:
-    `rg -n "connectChild|budChild|firstPendingChild|RenderPrefixChildStep|IsoImage" BijForm/StringDiagram/Traversal BijForm/StringDiagram/Bridge --glob '*.lean'`
-    should show the generic first-pending surface as the public path and no
-    duplicate connect/bud preservation families at call sites.
-  - Partial: the public branch computation wrappers
-    `SearchState.toDiag_connect` and `SearchState.toDiag_bud` were deleted.
-    Traversal, graph-render, and syntax round-trip proofs now instantiate
-    `SearchState.toDiag_step` with `FirstPendingStep.connect` or
-    `FirstPendingStep.bud` directly. The item remains open because branch
-    frontier-complete, order-trace, render-prefix, iso, and graph-relation
-    helper families still exist.
-  - Partial: the public branch frontier-completeness and termination wrappers
-    `connectChild_frontierComplete`, `budChild_frontierComplete`,
-    `connectChild_remainingEdges_lt`, and `budChild_remainingEdges_lt` were
-    deleted. `Traversal.Search`, graph-render, and syntax round-trip consumers
-    now obtain those child facts through `firstPendingChild_frontierComplete`
-    and `firstPendingChild_remainingEdges_lt`. The item remains open because
-    branch order-trace, render-prefix, iso, and graph-relation helper families
-    still exist.
-  - Partial: the single-use render-prefix wrappers
-    `RenderPrefixRelated.connectChild_of_new_edge` and
-    `RenderPrefixRelated.budChild_of_new_edge_node` were deleted. Their record
-    proofs now live inside `RenderPrefixRelated.firstPendingChild`, with
-    `RenderPrefixChildStep` carrying the branch evidence. The item remains
-    open because branch order-trace, iso, and graph-relation helper families
-    still exist.
-  - Partial: the single-use iso wrappers `IsoRelated.connectChild` and
-    `IsoRelated.budChild` were deleted. Their relation-constructor proofs now
-    live inside `IsoRelated.firstPendingChild`, with `FirstPendingStep.IsoImage`
-    carrying branch image evidence. The item remains open because branch
-    order-trace and graph-relation helper families still exist.
-  - Partial: the duplicate order-trace record types `ConnectChildOrderTrace`
-    and `BudChildOrderTrace`, plus the unused
-    `ConnectChildOrderTrace.renderEdge_get`, were deleted. Connect and bud
-    trace constructors now instantiate the shared `ChildOrderTrace` record with
-    their branch-specific suffixes. The item remains open because
-    `connectChild_orderTrace`, `budChild_orderTrace`, and graph-relation helper
-    families still exist.
-  - Partial: unused branch getter `endpointOrder_connectChild_get` was deleted.
-    The connect order trace constructor uses the canonical append-step witness
-    directly. The item remains open because `connectChild_orderTrace`,
-    `budChild_orderTrace`, and graph-relation helper families still exist.
+  - Original debt: the completed tracker item said branch connect/bud lemmas
+    remained as low-level implementation facts. That was slice-complete, not
+    maximal simplification.
+  - Complete: branch computation, frontier-completeness, termination,
+    render-prefix, iso, order-trace, and endpoint/edge/node order wrappers
+    were folded into first-pending schemas. The public path is now
+    `FirstPendingStep`, `firstPendingChild_*`,
+    `RenderPrefixRelated.firstPendingChild`, `IsoRelated.firstPendingChild`,
+    and `firstPendingChild_orderTrace`.
+  - Validation: scans are empty for the deleted connect/bud wrapper names and
+    positive for the first-pending traversal/order schemas.
 
 - [x] Delete low-value generated-code and presentation pass-through wrappers.
   - Owners: `BijForm.InitialAlgebra`,

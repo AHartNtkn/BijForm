@@ -1130,187 +1130,181 @@ def budChild {G : OpenPortHypergraph Sig boundary}
       exact hotherUnseen (by simp)
     · exact st.unseen_incident_unprocessed otherNode hotherNotSeen otherSlot hold
 
-theorem endpointOrder_connectChild
+def FirstPendingStep.endpointOrderSuffix
     {G : OpenPortHypergraph Sig boundary}
-    {activeLabel : Sig.Port} {frontier : List Sig.Port}
-    (st : SearchState G (activeLabel :: frontier))
+    {seenNode : Fin G.raw.nodeCount → Prop}
     {active : Fin G.raw.endpointCount}
     {rest : List (Fin G.raw.endpointCount)}
-    (hpending : st.pending = active :: rest)
-    (mate : Fin rest.length)
-    (hmate : PortHypergraph.EdgeMate G.raw active (rest.get mate)) :
-    endpointOrder G (st.connectChild hpending mate hmate) =
-      endpointOrder G st := by
-  simp [endpointOrder, connectChild]
+    (step : FirstPendingStep G seenNode active rest) :
+    List (Fin G.raw.endpointCount) :=
+  match step with
+  | FirstPendingStep.connect _ _ => []
+  | FirstPendingStep.bud node _ _ _ => G.raw.incident node
 
-def endpointOrder_connectChild_step
+def FirstPendingStep.edgeOrderSuffix
     {G : OpenPortHypergraph Sig boundary}
-    {activeLabel : Sig.Port} {frontier : List Sig.Port}
-    (st : SearchState G (activeLabel :: frontier))
+    {seenNode : Fin G.raw.nodeCount → Prop}
     {active : Fin G.raw.endpointCount}
     {rest : List (Fin G.raw.endpointCount)}
-    (hpending : st.pending = active :: rest)
-    (mate : Fin rest.length)
-    (hmate : PortHypergraph.EdgeMate G.raw active (rest.get mate)) :
-    AppendStep (endpointOrder G st)
-      (endpointOrder G (st.connectChild hpending mate hmate)) [] where
-  eq_append := by
-    rw [endpointOrder_connectChild st hpending mate hmate]
-    simp
+    (_step : FirstPendingStep G seenNode active rest) :
+    List (Fin G.raw.edgeCount) :=
+  [G.raw.endpointEdge active]
 
-theorem edgeOrder_connectChild
+def FirstPendingStep.nodeOrderSuffix
     {G : OpenPortHypergraph Sig boundary}
-    {activeLabel : Sig.Port} {frontier : List Sig.Port}
-    (st : SearchState G (activeLabel :: frontier))
+    {seenNode : Fin G.raw.nodeCount → Prop}
     {active : Fin G.raw.endpointCount}
     {rest : List (Fin G.raw.endpointCount)}
-    (hpending : st.pending = active :: rest)
-    (mate : Fin rest.length)
-    (hmate : PortHypergraph.EdgeMate G.raw active (rest.get mate)) :
-    edgeOrder (st.connectChild hpending mate hmate) =
-      edgeOrder st ++ [G.raw.endpointEdge active] := by
-  simp [edgeOrder, connectChild]
+    (step : FirstPendingStep G seenNode active rest) :
+    List (Fin G.raw.nodeCount) :=
+  match step with
+  | FirstPendingStep.connect _ _ => []
+  | FirstPendingStep.bud node _ _ _ => [node]
 
-def edgeOrder_connectChild_step
+theorem endpointOrder_firstPendingChild
     {G : OpenPortHypergraph Sig boundary}
     {activeLabel : Sig.Port} {frontier : List Sig.Port}
     (st : SearchState G (activeLabel :: frontier))
     {active : Fin G.raw.endpointCount}
     {rest : List (Fin G.raw.endpointCount)}
     (hpending : st.pending = active :: rest)
-    (mate : Fin rest.length)
-    (hmate : PortHypergraph.EdgeMate G.raw active (rest.get mate)) :
-    AppendStep (edgeOrder st)
-      (edgeOrder (st.connectChild hpending mate hmate))
-      [G.raw.endpointEdge active] where
-  eq_append := edgeOrder_connectChild st hpending mate hmate
+    (step : FirstPendingStep G st.seenNode active rest) :
+    match step with
+    | FirstPendingStep.connect mate hmate =>
+        endpointOrder G (st.connectChild hpending mate hmate) =
+          endpointOrder G st ++ []
+    | FirstPendingStep.bud node slot hmate hunseen =>
+        endpointOrder G (st.budChild hpending node slot hmate hunseen) =
+          endpointOrder G st ++ G.raw.incident node := by
+  cases step with
+  | connect mate hmate =>
+      simp [endpointOrder, connectChild]
+  | bud node slot hmate hunseen =>
+      simp [endpointOrder, SearchState.budChild, List.reverse_cons,
+        List.flatMap_append]
 
-theorem nodeOrder_connectChild
+theorem edgeOrder_firstPendingChild
     {G : OpenPortHypergraph Sig boundary}
     {activeLabel : Sig.Port} {frontier : List Sig.Port}
     (st : SearchState G (activeLabel :: frontier))
     {active : Fin G.raw.endpointCount}
     {rest : List (Fin G.raw.endpointCount)}
     (hpending : st.pending = active :: rest)
-    (mate : Fin rest.length)
-    (hmate : PortHypergraph.EdgeMate G.raw active (rest.get mate)) :
-    nodeOrder (st.connectChild hpending mate hmate) =
-      nodeOrder st := by
-  simp [nodeOrder, connectChild]
+    (step : FirstPendingStep G st.seenNode active rest) :
+    match step with
+    | FirstPendingStep.connect mate hmate =>
+        edgeOrder (st.connectChild hpending mate hmate) =
+          edgeOrder st ++ [G.raw.endpointEdge active]
+    | FirstPendingStep.bud node slot hmate hunseen =>
+        edgeOrder (st.budChild hpending node slot hmate hunseen) =
+          edgeOrder st ++ [G.raw.endpointEdge active] := by
+  cases step with
+  | connect mate hmate =>
+      simp [edgeOrder, connectChild]
+  | bud node slot hmate hunseen =>
+      simp [edgeOrder, SearchState.budChild]
 
-def nodeOrder_connectChild_step
+theorem nodeOrder_firstPendingChild
     {G : OpenPortHypergraph Sig boundary}
     {activeLabel : Sig.Port} {frontier : List Sig.Port}
     (st : SearchState G (activeLabel :: frontier))
     {active : Fin G.raw.endpointCount}
     {rest : List (Fin G.raw.endpointCount)}
     (hpending : st.pending = active :: rest)
-    (mate : Fin rest.length)
-    (hmate : PortHypergraph.EdgeMate G.raw active (rest.get mate)) :
-    AppendStep (nodeOrder st)
-      (nodeOrder (st.connectChild hpending mate hmate)) [] where
-  eq_append := by
-    rw [nodeOrder_connectChild st hpending mate hmate]
-    simp
+    (step : FirstPendingStep G st.seenNode active rest) :
+    match step with
+    | FirstPendingStep.connect mate hmate =>
+        nodeOrder (st.connectChild hpending mate hmate) =
+          nodeOrder st ++ []
+    | FirstPendingStep.bud node slot hmate hunseen =>
+        nodeOrder (st.budChild hpending node slot hmate hunseen) =
+          nodeOrder st ++ [node] := by
+  cases step with
+  | connect mate hmate =>
+      simp [nodeOrder, connectChild]
+  | bud node slot hmate hunseen =>
+      simp [nodeOrder, SearchState.budChild]
 
-theorem endpointOrder_budChild
+def endpointOrder_firstPendingChild_step
     {G : OpenPortHypergraph Sig boundary}
     {activeLabel : Sig.Port} {frontier : List Sig.Port}
     (st : SearchState G (activeLabel :: frontier))
     {active : Fin G.raw.endpointCount}
     {rest : List (Fin G.raw.endpointCount)}
     (hpending : st.pending = active :: rest)
-    (node : Fin G.raw.nodeCount)
-    (slot : Fin (G.raw.incident node).length)
-    (hmate :
-      PortHypergraph.EdgeMate G.raw active ((G.raw.incident node).get slot))
-    (hunseen : node ∉ st.seenNodes) :
-    endpointOrder G (st.budChild hpending node slot hmate hunseen) =
-      endpointOrder G st ++ G.raw.incident node := by
-  simp [endpointOrder, SearchState.budChild, List.reverse_cons,
-    List.flatMap_append]
+    (step : FirstPendingStep G st.seenNode active rest) :
+    match step with
+    | FirstPendingStep.connect mate hmate =>
+        AppendStep (endpointOrder G st)
+          (endpointOrder G (st.connectChild hpending mate hmate))
+          []
+    | FirstPendingStep.bud node slot hmate hunseen =>
+        AppendStep (endpointOrder G st)
+          (endpointOrder G (st.budChild hpending node slot hmate hunseen))
+          (G.raw.incident node) := by
+  cases step with
+  | connect mate hmate =>
+      refine { eq_append := ?_ }
+      exact endpointOrder_firstPendingChild st hpending
+        (FirstPendingStep.connect mate hmate)
+  | bud node slot hmate hunseen =>
+      refine { eq_append := ?_ }
+      exact endpointOrder_firstPendingChild st hpending
+        (FirstPendingStep.bud node slot hmate hunseen)
 
-theorem edgeOrder_budChild
+def edgeOrder_firstPendingChild_step
     {G : OpenPortHypergraph Sig boundary}
     {activeLabel : Sig.Port} {frontier : List Sig.Port}
     (st : SearchState G (activeLabel :: frontier))
     {active : Fin G.raw.endpointCount}
     {rest : List (Fin G.raw.endpointCount)}
     (hpending : st.pending = active :: rest)
-    (node : Fin G.raw.nodeCount)
-    (slot : Fin (G.raw.incident node).length)
-    (hmate :
-      PortHypergraph.EdgeMate G.raw active ((G.raw.incident node).get slot))
-    (hunseen : node ∉ st.seenNodes) :
-    edgeOrder (st.budChild hpending node slot hmate hunseen) =
-      edgeOrder st ++ [G.raw.endpointEdge active] := by
-  simp [edgeOrder, SearchState.budChild]
+    (step : FirstPendingStep G st.seenNode active rest) :
+    match step with
+    | FirstPendingStep.connect mate hmate =>
+        AppendStep (edgeOrder st)
+          (edgeOrder (st.connectChild hpending mate hmate))
+          [G.raw.endpointEdge active]
+    | FirstPendingStep.bud node slot hmate hunseen =>
+        AppendStep (edgeOrder st)
+          (edgeOrder (st.budChild hpending node slot hmate hunseen))
+          [G.raw.endpointEdge active] := by
+  cases step with
+  | connect mate hmate =>
+      refine { eq_append := ?_ }
+      exact edgeOrder_firstPendingChild st hpending
+        (FirstPendingStep.connect mate hmate)
+  | bud node slot hmate hunseen =>
+      refine { eq_append := ?_ }
+      exact edgeOrder_firstPendingChild st hpending
+        (FirstPendingStep.bud node slot hmate hunseen)
 
-theorem nodeOrder_budChild
+def nodeOrder_firstPendingChild_step
     {G : OpenPortHypergraph Sig boundary}
     {activeLabel : Sig.Port} {frontier : List Sig.Port}
     (st : SearchState G (activeLabel :: frontier))
     {active : Fin G.raw.endpointCount}
     {rest : List (Fin G.raw.endpointCount)}
     (hpending : st.pending = active :: rest)
-    (node : Fin G.raw.nodeCount)
-    (slot : Fin (G.raw.incident node).length)
-    (hmate :
-      PortHypergraph.EdgeMate G.raw active ((G.raw.incident node).get slot))
-    (hunseen : node ∉ st.seenNodes) :
-    nodeOrder (st.budChild hpending node slot hmate hunseen) =
-      nodeOrder st ++ [node] := by
-  simp [nodeOrder, SearchState.budChild]
-
-def endpointOrder_budChild_step
-    {G : OpenPortHypergraph Sig boundary}
-    {activeLabel : Sig.Port} {frontier : List Sig.Port}
-    (st : SearchState G (activeLabel :: frontier))
-    {active : Fin G.raw.endpointCount}
-    {rest : List (Fin G.raw.endpointCount)}
-    (hpending : st.pending = active :: rest)
-    (node : Fin G.raw.nodeCount)
-    (slot : Fin (G.raw.incident node).length)
-    (hmate :
-      PortHypergraph.EdgeMate G.raw active ((G.raw.incident node).get slot))
-    (hunseen : node ∉ st.seenNodes) :
-    AppendStep (endpointOrder G st)
-      (endpointOrder G (st.budChild hpending node slot hmate hunseen))
-      (G.raw.incident node) where
-  eq_append := endpointOrder_budChild st hpending node slot hmate hunseen
-
-def edgeOrder_budChild_step
-    {G : OpenPortHypergraph Sig boundary}
-    {activeLabel : Sig.Port} {frontier : List Sig.Port}
-    (st : SearchState G (activeLabel :: frontier))
-    {active : Fin G.raw.endpointCount}
-    {rest : List (Fin G.raw.endpointCount)}
-    (hpending : st.pending = active :: rest)
-    (node : Fin G.raw.nodeCount)
-    (slot : Fin (G.raw.incident node).length)
-    (hmate :
-      PortHypergraph.EdgeMate G.raw active ((G.raw.incident node).get slot))
-    (hunseen : node ∉ st.seenNodes) :
-    AppendStep (edgeOrder st)
-      (edgeOrder (st.budChild hpending node slot hmate hunseen))
-      [G.raw.endpointEdge active] where
-  eq_append := edgeOrder_budChild st hpending node slot hmate hunseen
-
-def nodeOrder_budChild_step
-    {G : OpenPortHypergraph Sig boundary}
-    {activeLabel : Sig.Port} {frontier : List Sig.Port}
-    (st : SearchState G (activeLabel :: frontier))
-    {active : Fin G.raw.endpointCount}
-    {rest : List (Fin G.raw.endpointCount)}
-    (hpending : st.pending = active :: rest)
-    (node : Fin G.raw.nodeCount)
-    (slot : Fin (G.raw.incident node).length)
-    (hmate :
-      PortHypergraph.EdgeMate G.raw active ((G.raw.incident node).get slot))
-    (hunseen : node ∉ st.seenNodes) :
-    AppendStep (nodeOrder st)
-      (nodeOrder (st.budChild hpending node slot hmate hunseen)) [node] where
-  eq_append := nodeOrder_budChild st hpending node slot hmate hunseen
+    (step : FirstPendingStep G st.seenNode active rest) :
+    match step with
+    | FirstPendingStep.connect mate hmate =>
+        AppendStep (nodeOrder st)
+          (nodeOrder (st.connectChild hpending mate hmate))
+          []
+    | FirstPendingStep.bud node slot hmate hunseen =>
+        AppendStep (nodeOrder st)
+          (nodeOrder (st.budChild hpending node slot hmate hunseen))
+          [node] := by
+  cases step with
+  | connect mate hmate =>
+      refine { eq_append := ?_ }
+      exact nodeOrder_firstPendingChild st hpending
+        (FirstPendingStep.connect mate hmate)
+  | bud node slot hmate hunseen =>
+      refine { eq_append := ?_ }
+      exact nodeOrder_firstPendingChild st hpending
+        (FirstPendingStep.bud node slot hmate hunseen)
 
 /--
 Ordered trace evidence for a child step.  The branch determines the render and
@@ -1339,7 +1333,7 @@ structure ChildOrderTrace
     AppendTrace rst.nodes childRst.nodes newRenderNodes
       (nodeOrder st) (nodeOrder childSt) newGraphNodes
 
-def connectChild_orderTrace
+def firstPendingChild_orderTrace
     {G : OpenPortHypergraph Sig boundary}
     {activeLabel : Sig.Port} {frontier : List Sig.Port}
     (rst : RenderState Sig (activeLabel :: frontier))
@@ -1347,134 +1341,133 @@ def connectChild_orderTrace
     {active : Fin G.raw.endpointCount}
     {rest : List (Fin G.raw.endpointCount)}
     (hpending : st.pending = active :: rest)
-    (mate : Fin rest.length)
-    (hmate : PortHypergraph.EdgeMate G.raw active (rest.get mate))
+    (step : FirstPendingStep G st.seenNode active rest)
     {activeId : Nat} {restIds : List Nat}
     (hids : rst.frontierIds = activeId :: restIds)
     (hendpointLength : rst.endpoints.length = (endpointOrder G st).length)
     (hedgeLength : rst.edges.length = (edgeOrder st).length)
     (hnodeLength : rst.nodes.length = (nodeOrder st).length) :
-    ChildOrderTrace rst
-      (Diag.connectStep (st.restLabelIndex hpending mate)
-        (st.connect_compatible hpending mate hmate) rst)
-      st (st.connectChild hpending mate hmate) [] []
-      [{ label := Sig.portEdge activeLabel
-         leftLabel := activeLabel
-         rightLabel := frontier.get (st.restLabelIndex hpending mate)
-         left := activeId
-         right :=
-           restIds.get (listIndexCast restIds
-             (by
-               exact (RenderState.frontierIds_cons_tail_length rst hids).symm)
-             (st.restLabelIndex hpending mate))
-         left_label := rfl
-         right_label := (Sig.compatible_edge
-           (st.connect_compatible hpending mate hmate)).symm
-         compatible := st.connect_compatible hpending mate hmate }]
-      [G.raw.endpointEdge active] [] [] where
-  endpoint :=
-    { prefix_length := hendpointLength
-      suffix_length := rfl
-      left_step :=
-        { eq_append := by
-            rw [Diag.connectStep_endpoints
-              (st.restLabelIndex hpending mate)
-              (st.connect_compatible hpending mate hmate) rst]
-            simp }
-      right_step := endpointOrder_connectChild_step st hpending mate hmate }
-  edge :=
-    { prefix_length := hedgeLength
-      suffix_length := rfl
-      left_step :=
-        { eq_append := by
-            exact Diag.connectStep_edges
-              (st.restLabelIndex hpending mate)
-              (st.connect_compatible hpending mate hmate) rst hids }
-      right_step := edgeOrder_connectChild_step st hpending mate hmate }
-  node :=
-    { prefix_length := hnodeLength
-      suffix_length := rfl
-      left_step :=
-        { eq_append := by
-            rw [Diag.connectStep_nodes
-              (st.restLabelIndex hpending mate)
-              (st.connect_compatible hpending mate hmate) rst]
-            simp }
-      right_step := nodeOrder_connectChild_step st hpending mate hmate }
-
-def budChild_orderTrace
-    {G : OpenPortHypergraph Sig boundary}
-    {activeLabel : Sig.Port} {frontier : List Sig.Port}
-    (rst : RenderState Sig (activeLabel :: frontier))
-    (st : SearchState G (activeLabel :: frontier))
-    {active : Fin G.raw.endpointCount}
-    {rest : List (Fin G.raw.endpointCount)}
-    (hpending : st.pending = active :: rest)
-    (node : Fin G.raw.nodeCount)
-    (slot : Fin (G.raw.incident node).length)
-    (hmate :
-      PortHypergraph.EdgeMate G.raw active ((G.raw.incident node).get slot))
-    (hunseen : node ∉ st.seenNodes)
-    {activeId : Nat} {restIds : List Nat}
-    (hids : rst.frontierIds = activeId :: restIds)
-    (hendpointLength : rst.endpoints.length = (endpointOrder G st).length)
-    (hedgeLength : rst.edges.length = (edgeOrder st).length)
-    (hnodeLength : rst.nodes.length = (nodeOrder st).length) :
-    ChildOrderTrace rst
-      (Diag.budStep (G.raw.nodeLabel node)
-        (SearchState.budEntry (G := G) node slot)
-        (st.bud_compatible hpending node slot hmate) rst)
-      st (st.budChild hpending node slot hmate hunseen)
-      (Sig.nodePorts (G.raw.nodeLabel node)) (G.raw.incident node)
-      [{ label := Sig.portEdge activeLabel
-         leftLabel := activeLabel
-         rightLabel := Sig.port (G.raw.nodeLabel node)
-           (SearchState.budEntry (G := G) node slot)
-         left := activeId
-         right :=
-           (Diag.freshNodeEndpoints rst.nextEndpoint
-             (Sig.arity (G.raw.nodeLabel node))).get
-             (listIndexCast
+    match step with
+    | FirstPendingStep.connect mate hmate =>
+        ChildOrderTrace rst
+          (Diag.connectStep (st.restLabelIndex hpending mate)
+            (st.connect_compatible hpending mate hmate) rst)
+          st (st.connectChild hpending mate hmate) [] []
+          [{ label := Sig.portEdge activeLabel
+             leftLabel := activeLabel
+             rightLabel := frontier.get (st.restLabelIndex hpending mate)
+             left := activeId
+             right :=
+               restIds.get (listIndexCast restIds
+                 (by
+                   exact
+                    (RenderState.frontierIds_cons_tail_length rst hids).symm)
+                 (st.restLabelIndex hpending mate))
+             left_label := rfl
+             right_label := (Sig.compatible_edge
+               (st.connect_compatible hpending mate hmate)).symm
+             compatible := st.connect_compatible hpending mate hmate }]
+          [G.raw.endpointEdge active] [] []
+    | FirstPendingStep.bud node slot hmate hunseen =>
+        ChildOrderTrace rst
+          (Diag.budStep (G.raw.nodeLabel node)
+            (SearchState.budEntry (G := G) node slot)
+            (st.bud_compatible hpending node slot hmate) rst)
+          st (st.budChild hpending node slot hmate hunseen)
+          (Sig.nodePorts (G.raw.nodeLabel node)) (G.raw.incident node)
+          [{ label := Sig.portEdge activeLabel
+             leftLabel := activeLabel
+             rightLabel := Sig.port (G.raw.nodeLabel node)
+               (SearchState.budEntry (G := G) node slot)
+             left := activeId
+             right :=
                (Diag.freshNodeEndpoints rst.nextEndpoint
-                 (Sig.arity (G.raw.nodeLabel node)))
-               (by simp [Diag.freshNodeEndpoints])
-               (SearchState.budEntry (G := G) node slot))
-         left_label := rfl
-         right_label := (Sig.compatible_edge
-           (st.bud_compatible hpending node slot hmate)).symm
-         compatible := st.bud_compatible hpending node slot hmate }]
-      [G.raw.endpointEdge active]
-      [{ label := G.raw.nodeLabel node
-         incident := Diag.freshNodeEndpoints rst.nextEndpoint
-           (Sig.arity (G.raw.nodeLabel node)) }]
-      [node] where
-  endpoint :=
-    { prefix_length := hendpointLength
-      suffix_length := by
-        simp [Signature.nodePorts, G.raw.incident_length node]
-      left_step :=
-        { eq_append := Diag.budStep_endpoints
-            (G.raw.nodeLabel node)
-            (SearchState.budEntry (G := G) node slot)
-            (st.bud_compatible hpending node slot hmate) rst }
-      right_step := endpointOrder_budChild_step st hpending node slot hmate hunseen }
-  edge :=
-    { prefix_length := hedgeLength
-      suffix_length := rfl
-      left_step :=
-        { eq_append := by
-            exact Diag.budStep_edges (G.raw.nodeLabel node)
-              (SearchState.budEntry (G := G) node slot)
-              (st.bud_compatible hpending node slot hmate) rst hids }
-      right_step := edgeOrder_budChild_step st hpending node slot hmate hunseen }
-  node :=
-    { prefix_length := hnodeLength
-      suffix_length := rfl
-      left_step :=
-        { eq_append := Diag.budStep_nodes (G.raw.nodeLabel node)
-            (SearchState.budEntry (G := G) node slot)
-            (st.bud_compatible hpending node slot hmate) rst }
-      right_step := nodeOrder_budChild_step st hpending node slot hmate hunseen }
+                 (Sig.arity (G.raw.nodeLabel node))).get
+                 (listIndexCast
+                   (Diag.freshNodeEndpoints rst.nextEndpoint
+                     (Sig.arity (G.raw.nodeLabel node)))
+                   (by simp [Diag.freshNodeEndpoints])
+                   (SearchState.budEntry (G := G) node slot))
+             left_label := rfl
+             right_label := (Sig.compatible_edge
+               (st.bud_compatible hpending node slot hmate)).symm
+             compatible := st.bud_compatible hpending node slot hmate }]
+          [G.raw.endpointEdge active]
+          [{ label := G.raw.nodeLabel node
+             incident := Diag.freshNodeEndpoints rst.nextEndpoint
+               (Sig.arity (G.raw.nodeLabel node)) }]
+          [node] := by
+  cases step with
+  | connect mate hmate =>
+      exact
+        { endpoint :=
+            { prefix_length := hendpointLength
+              suffix_length := rfl
+              left_step :=
+                { eq_append := by
+                    rw [Diag.connectStep_endpoints
+                      (st.restLabelIndex hpending mate)
+                      (st.connect_compatible hpending mate hmate) rst]
+                    simp }
+              right_step :=
+                endpointOrder_firstPendingChild_step st hpending
+                  (FirstPendingStep.connect mate hmate) }
+          edge :=
+            { prefix_length := hedgeLength
+              suffix_length := rfl
+              left_step :=
+                { eq_append := by
+                    exact Diag.connectStep_edges
+                      (st.restLabelIndex hpending mate)
+                      (st.connect_compatible hpending mate hmate) rst hids }
+              right_step := edgeOrder_firstPendingChild_step st hpending
+                (FirstPendingStep.connect mate hmate) }
+          node :=
+            { prefix_length := hnodeLength
+              suffix_length := rfl
+              left_step :=
+                { eq_append := by
+                    rw [Diag.connectStep_nodes
+                      (st.restLabelIndex hpending mate)
+                      (st.connect_compatible hpending mate hmate) rst]
+                    simp }
+              right_step := nodeOrder_firstPendingChild_step st hpending
+                (FirstPendingStep.connect mate hmate) } }
+  | bud node slot hmate hunseen =>
+      exact
+        { endpoint :=
+            { prefix_length := hendpointLength
+              suffix_length := by
+                simp [Signature.nodePorts, G.raw.incident_length node]
+              left_step :=
+                { eq_append := Diag.budStep_endpoints
+                    (G.raw.nodeLabel node)
+                    (SearchState.budEntry (G := G) node slot)
+                    (st.bud_compatible hpending node slot hmate) rst }
+              right_step :=
+                endpointOrder_firstPendingChild_step st hpending
+                  (FirstPendingStep.bud node slot hmate hunseen) }
+          edge :=
+            { prefix_length := hedgeLength
+              suffix_length := rfl
+              left_step :=
+                { eq_append := by
+                    exact Diag.budStep_edges (G.raw.nodeLabel node)
+                      (SearchState.budEntry (G := G) node slot)
+                      (st.bud_compatible hpending node slot hmate) rst hids }
+              right_step :=
+                edgeOrder_firstPendingChild_step st hpending
+                  (FirstPendingStep.bud node slot hmate hunseen) }
+          node :=
+            { prefix_length := hnodeLength
+              suffix_length := rfl
+              left_step :=
+                { eq_append := Diag.budStep_nodes (G.raw.nodeLabel node)
+                    (SearchState.budEntry (G := G) node slot)
+                    (st.bud_compatible hpending node slot hmate) rst }
+              right_step :=
+                nodeOrder_firstPendingChild_step st hpending
+                  (FirstPendingStep.bud node slot hmate hunseen) } }
 
 def firstPendingChildFrontier {G : OpenPortHypergraph Sig boundary}
     {activeLabel : Sig.Port} {restLabels : List Sig.Port}
