@@ -278,7 +278,7 @@ is ordered to turn helper additions into actual deletion.
     as Nat/ranked layer presentation constructors and typed-binding
     `toGeneratedCode`, or example-level generated-code deliverables.
 
-- [ ] Revisit `ListPiTuple` and typed-binding tuple helper placement for
+- [x] Revisit `ListPiTuple` and typed-binding tuple helper placement for
   maximal visibility.
   - Owners: `BijForm.DependentTuple`, `BijForm.TypedBinding`, and
     `BijForm.InitialAlgebra`.
@@ -297,6 +297,11 @@ is ordered to turn helper additions into actual deletion.
     through local `cases rest with`, and `ArgTuple.pairIso` now uses
     `ArgTuple.ofChild_toChild` instead of manually destructing the two-element
     tuple tail.
+  - Completed: `ArgTuple.singleIso` now also delegates its left inverse to
+    `ArgTuple.ofChild_toChild`. Tuple conversion hits are owner definitions,
+    inverse lemmas, or semantic construction sites; the only remaining
+    `cases tuple with` scan hit is inside the owner proof
+    `ListPiTuple.ofPi_toPi`.
 
 - [x] Delete the old tracker that marked targeted slices as complete.
   - Owner: `SIMPLIFICATION_TODO.md`.

@@ -497,10 +497,9 @@ def singleIso (Γ : List Ty) (arg : Arg Ty) :
   invFun z := (z, PUnit.unit)
   left_inv := by
     intro tuple
-    cases tuple with
-    | mk head tail =>
-        cases tail
-        rfl
+    simpa [ofChild, toChild] using
+      (ofChild_toChild (S := S) (Code := Code) Γ
+        (args := [arg]) tuple)
   right_inv := by
     intro z
     rfl
