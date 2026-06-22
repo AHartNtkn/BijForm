@@ -434,6 +434,10 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     rendered-edge endpoint bounds, and
     `GraphRenderRelated.connectChild_edgeEndpointBounds` owns the connect child
     edge-bound update consumed by the main `connectChild` proof.
+  - Partial: `GraphRenderRelated.NodeIncidentFields` and
+    `connectChild_nodeIncidentFields` now own the connect child unchanged-node
+    incident length/bound updates; the main `connectChild` proof consumes those
+    fields instead of defining local incident-field functions.
 
 - [ ] Introduce declarative render deltas for connect and bud.
   - Owner: `BijForm.StringDiagram.Renderer.Steps`
