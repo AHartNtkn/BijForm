@@ -252,6 +252,70 @@ theorem incident_nodup (G : PortHypergraph Sig boundary)
     (G.incident node).Nodup :=
   list_nodup_of_get_injective (G.incident node) (G.incident_injective node)
 
+theorem incident_mem_node_eq (G : PortHypergraph Sig boundary)
+    {leftNode rightNode : Fin G.nodeCount}
+    {endpoint : Fin G.endpointCount}
+    (hleft : endpoint ∈ G.incident leftNode)
+    (hright : endpoint ∈ G.incident rightNode) :
+    leftNode = rightNode := by
+  rcases list_exists_get_of_mem (G.incident leftNode) hleft with
+    ⟨leftSlot, hleftSlot⟩
+  rcases list_exists_get_of_mem (G.incident rightNode) hright with
+    ⟨rightSlot, hrightSlot⟩
+  have hsame :
+      (.constructor leftNode leftSlot :
+        EndpointOwner boundary.length G.nodeCount
+          (fun node => (G.incident node).length)) =
+      .constructor rightNode rightSlot :=
+    G.endpointOwner_eq_of_endpoint
+      (owner₁ := .constructor leftNode leftSlot)
+      (owner₂ := .constructor rightNode rightSlot)
+      (by simpa [endpointOwnerEndpoint] using hleftSlot)
+      (by simpa [endpointOwnerEndpoint] using hrightSlot)
+  cases hsame
+  rfl
+
+theorem boundary_mem_not_incident_mem (G : PortHypergraph Sig boundary)
+    {endpoint : Fin G.endpointCount}
+    (hboundary : endpoint ∈ List.ofFn G.boundaryPort)
+    {node : Fin G.nodeCount}
+    (hincident : endpoint ∈ G.incident node) :
+    False := by
+  rcases (List.mem_ofFn.mp hboundary) with ⟨boundaryIndex, hboundaryEq⟩
+  rcases list_exists_get_of_mem (G.incident node) hincident with
+    ⟨slot, hslot⟩
+  have hsame :
+      (.boundary boundaryIndex :
+        EndpointOwner boundary.length G.nodeCount
+          (fun node => (G.incident node).length)) =
+      .constructor node slot :=
+    G.endpointOwner_eq_of_endpoint
+      (owner₁ := .boundary boundaryIndex)
+      (owner₂ := .constructor node slot)
+      (by simpa [endpointOwnerEndpoint] using hboundaryEq)
+      (by simpa [endpointOwnerEndpoint] using hslot)
+  cases hsame
+
+theorem incidentFlatMap_nodup_of_nodup (G : PortHypergraph Sig boundary) :
+    ∀ (nodes : List (Fin G.nodeCount)),
+      nodes.Nodup →
+        (nodes.flatMap fun node => G.incident node).Nodup
+  | [], _hnodup => by simp
+  | node :: nodes, hnodup => by
+      have hsplit : node ∉ nodes ∧ nodes.Nodup := by
+        simpa using hnodup
+      apply nodup_append_of_nodup_disjoint
+      · exact G.incident_nodup node
+      · exact G.incidentFlatMap_nodup_of_nodup nodes hsplit.2
+      · intro endpoint hhead htail
+        rw [← List.flatMap_def] at htail
+        rw [List.mem_flatMap] at htail
+        rcases htail with ⟨otherNode, hotherNode, hotherIncident⟩
+        have hnodeEq :
+            node = otherNode :=
+          G.incident_mem_node_eq hhead hotherIncident
+        exact hsplit.1 (by simpa [hnodeEq] using hotherNode)
+
 theorem incident_labels (G : PortHypergraph Sig boundary)
     (node : Fin G.nodeCount) :
     (G.incident node).map G.endpointLabel =

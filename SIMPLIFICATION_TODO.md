@@ -461,7 +461,7 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
   - Validation: public syntax/open-graph finite and Nat isomorphisms remain
     unchanged.
 
-- [ ] Move semantic graph/order facts out of bridge files.
+- [x] Move semantic graph/order facts out of bridge files.
   - Owner: `BijForm.StringDiagram.Hypergraph` or `Traversal.State`
   - Evidence: `incident_mem_node_eq`, `boundary_mem_not_incident_mem`,
     `incidentFlatMap_nodup_of_nodup`, and `endpointOrder_nodup` live in
