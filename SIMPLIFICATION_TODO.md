@@ -490,6 +490,9 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
   - Partial: `GraphRenderRelated.budChild_edgeLeft` now owns the bud child
     old/new left-endpoint incidence update; the main `budChild` proof consumes
     that field instead of rebuilding endpoint and edge-order transport locally.
+  - Partial: `GraphRenderRelated.budChild_edgeLeft` now consumes
+    `AppendTraceRelation`, so bud left-incidence full-edge dispatch is owned by
+    the generic append-relation proof path.
   - Partial: `GraphRenderRelated.budChild_edgeRight` now owns the bud child
     old/new right-endpoint incidence update, including fresh node-slot
     arithmetic; the main `budChild` proof consumes that field instead of
