@@ -471,15 +471,17 @@ theorem renderTrace_connect_new_edge_get
   rcases renderTrace_edgesPrefix child (connectStep mate ok st) with
     ⟨suffix, hsuffix⟩
   have hstep :
-      (connectStep mate ok st).edges = st.edges ++ [edge] := by
-    simpa [edge, mateId] using connectStep_edges mate ok st hids
-  have hfinal :
-      final.edges = st.edges ++ edge :: suffix := by
-    dsimp [final]
-    rw [renderTrace_connect, hsuffix, hstep]
-    simp
-  exact list_get_of_eq_append_cons_at_length hfinal
-    (renderTrace_connect_new_edgeIndex mate ok child st hids) rfl
+      AppendStep st.edges (connectStep mate ok st).edges [edge] :=
+    ⟨by simpa [edge, mateId] using connectStep_edges mate ok st hids⟩
+  have htrace :
+      AppendStep (connectStep mate ok st).edges final.edges suffix :=
+    ⟨by
+      dsimp [final]
+      rw [renderTrace_connect]
+      exact hsuffix⟩
+  exact (AppendStep.trans hstep htrace).get_first_suffix_at
+    (renderTrace_connect_new_edgeIndex mate ok child st hids)
+    (renderTrace_connect_new_edgeIndex_val mate ok child st hids)
 
 /-- The first edge index allocated by a top-level rendered `bud`. -/
 def renderTrace_bud_new_edgeIndex
@@ -561,16 +563,19 @@ theorem renderTrace_bud_new_edge_get
   rcases renderTrace_edgesPrefix child (budStep node entry ok st) with
     ⟨suffix, hsuffix⟩
   have hstep :
-      (budStep node entry ok st).edges = st.edges ++ [edge] := by
-    simpa [edge, nodeEndpoints, entryIdx] using
-      budStep_edges node entry ok st hids
-  have hfinal :
-      final.edges = st.edges ++ edge :: suffix := by
-    dsimp [final]
-    rw [renderTrace_bud, hsuffix, hstep]
-    simp
-  exact list_get_of_eq_append_cons_at_length hfinal
-    (renderTrace_bud_new_edgeIndex node entry ok child st hids) rfl
+      AppendStep st.edges (budStep node entry ok st).edges [edge] :=
+    ⟨by
+      simpa [edge, nodeEndpoints, entryIdx] using
+        budStep_edges node entry ok st hids⟩
+  have htrace :
+      AppendStep (budStep node entry ok st).edges final.edges suffix :=
+    ⟨by
+      dsimp [final]
+      rw [renderTrace_bud]
+      exact hsuffix⟩
+  exact (AppendStep.trans hstep htrace).get_first_suffix_at
+    (renderTrace_bud_new_edgeIndex node entry ok child st hids)
+    (renderTrace_bud_new_edgeIndex_val node entry ok child st hids)
 
 theorem connectStep_nodesPrefix
     {active : Sig.Port} {frontier : List Sig.Port}
@@ -685,16 +690,19 @@ theorem renderTrace_bud_new_node_get
   rcases renderTrace_nodesPrefix child (budStep node entry ok st) with
     ⟨suffix, hsuffix⟩
   have hstep :
-      (budStep node entry ok st).nodes = st.nodes ++ [renderNode] := by
-    simpa [renderNode, nodeEndpoints] using
-      budStep_nodes node entry ok st
-  have hfinal :
-      final.nodes = st.nodes ++ renderNode :: suffix := by
-    dsimp [final]
-    rw [renderTrace_bud, hsuffix, hstep]
-    simp
-  exact list_get_of_eq_append_cons_at_length hfinal
-    (renderTrace_bud_new_nodeIndex node entry ok child st) rfl
+      AppendStep st.nodes (budStep node entry ok st).nodes [renderNode] :=
+    ⟨by
+      simpa [renderNode, nodeEndpoints] using
+        budStep_nodes node entry ok st⟩
+  have htrace :
+      AppendStep (budStep node entry ok st).nodes final.nodes suffix :=
+    ⟨by
+      dsimp [final]
+      rw [renderTrace_bud]
+      exact hsuffix⟩
+  exact (AppendStep.trans hstep htrace).get_first_suffix_at
+    (renderTrace_bud_new_nodeIndex node entry ok child st)
+    (renderTrace_bud_new_nodeIndex_val node entry ok child st)
 
 theorem connectStep_edges_length
     {active : Sig.Port} {frontier : List Sig.Port}

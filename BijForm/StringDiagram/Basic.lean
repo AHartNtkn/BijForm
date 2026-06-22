@@ -233,6 +233,20 @@ theorem get_single_at_length {α : Type} {pref full : List α} {x : α}
     full.get i = x :=
   list_get_of_eq_append_cons_at_length h.eq_append i hval
 
+theorem trans {α : Type} {pref mid full suffix₁ suffix₂ : List α}
+    (h₁ : AppendStep pref mid suffix₁)
+    (h₂ : AppendStep mid full suffix₂) :
+    AppendStep pref full (suffix₁ ++ suffix₂) where
+  eq_append := by
+    rw [h₂.eq_append, h₁.eq_append, List.append_assoc]
+
+theorem get_first_suffix_at {α : Type} {pref full : List α}
+    {x : α} {suffix : List α}
+    (h : AppendStep pref full (x :: suffix))
+    (i : Fin full.length) (hval : i.val = pref.length) :
+    full.get i = x :=
+  list_get_of_eq_append_cons_at_length h.eq_append i hval
+
 end AppendStep
 
 /--

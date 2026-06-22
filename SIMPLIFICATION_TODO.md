@@ -442,6 +442,11 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     suffix, old index, and new index theorems.
   - Validation: bridge proofs still have the trace computation and new-index
     facts they need.
+  - Partial: added `AppendStep.trans` and `AppendStep.get_first_suffix_at`, and
+    routed the connect-edge, bud-edge, and bud-node first-new render lookup
+    proofs through those helpers. Full data-carrying trace-field/index
+    ownership remains open because the current recursive prefix witnesses are
+    existential `Prop` evidence.
 
 - [ ] Factor traversal child-state updates.
   - Owner: `BijForm.StringDiagram.Traversal.State`
