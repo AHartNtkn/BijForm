@@ -470,6 +470,51 @@ theorem append_pointwise_relation {α β : Type} {R : α → β → Prop}
           omega)
     simpa [hleftLen] using hright'
 
+/-- A length equality plus an indexed pointwise relation between two lists. -/
+structure IndexedListRel {α β : Type} (R : α → β → Prop)
+    (xs : List α) (ys : List β) : Prop where
+  length : xs.length = ys.length
+  get :
+    ∀ (n : Nat) (hx : n < xs.length) (hy : n < ys.length),
+      R (xs.get ⟨n, hx⟩) (ys.get ⟨n, hy⟩)
+
+namespace IndexedListRel
+
+theorem get_of_val_eq {α β : Type} {R : α → β → Prop}
+    {xs : List α} {ys : List β}
+    (h : IndexedListRel R xs ys)
+    (ix : Fin xs.length) (iy : Fin ys.length)
+    (hval : ix.val = iy.val) :
+    R (xs.get ix) (ys.get iy) := by
+  have hy : ix.val < ys.length := by
+    rw [hval]
+    exact iy.isLt
+  have hrel := h.get ix.val ix.isLt hy
+  have hiy : (⟨ix.val, hy⟩ : Fin ys.length) = iy :=
+    fin_eq_of_val_eq hval
+  simpa [hiy] using hrel
+
+def erase {α β : Type} {R : α → β → Prop}
+    {xs : List α} {ys : List β}
+    (h : IndexedListRel R xs ys)
+    (ix : Fin xs.length) (iy : Fin ys.length)
+    (hindex : ix.val = iy.val) :
+    IndexedListRel R (eraseFin xs ix) (eraseFin ys iy) where
+  length := eraseFin_length_eq_of_length_eq h.length ix iy
+  get n hx hy := eraseFin_pointwise_relation h.length h.get ix iy hindex n hx hy
+
+def append {α β : Type} {R : α → β → Prop}
+    {leftIds rightIds : List α} {leftLabels rightLabels : List β}
+    (hleft : IndexedListRel R leftIds leftLabels)
+    (hright : IndexedListRel R rightIds rightLabels) :
+    IndexedListRel R (leftIds ++ rightIds) (leftLabels ++ rightLabels) where
+  length := by simp [hleft.length, hright.length]
+  get n hid hlabel :=
+    append_pointwise_relation hleft.length hright.length hleft.get hright.get
+      n hid hlabel
+
+end IndexedListRel
+
 theorem map_eraseFin {α β : Type} (f : α → β) :
     ∀ (xs : List α) (i : Fin xs.length),
       (eraseFin xs i).map f =

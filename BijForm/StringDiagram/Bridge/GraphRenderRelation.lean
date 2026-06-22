@@ -655,14 +655,15 @@ theorem GraphRenderRelated.connectChild
                       hbound⟩) =
                 (st.connectChild hpending mate hmate).pending.get
                   (Fin.cast hchildPendingLen id) := by
-          have hrestPoint :
-              ∀ (n : Nat) (hid : n < restIds.length)
-                (hrest : n < rest.length),
-                ∃ hbound : restIds.get ⟨n, hid⟩ < rst.endpoints.length,
-                  (endpointOrder G st).get
-                      (Fin.cast hrel.endpoint_length
-                        ⟨restIds.get ⟨n, hid⟩, hbound⟩) =
-                    rest.get ⟨n, hrest⟩ := by
+          have hrestRel :
+              IndexedListRel
+                (fun raw endpoint =>
+                  ∃ hbound : raw < rst.endpoints.length,
+                    (endpointOrder G st).get
+                        (hrel.endpointIndex ⟨raw, hbound⟩) =
+                      endpoint)
+                restIds rest := by
+            refine { length := htailLen, get := ?_ }
             intro n hid hrest
             refine ⟨hrel.frontier_id_bound_of_mem ?_, ?_⟩
             · rw [hids]
@@ -674,20 +675,14 @@ theorem GraphRenderRelated.connectChild
                 exact fin_eq_of_val_eq rfl
               rw [hidx]
               exact hpendingVals.2 ⟨n, hid⟩
-          have herased :=
-            eraseFin_pointwise_relation
-              (R := fun raw endpoint =>
-                ∃ hbound : raw < rst.endpoints.length,
-                  (endpointOrder G st).get
-                      (hrel.endpointIndex ⟨raw, hbound⟩) =
-                    endpoint)
-              htailLen hrestPoint idx mate hidxVal
-              id.val
+          have herased := hrestRel.erase idx mate hidxVal
+          have hget :=
+            herased.get id.val
               (by
                 exact (congrArg List.length hchildIds) ▸ id.isLt)
               (by
                 exact hchildPendingLen ▸ id.isLt)
-          simpa [hchildIds, connectChild] using herased
+          simpa [hchildIds, connectChild] using hget
         rcases haligned with ⟨hbound, hget⟩
         have hfin :
             (⟨(Diag.connectStep rendererMate ok rst).frontierIds.get id,
@@ -1398,10 +1393,8 @@ theorem GraphRenderRelated.budChild
                   (st.budChild hpending node slot hmate hunseen)
                   hchildEndpointLength ⟨raw, hbound⟩) =
               endpoint
-        have hleftRel :
-            ∀ (n : Nat) (hid : n < restIds.length)
-              (hrest : n < rest.length),
-              R (restIds.get ⟨n, hid⟩) (rest.get ⟨n, hrest⟩) := by
+        have hleftRel : IndexedListRel R restIds rest := by
+          refine { length := htailLen, get := ?_ }
           intro n hid hrest
           have holdBound :
               restIds.get ⟨n, hid⟩ < rst.endpoints.length :=
@@ -1444,10 +1437,8 @@ theorem GraphRenderRelated.budChild
               childEndpoint oldEndpoint (by simp [childEndpoint, oldEndpoint])
           exact hchildOld.trans hold
         have hrightRel :
-            ∀ (n : Nat) (hid : n < nodeEndpoints.length)
-              (hincident : n < (G.raw.incident node).length),
-              R (nodeEndpoints.get ⟨n, hid⟩)
-                ((G.raw.incident node).get ⟨n, hincident⟩) := by
+            IndexedListRel R nodeEndpoints (G.raw.incident node) := by
+          refine { length := hnodeEndpointsLen, get := ?_ }
           intro n hid hincident
           have hfreshMem :
               nodeEndpoints.get ⟨n, hid⟩ ∈ nodeEndpoints :=
@@ -1489,9 +1480,7 @@ theorem GraphRenderRelated.budChild
                 rv.nextEndpoint_eq ⟨n, hid⟩
           exact horderTrace.endpoint.get_suffix_at_right_of_val_eq
             childEndpoint incidentEndpoint hle hsub
-        have herasedRight :=
-          eraseFin_pointwise_relation
-            (R := R) hnodeEndpointsLen hrightRel entryIdx slot hentryIdxVal
+        have herasedRight := hrightRel.erase entryIdx slot hentryIdxVal
         let appendIndex : Fin (restIds ++ eraseFin nodeEndpoints entryIdx).length :=
           ⟨id.val, by
             have hlen :=
@@ -1505,17 +1494,9 @@ theorem GraphRenderRelated.budChild
               rw [hchildPendingLen]
               simp [SearchState.budChild]
             exact Nat.lt_of_lt_of_eq id.isLt hlen⟩
-        have hall :=
-          append_pointwise_relation
-            (R := R)
-            htailLen
-            (eraseFin_length_eq_of_length_eq hnodeEndpointsLen entryIdx slot)
-            hleftRel
-            herasedRight
-            id.val
-            appendIndex.isLt
-            pendingIndex.isLt
-        rcases hall with ⟨hbound, hget⟩
+        have hall := hleftRel.append herasedRight
+        rcases hall.get id.val appendIndex.isLt pendingIndex.isLt with
+          ⟨hbound, hget⟩
         have hrawEq :
             (restIds ++ eraseFin nodeEndpoints entryIdx).get appendIndex =
               (Diag.budStep renderNode entry ok rst).frontierIds.get id := by

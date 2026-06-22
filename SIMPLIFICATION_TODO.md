@@ -413,10 +413,11 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
   - Validation: public `toDiag` and `toPortHypergraphIso` theorems derive from
     the generic relation.
   - Partial: `AppendTrace` now packages paired render/graph append lookup
-    transport, and traversal exposes connect/bud child order traces consumed by
-    `GraphRenderRelation` for endpoint, edge, and node order lookups. The
-    larger relation that packages frontier/pending synchronization and the
-    graph-specific label/bound/incidence deltas is still open.
+    transport, traversal exposes connect/bud child order traces consumed by
+    `GraphRenderRelation` for endpoint, edge, and node order lookups, and
+    `IndexedListRel` now packages connect/bud frontier-to-pending relation
+    composition. The graph-specific label/bound/incidence deltas are still
+    open.
 
 - [ ] Introduce declarative render deltas for connect and bud.
   - Owner: `BijForm.StringDiagram.Renderer.Steps`
