@@ -283,7 +283,7 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     upper bound, pivot codec, tail codec, and left/right `SubcodeLt` witnesses.
     Finite and infinite child-rank theorems are now thin instantiations.
 
-- [ ] Generalize typed-binding NF constructor-family carrier coding.
+- [x] Generalize typed-binding NF constructor-family carrier coding.
   - Owner: `BijForm.TypedBinding`
   - Evidence: `NFNormalFamilyCarrierIso`, `NFAppFamilyCarrierIso`, and long
     `NFGeneratedLayer_child_rank_lt` proof in
@@ -303,8 +303,12 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     `NFGeneratedLayer_child_rank_lt` no longer directly names
     `LayerShape.iso`, `LayerShape.familyCarrierIso`, `LayerShape.layerToShape`,
     `LayerShape.familyIso`, `CtorLayer.familyIso`, `CtorLayer.toFamily`,
-    `ArgTuple.ofChild`, or `ListPiTuple.ofPi`. Repeated codec arithmetic inside
-    `NFGeneratedLayer_child_rank_lt` remains open.
+    `ArgTuple.ofChild`, or `ListPiTuple.ofPi`.
+  - Completed: extracted public NF constructor-child rank lemmas for `dum`,
+    `lam`, app-function, and app-argument children. `NFGeneratedLayer_child_rank_lt`
+    is now a dispatcher over those lemmas, and its body no longer contains
+    `hparent`, `let tail`, direct `CodeAlgebra.finProdNatOrNat`/
+    `CodeAlgebra.finTaggedProdNat` calls, or `omega`.
 
 - [ ] Replace HBT child-swap normal-form boilerplate with quotient helpers.
   - Owner: `BijForm.QuotientPolynomial` and `BijForm.CodeAlgebra`
