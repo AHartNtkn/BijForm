@@ -143,6 +143,19 @@ theorem list_get_of_eq_append_left {α : Type}
   subst full
   exact list_get_append_left pref suffix hi i.isLt
 
+theorem list_get_of_eq_append_left_of_val_eq {α : Type}
+    {full pref suffix : List α}
+    (hfull : full = pref ++ suffix)
+    (i : Fin full.length) (j : Fin pref.length)
+    (hval : i.val = j.val) :
+    full.get i = pref.get j := by
+  have hi : i.val < pref.length := by
+    simp [hval, j.isLt]
+  have hget := list_get_of_eq_append_left hfull i hi
+  have hidx : (⟨i.val, hi⟩ : Fin pref.length) = j := by
+    exact fin_eq_of_val_eq hval
+  simpa [hidx] using hget
+
 theorem list_get_of_eq_append_right {α : Type}
     {full pref suffix : List α}
     (hfull : full = pref ++ suffix)

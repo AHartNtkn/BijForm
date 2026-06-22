@@ -1533,27 +1533,10 @@ theorem GraphRenderRelated.budChild
             Fin (endpointOrder G
               (st.budChild hpending node slot hmate hunseen)).length :=
           Fin.cast hchildEndpointLength ⟨raw, hbound⟩
-        let appendEndpoint :
-            Fin (endpointOrder G st ++ G.raw.incident node).length :=
-          Fin.cast (congrArg List.length horder) childEndpoint
         let oldEndpoint : Fin (endpointOrder G st).length :=
           Fin.cast hrel.endpoint_length ⟨raw, hold⟩
-        have hget := list_get_of_eq horder childEndpoint
-        have hbefore : appendEndpoint.val < (endpointOrder G st).length := by
-          simpa [appendEndpoint, childEndpoint, oldEndpoint] using
-            oldEndpoint.isLt
-        have happ :
-            (endpointOrder G st ++ G.raw.incident node).get appendEndpoint =
-              (endpointOrder G st).get oldEndpoint := by
-          have hleft :=
-            list_get_append_left (endpointOrder G st)
-              (G.raw.incident node) hbefore appendEndpoint.isLt
-          have hidx :
-              (⟨appendEndpoint.val, hbefore⟩ :
-                Fin (endpointOrder G st).length) = oldEndpoint := by
-            exact fin_mk_val_eq oldEndpoint hbefore
-          simpa [hidx] using hleft
-        exact hget.trans happ
+        exact list_get_of_eq_append_left_of_val_eq horder
+          childEndpoint oldEndpoint (by simp [childEndpoint, oldEndpoint])
       have endpointAt_new :
           ∀ {raw : Nat}
             (hle : rst.endpoints.length ≤ raw)
@@ -1633,25 +1616,10 @@ theorem GraphRenderRelated.budChild
         let childEdge :
             Fin (edgeOrder (st.budChild hpending node slot hmate hunseen)).length :=
           Fin.cast hchildEdgeLength ⟨raw, hbound⟩
-        let appendEdge : Fin (edgeOrder st ++ [G.raw.endpointEdge active]).length :=
-          Fin.cast (congrArg List.length horder) childEdge
         let oldEdge : Fin (edgeOrder st).length :=
           Fin.cast hrel.edge_length ⟨raw, hold⟩
-        have hget := list_get_of_eq horder childEdge
-        have hbefore : appendEdge.val < (edgeOrder st).length := by
-          simpa [appendEdge, childEdge, oldEdge] using oldEdge.isLt
-        have happ :
-            (edgeOrder st ++ [G.raw.endpointEdge active]).get appendEdge =
-              (edgeOrder st).get oldEdge := by
-          have hleft :=
-            list_get_append_left (edgeOrder st)
-              [G.raw.endpointEdge active] hbefore appendEdge.isLt
-          have hidx :
-              (⟨appendEdge.val, hbefore⟩ :
-                Fin (edgeOrder st).length) = oldEdge := by
-            exact fin_mk_val_eq oldEdge hbefore
-          simpa [hidx] using hleft
-        exact hget.trans happ
+        exact list_get_of_eq_append_left_of_val_eq horder
+          childEdge oldEdge (by simp [childEdge, oldEdge])
       have edgeAt_new :
           ∀ {raw : Nat}
             (hnew : raw = rst.edges.length)
@@ -1699,25 +1667,10 @@ theorem GraphRenderRelated.budChild
         let childNode :
             Fin (nodeOrder (st.budChild hpending node slot hmate hunseen)).length :=
           Fin.cast hchildNodeLength ⟨raw, hbound⟩
-        let appendNode : Fin (nodeOrder st ++ [node]).length :=
-          Fin.cast (congrArg List.length horder) childNode
         let oldNode : Fin (nodeOrder st).length :=
           Fin.cast hrel.node_length ⟨raw, hold⟩
-        have hget := list_get_of_eq horder childNode
-        have hbefore : appendNode.val < (nodeOrder st).length := by
-          simpa [appendNode, childNode, oldNode] using oldNode.isLt
-        have happ :
-            (nodeOrder st ++ [node]).get appendNode =
-              (nodeOrder st).get oldNode := by
-          have hleft :=
-            list_get_append_left (nodeOrder st) [node] hbefore
-              appendNode.isLt
-          have hidx :
-              (⟨appendNode.val, hbefore⟩ :
-                Fin (nodeOrder st).length) = oldNode := by
-            exact fin_mk_val_eq oldNode hbefore
-          simpa [hidx] using hleft
-        exact hget.trans happ
+        exact list_get_of_eq_append_left_of_val_eq horder
+          childNode oldNode (by simp [childNode, oldNode])
       have nodeAt_new :
           ∀ {raw : Nat}
             (hnew : raw = rst.nodes.length)
