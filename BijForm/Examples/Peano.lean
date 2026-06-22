@@ -321,24 +321,38 @@ theorem PeanoNat_layer_child_lt :
           intro q
           cases q
           let c := child ()
+          have hpath :
+              CodeAlgebra.SubcodeLt CodeAlgebra.prodOrNatOrProdOrNat
+                (fun c : Nat => Sum.inr (Sum.inl c)) id := by
+            exact CodeAlgebra.SubcodeLe.toNatSum4_inr_inl_lt
+              (first := CodeAlgebra.prodNat) (third := CodeAlgebra.prodNat)
+              (fourth := Iso.refl Nat) CodeAlgebra.subcode_nat_id
           simpa [c, PeanoNatLayerShapeTo] using
-            CodeAlgebra.toNatSum4_inr_inl_lt_of_le CodeAlgebra.prodNat
-              (Iso.refl Nat) CodeAlgebra.prodNat (Iso.refl Nat)
-              (Nat.le_refl c)
+            hpath c
       | implies =>
           change PeanoParam PeanoCtor.implies at param
           change Nat at param
           cases out_eq
           intro q
           cases q
-          · simpa [PeanoNatLayerShapeTo] using
-              CodeAlgebra.toNatSum4_inr_inr_inl_lt_of_le CodeAlgebra.prodNat
-                (Iso.refl Nat) CodeAlgebra.prodNat (Iso.refl Nat)
-                (CodeAlgebra.prodNat_toFun_fst_le (child false, child true))
-          · simpa [PeanoNatLayerShapeTo] using
-              CodeAlgebra.toNatSum4_inr_inr_inl_lt_of_le CodeAlgebra.prodNat
-                (Iso.refl Nat) CodeAlgebra.prodNat (Iso.refl Nat)
-                (CodeAlgebra.prodNat_toFun_snd_le (child false, child true))
+          · have hpath :
+                CodeAlgebra.SubcodeLt CodeAlgebra.prodOrNatOrProdOrNat
+                  (fun p : Nat × Nat => Sum.inr (Sum.inr (Sum.inl p)))
+                  Prod.fst := by
+              exact CodeAlgebra.SubcodeLe.toNatSum4_inr_inr_inl_lt
+                (first := CodeAlgebra.prodNat) (second := Iso.refl Nat)
+                (fourth := Iso.refl Nat) CodeAlgebra.subcode_prodNat_fst
+            simpa [PeanoNatLayerShapeTo] using
+              hpath (child false, child true)
+          · have hpath :
+                CodeAlgebra.SubcodeLt CodeAlgebra.prodOrNatOrProdOrNat
+                  (fun p : Nat × Nat => Sum.inr (Sum.inr (Sum.inl p)))
+                  Prod.snd := by
+              exact CodeAlgebra.SubcodeLe.toNatSum4_inr_inr_inl_lt
+                (first := CodeAlgebra.prodNat) (second := Iso.refl Nat)
+                (fourth := Iso.refl Nat) CodeAlgebra.subcode_prodNat_snd
+            simpa [PeanoNatLayerShapeTo] using
+              hpath (child false, child true)
       | forallE =>
           change PeanoParam PeanoCtor.forallE at param
           change Nat at param
@@ -346,10 +360,14 @@ theorem PeanoNat_layer_child_lt :
           intro q
           cases q
           let c := child ()
+          have hpath :
+              CodeAlgebra.SubcodeLt CodeAlgebra.prodOrNatOrProdOrNat
+                (fun c : Nat => Sum.inr (Sum.inr (Sum.inr c))) id := by
+            exact CodeAlgebra.SubcodeLe.toNatSum4_inr_inr_inr_lt
+              (first := CodeAlgebra.prodNat) (second := Iso.refl Nat)
+              (third := CodeAlgebra.prodNat) CodeAlgebra.subcode_nat_id
           simpa [c, PeanoNatLayerShapeTo] using
-            CodeAlgebra.toNatSum4_inr_inr_inr_lt_of_le CodeAlgebra.prodNat
-              (Iso.refl Nat) CodeAlgebra.prodNat (Iso.refl Nat)
-              (Nat.le_refl c)
+            hpath c
 
 def PeanoNatLayerPresentation : NatLayerPresentation PeanoPoly PeanoInversion :=
   LayerPresentation.ofLayerShapeChildRank

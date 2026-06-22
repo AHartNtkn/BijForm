@@ -217,6 +217,9 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     three-/four-way Nat sums, Nat products, and finite prefixes.
     `NumNat_layer_child_lt` now uses subcode propagation instead of manual
     `finPrefixNat` plus nested-sum bound chains.
+  - Partial: `PeanoNat_layer_child_lt` now uses `SubcodeLt` propagation facts
+    for its four-way Nat sum branches instead of direct `toNatSum4` branch
+    lemma applications.
 
 - [ ] Move generic scaled-rank payload lemmas out of finite string diagrams.
   - Owner: `BijForm.CodeAlgebra`
