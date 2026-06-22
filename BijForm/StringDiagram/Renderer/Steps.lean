@@ -55,6 +55,15 @@ theorem oldEndpoint_lt_budEndpoints
   simp [Signature.nodePorts]
   omega
 
+theorem oldEndpoint_get_budEndpoints
+    {frontier : List Sig.Port} (st : RenderState Sig frontier)
+    (node : Sig.Node) {id : Nat}
+    (hbound : id < st.endpoints.length)
+    (hbud : id < (st.endpoints ++ Sig.nodePorts node).length) :
+    (st.endpoints ++ Sig.nodePorts node).get ⟨id, hbud⟩ =
+      st.endpoints.get ⟨id, hbound⟩ :=
+  list_get_append_left st.endpoints (Sig.nodePorts node) hbound hbud
+
 theorem freshNodeEndpoint_lt_budEndpoints
     {frontier : List Sig.Port} (st : RenderState Sig frontier)
     (hv : st.ValidIds) (node : Sig.Node) {id : Nat}
@@ -1090,8 +1099,8 @@ theorem budStep_validIds {active : Sig.Port} {frontier : List Sig.Port}
               ⟨restIds.get ⟨n, hid⟩, old_bound_lift oldBound⟩ =
               st.endpoints.get
                 ⟨restIds.get ⟨n, hid⟩, oldBound⟩ := by
-                exact list_get_append_left st.endpoints
-                  (Sig.nodePorts node) oldBound (old_bound_lift oldBound)
+                exact oldEndpoint_get_budEndpoints st node oldBound
+                  (old_bound_lift oldBound)
           _ = frontier.get ⟨n, hlabel⟩ := by
               simpa using oldLabel
       have hright :
@@ -1162,8 +1171,8 @@ theorem budStep_validIds {active : Sig.Port} {frontier : List Sig.Port}
           (st.endpoints ++ Sig.nodePorts node).get
               ⟨edge.left, old_bound_lift hbound⟩ =
               st.endpoints.get ⟨edge.left, hbound⟩ := by
-                exact list_get_append_left st.endpoints
-                  (Sig.nodePorts node) hbound (old_bound_lift hbound)
+                exact oldEndpoint_get_budEndpoints st node hbound
+                  (old_bound_lift hbound)
           _ = edge.leftLabel := hlabel
       · cases hnew
         have hlabel := hv.frontier_head_label hids
@@ -1172,8 +1181,8 @@ theorem budStep_validIds {active : Sig.Port} {frontier : List Sig.Port}
           (st.endpoints ++ Sig.nodePorts node).get
               ⟨activeId, old_bound_lift hbound⟩ =
               st.endpoints.get ⟨activeId, hbound⟩ := by
-                exact list_get_append_left st.endpoints
-                  (Sig.nodePorts node) hbound (old_bound_lift hbound)
+                exact oldEndpoint_get_budEndpoints st node hbound
+                  (old_bound_lift hbound)
           _ = active := hlabel
     · intro edge hmem
       simp at hmem
@@ -1184,8 +1193,8 @@ theorem budStep_validIds {active : Sig.Port} {frontier : List Sig.Port}
           (st.endpoints ++ Sig.nodePorts node).get
               ⟨edge.right, old_bound_lift hbound⟩ =
               st.endpoints.get ⟨edge.right, hbound⟩ := by
-                exact list_get_append_left st.endpoints
-                  (Sig.nodePorts node) hbound (old_bound_lift hbound)
+                exact oldEndpoint_get_budEndpoints st node hbound
+                  (old_bound_lift hbound)
           _ = edge.rightLabel := hlabel
       · cases hnew
         have hlabel :=
@@ -1218,8 +1227,8 @@ theorem budStep_validIds {active : Sig.Port} {frontier : List Sig.Port}
               ⟨renderNode.incident.get slot, old_bound_lift hbound⟩ =
               st.endpoints.get
                 ⟨renderNode.incident.get slot, hbound⟩ := by
-                exact list_get_append_left st.endpoints
-                  (Sig.nodePorts node) hbound (old_bound_lift hbound)
+                exact oldEndpoint_get_budEndpoints st node hbound
+                  (old_bound_lift hbound)
           _ =
               Sig.port renderNode.label
                 (Fin.cast (hv.node_incident_length renderNode hold) slot) :=
