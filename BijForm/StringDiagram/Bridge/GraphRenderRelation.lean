@@ -387,6 +387,80 @@ theorem GraphRenderRelated.pending_cons_values
       exact fin_eq_of_val_eq rfl
     simpa [hids, hpending, hcast, htailCast] using h
 
+theorem GraphRenderRelated.edgeLabel_of_appendTrace
+    {G : OpenPortHypergraph Sig boundary}
+    {frontier childFrontier : List Sig.Port}
+    {rst : RenderState Sig frontier} {st : SearchState G frontier}
+    {childRst : RenderState Sig childFrontier}
+    {childSt : SearchState G childFrontier}
+    (hrel : GraphRenderRelated G rst st)
+    {newRenderEdges : List (RenderEdge Sig)}
+    {newGraphEdges : List (Fin G.raw.edgeCount)}
+    (trace : AppendTrace rst.edges childRst.edges newRenderEdges
+      (edgeOrder st) (edgeOrder childSt) newGraphEdges)
+    (hchildEdgeLength : childRst.edges.length = (edgeOrder childSt).length)
+    (hnew :
+      ∀ (renderEdge : Fin newRenderEdges.length)
+        (graphEdge : Fin newGraphEdges.length),
+        renderEdge.val = graphEdge.val →
+        (newRenderEdges.get renderEdge).label =
+          G.raw.edgeLabel (newGraphEdges.get graphEdge)) :
+    ∀ edge : Fin childRst.edges.length,
+      (childRst.edges.get edge).label =
+        G.raw.edgeLabel
+          ((edgeOrder childSt).get
+            (listIndexCast (edgeOrder childSt) hchildEdgeLength edge)) := by
+  have hlabelRel :
+      AppendTraceRelation trace
+        (fun renderEdge graphEdge =>
+          renderEdge.label = G.raw.edgeLabel graphEdge) := by
+    refine { prefix_rel := ?_, suffix_rel := ?_ }
+    · intro oldEdge graphEdge hval
+      have hidx : graphEdge = hrel.edgeIndex oldEdge := by
+        exact fin_eq_of_val_eq hval.symm
+      simpa [hidx] using hrel.edge_label oldEdge
+    · intro renderEdge graphEdge hval
+      exact hnew renderEdge graphEdge hval
+  intro edge
+  exact AppendTraceRelation.get_listIndexCast hlabelRel hchildEdgeLength edge
+
+theorem GraphRenderRelated.nodeLabel_of_appendTrace
+    {G : OpenPortHypergraph Sig boundary}
+    {frontier childFrontier : List Sig.Port}
+    {rst : RenderState Sig frontier} {st : SearchState G frontier}
+    {childRst : RenderState Sig childFrontier}
+    {childSt : SearchState G childFrontier}
+    (hrel : GraphRenderRelated G rst st)
+    {newRenderNodes : List (RenderNode Sig)}
+    {newGraphNodes : List (Fin G.raw.nodeCount)}
+    (trace : AppendTrace rst.nodes childRst.nodes newRenderNodes
+      (nodeOrder st) (nodeOrder childSt) newGraphNodes)
+    (hchildNodeLength : childRst.nodes.length = (nodeOrder childSt).length)
+    (hnew :
+      ∀ (renderNode : Fin newRenderNodes.length)
+        (graphNode : Fin newGraphNodes.length),
+        renderNode.val = graphNode.val →
+        (newRenderNodes.get renderNode).label =
+          G.raw.nodeLabel (newGraphNodes.get graphNode)) :
+    ∀ node : Fin childRst.nodes.length,
+      (childRst.nodes.get node).label =
+        G.raw.nodeLabel
+          ((nodeOrder childSt).get
+            (listIndexCast (nodeOrder childSt) hchildNodeLength node)) := by
+  have hlabelRel :
+      AppendTraceRelation trace
+        (fun renderNode graphNode =>
+          renderNode.label = G.raw.nodeLabel graphNode) := by
+    refine { prefix_rel := ?_, suffix_rel := ?_ }
+    · intro oldNode graphNode hval
+      have hidx : graphNode = hrel.nodeIndex oldNode := by
+        exact fin_eq_of_val_eq hval.symm
+      simpa [hidx] using hrel.node_label oldNode
+    · intro renderNode graphNode hval
+      exact hnew renderNode graphNode hval
+  intro node
+  exact AppendTraceRelation.get_listIndexCast hlabelRel hchildNodeLength node
+
 theorem GraphRenderRelated.frontier_id_bound_of_mem
     {G : OpenPortHypergraph Sig boundary}
     {frontier : List Sig.Port}
@@ -862,25 +936,9 @@ theorem GraphRenderRelated.connectChild_nodeLabel
   let horderTrace :=
     connectChild_orderTrace rst st hpending mate hmate hids
       hrel.endpoint_length hrel.edge_length hrel.node_length
-  have hlabelRel :
-      AppendTraceRelation horderTrace.node
-        (fun renderNode graphNode =>
-          renderNode.label = G.raw.nodeLabel graphNode) := by
-    refine { prefix_rel := ?_, suffix_rel := ?_ }
-    · intro prefixNode graphNode hval
-      have hidx : graphNode = hrel.nodeIndex prefixNode := by
-        exact fin_eq_of_val_eq hval.symm
-      simpa [hidx] using hrel.node_label prefixNode
-    · intro renderNodeIdx _graphNode _hval
-      exact fin_zero_elim renderNodeIdx
-  intro node
-  have hidx :
-      horderTrace.node.rightIndex node =
-        listIndexCast
-          (nodeOrder (st.connectChild hpending mate hmate))
-          hchildNodeLength node := by
-    exact fin_eq_of_val_eq rfl
-  simpa [hidx] using AppendTraceRelation.get hlabelRel node
+  exact hrel.nodeLabel_of_appendTrace horderTrace.node hchildNodeLength (by
+    intro renderNodeIdx _graphNode _hval
+    exact fin_zero_elim renderNodeIdx)
 
 theorem GraphRenderRelated.connectChild_edgeLabel
     {G : OpenPortHypergraph Sig boundary}
@@ -908,8 +966,6 @@ theorem GraphRenderRelated.connectChild_edgeLabel
             (listIndexCast
               (edgeOrder (st.connectChild hpending mate hmate))
               hchildEdgeLength edge)) := by
-  let rendererMate := st.restLabelIndex hpending mate
-  let ok := st.connect_compatible hpending mate hmate
   let horderTrace :=
     connectChild_orderTrace rst st hpending mate hmate hids
       hrel.endpoint_length hrel.edge_length hrel.node_length
@@ -919,24 +975,9 @@ theorem GraphRenderRelated.connectChild_edgeLabel
         G.raw.edgeLabel (G.raw.endpointEdge active) := by
     rw [← hactiveLabel]
     exact G.raw.endpoint_edge_label active
-  have hlabelRel :
-      AppendTraceRelation horderTrace.edge
-        (fun renderEdge graphEdge =>
-          renderEdge.label = G.raw.edgeLabel graphEdge) := by
-    refine { prefix_rel := ?_, suffix_rel := ?_ }
-    · intro oldEdge graphEdge hval
-      have hidx : graphEdge = hrel.edgeIndex oldEdge := by
-        exact fin_eq_of_val_eq hval.symm
-      simpa [hidx] using hrel.edge_label oldEdge
-    · intro renderEdge graphEdge _hval
-      simpa [horderTrace, connectChild_orderTrace] using hlabelNew
-  intro edge
-  have hidx :
-      horderTrace.edge.rightIndex edge =
-        listIndexCast (edgeOrder (st.connectChild hpending mate hmate))
-          hchildEdgeLength edge := by
-    exact fin_eq_of_val_eq rfl
-  simpa [hidx] using AppendTraceRelation.get hlabelRel edge
+  exact hrel.edgeLabel_of_appendTrace horderTrace.edge hchildEdgeLength (by
+    intro renderEdge graphEdge _hval
+    simpa [horderTrace, connectChild_orderTrace] using hlabelNew)
 
 theorem GraphRenderRelated.connectChild_edgeLeft
     {G : OpenPortHypergraph Sig boundary}
@@ -1079,13 +1120,9 @@ theorem GraphRenderRelated.connectChild_edgeLeft
               exact congrArg G.raw.endpointEdge hpendingVals.1
       simpa [horderTrace, connectChild_orderTrace] using hcalc
   intro edge
-  have hidx :
-      horderTrace.edge.rightIndex edge =
-        listIndexCast (edgeOrder (st.connectChild hpending mate hmate))
-          hchildEdgeLength edge := by
-    exact fin_eq_of_val_eq rfl
-  simpa [hidx] using
-    (AppendTraceRelation.get hleftRel edge) (hchildEdgeBounds.left edge)
+  exact
+    (AppendTraceRelation.get_listIndexCast hleftRel hchildEdgeLength edge)
+      (hchildEdgeBounds.left edge)
 
 theorem GraphRenderRelated.connectChild_edgeRight
     {G : OpenPortHypergraph Sig boundary}
@@ -1248,13 +1285,9 @@ theorem GraphRenderRelated.connectChild_edgeRight
       simpa [horderTrace, connectChild_orderTrace, idx, rendererMate] using
         hcalc
   intro edge
-  have hidx :
-      horderTrace.edge.rightIndex edge =
-        listIndexCast (edgeOrder (st.connectChild hpending mate hmate))
-          hchildEdgeLength edge := by
-    exact fin_eq_of_val_eq rfl
-  simpa [hidx] using
-    (AppendTraceRelation.get hrightRel edge) (hchildEdgeBounds.right edge)
+  exact
+    (AppendTraceRelation.get_listIndexCast hrightRel hchildEdgeLength edge)
+      (hchildEdgeBounds.right edge)
 
 theorem GraphRenderRelated.connectChild
     {G : OpenPortHypergraph Sig boundary}
@@ -1659,13 +1692,8 @@ theorem GraphRenderRelated.budChild_nodeIncidentFields
         renderNode] using (G.raw.incident_length node).symm
   refine { node_incident_length := ?_, node_incident_bound := ?_ }
   · intro renderIdx
-    have hidx :
-        horderTrace.node.rightIndex renderIdx =
-          listIndexCast
-            (nodeOrder (st.budChild hpending node slot hmate hunseen))
-            hchildNodeLength renderIdx := by
-      exact fin_eq_of_val_eq rfl
-    simpa [hidx] using AppendTraceRelation.get hlengthRel renderIdx
+    exact AppendTraceRelation.get_listIndexCast hlengthRel hchildNodeLength
+      renderIdx
   · intro renderIdx renderSlot
     exact hchildValid.node_incident_bound
       ((Diag.budStep renderNode entry ok rst).nodes.get renderIdx)
@@ -1871,22 +1899,18 @@ theorem GraphRenderRelated.budChild_nodeIncident
       simpa [horderTrace, budChild_orderTrace, nodeEndpoints, renderNode,
         freshSlot, childEndpoint] using hendpointRaw.trans hgraphSlotGet
   intro renderIdx renderSlot
-  have hnodeIdx :
-      horderTrace.node.rightIndex renderIdx =
-        listIndexCast
-          (nodeOrder (st.budChild hpending node slot hmate hunseen))
-          hchildNodeLength renderIdx := by
-    exact fin_eq_of_val_eq rfl
   have hlen :
       ((Diag.budStep renderNode entry ok rst).nodes.get renderIdx).incident.length =
         (G.raw.incident
           ((nodeOrder
             (st.budChild hpending node slot hmate hunseen)).get
-              (horderTrace.node.rightIndex renderIdx))).length := by
-    simpa [hnodeIdx] using
-      hnodeIncidentFields.node_incident_length renderIdx
-  simpa [hnodeIdx] using
-    (AppendTraceRelation.get hincidentRel renderIdx)
+              (listIndexCast
+                (nodeOrder (st.budChild hpending node slot hmate hunseen))
+                hchildNodeLength renderIdx))).length :=
+    hnodeIncidentFields.node_incident_length renderIdx
+  exact
+    (AppendTraceRelation.get_listIndexCast hincidentRel hchildNodeLength
+      renderIdx)
       renderSlot
       (hnodeIncidentFields.node_incident_bound renderIdx renderSlot)
       hlen
@@ -1945,13 +1969,8 @@ theorem GraphRenderRelated.budChild_endpointLabel
       have hinc := G.raw.incidence_label node suffixEndpoint
       simpa [Signature.nodePorts, renderNode, hval] using hinc.symm
   intro endpoint
-  have hidx :
-      horderTrace.endpoint.rightIndex endpoint =
-        listIndexCast
-          (endpointOrder G (st.budChild hpending node slot hmate hunseen))
-          hchildEndpointLength endpoint := by
-    exact fin_eq_of_val_eq rfl
-  simpa [hidx] using AppendTraceRelation.get hendpointRel endpoint
+  exact AppendTraceRelation.get_listIndexCast hendpointRel
+    hchildEndpointLength endpoint
 
 theorem GraphRenderRelated.budChild_edgeLabel
     {G : OpenPortHypergraph Sig boundary}
@@ -1986,8 +2005,6 @@ theorem GraphRenderRelated.budChild_edgeLabel
               (edgeOrder (st.budChild hpending node slot hmate hunseen))
               hchildEdgeLength edge)) := by
   let renderNode := G.raw.nodeLabel node
-  let entry := SearchState.budEntry (G := G) node slot
-  let ok := st.bud_compatible hpending node slot hmate
   let horderTrace :=
     budChild_orderTrace rst st hpending node slot hmate hunseen hids
       hrel.endpoint_length hrel.edge_length hrel.node_length
@@ -1997,25 +2014,9 @@ theorem GraphRenderRelated.budChild_edgeLabel
         G.raw.edgeLabel (G.raw.endpointEdge active) := by
     rw [← hactiveLabel]
     exact G.raw.endpoint_edge_label active
-  have hlabelRel :
-      AppendTraceRelation horderTrace.edge
-        (fun renderEdge graphEdge =>
-          renderEdge.label = G.raw.edgeLabel graphEdge) := by
-    refine { prefix_rel := ?_, suffix_rel := ?_ }
-    · intro oldEdge graphEdge hval
-      have hidx : graphEdge = hrel.edgeIndex oldEdge := by
-        exact fin_eq_of_val_eq hval.symm
-      simpa [hidx] using hrel.edge_label oldEdge
-    · intro renderEdge graphEdge _hval
-      simpa [horderTrace, budChild_orderTrace] using hlabelNew
-  intro edge
-  have hidx :
-      horderTrace.edge.rightIndex edge =
-        listIndexCast
-          (edgeOrder (st.budChild hpending node slot hmate hunseen))
-          hchildEdgeLength edge := by
-    exact fin_eq_of_val_eq rfl
-  simpa [hidx] using AppendTraceRelation.get hlabelRel edge
+  exact hrel.edgeLabel_of_appendTrace horderTrace.edge hchildEdgeLength (by
+    intro renderEdge graphEdge _hval
+    simpa [horderTrace, budChild_orderTrace] using hlabelNew)
 
 theorem GraphRenderRelated.budChild_edgeLeft
     {G : OpenPortHypergraph Sig boundary}
@@ -2171,14 +2172,9 @@ theorem GraphRenderRelated.budChild_edgeLeft
               exact congrArg G.raw.endpointEdge hpendingVals.1
       simpa [horderTrace, budChild_orderTrace] using hcalc
   intro edge
-  have hidx :
-      horderTrace.edge.rightIndex edge =
-        listIndexCast
-          (edgeOrder (st.budChild hpending node slot hmate hunseen))
-          hchildEdgeLength edge := by
-    exact fin_eq_of_val_eq rfl
-  simpa [hidx] using
-    (AppendTraceRelation.get hleftRel edge) (hchildEdgeBounds.left edge)
+  exact
+    (AppendTraceRelation.get_listIndexCast hleftRel hchildEdgeLength edge)
+      (hchildEdgeBounds.left edge)
 
 theorem GraphRenderRelated.budChild_edgeRight
     {G : OpenPortHypergraph Sig boundary}
@@ -2381,14 +2377,9 @@ theorem GraphRenderRelated.budChild_edgeRight
       simpa [horderTrace, budChild_orderTrace, nodeEndpoints, entryIdx,
         renderNode, childEndpoint] using hcalc
   intro edge
-  have hidx :
-      horderTrace.edge.rightIndex edge =
-        listIndexCast
-          (edgeOrder (st.budChild hpending node slot hmate hunseen))
-          hchildEdgeLength edge := by
-    exact fin_eq_of_val_eq rfl
-  simpa [hidx] using
-    (AppendTraceRelation.get hrightRel edge) (hchildEdgeBounds.right edge)
+  exact
+    (AppendTraceRelation.get_listIndexCast hrightRel hchildEdgeLength edge)
+      (hchildEdgeBounds.right edge)
 
 theorem GraphRenderRelated.budChild_nodeLabel
     {G : OpenPortHypergraph Sig boundary}
@@ -2422,31 +2413,12 @@ theorem GraphRenderRelated.budChild_nodeLabel
             (listIndexCast
               (nodeOrder (st.budChild hpending node slot hmate hunseen))
               hchildNodeLength renderIdx)) := by
-  let renderNode := G.raw.nodeLabel node
-  let entry := SearchState.budEntry (G := G) node slot
-  let ok := st.bud_compatible hpending node slot hmate
   let horderTrace :=
     budChild_orderTrace rst st hpending node slot hmate hunseen hids
       hrel.endpoint_length hrel.edge_length hrel.node_length
-  have hlabelRel :
-      AppendTraceRelation horderTrace.node
-        (fun renderNode graphNode =>
-          renderNode.label = G.raw.nodeLabel graphNode) := by
-    refine { prefix_rel := ?_, suffix_rel := ?_ }
-    · intro oldNode graphNode hval
-      have hidx : graphNode = hrel.nodeIndex oldNode := by
-        exact fin_eq_of_val_eq hval.symm
-      simpa [hidx] using hrel.node_label oldNode
-    · intro renderNodeIdx graphNode _hval
-      simp [horderTrace, budChild_orderTrace]
-  intro renderIdx
-  have hidx :
-      horderTrace.node.rightIndex renderIdx =
-        listIndexCast
-          (nodeOrder (st.budChild hpending node slot hmate hunseen))
-          hchildNodeLength renderIdx := by
-    exact fin_eq_of_val_eq rfl
-  simpa [hidx] using AppendTraceRelation.get hlabelRel renderIdx
+  exact hrel.nodeLabel_of_appendTrace horderTrace.node hchildNodeLength (by
+    intro renderNodeIdx graphNode _hval
+    simp [horderTrace, budChild_orderTrace])
 
 theorem GraphRenderRelated.budChild
     {G : OpenPortHypergraph Sig boundary}

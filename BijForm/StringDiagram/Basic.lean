@@ -503,6 +503,25 @@ theorem listIndexCast_val {α : Type} (xs : List α) {n : Nat}
     (listIndexCast xs h i).val = i.val :=
   rfl
 
+namespace AppendTraceRelation
+
+theorem get_listIndexCast {α β : Type}
+    {leftPref leftFull leftSuffix : List α}
+    {rightPref rightFull rightSuffix : List β}
+    {trace : AppendTrace leftPref leftFull leftSuffix
+      rightPref rightFull rightSuffix}
+    {R : α → β → Prop}
+    (h : AppendTraceRelation trace R)
+    (hlen : leftFull.length = rightFull.length)
+    (i : Fin leftFull.length) :
+    R (leftFull.get i) (rightFull.get (listIndexCast rightFull hlen i)) := by
+  have hidx :
+      trace.rightIndex i = listIndexCast rightFull hlen i := by
+    exact fin_eq_of_val_eq rfl
+  simpa [hidx] using AppendTraceRelation.get h i
+
+end AppendTraceRelation
+
 theorem list_get_of_eq {α : Type} {xs ys : List α}
     (h : xs = ys) (i : Fin xs.length) :
     xs.get i = ys.get (Fin.cast (congrArg List.length h) i) := by
