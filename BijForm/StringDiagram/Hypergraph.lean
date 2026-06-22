@@ -144,6 +144,15 @@ def EdgeMate (G : PortHypergraph Sig boundary)
     (endpoint mate : Fin G.endpointCount) : Prop :=
   endpoint ≠ mate ∧ G.endpointEdge endpoint = G.endpointEdge mate
 
+theorem EdgeMate.symm {G : PortHypergraph Sig boundary}
+    {endpoint mate : Fin G.endpointCount}
+    (hmate : EdgeMate G endpoint mate) :
+    EdgeMate G mate endpoint := by
+  constructor
+  · intro hsame
+    exact hmate.1 hsame.symm
+  · exact hmate.2.symm
+
 /-- Type-level wrapper for executable edge-mate checks. -/
 structure EdgeMateData (G : PortHypergraph Sig boundary)
     (endpoint mate : Fin G.endpointCount) : Type where
@@ -281,6 +290,14 @@ inductive PortReachesBoundary (G : PortHypergraph Sig boundary) :
       (hq : (G.incident node).get toSlot = q)
       (reach : PortReachesBoundary G p) :
       PortReachesBoundary G q
+
+theorem PortReachesBoundary.throughEdgeMate
+    {G : PortHypergraph Sig boundary}
+    {endpoint mate : Fin G.endpointCount}
+    (hmate : EdgeMate G endpoint mate)
+    (reach : PortReachesBoundary G endpoint) :
+    PortReachesBoundary G mate :=
+  PortReachesBoundary.throughEdge hmate.2 hmate.1 reach
 
 /-- Every constructor is in some component connected to the external boundary. -/
 def AllConstructorsReachBoundary (G : PortHypergraph Sig boundary) : Prop :=
@@ -514,8 +531,7 @@ theorem rawReachesBoundary_to_portReachesBoundaryOfInvariants
         ⟨_, List.mem_range.mp hboundary⟩
       have hendpoint :
           G.boundaryPort boundaryIndex = ⟨_, hbound⟩ := by
-        apply Fin.ext
-        rfl
+        exact fin_eq_of_val_eq rfl
       simpa [hendpoint] using
         (PortHypergraph.PortReachesBoundary.boundary
           (G := G) boundaryIndex)
@@ -528,43 +544,27 @@ theorem rawReachesBoundary_to_portReachesBoundaryOfInvariants
         hv.edge_left_bound (st.edges.get edgeIndex) hedgeMem
       have hrightBound :=
         hv.edge_right_bound (st.edges.get edgeIndex) hedgeMem
-      have hleftEdge :
-          G.endpointEdge ⟨(st.edges.get edgeIndex).left, hleftBound⟩ =
-            edgeIndex := by
-        have h := endpointEdgeOfPartition_left hv hp edgeIndex
-        simpa [G, ev, PortHypergraphEvidence.toPortHypergraph,
-          portHypergraphEvidenceOfInvariants, edgeEvidenceOfPartition,
-          endpointEdgeEvidenceOfPartition] using h
-      have hrightEdge :
-          G.endpointEdge ⟨(st.edges.get edgeIndex).right, hrightBound⟩ =
-            edgeIndex := by
-        have h := endpointEdgeOfPartition_right hv hp edgeIndex
-        simpa [G, ev, PortHypergraphEvidence.toPortHypergraph,
-          portHypergraphEvidenceOfInvariants, edgeEvidenceOfPartition,
-          endpointEdgeEvidenceOfPartition] using h
-      have hsame :
-          G.endpointEdge ⟨(st.edges.get edgeIndex).left, hleftBound⟩ =
-            G.endpointEdge ⟨(st.edges.get edgeIndex).right, hrightBound⟩ :=
-        hleftEdge.trans hrightEdge.symm
-      have hdiff :
-          (⟨(st.edges.get edgeIndex).left, hleftBound⟩ :
-              Fin st.endpoints.length) ≠
+      have hmate :
+          PortHypergraph.EdgeMate G
+            (⟨(st.edges.get edgeIndex).left, hleftBound⟩ :
+              Fin st.endpoints.length)
             ⟨(st.edges.get edgeIndex).right, hrightBound⟩ := by
-        intro heq
-        have hval := congrArg (fun endpoint : Fin st.endpoints.length => endpoint.val) heq
-        have hne := edge_left_ne_right_of_partition hp edgeIndex
-        exact hne hval
+        simpa [G, ev] using
+          edgeMateOfInvariants_of_endpoint_sides hv hp hn pref ho
+            (⟨(st.edges.get edgeIndex).left, hleftBound⟩ :
+              Fin st.endpoints.length)
+            (⟨(st.edges.get edgeIndex).right, hrightBound⟩ :
+              Fin st.endpoints.length)
+            edgeIndex rfl rfl
       have hreachRight :
           PortHypergraph.PortReachesBoundary G
             ⟨(st.edges.get edgeIndex).right, hrightBound⟩ :=
-        PortHypergraph.PortReachesBoundary.throughEdge hsame hdiff
-          (ih hleftBound)
+        PortHypergraph.PortReachesBoundary.throughEdgeMate hmate (ih hleftBound)
       have htarget :
           (⟨(st.edges.get edgeIndex).right, hrightBound⟩ :
               Fin st.endpoints.length) =
             ⟨(st.edges.get edgeIndex).right, hbound⟩ := by
-        apply Fin.ext
-        rfl
+        exact fin_eq_of_val_eq rfl
       simpa [htarget] using hreachRight
   | throughEdgeRight edge hmem _reach ih =>
       rcases list_exists_get_of_mem st.edges hmem with ⟨edgeIndex, hedgeEq⟩
@@ -575,43 +575,28 @@ theorem rawReachesBoundary_to_portReachesBoundaryOfInvariants
         hv.edge_left_bound (st.edges.get edgeIndex) hedgeMem
       have hrightBound :=
         hv.edge_right_bound (st.edges.get edgeIndex) hedgeMem
-      have hleftEdge :
-          G.endpointEdge ⟨(st.edges.get edgeIndex).left, hleftBound⟩ =
-            edgeIndex := by
-        have h := endpointEdgeOfPartition_left hv hp edgeIndex
-        simpa [G, ev, PortHypergraphEvidence.toPortHypergraph,
-          portHypergraphEvidenceOfInvariants, edgeEvidenceOfPartition,
-          endpointEdgeEvidenceOfPartition] using h
-      have hrightEdge :
-          G.endpointEdge ⟨(st.edges.get edgeIndex).right, hrightBound⟩ =
-            edgeIndex := by
-        have h := endpointEdgeOfPartition_right hv hp edgeIndex
-        simpa [G, ev, PortHypergraphEvidence.toPortHypergraph,
-          portHypergraphEvidenceOfInvariants, edgeEvidenceOfPartition,
-          endpointEdgeEvidenceOfPartition] using h
-      have hsame :
-          G.endpointEdge ⟨(st.edges.get edgeIndex).right, hrightBound⟩ =
-            G.endpointEdge ⟨(st.edges.get edgeIndex).left, hleftBound⟩ :=
-        hrightEdge.trans hleftEdge.symm
-      have hdiff :
-          (⟨(st.edges.get edgeIndex).right, hrightBound⟩ :
-              Fin st.endpoints.length) ≠
-            ⟨(st.edges.get edgeIndex).left, hleftBound⟩ := by
-        intro heq
-        have hval := congrArg (fun endpoint : Fin st.endpoints.length => endpoint.val) heq
-        have hne := edge_left_ne_right_of_partition hp edgeIndex
-        exact hne hval.symm
+      have hmate :
+          PortHypergraph.EdgeMate G
+            (⟨(st.edges.get edgeIndex).left, hleftBound⟩ :
+              Fin st.endpoints.length)
+            ⟨(st.edges.get edgeIndex).right, hrightBound⟩ := by
+        simpa [G, ev] using
+          edgeMateOfInvariants_of_endpoint_sides hv hp hn pref ho
+            (⟨(st.edges.get edgeIndex).left, hleftBound⟩ :
+              Fin st.endpoints.length)
+            (⟨(st.edges.get edgeIndex).right, hrightBound⟩ :
+              Fin st.endpoints.length)
+            edgeIndex rfl rfl
       have hreachLeft :
           PortHypergraph.PortReachesBoundary G
             ⟨(st.edges.get edgeIndex).left, hleftBound⟩ :=
-        PortHypergraph.PortReachesBoundary.throughEdge hsame hdiff
+        PortHypergraph.PortReachesBoundary.throughEdgeMate hmate.symm
           (ih hrightBound)
       have htarget :
           (⟨(st.edges.get edgeIndex).left, hleftBound⟩ :
               Fin st.endpoints.length) =
             ⟨(st.edges.get edgeIndex).left, hbound⟩ := by
-        apply Fin.ext
-        rfl
+        exact fin_eq_of_val_eq rfl
       simpa [htarget] using hreachLeft
   | throughConstructor node hmem fromSlot toSlot _reach ih =>
       rcases list_exists_get_of_mem st.nodes hmem with ⟨nodeIndex, hnodeEq⟩
@@ -652,8 +637,7 @@ theorem rawReachesBoundary_to_portReachesBoundaryOfInvariants
           (⟨(st.nodes.get nodeIndex).incident.get toSlot, htoBound⟩ :
               Fin st.endpoints.length) =
             ⟨(st.nodes.get nodeIndex).incident.get toSlot, hbound⟩ := by
-        apply Fin.ext
-        rfl
+        exact fin_eq_of_val_eq rfl
       simpa [htarget] using hreachTo
 
 /-- Evidence that a completed render trace presents an open semantic graph. -/
