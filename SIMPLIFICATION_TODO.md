@@ -167,6 +167,10 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     branches through `endpointOrderIndex` and `edgeOrderIndex`. The pending
     relation-field bridge plus later edge-left/right and dependent
     incident-slot transports remain open.
+  - Partial: routed bud-child edge-left and edge-right preservation branches
+    through `endpointOrderIndex` and `edgeOrderIndex` for child order lookups.
+    The pending relation-field bridge and node/incident-slot preservation
+    region remain open.
 
 ## Code Algebra and Rank Descent
 
