@@ -491,13 +491,16 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
   - Validation: `TupleAction.BinarySwap` and `Examples/HBTQuotient.lean` build
     through the shared abstraction.
 
-- [ ] Add generic setoid transport across `Iso`.
+- [x] Add generic setoid transport across `Iso`.
   - Owner: `BijForm.Coding` or `BijForm.QuotientPolynomial`
   - Evidence: syntax/code relation transport is duplicated in
     `QuotientPolynomial.lean`.
   - Action: add `Iso.transportSetoid` and indexed quotient transport helpers.
   - Validation: `syntaxCarrierIso`, `codeIso`, and HBT quotient examples build
     through the generic transport.
+  - Completed: added `Iso.transportSetoid` and `Iso.quotientTransport` in
+    `BijForm.Coding`; `syntaxSetoid`, `codeSetoid`, `syntaxCarrierIso`, and
+    `codeIso` now route through the generic transport.
 
 - [ ] Replace stale-name audit greps with Lean validation surfaces.
   - Owner: audit tooling plus quotient/example validation modules.

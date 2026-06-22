@@ -140,6 +140,19 @@ def subtypePartition {α : Type u} {β : Type v} {γ : Type w}
           rfl
         simp [hn, hright]
 
+/-- Transport a setoid across an isomorphism. -/
+def transportSetoid {α : Type u} {β : Type v}
+    (e : α ≃ᵢ β) (S : Setoid α) : Setoid β where
+  r x y := S.r (e.invFun x) (e.invFun y)
+  iseqv := by
+    refine ⟨?_, ?_, ?_⟩
+    · intro x
+      exact S.iseqv.refl _
+    · intro x y hxy
+      exact S.iseqv.symm hxy
+    · intro x y z hxy hyz
+      exact S.iseqv.trans hxy hyz
+
 /-- Transport quotients across an isomorphism when both directions preserve
 the chosen setoid relations. -/
 def quotient {α : Type u} {β : Type v} (e : α ≃ᵢ β)
@@ -167,6 +180,21 @@ def quotient {α : Type u} {β : Type v} (e : α ≃ᵢ β)
     exact Quotient.inductionOn q (fun b => by
       change Quotient.mk Sβ (e.toFun (e.invFun b)) = Quotient.mk Sβ b
       rw [e.right_inv b])
+
+/-- A quotient is transported canonically to the quotient by the transported
+setoid. -/
+def quotientTransport {α : Type u} {β : Type v}
+    (e : α ≃ᵢ β) (S : Setoid α) :
+    Quotient S ≃ᵢ Quotient (transportSetoid e S) :=
+  quotient e S (transportSetoid e S)
+    (by
+      intro a b hab
+      change S.r (e.invFun (e.toFun a)) (e.invFun (e.toFun b))
+      rw [e.left_inv a, e.left_inv b]
+      exact hab)
+    (by
+      intro a b hab
+      exact hab)
 
 theorem noNatIsoOfSubsingleton {α : Type u} [Subsingleton α] :
     (α ≃ᵢ Nat) → False := by
