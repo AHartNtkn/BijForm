@@ -1,5 +1,5 @@
 import BijForm.Examples.Num
-import BijForm.DependentPolynomial
+import BijForm.InitialAlgebra
 import BijForm.CodeAlgebra
 
 namespace BijForm

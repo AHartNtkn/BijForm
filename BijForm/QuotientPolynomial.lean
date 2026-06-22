@@ -1,4 +1,4 @@
-import BijForm.DependentPolynomial
+import BijForm.InitialAlgebra
 
 namespace BijForm
 namespace DepPoly

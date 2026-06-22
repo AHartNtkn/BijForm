@@ -34,7 +34,7 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     syntax, Nat, and ranked-Nat presentations are views, and shape presentation
     stores only shape metadata plus a canonical presentation.
 
-- [ ] Split initial algebra machinery out of `DependentPolynomial.lean`.
+- [x] Split initial algebra machinery out of `DependentPolynomial.lean`.
   - Owner: new `BijForm.InitialAlgebra` or equivalent core module.
   - Evidence: `Mu`, `Mu.fold`, `WellFoundedCode`, generated code, shapes, and
     presentation DSL all live in `BijForm/DependentPolynomial.lean`.
@@ -42,6 +42,9 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     while leaving polynomial container definitions in `DependentPolynomial`.
   - Validation: import graph builds without cycles; downstream modules still
     import the intended public API.
+  - Completed: `BijForm.DependentPolynomial` now contains the container and
+    output-fiber layer; `BijForm.InitialAlgebra` owns `Mu`, fold,
+    generated-code, shape-code, and presentation APIs.
 
 - [ ] Remove the parallel `Obj` and `FiberObj` layer representation model.
   - Owner: `BijForm.DependentPolynomial`

@@ -90,11 +90,15 @@ lake exe bijform
   - `TupleAction.BinarySwap.decode`
 
 - `BijForm.DependentPolynomial`
-  Defines dependent polynomial signatures, their initial algebras, and the
-  generic coding framework:
+  Defines dependent polynomial signatures and constructor-fiber data:
   - `DepPoly`
-  - `Mu`
+  - `Obj`
+  - `Fiber`
   - `OutputIndexInversion`
+
+- `BijForm.InitialAlgebra`
+  Defines initial algebras and the generic generated-coding framework:
+  - `Mu`
   - `WellFoundedCode`
   - `LayerPresentation`
   - `GeneratedCode`
@@ -527,6 +531,9 @@ lake exe bijform
   - `BijForm.Examples.SymmetricInteractionNet`
 
 ## Generic Coding Framework
+
+`BijForm.InitialAlgebra` builds the reusable coding framework over the
+container data from `BijForm.DependentPolynomial`.
 
 The central construction is `WellFoundedCode`. It packages:
 
