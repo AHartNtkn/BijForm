@@ -521,18 +521,12 @@ theorem GraphRenderRelated.connectChild
           Fin.cast hrel.node_length oldNode
         have hnodeGet :=
           Diag.connectStep_nodes_get rendererMate ok rst node
-        have hnodeOrderGet :=
-          nodeOrder_connectChild_get st hpending mate hmate childNode
-        have hnodeOrderIdx :
-            Fin.cast
-                (congrArg List.length
-                  (nodeOrder_connectChild st hpending mate hmate))
-                childNode = oldOrderNode := by
-          exact fin_eq_of_val_eq rfl
         have hnodeOrder :
             (nodeOrder (st.connectChild hpending mate hmate)).get childNode =
               (nodeOrder st).get oldOrderNode := by
-          simpa [hnodeOrderIdx] using hnodeOrderGet
+          exact AppendStep.get_prefix_of_val_eq
+            (nodeOrder_connectChild_step st hpending mate hmate)
+            childNode oldOrderNode rfl
         calc
           ((Diag.connectStep rendererMate ok rst).nodes.get node).incident.length =
               (rst.nodes.get oldNode).incident.length := by
@@ -731,7 +725,8 @@ theorem GraphRenderRelated.connectChild
                   childEdge =
                 (edgeOrder st).get (hrel.edgeIndex oldEdge) := by
             have hget :=
-              edgeOrder_connectChild_get_old st hpending mate hmate
+              AppendStep.get_prefix
+                (edgeOrder_connectChild_step st hpending mate hmate)
                 childEdge (by simpa [hrel.edge_length] using hold)
             simpa [childEdge, oldEdge] using hget
           rw [hedgeEq]
@@ -767,7 +762,8 @@ theorem GraphRenderRelated.connectChild
                   childEdge =
                 G.raw.endpointEdge active := by
             have hget :=
-              edgeOrder_connectChild_get_new st hpending mate hmate
+              AppendStep.get_single_at_length
+                (edgeOrder_connectChild_step st hpending mate hmate)
                 childEdge (by simp [childEdge, hnewVal, hrel.edge_length])
             simpa [childEdge] using hget
           have hactiveLabel := (st.pending_labels_cons hpending).1
@@ -806,7 +802,8 @@ theorem GraphRenderRelated.connectChild
                     edge) =
                 (edgeOrder st).get (hrel.edgeIndex oldEdge) := by
             have hget :=
-              edgeOrder_connectChild_get_old st hpending mate hmate
+              AppendStep.get_prefix
+                (edgeOrder_connectChild_step st hpending mate hmate)
                 childEdge (by simpa [hrel.edge_length] using hold)
             simpa [childEdge, oldEdge] using hget
           let childEndpoint :
@@ -871,7 +868,8 @@ theorem GraphRenderRelated.connectChild
                   childEdge =
                 G.raw.endpointEdge active := by
             have hget :=
-              edgeOrder_connectChild_get_new st hpending mate hmate
+              AppendStep.get_single_at_length
+                (edgeOrder_connectChild_step st hpending mate hmate)
                 childEdge (by simp [childEdge, hnewVal, hrel.edge_length])
             simpa [childEdge] using hget
           let childEndpoint :
@@ -926,7 +924,8 @@ theorem GraphRenderRelated.connectChild
                   childEdge =
                 (edgeOrder st).get (Fin.cast hrel.edge_length oldEdge) := by
             have hget :=
-              edgeOrder_connectChild_get_old st hpending mate hmate
+              AppendStep.get_prefix
+                (edgeOrder_connectChild_step st hpending mate hmate)
                 childEdge (by simpa [hrel.edge_length] using hold)
             simpa [childEdge, oldEdge] using hget
           let childEndpoint :
@@ -991,7 +990,8 @@ theorem GraphRenderRelated.connectChild
                   childEdge =
                 G.raw.endpointEdge active := by
             have hget :=
-              edgeOrder_connectChild_get_new st hpending mate hmate
+              AppendStep.get_single_at_length
+                (edgeOrder_connectChild_step st hpending mate hmate)
                 childEdge (by simp [childEdge, hnewVal, hrel.edge_length])
             simpa [childEdge] using hget
           have hmateIdx : Fin.cast htailLen idx = mate := by
@@ -1054,18 +1054,12 @@ theorem GraphRenderRelated.connectChild
           hrel.nodeIndex oldNode
         have hnodeGet :=
           Diag.connectStep_nodes_get rendererMate ok rst node
-        have hnodeOrderGet :=
-          nodeOrder_connectChild_get st hpending mate hmate childNode
-        have hnodeOrderIdx :
-            Fin.cast
-                (congrArg List.length
-                  (nodeOrder_connectChild st hpending mate hmate))
-                childNode = oldOrderNode := by
-          exact fin_eq_of_val_eq rfl
         have hnodeOrder :
             (nodeOrder (st.connectChild hpending mate hmate)).get childNode =
               (nodeOrder st).get oldOrderNode := by
-          simpa [hnodeOrderIdx] using hnodeOrderGet
+          exact AppendStep.get_prefix_of_val_eq
+            (nodeOrder_connectChild_step st hpending mate hmate)
+            childNode oldOrderNode rfl
         calc
           ((Diag.connectStep rendererMate ok rst).nodes.get node).label =
               (rst.nodes.get oldNode).label := by
@@ -1100,18 +1094,12 @@ theorem GraphRenderRelated.connectChild
             ((Diag.connectStep rendererMate ok rst).nodes.get node).incident.get slot =
               (rst.nodes.get oldNode).incident.get oldSlot := by
           exact list_get_of_eq (congrArg RenderNode.incident hnodeGet) slot
-        have hnodeOrderGet :=
-          nodeOrder_connectChild_get st hpending mate hmate childNode
-        have hnodeOrderIdx :
-            Fin.cast
-                (congrArg List.length
-                  (nodeOrder_connectChild st hpending mate hmate))
-                childNode = oldOrderNode := by
-          exact fin_eq_of_val_eq rfl
         have hnodeOrder :
             (nodeOrder (st.connectChild hpending mate hmate)).get childNode =
               (nodeOrder st).get oldOrderNode := by
-          simpa [hnodeOrderIdx] using hnodeOrderGet
+          exact AppendStep.get_prefix_of_val_eq
+            (nodeOrder_connectChild_step st hpending mate hmate)
+            childNode oldOrderNode rfl
         let childEndpoint :
             Fin (endpointOrder G
               (st.connectChild hpending mate hmate)).length :=
@@ -1266,8 +1254,9 @@ theorem GraphRenderRelated.budChild
             hchildEndpointLength ⟨raw, hbound⟩
         let oldEndpoint : Fin (endpointOrder G st).length :=
           Fin.cast hrel.endpoint_length ⟨raw, hold⟩
-        exact endpointOrder_budChild_get_old st hpending node slot hmate
-          hunseen childEndpoint oldEndpoint
+        exact AppendStep.get_prefix_of_val_eq
+          (endpointOrder_budChild_step st hpending node slot hmate hunseen)
+          childEndpoint oldEndpoint
           (by simp [childEndpoint, oldEndpoint])
       have endpointAt_new :
           ∀ {raw : Nat}
@@ -1301,8 +1290,9 @@ theorem GraphRenderRelated.budChild
             rw [hincidentLen]
             change raw - rst.endpoints.length < Sig.arity renderNode
             omega⟩
-        exact endpointOrder_budChild_get_new st hpending node slot hmate
-          hunseen childEndpoint newEndpoint hleOrder (by
+        exact AppendStep.get_suffix_of_val_eq
+          (endpointOrder_budChild_step st hpending node slot hmate hunseen)
+          childEndpoint newEndpoint hleOrder (by
             have holdLen :
                 (endpointOrder G st).length = rst.endpoints.length :=
               hrel.endpoint_length.symm
@@ -1325,8 +1315,9 @@ theorem GraphRenderRelated.budChild
             hchildEdgeLength ⟨raw, hbound⟩
         let oldEdge : Fin (edgeOrder st).length :=
           hrel.edgeIndex ⟨raw, hold⟩
-        exact edgeOrder_budChild_get_old st hpending node slot hmate
-          hunseen childEdge oldEdge (by simp [childEdge, oldEdge])
+        exact AppendStep.get_prefix_of_val_eq
+          (edgeOrder_budChild_step st hpending node slot hmate hunseen)
+          childEdge oldEdge (by simp [childEdge, oldEdge])
       have edgeAt_new :
           ∀ {raw : Nat}
             (hnew : raw = rst.edges.length)
@@ -1342,8 +1333,9 @@ theorem GraphRenderRelated.budChild
           edgeOrderIndex
             (st.budChild hpending node slot hmate hunseen)
             hchildEdgeLength ⟨raw, hbound⟩
-        exact edgeOrder_budChild_get_new st hpending node slot hmate
-          hunseen childEdge (by simp [childEdge, hnew, hrel.edge_length])
+        exact AppendStep.get_single_at_length
+          (edgeOrder_budChild_step st hpending node slot hmate hunseen)
+          childEdge (by simp [childEdge, hnew, hrel.edge_length])
       have nodeAt_old :
           ∀ {raw : Nat}
             (hold : raw < rst.nodes.length)
@@ -1362,8 +1354,9 @@ theorem GraphRenderRelated.budChild
             hchildNodeLength ⟨raw, hbound⟩
         let oldNode : Fin (nodeOrder st).length :=
           Fin.cast hrel.node_length ⟨raw, hold⟩
-        exact nodeOrder_budChild_get_old st hpending node slot hmate
-          hunseen childNode oldNode (by simp [childNode, oldNode])
+        exact AppendStep.get_prefix_of_val_eq
+          (nodeOrder_budChild_step st hpending node slot hmate hunseen)
+          childNode oldNode (by simp [childNode, oldNode])
       have nodeAt_new :
           ∀ {raw : Nat}
             (hnew : raw = rst.nodes.length)
@@ -1379,8 +1372,9 @@ theorem GraphRenderRelated.budChild
           nodeOrderIndex
             (st.budChild hpending node slot hmate hunseen)
             hchildNodeLength ⟨raw, hbound⟩
-        exact nodeOrder_budChild_get_new st hpending node slot hmate
-          hunseen childNode (by simp [childNode, hnew, hrel.node_length])
+        exact AppendStep.get_single_at_length
+          (nodeOrder_budChild_step st hpending node slot hmate hunseen)
+          childNode (by simp [childNode, hnew, hrel.node_length])
       have hchildNodeIncidentLength :
           ∀ renderIdx : Fin (Diag.budStep renderNode entry ok rst).nodes.length,
             ((Diag.budStep renderNode entry ok rst).nodes.get renderIdx).incident.length =
@@ -1598,8 +1592,9 @@ theorem GraphRenderRelated.budChild
               (endpointOrder G (st.budChild hpending node slot hmate hunseen)).get
                   childEndpoint =
                 (endpointOrder G st).get oldEndpoint :=
-            endpointOrder_budChild_get_old st hpending node slot hmate
-              hunseen childEndpoint oldEndpoint
+            AppendStep.get_prefix_of_val_eq
+              (endpointOrder_budChild_step st hpending node slot hmate hunseen)
+              childEndpoint oldEndpoint
               (by simp [childEndpoint, oldEndpoint])
           exact hchildOld.trans hold
         have hrightRel :
@@ -1646,8 +1641,9 @@ theorem GraphRenderRelated.budChild
                 (base := rst.endpoints.length)
                 (arity := Sig.arity renderNode)
                 rv.nextEndpoint_eq ⟨n, hid⟩
-          exact endpointOrder_budChild_get_new st hpending node slot hmate
-            hunseen childEndpoint incidentEndpoint hle hsub
+          exact AppendStep.get_suffix_of_val_eq
+            (endpointOrder_budChild_step st hpending node slot hmate hunseen)
+            childEndpoint incidentEndpoint hle hsub
         have herasedRight :=
           eraseFin_pointwise_relation
             (R := R) hnodeEndpointsLen hrightRel entryIdx slot hentryIdxVal

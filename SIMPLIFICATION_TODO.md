@@ -415,6 +415,10 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     parameterized by field projections and per-field laws.
   - Validation: public `toDiag` and `toPortHypergraphIso` theorems derive from
     the generic relation.
+  - Partial: `AppendStep` now owns reusable list-append get reasoning, and
+    traversal child-state order updates expose step witnesses consumed by
+    `GraphRenderRelation`. The larger ordered-trace relation that packages the
+    endpoint, edge, node, frontier, and pending synchronizations is still open.
 
 - [ ] Introduce declarative render deltas for connect and bud.
   - Owner: `BijForm.StringDiagram.Renderer.Steps`

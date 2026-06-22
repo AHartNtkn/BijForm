@@ -194,6 +194,47 @@ theorem list_get_of_eq_append_cons_at_length {α : Type}
   rw [hidx]
   exact list_get_append_single_at_length pref suffix x
 
+/-- A reusable witness that `full` is formed by appending `suffix` to `prefix`. -/
+structure AppendStep {α : Type} (pref full suffix : List α) : Prop where
+  eq_append : full = pref ++ suffix
+
+namespace AppendStep
+
+theorem length {α : Type} {pref full suffix : List α}
+    (h : AppendStep pref full suffix) :
+    full.length = pref.length + suffix.length := by
+  rw [h.eq_append]
+  simp
+
+theorem get_prefix {α : Type} {pref full suffix : List α}
+    (h : AppendStep pref full suffix)
+    (i : Fin full.length) (hi : i.val < pref.length) :
+    full.get i = pref.get ⟨i.val, hi⟩ :=
+  list_get_of_eq_append_left h.eq_append i hi
+
+theorem get_prefix_of_val_eq {α : Type} {pref full suffix : List α}
+    (h : AppendStep pref full suffix)
+    (i : Fin full.length) (j : Fin pref.length)
+    (hval : i.val = j.val) :
+    full.get i = pref.get j :=
+  list_get_of_eq_append_left_of_val_eq h.eq_append i j hval
+
+theorem get_suffix_of_val_eq {α : Type} {pref full suffix : List α}
+    (h : AppendStep pref full suffix)
+    (i : Fin full.length) (j : Fin suffix.length)
+    (hi : pref.length ≤ i.val)
+    (hval : i.val - pref.length = j.val) :
+    full.get i = suffix.get j :=
+  list_get_of_eq_append_right_of_val_eq h.eq_append i j hi hval
+
+theorem get_single_at_length {α : Type} {pref full : List α} {x : α}
+    (h : AppendStep pref full [x])
+    (i : Fin full.length) (hval : i.val = pref.length) :
+    full.get i = x :=
+  list_get_of_eq_append_cons_at_length h.eq_append i hval
+
+end AppendStep
+
 def listIndexCast {α : Type} (xs : List α) {n : Nat}
     (h : n = xs.length) (i : Fin n) : Fin xs.length :=
   Fin.cast h i
