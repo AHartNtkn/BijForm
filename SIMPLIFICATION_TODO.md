@@ -350,7 +350,7 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     `LayerShape.layerShape_left_inv` now supply only variable/operator branch
     proofs.
 
-- [ ] Replace HBT child-swap normal-form boilerplate with quotient helpers.
+- [x] Replace HBT child-swap normal-form boilerplate with quotient helpers.
   - Owner: `BijForm.QuotientPolynomial` and `BijForm.CodeAlgebra`
   - Evidence: manual `HBTChildSwapNorm`, `HBTChildSwapDenorm`, and binary swap
     relation proofs in `BijForm/Examples/HBTQuotient.lean`.
@@ -358,20 +358,14 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     pair coding through existing `CodeAlgebra.unorderedPair*` APIs.
   - Validation: HBT quotient example exposes the same public final isomorphisms
     through generic quotient descent.
-  - Partial: added `QuotientPresentation.DescendedGeneratedCode.ofMuNormalizer`
-    for generated-code descent from `Mu` normalizer/denormalizer laws. HBT
-    branch congruence, eta, and swap relation chains are now named helper
-    lemmas, and `HBTChildSwapDescendedNatCode` is an instantiation of the
-    generic normalizer helper. Added
-    `QuotientPresentation.Rel.unorderedPair_decode_encode_repair`; HBT now
-    routes branch-pair coding through `CodeAlgebra.unorderedPairCode` and
-    `CodeAlgebra.unorderedPairNat` directly instead of the `TupleAction`
-    binary-swap wrapper. Extracted
-    `QuotientPresentation.Rel.respects_of_layer_congr`, so HBT normalizer
-    respect supplies only branch-swap layer and constructor-congruence cases
-    instead of manually traversing `Rel.refl`, `Rel.symm`, and `Rel.trans`.
-    The broader generic binary child-swap descent abstraction that eliminates
-    the domain-specific recursive normalizer/denormalizer remains open.
+  - Completed: added quotient-owned `LayerNormalForm`, which derives recursive
+    normalize/denormalize functions, quotient repair, relation-respect, and
+    descended generated code from one-layer data. HBT now supplies only
+    `HBTChildSwapLayerNormalForm`; the old recursive `HBTChildSwapNorm`/
+    `HBTChildSwapDenorm` cluster and branch congruence/eta/swap helper
+    declarations were deleted. Unordered-pair component bounds live in
+    `CodeAlgebra`, and HBT branch repair uses the generic
+    `QuotientPresentation.Rel.unorderedPair_code_decode_encode_repair`.
 
 - [x] Generate finite string-diagram entry tables for finite signatures.
   - Owner: `BijForm.StringDiagram.FiniteCoding.Syntax`

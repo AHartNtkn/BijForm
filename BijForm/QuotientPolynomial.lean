@@ -11,7 +11,7 @@ variable {ι : Type u}
 namespace Obj
 
 /-- Functorial action on one dependent-polynomial layer. -/
-def map {P : DepPoly ι} {X Y : ι → Type v}
+def map {P : DepPoly ι} {X : ι → Type v} {Y : ι → Type w}
     (f : ∀ i, X i → Y i) {i : ι} (x : Obj P X i) : Obj P Y i where
   ctor := x.ctor
   param := x.param
@@ -19,19 +19,19 @@ def map {P : DepPoly ι} {X Y : ι → Type v}
   child := fun q => f (P.input x.param q) (x.child q)
 
 @[simp]
-theorem map_ctor {P : DepPoly ι} {X Y : ι → Type v}
+theorem map_ctor {P : DepPoly ι} {X : ι → Type v} {Y : ι → Type w}
     (f : ∀ i, X i → Y i) {i : ι} (x : Obj P X i) :
     (map f x).ctor = x.ctor :=
   rfl
 
 @[simp]
-theorem map_param {P : DepPoly ι} {X Y : ι → Type v}
+theorem map_param {P : DepPoly ι} {X : ι → Type v} {Y : ι → Type w}
     (f : ∀ i, X i → Y i) {i : ι} (x : Obj P X i) :
     (map f x).param = x.param :=
   rfl
 
 @[simp]
-theorem map_child {P : DepPoly ι} {X Y : ι → Type v}
+theorem map_child {P : DepPoly ι} {X : ι → Type v} {Y : ι → Type w}
     (f : ∀ i, X i → Y i) {i : ι} (x : Obj P X i)
     (q : P.Pos x.ctor x.param) :
     (map f x).child q = f (P.input x.param q) (x.child q) :=
@@ -134,6 +134,26 @@ theorem unorderedPair_decode_encode_repair
   · rw [CodeAlgebra.unorderedPairNat_inv_unorderedPairCode_of_not_le hle]
     exact Rel.trans (branch_congr hright hleft)
       (Rel.trans (branch_swap rhs lhs) branch_eta)
+
+theorem unorderedPair_code_decode_encode_repair
+    (Q : QuotientPresentation P)
+    {outIndex : ι}
+    (mk : Nat → Nat → Mu P outIndex)
+    (lhs rhs : Nat)
+    (branch_swap :
+      ∀ a b : Nat, Rel Q outIndex (mk a b) (mk b a)) :
+    Rel Q outIndex
+      (mk
+        (CodeAlgebra.unorderedPairNat.invFun
+          (CodeAlgebra.unorderedPairCode lhs rhs)).val.1
+        (CodeAlgebra.unorderedPairNat.invFun
+          (CodeAlgebra.unorderedPairCode lhs rhs)).val.2)
+      (mk lhs rhs) := by
+  by_cases hle : lhs ≤ rhs
+  · rw [CodeAlgebra.unorderedPairNat_inv_unorderedPairCode_of_le hle]
+    exact Rel.refl _
+  · rw [CodeAlgebra.unorderedPairNat_inv_unorderedPairCode_of_not_le hle]
+    exact branch_swap rhs lhs
 
 end Rel
 
@@ -393,6 +413,134 @@ def carrierIso (D : DescendedGeneratedCode Q C Out) (i : ι) :
   Iso.trans (generatedCodeIso Q C i) (codeCarrierIso D i)
 
 end DescendedGeneratedCode
+
+/--
+One-layer normal-form data for a quotient presentation. The framework derives
+the recursive normalizer and denormalizer; callers supply only layer-local
+encoding, decoding, rank, quotient-generator preservation, and layer repair.
+-/
+structure LayerNormalForm
+    (Q : QuotientPresentation P) (Out : ι → Type w) where
+  encodeLayer : ∀ i, Obj P Out i → Out i
+  decodeLayer : ∀ i, Out i → Obj P Out i
+  rank : ∀ i, Out i → Nat
+  child_rank_lt :
+    ∀ {i : ι} (z : Out i)
+      {c : P.Ctor} {p : P.Param c} {h : P.out c p = i}
+      {child : (q : P.Pos c p) → Out (P.input p q)},
+      decodeLayer i z = ⟨c, p, h, child⟩ →
+        ∀ q, rank (P.input p q) (child q) < rank i z
+  encode_decode_layer :
+    ∀ i (z : Out i), encodeLayer i (decodeLayer i z) = z
+  layer_rel_respects :
+    ∀ {i : ι} {x y : Obj P (Mu P) i}
+      (encodeChild : ∀ j, Mu P j → Out j),
+      Q.LayerRel i x y →
+        encodeLayer i (Obj.map encodeChild x) =
+          encodeLayer i (Obj.map encodeChild y)
+  decode_encode_layer_rel :
+    ∀ {i : ι} (realize : ∀ j, Out j → Mu P j)
+      (layer : Obj P Out i),
+      Rel Q i
+        (Mu.inn (Obj.map realize (decodeLayer i (encodeLayer i layer))))
+        (Mu.inn (Obj.map realize layer))
+
+namespace LayerNormalForm
+
+variable {Q : QuotientPresentation P} {Out : ι → Type w}
+
+def normalize (L : LayerNormalForm Q Out) : ∀ i, Mu P i → Out i
+  | i, Mu.sup c p h child =>
+      L.encodeLayer i
+        ⟨c, p, h, fun q => normalize L (P.input p q) (child q)⟩
+
+def denormalize (L : LayerNormalForm Q Out) : ∀ i, Out i → Mu P i
+  | i, z =>
+      let layer := L.decodeLayer i z
+      Mu.sup layer.ctor layer.param layer.out_eq
+        (fun q => denormalize L (P.input layer.param q) (layer.child q))
+termination_by i z => L.rank i z
+decreasing_by
+  exact L.child_rank_lt z rfl q
+
+theorem normalize_denormalize (L : LayerNormalForm Q Out) :
+    ∀ i (z : Out i), L.normalize i (L.denormalize i z) = z
+  | i, z => by
+      let layer := L.decodeLayer i z
+      have ih :
+          (fun q => L.normalize (P.input layer.param q)
+            (L.denormalize (P.input layer.param q) (layer.child q))) =
+            layer.child := by
+        funext q
+        exact normalize_denormalize L (P.input layer.param q) (layer.child q)
+      have hstep : L.encodeLayer i layer = z :=
+        L.encode_decode_layer i z
+      rw [denormalize, normalize]
+      change L.encodeLayer i
+          ⟨layer.ctor, layer.param, layer.out_eq, fun q =>
+            L.normalize (P.input layer.param q)
+              (L.denormalize (P.input layer.param q) (layer.child q))⟩ = z
+      rw [ih]
+      exact hstep
+termination_by i z => L.rank i z
+decreasing_by
+  exact L.child_rank_lt z rfl q
+
+theorem denormalize_normalize_rel (L : LayerNormalForm Q Out) :
+    ∀ i (x : Mu P i), Rel Q i (L.denormalize i (L.normalize i x)) x
+  | i, Mu.sup c p h child => by
+      let layer : Obj P Out i :=
+        ⟨c, p, h, fun q => L.normalize (P.input p q) (child q)⟩
+      let realize : ∀ j, Out j → Mu P j := fun j z => L.denormalize j z
+      have hrepair :
+          Rel Q i
+            (Mu.inn (Obj.map realize
+              (L.decodeLayer i (L.encodeLayer i layer))))
+            (Mu.inn (Obj.map realize layer)) :=
+        L.decode_encode_layer_rel realize layer
+      have hchildren :
+          Rel Q i (Mu.inn (Obj.map realize layer))
+            (Mu.sup c p h child) := by
+        apply Rel.congr
+        intro q
+        exact denormalize_normalize_rel L (P.input p q) (child q)
+      rw [normalize, denormalize]
+      change
+        Rel Q i
+          (Mu.inn (Obj.map realize
+            (L.decodeLayer i (L.encodeLayer i layer))))
+          (Mu.sup c p h child)
+      exact Rel.trans hrepair hchildren
+
+theorem normalize_respects (L : LayerNormalForm Q Out) :
+    ∀ {i : ι} {x y : Mu P i}, Rel Q i x y →
+      L.normalize i x = L.normalize i y :=
+  Rel.respects_of_layer_congr Q L.normalize
+    (by
+      intro i x y hxy
+      exact L.layer_rel_respects L.normalize hxy)
+    (by
+      intro i c p h child child' ih
+      simp [normalize]
+      congr
+      funext q
+      exact ih q)
+
+def descendedGeneratedCode
+    (L : LayerNormalForm Q Out)
+    {Code : ι → Type v} (C : GeneratedCode P Code) :
+    DescendedGeneratedCode Q C Out :=
+  DescendedGeneratedCode.ofMuNormalizer
+    (C := C)
+    L.normalize
+    L.denormalize
+    (by
+      intro i x y hxy
+      exact L.normalize_respects hxy)
+    L.denormalize_normalize_rel
+    L.normalize_denormalize
+
+end LayerNormalForm
 
 end QuotientPresentation
 

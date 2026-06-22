@@ -883,6 +883,11 @@ theorem unorderedPairCode_comm (a b : Nat) :
     unorderedPairCode a b = unorderedPairCode b a := by
   simp [unorderedPairCode, sortNatPair_comm a b]
 
+theorem sumNat_unorderedPairCode_swap (a b : Nat) :
+    sumNat.toFun (Sum.inr (unorderedPairCode a b)) =
+      sumNat.toFun (Sum.inr (unorderedPairCode b a)) := by
+  rw [unorderedPairCode_comm]
+
 theorem unorderedPairCode_invFun (n : Nat) :
     unorderedPairCode (unorderedPairNat.invFun n).val.1
       (unorderedPairNat.invFun n).val.2 = n := by
@@ -894,6 +899,30 @@ theorem unorderedPairCode_invFun (n : Nat) :
     exact sortNatPair_of_le (unorderedPairNat.invFun n).property
   rw [hsort]
   exact unorderedPairNat.right_inv n
+
+theorem unorderedPairNat_invFun_fst_le (n : Nat) :
+    (unorderedPairNat.invFun n).val.1 ≤ n := by
+  dsimp [unorderedPairNat]
+  exact prodNat_fst_le n
+
+theorem unorderedPairNat_invFun_snd_le_twice (n : Nat) :
+    (unorderedPairNat.invFun n).val.2 ≤ 2 * n := by
+  dsimp [unorderedPairNat]
+  have hfst := prodNat_fst_le n
+  have hsnd := prodNat_snd_le n
+  omega
+
+theorem unorderedPairNat_invFun_fst_lt_sumNat_inr (n : Nat) :
+    (unorderedPairNat.invFun n).val.1 < sumNat.toFun (Sum.inr n) := by
+  have hfst := unorderedPairNat_invFun_fst_le n
+  dsimp [sumNat]
+  omega
+
+theorem unorderedPairNat_invFun_snd_lt_sumNat_inr (n : Nat) :
+    (unorderedPairNat.invFun n).val.2 < sumNat.toFun (Sum.inr n) := by
+  have hsnd := unorderedPairNat_invFun_snd_le_twice n
+  dsimp [sumNat]
+  omega
 
 theorem unorderedPairNat_inv_unorderedPairCode_of_le {a b : Nat}
     (h : a ≤ b) :
