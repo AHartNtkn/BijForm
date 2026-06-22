@@ -696,14 +696,12 @@ theorem toDiag_of_renderPrefixRelated :
                   activeEndpoint =
                     (⟨activeId, hactiveBound⟩ :
                       Fin (renderTrace (Diag.connect mate ok child) rst).endpoints.length) := by
-                apply Fin.ext
-                exact hvals.1
+                exact fin_eq_of_val_eq hvals.1
               have hmateEq :
                   rest.get searchMate =
                     (⟨restIds.get renderMateInRestIds, hmateBound⟩ :
                       Fin (renderTrace (Diag.connect mate ok child) rst).endpoints.length) := by
-                apply Fin.ext
-                exact hmateVal
+                exact fin_eq_of_val_eq hmateVal
               have hmateSearch :
                   PortHypergraph.EdgeMate (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph.raw
                     activeEndpoint (rest.get searchMate) := by
@@ -722,9 +720,9 @@ theorem toDiag_of_renderPrefixRelated :
                 hpending searchMate hmateSearch' hstep]
               have hidx :
                   sst.restLabelIndex hpending searchMate = mate := by
-                apply Fin.ext
-                simp [OpenPortHypergraph.SearchState.restLabelIndex,
-                  searchMate]
+                exact fin_eq_of_val_eq (by
+                  simp [OpenPortHypergraph.SearchState.restLabelIndex,
+                    searchMate])
               have hactiveEdgeRaw :=
                 renderTrace_connect_active_endpointEdge_val
                   mate ok child rst hv hp hn pref ho hids hactiveBound
@@ -825,8 +823,7 @@ theorem toDiag_of_renderPrefixRelated :
                   activeEndpoint =
                     (⟨activeId, hactiveBound⟩ :
                       Fin (renderTrace (Diag.bud node entry ok child) rst).endpoints.length) := by
-                apply Fin.ext
-                exact hvals.1
+                exact fin_eq_of_val_eq hvals.1
               have hmateSearch :
                   PortHypergraph.EdgeMate (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph.raw
                     activeEndpoint (((RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph.raw.incident nodeIndex).get slot) := by
