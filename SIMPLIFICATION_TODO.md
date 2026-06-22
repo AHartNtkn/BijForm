@@ -212,6 +212,11 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     `Iso.sum`, `Iso.prod`, `Iso.trans`, finite prefixes, and tagged branches.
   - Validation: rank descent proofs in examples become applications of these
     propagation lemmas.
+  - Partial: added `SubcodeLe` and `SubcodeLt` relations with base Nat/product
+    payload facts plus propagation lemmas for `Iso.trans`, Nat sums,
+    three-/four-way Nat sums, Nat products, and finite prefixes.
+    `NumNat_layer_child_lt` now uses subcode propagation instead of manual
+    `finPrefixNat` plus nested-sum bound chains.
 
 - [ ] Move generic scaled-rank payload lemmas out of finite string diagrams.
   - Owner: `BijForm.CodeAlgebra`

@@ -394,12 +394,15 @@ theorem NumNat_layer_child_lt :
           intro q
           cases q
           let c := child ()
-          have htail :=
-            CodeAlgebra.toNatSum3_inl_le_of_le (Iso.refl Nat)
-              CodeAlgebra.prodNat CodeAlgebra.prodNat (Nat.le_refl c)
-          have hlt := CodeAlgebra.finPrefixNat_toFun_inr_lt_of_le
-            (k + 2) (by omega) CodeAlgebra.natOrProdOrProdNat
-            (a := Sum.inl c) htail
+          have htail :
+              CodeAlgebra.SubcodeLe CodeAlgebra.natOrProdOrProdNat
+                (fun c : Nat => Sum.inl c) id := by
+            exact CodeAlgebra.SubcodeLe.toNatSum3_inl
+              (middle := CodeAlgebra.prodNat) (right := CodeAlgebra.prodNat)
+              CodeAlgebra.subcode_nat_id
+          have hlt :=
+            (CodeAlgebra.SubcodeLe.finPrefixNat_inr_lt (k + 2) (by omega)
+              htail) c
           simpa [c, NumNatLayerShapeTo] using hlt
         | plus =>
           change NumParam NumCtor.plus at param
@@ -409,23 +412,25 @@ theorem NumNat_layer_child_lt :
           cases out_eq
           intro q
           cases q
-          · have htail :=
-              Nat.le_of_lt
-                (CodeAlgebra.toNatSum3_inr_inl_lt_of_le (Iso.refl Nat)
-                  CodeAlgebra.prodNat CodeAlgebra.prodNat
-                  (CodeAlgebra.prodNat_toFun_fst_le (child false, child true)))
-            have hlt := CodeAlgebra.finPrefixNat_toFun_inr_lt_of_le
-              (k + 2) (by omega) CodeAlgebra.natOrProdOrProdNat
-              (a := Sum.inr (Sum.inl (child false, child true))) htail
+          · have hlt :=
+              have htail :
+                  CodeAlgebra.SubcodeLt CodeAlgebra.natOrProdOrProdNat
+                    (fun p : Nat × Nat => Sum.inr (Sum.inl p)) Prod.fst := by
+                exact CodeAlgebra.SubcodeLe.toNatSum3_inr_inl_lt
+                  (left := Iso.refl Nat) (right := CodeAlgebra.prodNat)
+                  CodeAlgebra.subcode_prodNat_fst
+              (CodeAlgebra.SubcodeLt.finPrefixNat_inr (k + 2) htail)
+                (child false, child true)
             simpa [NumNatLayerShapeTo] using hlt
-          · have htail :=
-              Nat.le_of_lt
-                (CodeAlgebra.toNatSum3_inr_inl_lt_of_le (Iso.refl Nat)
-                  CodeAlgebra.prodNat CodeAlgebra.prodNat
-                  (CodeAlgebra.prodNat_toFun_snd_le (child false, child true)))
-            have hlt := CodeAlgebra.finPrefixNat_toFun_inr_lt_of_le
-              (k + 2) (by omega) CodeAlgebra.natOrProdOrProdNat
-              (a := Sum.inr (Sum.inl (child false, child true))) htail
+          · have hlt :=
+              have htail :
+                  CodeAlgebra.SubcodeLt CodeAlgebra.natOrProdOrProdNat
+                    (fun p : Nat × Nat => Sum.inr (Sum.inl p)) Prod.snd := by
+                exact CodeAlgebra.SubcodeLe.toNatSum3_inr_inl_lt
+                  (left := Iso.refl Nat) (right := CodeAlgebra.prodNat)
+                  CodeAlgebra.subcode_prodNat_snd
+              (CodeAlgebra.SubcodeLt.finPrefixNat_inr (k + 2) htail)
+                (child false, child true)
             simpa [NumNatLayerShapeTo] using hlt
         | times =>
           change NumParam NumCtor.times at param
@@ -435,23 +440,25 @@ theorem NumNat_layer_child_lt :
           cases out_eq
           intro q
           cases q
-          · have htail :=
-              Nat.le_of_lt
-                (CodeAlgebra.toNatSum3_inr_inr_lt_of_le (Iso.refl Nat)
-                  CodeAlgebra.prodNat CodeAlgebra.prodNat
-                  (CodeAlgebra.prodNat_toFun_fst_le (child false, child true)))
-            have hlt := CodeAlgebra.finPrefixNat_toFun_inr_lt_of_le
-              (k + 2) (by omega) CodeAlgebra.natOrProdOrProdNat
-              (a := Sum.inr (Sum.inr (child false, child true))) htail
+          · have hlt :=
+              have htail :
+                  CodeAlgebra.SubcodeLt CodeAlgebra.natOrProdOrProdNat
+                    (fun p : Nat × Nat => Sum.inr (Sum.inr p)) Prod.fst := by
+                exact CodeAlgebra.SubcodeLe.toNatSum3_inr_inr_lt
+                  (left := Iso.refl Nat) (middle := CodeAlgebra.prodNat)
+                  CodeAlgebra.subcode_prodNat_fst
+              (CodeAlgebra.SubcodeLt.finPrefixNat_inr (k + 2) htail)
+                (child false, child true)
             simpa [NumNatLayerShapeTo] using hlt
-          · have htail :=
-              Nat.le_of_lt
-                (CodeAlgebra.toNatSum3_inr_inr_lt_of_le (Iso.refl Nat)
-                  CodeAlgebra.prodNat CodeAlgebra.prodNat
-                  (CodeAlgebra.prodNat_toFun_snd_le (child false, child true)))
-            have hlt := CodeAlgebra.finPrefixNat_toFun_inr_lt_of_le
-              (k + 2) (by omega) CodeAlgebra.natOrProdOrProdNat
-              (a := Sum.inr (Sum.inr (child false, child true))) htail
+          · have hlt :=
+              have htail :
+                  CodeAlgebra.SubcodeLt CodeAlgebra.natOrProdOrProdNat
+                    (fun p : Nat × Nat => Sum.inr (Sum.inr p)) Prod.snd := by
+                exact CodeAlgebra.SubcodeLe.toNatSum3_inr_inr_lt
+                  (left := Iso.refl Nat) (middle := CodeAlgebra.prodNat)
+                  CodeAlgebra.subcode_prodNat_snd
+              (CodeAlgebra.SubcodeLt.finPrefixNat_inr (k + 2) htail)
+                (child false, child true)
             simpa [NumNatLayerShapeTo] using hlt
 
 def NumNatLayerPresentation : NatLayerPresentation NumPoly NumInversion :=

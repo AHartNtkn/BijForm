@@ -345,6 +345,144 @@ theorem toNatProd_rightCode_le {α : Type u} {β : Type v}
   dsimp [toNatProd, Iso.trans, Iso.prod]
   exact prodNat_toFun_snd_le (left.toFun p.1, right.toFun p.2)
 
+/-- A rank/projection is bounded by a codec after embedding into its carrier. -/
+def SubcodeLe {α : Type u} {β : Type v}
+    (codec : α ≃ᵢ Nat) (embed : β → α) (rank : β → Nat) : Prop :=
+  ∀ b, rank b ≤ codec.toFun (embed b)
+
+/-- A rank/projection is strictly bounded by a codec after embedding. -/
+def SubcodeLt {α : Type u} {β : Type v}
+    (codec : α ≃ᵢ Nat) (embed : β → α) (rank : β → Nat) : Prop :=
+  ∀ b, rank b < codec.toFun (embed b)
+
+theorem subcode_nat_id : SubcodeLe (Iso.refl Nat) id id :=
+  fun _ => Nat.le_refl _
+
+theorem subcode_prodNat_fst : SubcodeLe prodNat id Prod.fst :=
+  prodNat_toFun_fst_le
+
+theorem subcode_prodNat_snd : SubcodeLe prodNat id Prod.snd :=
+  prodNat_toFun_snd_le
+
+theorem subcode_finProdNat_snd (k : Nat) (hk : 0 < k) :
+    SubcodeLe (finProdNat k hk) id Prod.snd :=
+  finProdNat_toFun_snd_le k hk
+
+theorem SubcodeLe.isoTrans {α : Type u} {β : Type v} {γ : Type w}
+    {front : α ≃ᵢ β} {codec : β ≃ᵢ Nat}
+    {embed : γ → α} {rank : γ → Nat}
+    (h : SubcodeLe codec (fun x => front.toFun (embed x)) rank) :
+    SubcodeLe (Iso.trans front codec) embed rank :=
+  fun x => h x
+
+theorem SubcodeLt.isoTrans {α : Type u} {β : Type v} {γ : Type w}
+    {front : α ≃ᵢ β} {codec : β ≃ᵢ Nat}
+    {embed : γ → α} {rank : γ → Nat}
+    (h : SubcodeLt codec (fun x => front.toFun (embed x)) rank) :
+    SubcodeLt (Iso.trans front codec) embed rank :=
+  fun x => h x
+
+theorem SubcodeLe.toNatSum_inl {α : Type u} {β : Type v} {γ : Type w}
+    {left : α ≃ᵢ Nat} {right : β ≃ᵢ Nat}
+    {embed : γ → α} {rank : γ → Nat}
+    (h : SubcodeLe left embed rank) :
+    SubcodeLe (toNatSum left right) (fun x => Sum.inl (embed x)) rank :=
+  fun x => toNatSum_inl_le_of_le left right (h x)
+
+theorem SubcodeLe.toNatSum_inr_lt {α : Type u} {β : Type v} {γ : Type w}
+    {left : α ≃ᵢ Nat} {right : β ≃ᵢ Nat}
+    {embed : γ → β} {rank : γ → Nat}
+    (h : SubcodeLe right embed rank) :
+    SubcodeLt (toNatSum left right) (fun x => Sum.inr (embed x)) rank :=
+  fun x => toNatSum_inr_lt_of_le left right (h x)
+
+theorem SubcodeLt.toNatSum_inr {α : Type u} {β : Type v} {γ : Type w}
+    {left : α ≃ᵢ Nat} {right : β ≃ᵢ Nat}
+    {embed : γ → β} {rank : γ → Nat}
+    (h : SubcodeLt right embed rank) :
+    SubcodeLt (toNatSum left right) (fun x => Sum.inr (embed x)) rank :=
+  fun x => toNatSum_inr_lt_of_lt left right (h x)
+
+theorem SubcodeLe.toNatSum3_inl {α : Type u} {β : Type v}
+    {γ : Type w} {δ : Type x}
+    {left : α ≃ᵢ Nat} {middle : β ≃ᵢ Nat} {right : γ ≃ᵢ Nat}
+    {embed : δ → α} {rank : δ → Nat}
+    (h : SubcodeLe left embed rank) :
+    SubcodeLe (toNatSum3 left middle right) (fun x => Sum.inl (embed x)) rank :=
+  fun x => toNatSum3_inl_le_of_le left middle right (h x)
+
+theorem SubcodeLe.toNatSum3_inr_inl_lt {α : Type u} {β : Type v}
+    {γ : Type w} {δ : Type x}
+    {left : α ≃ᵢ Nat} {middle : β ≃ᵢ Nat} {right : γ ≃ᵢ Nat}
+    {embed : δ → β} {rank : δ → Nat}
+    (h : SubcodeLe middle embed rank) :
+    SubcodeLt (toNatSum3 left middle right)
+      (fun x => Sum.inr (Sum.inl (embed x))) rank :=
+  fun x => toNatSum3_inr_inl_lt_of_le left middle right (h x)
+
+theorem SubcodeLe.toNatSum3_inr_inr_lt {α : Type u} {β : Type v}
+    {γ : Type w} {δ : Type x}
+    {left : α ≃ᵢ Nat} {middle : β ≃ᵢ Nat} {right : γ ≃ᵢ Nat}
+    {embed : δ → γ} {rank : δ → Nat}
+    (h : SubcodeLe right embed rank) :
+    SubcodeLt (toNatSum3 left middle right)
+      (fun x => Sum.inr (Sum.inr (embed x))) rank :=
+  fun x => toNatSum3_inr_inr_lt_of_le left middle right (h x)
+
+theorem SubcodeLe.toNatSum4_inl {α : Type u} {β : Type v}
+    {γ : Type w} {δ : Type x} {ε : Type y}
+    {first : α ≃ᵢ Nat} {second : β ≃ᵢ Nat}
+    {third : γ ≃ᵢ Nat} {fourth : δ ≃ᵢ Nat}
+    {embed : ε → α} {rank : ε → Nat}
+    (h : SubcodeLe first embed rank) :
+    SubcodeLe (toNatSum4 first second third fourth)
+      (fun x => Sum.inl (embed x)) rank :=
+  fun x => toNatSum4_inl_le_of_le first second third fourth (h x)
+
+theorem SubcodeLe.toNatSum4_inr_inl_lt {α : Type u} {β : Type v}
+    {γ : Type w} {δ : Type x} {ε : Type y}
+    {first : α ≃ᵢ Nat} {second : β ≃ᵢ Nat}
+    {third : γ ≃ᵢ Nat} {fourth : δ ≃ᵢ Nat}
+    {embed : ε → β} {rank : ε → Nat}
+    (h : SubcodeLe second embed rank) :
+    SubcodeLt (toNatSum4 first second third fourth)
+      (fun x => Sum.inr (Sum.inl (embed x))) rank :=
+  fun x => toNatSum4_inr_inl_lt_of_le first second third fourth (h x)
+
+theorem SubcodeLe.toNatSum4_inr_inr_inl_lt {α : Type u} {β : Type v}
+    {γ : Type w} {δ : Type x} {ε : Type y}
+    {first : α ≃ᵢ Nat} {second : β ≃ᵢ Nat}
+    {third : γ ≃ᵢ Nat} {fourth : δ ≃ᵢ Nat}
+    {embed : ε → γ} {rank : ε → Nat}
+    (h : SubcodeLe third embed rank) :
+    SubcodeLt (toNatSum4 first second third fourth)
+      (fun x => Sum.inr (Sum.inr (Sum.inl (embed x)))) rank :=
+  fun x => toNatSum4_inr_inr_inl_lt_of_le first second third fourth (h x)
+
+theorem SubcodeLe.toNatSum4_inr_inr_inr_lt {α : Type u} {β : Type v}
+    {γ : Type w} {δ : Type x} {ε : Type y}
+    {first : α ≃ᵢ Nat} {second : β ≃ᵢ Nat}
+    {third : γ ≃ᵢ Nat} {fourth : δ ≃ᵢ Nat}
+    {embed : ε → δ} {rank : ε → Nat}
+    (h : SubcodeLe fourth embed rank) :
+    SubcodeLt (toNatSum4 first second third fourth)
+      (fun x => Sum.inr (Sum.inr (Sum.inr (embed x)))) rank :=
+  fun x => toNatSum4_inr_inr_inr_lt_of_le first second third fourth (h x)
+
+theorem SubcodeLe.toNatProd_left {α : Type u} {β : Type v} {γ : Type w}
+    {left : α ≃ᵢ Nat} {right : β ≃ᵢ Nat}
+    {embed : γ → α} {fill : γ → β} {rank : γ → Nat}
+    (h : SubcodeLe left embed rank) :
+    SubcodeLe (toNatProd left right) (fun x => (embed x, fill x)) rank :=
+  fun x => Nat.le_trans (h x) (toNatProd_leftCode_le left right (embed x, fill x))
+
+theorem SubcodeLe.toNatProd_right {α : Type u} {β : Type v} {γ : Type w}
+    {left : α ≃ᵢ Nat} {right : β ≃ᵢ Nat}
+    {fill : γ → α} {embed : γ → β} {rank : γ → Nat}
+    (h : SubcodeLe right embed rank) :
+    SubcodeLe (toNatProd left right) (fun x => (fill x, embed x)) rank :=
+  fun x => Nat.le_trans (h x) (toNatProd_rightCode_le left right (fill x, embed x))
+
 def sumProdNat : (Nat ⊕ (Nat × Nat)) ≃ᵢ Nat :=
   toNatSum (Iso.refl Nat) prodNat
 
@@ -448,6 +586,18 @@ theorem finPrefixNat_toFun_inr_lt_of_le {α : Type u}
     m < (finPrefixNat k tail).toFun (Sum.inr a) := by
   dsimp [finPrefixNat, Iso.trans, Iso.sum, finPlusNat]
   omega
+
+theorem SubcodeLt.finPrefixNat_inr {α : Type u} {β : Type v}
+    {tail : α ≃ᵢ Nat} {embed : β → α} {rank : β → Nat}
+    (k : Nat) (h : SubcodeLt tail embed rank) :
+    SubcodeLt (finPrefixNat k tail) (fun x => Sum.inr (embed x)) rank :=
+  fun x => finPrefixNat_toFun_inr_lt_of_lt k tail (h x)
+
+theorem SubcodeLe.finPrefixNat_inr_lt {α : Type u} {β : Type v}
+    {tail : α ≃ᵢ Nat} {embed : β → α} {rank : β → Nat}
+    (k : Nat) (hk : 0 < k) (h : SubcodeLe tail embed rank) :
+    SubcodeLt (finPrefixNat k tail) (fun x => Sum.inr (embed x)) rank :=
+  fun x => finPrefixNat_toFun_inr_lt_of_le k hk tail (h x)
 
 /-- Recursive payloads are bounded by their finite-recursive branch code. -/
 theorem finiteRecursiveNat_payload_le
