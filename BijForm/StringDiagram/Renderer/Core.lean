@@ -561,6 +561,86 @@ theorem endpointEdgeOfPartition_endpoint
     (edgeEndpointRefOfEndpointId st.edges (id := endpoint.val) (by
       simpa [edgeEndpointIds, edgeEndpointIdsOfEdges] using hconsumed)).2
 
+def edgeLeftEndpointOfValidIds
+    {Sig : Signature} {frontier : List Sig.Port}
+    {st : RenderState Sig frontier}
+    (hv : st.ValidIds) (edgeIndex : Fin st.edges.length) :
+    Fin st.endpoints.length :=
+  ⟨(st.edges.get edgeIndex).left,
+    hv.edge_left_bound (st.edges.get edgeIndex)
+      (List.get_mem st.edges edgeIndex)⟩
+
+def edgeRightEndpointOfValidIds
+    {Sig : Signature} {frontier : List Sig.Port}
+    {st : RenderState Sig frontier}
+    (hv : st.ValidIds) (edgeIndex : Fin st.edges.length) :
+    Fin st.endpoints.length :=
+  ⟨(st.edges.get edgeIndex).right,
+    hv.edge_right_bound (st.edges.get edgeIndex)
+      (List.get_mem st.edges edgeIndex)⟩
+
+theorem edgeLeftEndpointOfValidIds_get
+    {Sig : Signature} {frontier : List Sig.Port}
+    {st : RenderState Sig frontier}
+    (hv : st.ValidIds) (edgeIndex : Fin st.edges.length) :
+    st.endpoints.get (edgeLeftEndpointOfValidIds hv edgeIndex) =
+      (st.edges.get edgeIndex).leftLabel := by
+  simpa [edgeLeftEndpointOfValidIds] using
+    hv.edge_left_label (st.edges.get edgeIndex)
+      (List.get_mem st.edges edgeIndex)
+
+theorem edgeRightEndpointOfValidIds_get
+    {Sig : Signature} {frontier : List Sig.Port}
+    {st : RenderState Sig frontier}
+    (hv : st.ValidIds) (edgeIndex : Fin st.edges.length) :
+    st.endpoints.get (edgeRightEndpointOfValidIds hv edgeIndex) =
+      (st.edges.get edgeIndex).rightLabel := by
+  simpa [edgeRightEndpointOfValidIds] using
+    hv.edge_right_label (st.edges.get edgeIndex)
+      (List.get_mem st.edges edgeIndex)
+
+theorem endpoint_eq_edgeLeftEndpointOfValidIds_of_val
+    {Sig : Signature} {frontier : List Sig.Port}
+    {st : RenderState Sig frontier}
+    (hv : st.ValidIds)
+    {endpoint : Fin st.endpoints.length}
+    {edgeIndex : Fin st.edges.length}
+    (h : endpoint.val = (st.edges.get edgeIndex).left) :
+    endpoint = edgeLeftEndpointOfValidIds hv edgeIndex :=
+  fin_eq_of_val_eq h
+
+theorem endpoint_eq_edgeRightEndpointOfValidIds_of_val
+    {Sig : Signature} {frontier : List Sig.Port}
+    {st : RenderState Sig frontier}
+    (hv : st.ValidIds)
+    {endpoint : Fin st.endpoints.length}
+    {edgeIndex : Fin st.edges.length}
+    (h : endpoint.val = (st.edges.get edgeIndex).right) :
+    endpoint = edgeRightEndpointOfValidIds hv edgeIndex :=
+  fin_eq_of_val_eq h
+
+theorem endpoint_get_eq_edgeLeftLabel_of_val
+    {Sig : Signature} {frontier : List Sig.Port}
+    {st : RenderState Sig frontier}
+    (hv : st.ValidIds)
+    {endpoint : Fin st.endpoints.length}
+    {edgeIndex : Fin st.edges.length}
+    (h : endpoint.val = (st.edges.get edgeIndex).left) :
+    st.endpoints.get endpoint = (st.edges.get edgeIndex).leftLabel := by
+  rw [endpoint_eq_edgeLeftEndpointOfValidIds_of_val hv h]
+  exact edgeLeftEndpointOfValidIds_get hv edgeIndex
+
+theorem endpoint_get_eq_edgeRightLabel_of_val
+    {Sig : Signature} {frontier : List Sig.Port}
+    {st : RenderState Sig frontier}
+    (hv : st.ValidIds)
+    {endpoint : Fin st.endpoints.length}
+    {edgeIndex : Fin st.edges.length}
+    (h : endpoint.val = (st.edges.get edgeIndex).right) :
+    st.endpoints.get endpoint = (st.edges.get edgeIndex).rightLabel := by
+  rw [endpoint_eq_edgeRightEndpointOfValidIds_of_val hv h]
+  exact edgeRightEndpointOfValidIds_get hv edgeIndex
+
 theorem endpointEdgeOfPartition_label
     {Sig : Signature} {st : RenderState Sig []}
     (hv : st.ValidIds) (hp : st.EndpointPartition)
@@ -569,36 +649,17 @@ theorem endpointEdgeOfPartition_label
       (st.edges.get (endpointEdgeOfPartition hp endpoint)).label := by
   let edgeIndex := endpointEdgeOfPartition hp endpoint
   let edge := st.edges.get edgeIndex
-  have hedgeMem : edge ∈ st.edges := List.get_mem st.edges edgeIndex
   have hside : endpoint.val = edge.left ∨ endpoint.val = edge.right := by
     simpa [edgeIndex, edge] using
       endpointEdgeOfPartition_endpoint hp endpoint
   change Sig.portEdge (st.endpoints.get endpoint) = edge.label
   rcases hside with hleft | hright
-  · have hfin : endpoint = ⟨edge.left, hv.edge_left_bound edge hedgeMem⟩ := by
-      apply Fin.ext
-      exact hleft
-    calc
-      Sig.portEdge (st.endpoints.get endpoint) =
-          Sig.portEdge
-            (st.endpoints.get
-              ⟨edge.left, hv.edge_left_bound edge hedgeMem⟩) := by
-        rw [hfin]
-      _ = Sig.portEdge edge.leftLabel := by
-        rw [hv.edge_left_label edge hedgeMem]
-      _ = edge.label := edge.left_label
-  · have hfin : endpoint = ⟨edge.right, hv.edge_right_bound edge hedgeMem⟩ := by
-      apply Fin.ext
-      exact hright
-    calc
-      Sig.portEdge (st.endpoints.get endpoint) =
-          Sig.portEdge
-            (st.endpoints.get
-              ⟨edge.right, hv.edge_right_bound edge hedgeMem⟩) := by
-        rw [hfin]
-      _ = Sig.portEdge edge.rightLabel := by
-        rw [hv.edge_right_label edge hedgeMem]
-      _ = edge.label := edge.right_label
+  · rw [endpoint_get_eq_edgeLeftLabel_of_val hv
+      (edgeIndex := edgeIndex) (by simpa [edge] using hleft)]
+    exact edge.left_label
+  · rw [endpoint_get_eq_edgeRightLabel_of_val hv
+      (edgeIndex := edgeIndex) (by simpa [edge] using hright)]
+    exact edge.right_label
 
 theorem endpointEdgeOfPartition_eq_of_endpoint_side
     {Sig : Signature} {st : RenderState Sig []}
@@ -613,6 +674,15 @@ theorem endpointEdgeOfPartition_eq_of_endpoint_side
   · simpa [edgeEndpointIds, edgeEndpointIdsOfEdges] using hp.consumed_nodup
   · exact hside
 
+theorem endpointEdgeOfPartition_edgeLeftEndpointOfValidIds
+    {Sig : Signature} {st : RenderState Sig []}
+    (hv : st.ValidIds) (hp : st.EndpointPartition)
+    (edgeIndex : Fin st.edges.length) :
+    endpointEdgeOfPartition hp
+        (edgeLeftEndpointOfValidIds hv edgeIndex) = edgeIndex := by
+  apply endpointEdgeOfPartition_eq_of_endpoint_side
+  exact Or.inl rfl
+
 theorem endpointEdgeOfPartition_left
     {Sig : Signature} {st : RenderState Sig []}
     (hv : st.ValidIds) (hp : st.EndpointPartition)
@@ -621,8 +691,16 @@ theorem endpointEdgeOfPartition_left
         ⟨(st.edges.get edgeIndex).left,
           hv.edge_left_bound (st.edges.get edgeIndex)
             (List.get_mem st.edges edgeIndex)⟩ = edgeIndex := by
+  exact endpointEdgeOfPartition_edgeLeftEndpointOfValidIds hv hp edgeIndex
+
+theorem endpointEdgeOfPartition_edgeRightEndpointOfValidIds
+    {Sig : Signature} {st : RenderState Sig []}
+    (hv : st.ValidIds) (hp : st.EndpointPartition)
+    (edgeIndex : Fin st.edges.length) :
+    endpointEdgeOfPartition hp
+        (edgeRightEndpointOfValidIds hv edgeIndex) = edgeIndex := by
   apply endpointEdgeOfPartition_eq_of_endpoint_side
-  exact Or.inl rfl
+  exact Or.inr rfl
 
 theorem endpointEdgeOfPartition_right
     {Sig : Signature} {st : RenderState Sig []}
@@ -632,8 +710,7 @@ theorem endpointEdgeOfPartition_right
         ⟨(st.edges.get edgeIndex).right,
           hv.edge_right_bound (st.edges.get edgeIndex)
             (List.get_mem st.edges edgeIndex)⟩ = edgeIndex := by
-  apply endpointEdgeOfPartition_eq_of_endpoint_side
-  exact Or.inr rfl
+  exact endpointEdgeOfPartition_edgeRightEndpointOfValidIds hv hp edgeIndex
 
 theorem edge_left_ne_right_of_partition
     {Sig : Signature} {st : RenderState Sig []}
@@ -653,7 +730,6 @@ theorem edgeCompatibleOfPartition
     Sig.compatible (st.endpoints.get left) (st.endpoints.get right) := by
   let edgeIndex := endpointEdgeOfPartition hp left
   let edge := st.edges.get edgeIndex
-  have hedgeMem : edge ∈ st.edges := List.get_mem st.edges edgeIndex
   have hleftSide : left.val = edge.left ∨ left.val = edge.right := by
     simpa [edgeIndex, edge] using endpointEdgeOfPartition_endpoint hp left
   have hrightEdge : endpointEdgeOfPartition hp right = edgeIndex := by
@@ -664,37 +740,21 @@ theorem edgeCompatibleOfPartition
   rcases hleftSide with hleftL | hleftR
   · rcases hrightSide with hrightL | hrightR
     · have hfin : left = right := by
-        apply Fin.ext
-        exact hleftL.trans hrightL.symm
+        exact fin_eq_of_val_eq (hleftL.trans hrightL.symm)
       exact False.elim (hne hfin)
-    · have hleftFin :
-          left = ⟨edge.left, hv.edge_left_bound edge hedgeMem⟩ := by
-        apply Fin.ext
-        exact hleftL
-      have hrightFin :
-          right = ⟨edge.right, hv.edge_right_bound edge hedgeMem⟩ := by
-        apply Fin.ext
-        exact hrightR
-      rw [hleftFin, hrightFin]
-      rw [hv.edge_left_label edge hedgeMem]
-      rw [hv.edge_right_label edge hedgeMem]
+    · rw [endpoint_get_eq_edgeLeftLabel_of_val hv
+        (edgeIndex := edgeIndex) (by simpa [edge] using hleftL)]
+      rw [endpoint_get_eq_edgeRightLabel_of_val hv
+        (edgeIndex := edgeIndex) (by simpa [edge] using hrightR)]
       exact edge.compatible
   · rcases hrightSide with hrightL | hrightR
-    · have hleftFin :
-          left = ⟨edge.right, hv.edge_right_bound edge hedgeMem⟩ := by
-        apply Fin.ext
-        exact hleftR
-      have hrightFin :
-          right = ⟨edge.left, hv.edge_left_bound edge hedgeMem⟩ := by
-        apply Fin.ext
-        exact hrightL
-      rw [hleftFin, hrightFin]
-      rw [hv.edge_right_label edge hedgeMem]
-      rw [hv.edge_left_label edge hedgeMem]
+    · rw [endpoint_get_eq_edgeRightLabel_of_val hv
+        (edgeIndex := edgeIndex) (by simpa [edge] using hleftR)]
+      rw [endpoint_get_eq_edgeLeftLabel_of_val hv
+        (edgeIndex := edgeIndex) (by simpa [edge] using hrightL)]
       exact Sig.compatible_symm edge.compatible
     · have hfin : left = right := by
-        apply Fin.ext
-        exact hleftR.trans hrightR.symm
+        exact fin_eq_of_val_eq (hleftR.trans hrightR.symm)
       exact False.elim (hne hfin)
 
 theorem edgeTwoEndpointsOfPartition
@@ -709,29 +769,28 @@ theorem edgeTwoEndpointsOfPartition
         endpointEdgeOfPartition hp endpoint = edgeIndex →
           endpoint = left ∨ endpoint = right := by
   let edge := st.edges.get edgeIndex
-  have hedgeMem : edge ∈ st.edges := List.get_mem st.edges edgeIndex
   let leftEndpoint : Fin st.endpoints.length :=
-    ⟨edge.left, hv.edge_left_bound edge hedgeMem⟩
+    edgeLeftEndpointOfValidIds hv edgeIndex
   let rightEndpoint : Fin st.endpoints.length :=
-    ⟨edge.right, hv.edge_right_bound edge hedgeMem⟩
+    edgeRightEndpointOfValidIds hv edgeIndex
   refine ⟨leftEndpoint, rightEndpoint, ?_, ?_, ?_, ?_⟩
   · intro hsame
     have hval : edge.left = edge.right := by
       exact congrArg Fin.val hsame
     exact edge_left_ne_right_of_partition hp edgeIndex hval
-  · exact endpointEdgeOfPartition_left hv hp edgeIndex
-  · exact endpointEdgeOfPartition_right hv hp edgeIndex
+  · exact endpointEdgeOfPartition_edgeLeftEndpointOfValidIds hv hp edgeIndex
+  · exact endpointEdgeOfPartition_edgeRightEndpointOfValidIds hv hp edgeIndex
   · intro endpoint hendpointEdge
     have hsideRaw := endpointEdgeOfPartition_endpoint hp endpoint
     have hside : endpoint.val = edge.left ∨ endpoint.val = edge.right := by
       simpa [edge, hendpointEdge] using hsideRaw
     rcases hside with hleft | hright
     · left
-      apply Fin.ext
-      exact hleft
+      exact endpoint_eq_edgeLeftEndpointOfValidIds_of_val hv
+        (edgeIndex := edgeIndex) (by simpa [edge] using hleft)
     · right
-      apply Fin.ext
-      exact hright
+      exact endpoint_eq_edgeRightEndpointOfValidIds_of_val hv
+        (edgeIndex := edgeIndex) (by simpa [edge] using hright)
 
 /--
 The semantic endpoint-to-edge slice of graph evidence derived from renderer
