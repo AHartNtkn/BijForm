@@ -448,6 +448,9 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
   - Partial: `GraphRenderRelated.budChild_nodeIncidentFields` now owns the bud
     child old/fresh node incident length and endpoint-bound field updates; the
     main `budChild` proof consumes the shared node incident field package.
+  - Partial: `GraphRenderRelated.budChild_nodeIncidentFields` now consumes
+    `AppendTraceRelation` for node incident lengths; endpoint bounds remain
+    delegated to child `ValidIds`.
   - Partial: `GraphRenderRelated.budChild_nodeIncident` now owns the old/fresh
     dependent endpoint/graph incident-slot transport for bud children; the main
     `budChild` proof no longer carries that cast-reconstruction block.
