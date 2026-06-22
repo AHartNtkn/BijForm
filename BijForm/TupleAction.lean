@@ -23,6 +23,34 @@ structure ConcreteQuotientCode (Raw : Type u) where
 
 namespace ConcreteQuotientCode
 
+def ofNormalizer {Raw : Type u} {Canon : Type v}
+    (code : Canon ≃ᵢ Nat)
+    (normalize : Raw → Canon)
+    (denormalize : Canon → Raw)
+    (normalize_denormalize : ∀ c, normalize (denormalize c) = c) :
+    ConcreteQuotientCode Raw where
+  Rel x y := normalize x = normalize y
+  rel_refl := by
+    intro x
+    rfl
+  rel_symm := by
+    intro x y hxy
+    exact hxy.symm
+  rel_trans := by
+    intro x y z hxy hyz
+    exact hxy.trans hyz
+  Canon := Canon
+  code := code
+  normalize := normalize
+  denormalize := denormalize
+  normalize_respects := by
+    intro x y hxy
+    exact hxy
+  denormalize_normalize_rel := by
+    intro x
+    exact normalize_denormalize (normalize x)
+  normalize_denormalize := normalize_denormalize
+
 def setoid {Raw : Type u} (C : ConcreteQuotientCode Raw) : Setoid Raw where
   r := C.Rel
   iseqv := by
@@ -269,25 +297,6 @@ def action : FiniteAction (Nat × Nat) where
   elemCode := elemCode
   act := act
 
-def Rel (p q : Nat × Nat) : Prop :=
-  CodeAlgebra.sortNatPair p.1 p.2 = CodeAlgebra.sortNatPair q.1 q.2
-
-theorem rel_refl (p : Nat × Nat) : Rel p p :=
-  rfl
-
-theorem rel_symm {p q : Nat × Nat} (h : Rel p q) : Rel q p :=
-  h.symm
-
-theorem rel_trans {p q r : Nat × Nat} (hpq : Rel p q) (hqr : Rel q r) :
-    Rel p r :=
-  hpq.trans hqr
-
-theorem action_sound (g : Elem) (p : Nat × Nat) : Rel (act g p) p := by
-  cases g with
-  | id => rfl
-  | swap =>
-      exact CodeAlgebra.sortNatPair_comm p.2 p.1
-
 abbrev Canon : Type :=
   {p : Nat × Nat // p.1 ≤ p.2}
 
@@ -297,33 +306,23 @@ def normalize (p : Nat × Nat) : Canon :=
 def denormalize (p : Canon) : Nat × Nat :=
   p.val
 
-theorem normalize_respects {p q : Nat × Nat} (h : Rel p q) :
-    normalize p = normalize q :=
-  h
-
-theorem denormalize_normalize_rel (p : Nat × Nat) :
-    Rel (denormalize (normalize p)) p := by
-  cases p with
-  | mk a b =>
-    dsimp [Rel, normalize, denormalize]
-    rw [CodeAlgebra.sortNatPair_of_le (CodeAlgebra.sortNatPair a b).property]
-
 theorem normalize_denormalize (p : Canon) :
     normalize (denormalize p) = p := by
   exact CodeAlgebra.sortNatPair_of_le p.property
 
+theorem action_sound (g : Elem) (p : Nat × Nat) :
+    normalize (act g p) = normalize p := by
+  cases g with
+  | id => rfl
+  | swap =>
+      exact CodeAlgebra.sortNatPair_comm p.2 p.1
+
+def quotientCode : ConcreteQuotientCode (Nat × Nat) :=
+  ConcreteQuotientCode.ofNormalizer
+    CodeAlgebra.unorderedPairNat normalize denormalize normalize_denormalize
+
 def concreteCode : ConcreteActionCode action where
-  Rel := Rel
-  rel_refl := rel_refl
-  rel_symm := @rel_symm
-  rel_trans := @rel_trans
-  Canon := Canon
-  code := CodeAlgebra.unorderedPairNat
-  normalize := normalize
-  denormalize := denormalize
-  normalize_respects := @normalize_respects
-  denormalize_normalize_rel := denormalize_normalize_rel
-  normalize_denormalize := normalize_denormalize
+  toConcreteQuotientCode := quotientCode
   action_sound := action_sound
 
 def encode (a b : Nat) : Nat :=
