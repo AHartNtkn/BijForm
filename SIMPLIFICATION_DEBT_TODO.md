@@ -191,12 +191,14 @@ is ordered to turn helper additions into actual deletion.
     Remaining `sumProdNat` inverse proofs call generic `toNatSum_inr_lt_of_le`
     and `prodNat_toFun_*_le` facts directly, and the validation scan is empty.
 
-- [ ] Make packaged render evidence the only bridge-visible invariant API.
+- [x] Make packaged render evidence the only bridge-visible invariant API.
   - Owners: `BijForm.StringDiagram.Hypergraph` and
     `BijForm.StringDiagram.Bridge`.
-  - Why this remains open: `RenderTraceEvidence` now exists, but the raw
+  - Original debt: `RenderTraceEvidence` existed, but the raw
     `openEvidenceOfInvariants` constructor is still a visible lower-level
-    surface.
+    surface. A second pass found the bridge/traversal relation surface still
+    accepted projected `OpenPortHypergraphEvidence` rather than packaged render
+    trace evidence.
   - Delete: bridge-facing raw invariant tuple assembly and any public raw
     constructor that lets callers bypass the evidence package.
   - Replace with: package constructors and projections as the only public API
@@ -204,6 +206,14 @@ is ordered to turn helper additions into actual deletion.
   - Validation:
     `rg -n "openEvidenceOfInvariants|hv hp hn pref ho hall" BijForm/StringDiagram/Bridge BijForm/StringDiagram/FiniteCoding BijForm/StringDiagram/Renderer BijForm/StringDiagram/Traversal --glob '*.lean'`
     should show no bridge-facing raw invariant assembly.
+  - Completed: the obsolete `openEvidenceOfInvariants` and diagram-level
+    `renderTrace*_graphEvidence` / `renderTrace*_openEvidence` helper surfaces
+    were deleted. `RenderPrefixRelated`, `RenderPrefixChildStep`, and syntax
+    round-trip bridge proofs now take `RenderState.RenderTraceEvidence`
+    directly and project `toOpenPortHypergraph` / `toPortHypergraph` from that
+    package. The validation scan above is empty, the old helper-name scan is
+    empty, and a signature scan for bridge/traversal `OpenPortHypergraphEvidence`
+    render-prefix parameters is empty.
 
 ## Second-Pass Simplification Work
 

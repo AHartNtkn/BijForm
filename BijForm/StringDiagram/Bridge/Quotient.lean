@@ -39,30 +39,27 @@ theorem Diag.fromGraph_toOpenPortHypergraph
     (d : Diag Sig boundary) :
     OpenPortHypergraph.fromGraph (Diag.toOpenPortHypergraph d) = d := by
   let evidence := Diag.renderTraceFromBoundary_evidence d
-  let ev := evidence.openEvidence
   have hrel :
-      OpenPortHypergraph.SearchState.RenderPrefixRelated ev
+      OpenPortHypergraph.SearchState.RenderPrefixRelated evidence
         (RenderState.initial Sig boundary)
-        (OpenPortHypergraph.SearchState.initial ev.toOpenPortHypergraph) := by
-    simpa [ev, evidence, RenderState.RenderTraceEvidence.openEvidence,
-      RenderState.RenderTraceEvidence.graphEvidence, renderTraceFromBoundary_evidence,
-      renderTraceFromBoundary_openEvidence, renderTraceFromBoundary_graphEvidence,
+        (OpenPortHypergraph.SearchState.initial evidence.toOpenPortHypergraph) := by
+    simpa [evidence, renderTraceFromBoundary_evidence,
       Diag.toOpenPortHypergraph] using
       OpenPortHypergraph.SearchState.initial_renderPrefixRelated d
   have hcomplete :
-      (OpenPortHypergraph.SearchState.initial ev.toOpenPortHypergraph).FrontierComplete :=
-    OpenPortHypergraph.SearchState.initial_frontierComplete ev.toOpenPortHypergraph
+      (OpenPortHypergraph.SearchState.initial
+        evidence.toOpenPortHypergraph).FrontierComplete :=
+    OpenPortHypergraph.SearchState.initial_frontierComplete
+      evidence.toOpenPortHypergraph
   have hreplay :=
     Diag.toDiag_of_renderPrefixRelated d (RenderState.initial Sig boundary)
       (RenderState.RenderTraceEvidence.initial boundary)
       evidence
-      (OpenPortHypergraph.SearchState.initial ev.toOpenPortHypergraph)
+      (OpenPortHypergraph.SearchState.initial evidence.toOpenPortHypergraph)
       hrel hcomplete
-  simpa [OpenPortHypergraph.fromGraph, Diag.toOpenPortHypergraph, ev,
-    evidence, RenderState.RenderTraceEvidence.openEvidence,
-    RenderState.RenderTraceEvidence.graphEvidence,
-    renderTraceFromBoundary_evidence, renderTraceFromBoundary_openEvidence,
-    renderTraceFromBoundary_graphEvidence] using hreplay
+  simpa [OpenPortHypergraph.fromGraph, Diag.toOpenPortHypergraph, evidence,
+    RenderState.RenderTraceEvidence.toOpenPortHypergraph,
+    renderTraceFromBoundary_evidence] using hreplay
 
 /--
 Inverse law: traversing an open graph to syntax and rendering that syntax
@@ -91,10 +88,8 @@ theorem OpenPortHypergraph.toOpenPortHypergraph_fromGraph_iso
   refine ⟨?_⟩
   simpa [d, OpenPortHypergraph.fromGraph, Diag.toOpenPortHypergraph,
     Diag.renderTraceFromBoundary, evidence, Diag.renderTraceFromBoundary_evidence,
-    RenderState.RenderTraceEvidence.openEvidence,
     RenderState.RenderTraceEvidence.graphEvidence,
-    Diag.renderTraceFromBoundary_openEvidence,
-    Diag.renderTraceFromBoundary_graphEvidence] using
+    RenderState.RenderTraceEvidence.toOpenPortHypergraph] using
     OpenPortHypergraph.SearchState.GraphRenderRelated.toPortHypergraphIso
       evidence hrelFinal hexhausted
 

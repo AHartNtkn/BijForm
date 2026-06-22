@@ -260,7 +260,7 @@ exactly the rendered node prefix.
 structure RenderPrefixRelated
     {frontier : List Sig.Port}
     {final : RenderState Sig []}
-    (ev : RenderState.OpenPortHypergraphEvidence final boundary)
+    (ev : RenderState.RenderTraceEvidence final boundary)
     (rst : RenderState Sig frontier)
     (sst : SearchState ev.toOpenPortHypergraph frontier) : Prop where
   pending_vals :
@@ -275,7 +275,7 @@ structure RenderPrefixRelated
 theorem RenderPrefixRelated.cast
     {frontier frontier' : List Sig.Port}
     {final : RenderState Sig []}
-    {ev : RenderState.OpenPortHypergraphEvidence final boundary}
+    {ev : RenderState.RenderTraceEvidence final boundary}
     {rst : RenderState Sig frontier}
     {sst : SearchState ev.toOpenPortHypergraph frontier}
     (h : frontier = frontier')
@@ -287,7 +287,7 @@ theorem RenderPrefixRelated.cast
 theorem RenderPrefixRelated.cast_cancel_left
     {frontier frontier' : List Sig.Port}
     {final : RenderState Sig []}
-    {ev : RenderState.OpenPortHypergraphEvidence final boundary}
+    {ev : RenderState.RenderTraceEvidence final boundary}
     {rst : RenderState Sig frontier'}
     {sst : SearchState ev.toOpenPortHypergraph frontier}
     (h : frontier = frontier')
@@ -299,7 +299,7 @@ theorem RenderPrefixRelated.cast_cancel_left
 theorem RenderPrefixRelated.pending_cons_values
     {activeLabel : Sig.Port} {frontier : List Sig.Port}
     {final : RenderState Sig []}
-    {ev : RenderState.OpenPortHypergraphEvidence final boundary}
+    {ev : RenderState.RenderTraceEvidence final boundary}
     {rst : RenderState Sig (activeLabel :: frontier)}
     {sst : SearchState ev.toOpenPortHypergraph (activeLabel :: frontier)}
     (hrel : RenderPrefixRelated ev rst sst)
@@ -318,7 +318,7 @@ theorem RenderPrefixRelated.pending_cons_values
 theorem initial_renderPrefixRelated
     {boundary : List Sig.Port} (d : Diag Sig boundary) :
     RenderPrefixRelated
-      (Diag.renderTraceFromBoundary_openEvidence d)
+      (Diag.renderTraceFromBoundary_evidence d)
       (RenderState.initial Sig boundary)
       (initial (Diag.toOpenPortHypergraph d)) where
   pending_vals := by
@@ -326,9 +326,9 @@ theorem initial_renderPrefixRelated
     · simp [initial, RenderState.initial]
     · intro i _hleft hright
       dsimp [initial, RenderState.initial, Diag.toOpenPortHypergraph,
-        Diag.renderTraceFromBoundary_openEvidence,
-        Diag.renderTraceFromBoundary_graphEvidence,
-        RenderState.OpenPortHypergraphEvidence.toOpenPortHypergraph,
+        Diag.renderTraceFromBoundary_evidence,
+        RenderState.RenderTraceEvidence.toOpenPortHypergraph,
+        RenderState.RenderTraceEvidence.graphEvidence,
         RenderState.PortHypergraphEvidence.toPortHypergraph,
         RenderState.portHypergraphEvidenceOfInvariants,
         RenderState.boundaryEvidenceOfPrefix]
@@ -1768,7 +1768,7 @@ ask only for preservation of `firstPendingChildState`.
 inductive RenderPrefixChildStep
     {activeLabel : Sig.Port} {restLabels : List Sig.Port}
     {final : RenderState Sig []}
-    {ev : RenderState.OpenPortHypergraphEvidence final boundary}
+    {ev : RenderState.RenderTraceEvidence final boundary}
     {rst : RenderState Sig (activeLabel :: restLabels)}
     {sst : SearchState ev.toOpenPortHypergraph (activeLabel :: restLabels)}
     {active : Fin ev.toOpenPortHypergraph.raw.endpointCount}
@@ -1835,7 +1835,7 @@ inductive RenderPrefixChildStep
 theorem RenderPrefixRelated.connectChild_of_new_edge
     {activeLabel : Sig.Port} {frontier : List Sig.Port}
     {final : RenderState Sig []}
-    {ev : RenderState.OpenPortHypergraphEvidence final boundary}
+    {ev : RenderState.RenderTraceEvidence final boundary}
     {rst : RenderState Sig (activeLabel :: frontier)}
     {sst : SearchState ev.toOpenPortHypergraph (activeLabel :: frontier)}
     (hrel : RenderPrefixRelated ev rst sst)
@@ -1906,7 +1906,7 @@ theorem RenderPrefixRelated.connectChild_of_new_edge
 theorem RenderPrefixRelated.budChild_of_new_edge_node
     {activeLabel : Sig.Port} {restLabels : List Sig.Port}
     {final : RenderState Sig []}
-    {ev : RenderState.OpenPortHypergraphEvidence final boundary}
+    {ev : RenderState.RenderTraceEvidence final boundary}
     {rst : RenderState Sig (activeLabel :: restLabels)}
     {sst : SearchState ev.toOpenPortHypergraph (activeLabel :: restLabels)}
     (hrel : RenderPrefixRelated ev rst sst)
@@ -1998,7 +1998,7 @@ theorem RenderPrefixRelated.budChild_of_new_edge_node
 theorem RenderPrefixRelated.firstPendingChild
     {activeLabel : Sig.Port} {restLabels : List Sig.Port}
     {final : RenderState Sig []}
-    {ev : RenderState.OpenPortHypergraphEvidence final boundary}
+    {ev : RenderState.RenderTraceEvidence final boundary}
     {rst : RenderState Sig (activeLabel :: restLabels)}
     {sst : SearchState ev.toOpenPortHypergraph (activeLabel :: restLabels)}
     (hrel : RenderPrefixRelated ev rst sst)
