@@ -3188,14 +3188,14 @@ def GraphRenderRelated.toPortHypergraphIso
     · change
         G.raw.endpointEdge
             ((endpointOrder G st).get
-              (Fin.cast hrel.endpoint_length endpoint)) =
-          (edgeOrder st).get (Fin.cast hrel.edge_length edgeIndex)
+              (hrel.endpointIndex endpoint)) =
+          (edgeOrder st).get (hrel.edgeIndex edgeIndex)
       exact hrel.edge_left_of_endpoint_val hleft
     · change
         G.raw.endpointEdge
             ((endpointOrder G st).get
-              (Fin.cast hrel.endpoint_length endpoint)) =
-          (edgeOrder st).get (Fin.cast hrel.edge_length edgeIndex)
+              (hrel.endpointIndex endpoint)) =
+          (edgeOrder st).get (hrel.edgeIndex edgeIndex)
       exact hrel.edge_right_of_endpoint_val hright
   · intro node
     dsimp [R, nodeEquiv, Iso.trans, finCastIso, listFinIso,
@@ -3221,17 +3221,17 @@ def GraphRenderRelated.toPortHypergraphIso
       have hslotRight :
           i <
             (G.raw.incident
-              ((nodeOrder st).get (Fin.cast hrel.node_length node))).length := by
+              ((nodeOrder st).get (hrel.nodeIndex node))).length := by
         simpa [slot] using hright
       have hslotCast :
           (Fin.cast (hrel.node_incident_length node) slot).val = i := rfl
       have hleftGet :
           (endpointOrder G st).get
-              (Fin.cast hrel.endpoint_length
+              (hrel.endpointIndex
                 ⟨(rst.nodes.get node).incident.get slot,
                   hrel.node_incident_bound node slot⟩) =
             (G.raw.incident
-              ((nodeOrder st).get (Fin.cast hrel.node_length node))).get
+              ((nodeOrder st).get (hrel.nodeIndex node))).get
                 (Fin.cast (hrel.node_incident_length node) slot) :=
         hrel.node_incident node slot
       simpa [slot, hslotCast] using hleftGet

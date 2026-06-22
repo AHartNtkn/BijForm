@@ -146,6 +146,9 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     `GraphRenderRelation` relation-length casts dropped, but the bridge file
     still needs a broader ordered-trace/list-transport cleanup before this item
     is complete.
+  - Partial: routed more final preservation proof sites through the relation
+    helpers; `GraphRenderRelation` still has raw child-step and incident-slot
+    transports that need a separate helper family.
 
 ## Code Algebra and Rank Descent
 
