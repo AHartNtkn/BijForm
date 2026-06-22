@@ -252,7 +252,7 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
 
 ## Examples
 
-- [ ] Replace repeated `SyntaxPresentation.ofLayerMaps` inverse boilerplate.
+- [x] Replace repeated `SyntaxPresentation.ofLayerMaps` inverse boilerplate.
   - Owner: `BijForm.DependentPolynomial` plus example modules.
   - Evidence: repeated same-fiber unpacking, `cases out_eq`, constructor cases,
     and `child_eta_rfl` in `Num`, `Peano`, `Lambda`, `HBT`, `FinChain`,
@@ -285,6 +285,13 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     and Sorted are branch-local payload cases after shared scaffold removal;
     remaining layer/fiber scaffold surfaces are typed-binding internals and
     finite string-diagram frontier-case proofs.
+  - Completed: named syntax/example surfaces no longer use
+    `SyntaxPresentation.ofLayerMaps`; syntax and core same-fiber layer inverse
+    scaffolds route through `CodeLayer.canonical_left_inv_by_fiber` or
+    `CodeLayer.canonical_left_inv_at_by_fiber`. Remaining direct child-eta
+    closers in examples are payload-local branches after shared scaffold
+    removal, and finite string-diagram frontier branching is tracked by the
+    finite frontier table item below.
 
 - [x] Factor finite and infinite sorted branch payload coding.
   - Owner: `BijForm.Examples.Sorted`, backed by `CodeAlgebra` payload lemmas.
@@ -328,6 +335,16 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     is now a dispatcher over those lemmas, and its body no longer contains
     `hparent`, `let tail`, direct `CodeAlgebra.finProdNatOrNat`/
     `CodeAlgebra.finTaggedProdNat` calls, or `omega`.
+
+- [ ] Add noncanonical typed-binding layer inverse helpers.
+  - Owner: `BijForm.TypedBinding`
+  - Evidence: `SyntaxIso.layer_left_inv` and
+    `LayerShape.layerShape_left_inv` still manually destruct noncanonical
+    `CodeLayer` values over `TypedBinding.inversion`.
+  - Action: add typed-binding-owned helpers for `FiberCode` layer inverse
+    proofs so callers supply only variable/operator branch clauses.
+  - Validation: typed-binding left-inverse proofs no longer contain local
+    `cases layer`/`cases code` scaffolds.
 
 - [ ] Replace HBT child-swap normal-form boilerplate with quotient helpers.
   - Owner: `BijForm.QuotientPolynomial` and `BijForm.CodeAlgebra`
