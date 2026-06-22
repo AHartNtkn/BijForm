@@ -185,7 +185,7 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
 
 ## Code Algebra and Rank Descent
 
-- [ ] Replace hard-coded nested Nat codecs with a declarative codec builder.
+- [x] Replace hard-coded nested Nat codecs with a declarative codec builder.
   - Owner: `BijForm.CodeAlgebra`
   - Evidence: `sumProdNat`, `natOrProdOrProdNat`,
     `prodOrNatOrProdOrNat`, and matching branch-bound lemmas.
@@ -198,6 +198,11 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     assemble through those builders while preserving their public names and
     carrier shapes. Example rank proofs still need to move from specialized
     nested-code theorem names to the generic branch-path lemmas.
+  - Completed: Num, Peano, HBT, and Lambda rank proofs now use generic
+    `toNatSum`, `toNatSum3`, and `toNatSum4` branch-path lemmas instead of
+    specialized nested-code theorem names. Source scan for
+    `natOrProdOrProdNat_toFun`, `prodOrNatOrProdOrNat_toFun`, and
+    `sumProdNat_toFun` in examples and string-diagram modules has no matches.
 
 - [ ] Add generic child-bound propagation through codec combinators.
   - Owner: `BijForm.CodeAlgebra`

@@ -287,7 +287,9 @@ theorem LamNat_layer_child_rank_lt :
           have hchild_lt_parent :=
             CodeAlgebra.finPrefixNat_toFun_inr_lt_of_lt param CodeAlgebra.sumProdNat
               (a := Sum.inr (child false, child true))
-              (CodeAlgebra.sumProdNat_toFun_inr_fst_lt (child false, child true))
+              (CodeAlgebra.toNatSum_inr_lt_of_le (Iso.refl Nat)
+                CodeAlgebra.prodNat
+                (CodeAlgebra.prodNat_toFun_fst_le (child false, child true)))
           dsimp [LamNatRank]
           by_cases hk : param = 0
           · simpa [hk, LamNatLayerShapeTo] using hchild_lt_parent
@@ -300,7 +302,9 @@ theorem LamNat_layer_child_rank_lt :
           have hchild_lt_parent :=
             CodeAlgebra.finPrefixNat_toFun_inr_lt_of_lt param CodeAlgebra.sumProdNat
               (a := Sum.inr (child false, child true))
-              (CodeAlgebra.sumProdNat_toFun_inr_snd_lt (child false, child true))
+              (CodeAlgebra.toNatSum_inr_lt_of_le (Iso.refl Nat)
+                CodeAlgebra.prodNat
+                (CodeAlgebra.prodNat_toFun_snd_le (child false, child true)))
           dsimp [LamNatRank]
           by_cases hk : param = 0
           · simpa [hk, LamNatLayerShapeTo] using hchild_lt_parent

@@ -322,7 +322,9 @@ theorem PeanoNat_layer_child_lt :
           cases q
           let c := child ()
           simpa [c, PeanoNatLayerShapeTo] using
-            CodeAlgebra.prodOrNatOrProdOrNat_toFun_inr_inl_lt c
+            CodeAlgebra.toNatSum4_inr_inl_lt_of_le CodeAlgebra.prodNat
+              (Iso.refl Nat) CodeAlgebra.prodNat (Iso.refl Nat)
+              (Nat.le_refl c)
       | implies =>
           change PeanoParam PeanoCtor.implies at param
           change Nat at param
@@ -330,11 +332,13 @@ theorem PeanoNat_layer_child_lt :
           intro q
           cases q
           · simpa [PeanoNatLayerShapeTo] using
-              CodeAlgebra.prodOrNatOrProdOrNat_toFun_inr_inr_inl_fst_lt
-                (child false, child true)
+              CodeAlgebra.toNatSum4_inr_inr_inl_lt_of_le CodeAlgebra.prodNat
+                (Iso.refl Nat) CodeAlgebra.prodNat (Iso.refl Nat)
+                (CodeAlgebra.prodNat_toFun_fst_le (child false, child true))
           · simpa [PeanoNatLayerShapeTo] using
-              CodeAlgebra.prodOrNatOrProdOrNat_toFun_inr_inr_inl_snd_lt
-                (child false, child true)
+              CodeAlgebra.toNatSum4_inr_inr_inl_lt_of_le CodeAlgebra.prodNat
+                (Iso.refl Nat) CodeAlgebra.prodNat (Iso.refl Nat)
+                (CodeAlgebra.prodNat_toFun_snd_le (child false, child true))
       | forallE =>
           change PeanoParam PeanoCtor.forallE at param
           change Nat at param
@@ -343,7 +347,9 @@ theorem PeanoNat_layer_child_lt :
           cases q
           let c := child ()
           simpa [c, PeanoNatLayerShapeTo] using
-            CodeAlgebra.prodOrNatOrProdOrNat_toFun_inr_inr_inr_lt c
+            CodeAlgebra.toNatSum4_inr_inr_inr_lt_of_le CodeAlgebra.prodNat
+              (Iso.refl Nat) CodeAlgebra.prodNat (Iso.refl Nat)
+              (Nat.le_refl c)
 
 def PeanoNatLayerPresentation : NatLayerPresentation PeanoPoly PeanoInversion :=
   LayerPresentation.ofLayerShapeChildRank
