@@ -42,36 +42,12 @@ theorem openFrontierEmptyCarrier_unique {Sig : Signature}
   cases h
   exact fin_one_eq _ _
 
-def openFrontierNatCarrier {Sig : Signature}
+def openFrontierNonemptyIso {Sig : Signature}
     {boundary : List Sig.Port} (h : boundary ≠ []) :
-    Nat → (openFrontierShape Sig boundary).Carrier := by
+    (openFrontierShape Sig boundary).Carrier ≃ᵢ Nat := by
   cases boundary with
   | nil => exact False.elim (h rfl)
-  | cons _ _ => exact id
-
-def openFrontierCarrierNat {Sig : Signature}
-    {boundary : List Sig.Port} (h : boundary ≠ []) :
-    (openFrontierShape Sig boundary).Carrier → Nat := by
-  cases boundary with
-  | nil => exact False.elim (h rfl)
-  | cons _ _ => exact id
-
-theorem openFrontierNatCarrier_left_inv {Sig : Signature}
-    {boundary : List Sig.Port} (h : boundary ≠ [])
-    (z : (openFrontierShape Sig boundary).Carrier) :
-    openFrontierNatCarrier (Sig := Sig) h
-        (openFrontierCarrierNat (Sig := Sig) h z) = z := by
-  cases boundary with
-  | nil => exact False.elim (h rfl)
-  | cons _ _ => rfl
-
-theorem openFrontierNatCarrier_right_inv {Sig : Signature}
-    {boundary : List Sig.Port} (h : boundary ≠ []) (n : Nat) :
-    openFrontierCarrierNat (Sig := Sig) h
-        (openFrontierNatCarrier (Sig := Sig) h n) = n := by
-  cases boundary with
-  | nil => exact False.elim (h rfl)
-  | cons _ _ => rfl
+  | cons _ _ => exact CodeShape.infiniteIso rfl
 
 theorem Signature.nodePortsExcept_length
     {Sig : Signature} (node : Sig.Node) (entry : Fin (Sig.arity node)) :
@@ -310,16 +286,17 @@ def singleSortedFiniteRank
   cases h
   rfl
 
-@[simp] private theorem singleSortedFiniteRank_openFrontierNatCarrier
+@[simp] private theorem singleSortedFiniteRank_openFrontierNonemptyIso
     {Sig : Signature} (data : SingleSortedFiniteCodingData Sig)
     {boundary : List Sig.Port} (h : boundary ≠ []) (code : Nat) :
     singleSortedFiniteRank data boundary
-        (openFrontierNatCarrier (Sig := Sig) h code) =
+        ((openFrontierNonemptyIso (Sig := Sig) h).invFun code) =
       boundary.length + data.rankScale * code := by
   cases boundary with
   | nil => exact False.elim (h rfl)
   | cons _ _ =>
-      simp [singleSortedFiniteRank, openFrontierNatCarrier]
+      simp [singleSortedFiniteRank, openFrontierNonemptyIso,
+        CodeShape.infiniteIso, Iso.refl]
 
 private theorem rank_scaled_payload_lt
     {scale childBase parentBase payload code : Nat}
@@ -376,7 +353,7 @@ def singleSortedFiniteLayerToShape
                 (data.arity_pos node) hentry
             exact Sum.inr
               (⟨⟨node, entry⟩, hentry⟩,
-                openFrontierCarrierNat (Sig := Sig) hne (child ()))
+                (openFrontierNonemptyIso (Sig := Sig) hne).toFun (child ()))
   | active :: first :: [], ⟨⟨.finish, (), h⟩, _child⟩ => by
       cases h
   | active :: first :: [], ⟨⟨.connect, p, h⟩, _child⟩ => by
@@ -398,7 +375,7 @@ def singleSortedFiniteLayerToShape
               eraseFin (first :: second :: rest) mate ≠ [] :=
             eraseFin_ne_nil_of_length_gt_one mate (by simp)
           exact Sum.inl
-            (mate, openFrontierCarrierNat (Sig := Sig) hne (child ()))
+            (mate, (openFrontierNonemptyIso (Sig := Sig) hne).toFun (child ()))
   | active :: first :: second :: rest, ⟨⟨.bud, p, h⟩, child⟩ => by
       cases p with
       | mk _ frontier node entry _ =>
@@ -430,7 +407,7 @@ def singleSortedFiniteLayerFromShape
       ⟨⟨.bud,
           ⟨active, [], entry.1, entry.2, data.compatibleAll active _⟩,
           rfl⟩,
-        fun _ => openFrontierNatCarrier (Sig := Sig) hne tagged.2⟩
+        fun _ => (openFrontierNonemptyIso (Sig := Sig) hne).invFun tagged.2⟩
   | active :: first :: [], Sum.inl _connect =>
       ⟨⟨.connect,
           ⟨active, [first], ⟨0, by simp⟩, data.compatibleAll active first⟩,
@@ -450,7 +427,7 @@ def singleSortedFiniteLayerFromShape
           ⟨active, first :: second :: rest, tagged.1,
             data.compatibleAll active ((first :: second :: rest).get tagged.1)⟩,
           rfl⟩,
-        fun _ => openFrontierNatCarrier (Sig := Sig) hne tagged.2⟩
+        fun _ => (openFrontierNonemptyIso (Sig := Sig) hne).invFun tagged.2⟩
   | active :: first :: second :: rest, Sum.inr tagged =>
       let entry := tagged.1
       ⟨⟨.bud,
@@ -543,23 +520,8 @@ def singleSortedFiniteLayerPresentation
                                   (BudParam.eq_of_ok) ?_
                                 exact heq_of_eq hchild
                               · have hchild :
-                                    (fun _ =>
-                                      openFrontierNatCarrier
-                                        (Sig := Sig)
-                                        (Signature.nodePortsExcept_ne_nil_of_arity_ne_one
-                                          (data.arity_pos node) hentry)
-                                        (openFrontierCarrierNat
-                                          (Sig := Sig)
-                                          (Signature.nodePortsExcept_ne_nil_of_arity_ne_one
-                                            (data.arity_pos node) hentry)
-                                          (child ()))) = child := by
-                                  funext q
-                                  cases q
-                                  exact openFrontierNatCarrier_left_inv
-                                    (Sig := Sig)
-                                    (Signature.nodePortsExcept_ne_nil_of_arity_ne_one
-                                      (data.arity_pos node) hentry)
-                                    (child ())
+                                    (fun _ => child ()) = child := by
+                                  child_eta_unit
                                 simp [singleSortedFiniteLayerToShape,
                                   singleSortedFiniteLayerFromShape, hentry]
                                 refine CodeLayer.canonical_ext_param
@@ -631,15 +593,8 @@ def singleSortedFiniteLayerPresentation
                                       eraseFin (first :: second :: rest) mate ≠ [] :=
                                     eraseFin_ne_nil_of_length_gt_one mate (by simp)
                                   have hchild :
-                                      (fun _ =>
-                                        openFrontierNatCarrier
-                                          (Sig := Sig) hne
-                                          (openFrontierCarrierNat
-                                            (Sig := Sig) hne (child ()))) = child := by
-                                    funext q
-                                    cases q
-                                    exact openFrontierNatCarrier_left_inv
-                                      (Sig := Sig) hne (child ())
+                                      (fun _ => child ()) = child := by
+                                    child_eta_unit
                                   simp [singleSortedFiniteLayerToShape,
                                     singleSortedFiniteLayerFromShape]
                                   refine CodeLayer.canonical_ext_param
@@ -687,7 +642,7 @@ def singleSortedFiniteLayerPresentation
                     | mk entry hentry =>
                         simp [singleSortedFiniteLayerToShape,
                           singleSortedFiniteLayerFromShape, hentry,
-                          openFrontierNatCarrier_right_inv]
+                          openFrontierNonemptyIso]
           | cons first rest =>
               cases rest with
               | nil =>
@@ -709,7 +664,7 @@ def singleSortedFiniteLayerPresentation
                       | mk mate payload =>
                           simp [singleSortedFiniteLayerToShape,
                             singleSortedFiniteLayerFromShape,
-                            openFrontierNatCarrier_right_inv]
+                            openFrontierNonemptyIso]
                   | inr tagged =>
                       simp [singleSortedFiniteLayerToShape,
                         singleSortedFiniteLayerFromShape])
