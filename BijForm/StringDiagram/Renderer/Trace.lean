@@ -240,7 +240,7 @@ theorem renderTrace_connect_edge_mem
        rightLabel := frontier.get mate
        left := activeId
        right :=
-        restIds.get (Fin.cast (by
+        restIds.get (listIndexCast restIds (by
           exact (RenderState.frontierIds_cons_tail_length st hids).symm) mate)
        left_label := rfl
        right_label := (Sig.compatible_edge ok).symm
@@ -267,7 +267,8 @@ theorem renderTrace_bud_edge_mem
        left := activeId
        right :=
         (freshNodeEndpoints st.nextEndpoint (Sig.arity node)).get
-          (Fin.cast (by simp [freshNodeEndpoints]) entry)
+          (listIndexCast (freshNodeEndpoints st.nextEndpoint (Sig.arity node))
+            (by simp [freshNodeEndpoints]) entry)
        left_label := rfl
        right_label := (Sig.compatible_edge ok).symm
        compatible := ok } : RenderEdge Sig) ∈
@@ -360,7 +361,7 @@ def renderTrace_connect_new_edgeIndex
     (hids : st.frontierIds = activeId :: restIds) :
     Fin (renderTrace (Diag.connect mate ok child) st).edges.length := by
   let mateId :=
-    restIds.get (Fin.cast (by
+    restIds.get (listIndexCast restIds (by
       exact (RenderState.frontierIds_cons_tail_length st hids).symm) mate)
   let edge : RenderEdge Sig :=
     { label := Sig.portEdge active
@@ -414,7 +415,7 @@ theorem renderTrace_connect_new_edge_get
     (hids : st.frontierIds = activeId :: restIds) :
     let final := renderTrace (Diag.connect mate ok child) st
     let mateId :=
-      restIds.get (Fin.cast (by
+      restIds.get (listIndexCast restIds (by
         exact (RenderState.frontierIds_cons_tail_length st hids).symm) mate)
     let edge : RenderEdge Sig :=
       { label := Sig.portEdge active
@@ -457,7 +458,7 @@ def renderTrace_bud_new_edgeIndex
     Fin (renderTrace (Diag.bud node entry ok child) st).edges.length := by
   let nodeEndpoints := freshNodeEndpoints st.nextEndpoint (Sig.arity node)
   let entryIdx : Fin nodeEndpoints.length :=
-    Fin.cast (by simp [nodeEndpoints]) entry
+    listIndexCast nodeEndpoints (by simp [nodeEndpoints]) entry
   let edge : RenderEdge Sig :=
     { label := Sig.portEdge active
       leftLabel := active
@@ -514,7 +515,7 @@ theorem renderTrace_bud_new_edge_get
     let final := renderTrace (Diag.bud node entry ok child) st
     let nodeEndpoints := freshNodeEndpoints st.nextEndpoint (Sig.arity node)
     let entryIdx : Fin nodeEndpoints.length :=
-      Fin.cast (by simp [nodeEndpoints]) entry
+      listIndexCast nodeEndpoints (by simp [nodeEndpoints]) entry
     let edge : RenderEdge Sig :=
       { label := Sig.portEdge active
         leftLabel := active

@@ -825,7 +825,9 @@ theorem budStep_edges
            left := activeId
            right :=
             (freshNodeEndpoints st.nextEndpoint (Sig.arity node)).get
-              (Fin.cast (by simp [freshNodeEndpoints]) entry)
+              (listIndexCast
+                (freshNodeEndpoints st.nextEndpoint (Sig.arity node))
+                (by simp [freshNodeEndpoints]) entry)
            left_label := rfl
            right_label := (Sig.compatible_edge ok).symm
            compatible := ok }] := by
@@ -1151,7 +1153,9 @@ theorem budStep_edges_get_new
         left := activeId
         right :=
           (freshNodeEndpoints rst.nextEndpoint (Sig.arity node)).get
-            (Fin.cast (by simp [freshNodeEndpoints]) entry)
+            (listIndexCast
+              (freshNodeEndpoints rst.nextEndpoint (Sig.arity node))
+              (by simp [freshNodeEndpoints]) entry)
         left_label := rfl
         right_label := (Sig.compatible_edge ok).symm
         compatible := ok } := by

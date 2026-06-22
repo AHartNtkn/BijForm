@@ -82,7 +82,10 @@ is ordered to turn helper additions into actual deletion.
     `eraseFin_eq_of_eq_of_val_eq`, and signature node-port index helpers;
     `Hypergraph.lean` direct `Fin.cast` hits are down to the two
     `PortHypergraphIso` incidence-slot transport helper implementations. The
-    item remains open because renderer and traversal casts still remain.
+    renderer trace rest/fresh-node edge expressions now use `listIndexCast`,
+    so `Renderer/Trace.lean` direct `Fin.cast` hits dropped to `0`. The item
+    remains open because renderer step/core owner internals and traversal casts
+    still remain.
 
 - [ ] Collapse the graph-render relation helper volume into schemas.
   - Owners: `BijForm.StringDiagram.Bridge.GraphRenderRelation`,
