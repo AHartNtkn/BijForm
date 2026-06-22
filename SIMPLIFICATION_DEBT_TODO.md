@@ -157,9 +157,13 @@ is ordered to turn helper additions into actual deletion.
     `FiberCode` var payloads, `ArgTuple.ofChild_toChild` for pair tuple
     reconstruction, and constructor-family inverse proofs rewrite through the
     existing argument-tuple and constructor-iso inverse facts instead of local
-    `heq_of_eq` assembly. The item remains open because no-child layer
-    branches, finite syntax helper extensionality, example sum-tail
-    destructuring, and proof-field-sensitive `heq_of_eq` branches still exist.
+    `heq_of_eq` assembly. Peano Nat-layer no-child branches, the sorted leaf
+    no-child branch, and the finite syntax finish branch now call the
+    owner-level `finish_code_layer_left_inv` macro instead of spelling direct
+    `child_eta_rfl child` locally. The item remains open because typed-binding
+    layer branches outside the macro's current reduction class, finite syntax
+    helper extensionality, example sum-tail destructuring, and
+    proof-field-sensitive `heq_of_eq` branches still exist.
 
 - [ ] Finish typed-binding proof-surface cleanup.
   - Owners: `BijForm.TypedBinding` and

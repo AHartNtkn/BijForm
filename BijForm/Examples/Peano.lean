@@ -234,20 +234,11 @@ def PeanoNatLayerShapeLayerPresentation :
             · apply heq_of_eq
               child_eta_cases
       | not =>
-          simp [PeanoPoly, PeanoOut] at out_eq
-          cases out_eq
-          dsimp [PeanoNatLayerShapeTo, PeanoNatLayerShapeInv]
-          child_eta_rfl child
+          finish_code_layer_left_inv out_eq child
       | implies =>
-          simp [PeanoPoly, PeanoOut] at out_eq
-          cases out_eq
-          dsimp [PeanoNatLayerShapeTo, PeanoNatLayerShapeInv]
-          child_eta_rfl child
+          finish_code_layer_left_inv out_eq child
       | forallE =>
-          simp [PeanoPoly, PeanoOut] at out_eq
-          cases out_eq
-          dsimp [PeanoNatLayerShapeTo, PeanoNatLayerShapeInv]
-          child_eta_rfl child))
+          finish_code_layer_left_inv out_eq child))
     (by
     intro k x
     have hshape :

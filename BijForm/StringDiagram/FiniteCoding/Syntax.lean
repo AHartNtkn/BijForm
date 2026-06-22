@@ -796,8 +796,7 @@ private theorem singleSortedFiniteLayer_left_inv
               cases ctor with
               | finish =>
                   cases param
-                  cases out_eq
-                  child_eta_rfl child
+                  finish_code_layer_left_inv out_eq child
               | connect =>
                   cases param with
                   | mk active frontier mate ok =>

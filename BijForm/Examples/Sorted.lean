@@ -417,9 +417,8 @@ private def SortedCarrierLayerIso (i : SortedIx) :
               intro ctor param out_eq child
               cases ctor with
               | leaf =>
-                  cases out_eq
                   simp [h]
-                  child_eta_rfl child
+                  finish_code_layer_left_inv out_eq child
               | branch =>
                   cases param with
                   | mk _i pivot =>
