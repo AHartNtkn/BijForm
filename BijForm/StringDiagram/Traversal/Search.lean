@@ -774,7 +774,7 @@ theorem toDiag_isoRelated
       rcases hrel.firstPendingStepSearch?_connect hpending mate hmate with
         ⟨rightMateEdge, hrightStep⟩
       have hchildRel :=
-        hrel.connectChild_with hpending mate hmate rightMateEdge
+        hrel.connectChild hpending mate hmate rightMateEdge
       have hchild :=
         ih (right.connectChild hrightPending rightMate
               rightMateEdge) hchildRel
@@ -827,7 +827,7 @@ theorem toDiag_isoRelated
             (st.budChild hpending node slot hmate leftUnseenMem)
             rightChild := by
         dsimp [rightChild, rightNode, rightSlot, hfrontier]
-        exact hrel.budChild_with hpending node slot hmate leftUnseenMem
+        exact hrel.budChild hpending node slot hmate leftUnseenMem
           rightMateEdge rightUnseenMem
       have hrightChildCompleteUncast :
           (right.budChild hrightPending rightNode rightSlot rightMateEdge
