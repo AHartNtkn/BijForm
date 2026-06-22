@@ -278,6 +278,11 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     layer/fiber destructuring in those blocks. Remaining surfaces are fixed
     sorted carrier/payload isomorphisms, typed-binding internals, and finite
     string-diagram frontier-case proofs.
+  - Partial: added fixed-index `CodeLayer.canonical_left_inv_at_by_fiber`.
+    `sortedConstructorPayloadIso` and the nontrivial fixed branch of
+    `SortedCarrierLayerIso` now use the shared fixed-fiber layer/fiber
+    destructuring helper. Remaining surfaces are typed-binding internals and
+    finite string-diagram frontier-case proofs.
 
 - [x] Factor finite and infinite sorted branch payload coding.
   - Owner: `BijForm.Examples.Sorted`, backed by `CodeAlgebra` payload lemmas.

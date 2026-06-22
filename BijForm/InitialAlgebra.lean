@@ -139,9 +139,30 @@ theorem ext_layer {P : DepPoly ι} {H : OutputIndexInversion P}
       exact ext hcode hchild
 
 /--
-Prove a canonical same-fiber layer left inverse by constructor/fiber cases.
-Callers supply only the domain-specific constructor clauses; this helper owns
-the generic `CodeLayer` and `Fiber` unpacking.
+Prove a fixed canonical same-fiber layer left inverse by constructor/fiber
+cases. Callers supply only the domain-specific constructor clauses; this helper
+owns the generic `CodeLayer` and `Fiber` unpacking.
+-/
+theorem canonical_left_inv_at_by_fiber {P : DepPoly ι} {Code : ι → Type v}
+    {i : ι} {Carrier : Type w}
+    {toCarrier : CodeLayer P (OutputIndexInversion.canonical P) Code i → Carrier}
+    {fromCarrier : Carrier → CodeLayer P (OutputIndexInversion.canonical P) Code i}
+    (h : ∀ (ctor : P.Ctor) (param : P.Param ctor)
+      (out_eq : P.out ctor param = i)
+      (child : (q : P.Pos ctor param) → Code (P.input param q)),
+      fromCarrier (toCarrier ⟨⟨ctor, param, out_eq⟩, child⟩) =
+        ⟨⟨ctor, param, out_eq⟩, child⟩) :
+    Function.LeftInverse fromCarrier toCarrier := by
+  intro layer
+  cases layer with
+  | mk code child =>
+    cases code with
+    | mk ctor param out_eq =>
+      exact h ctor param out_eq child
+
+/--
+Prove an indexed canonical same-fiber layer left inverse by constructor/fiber
+cases.
 -/
 theorem canonical_left_inv_by_fiber {P : DepPoly ι} {Code : ι → Type v}
     {Carrier : ι → Type w}
@@ -155,12 +176,8 @@ theorem canonical_left_inv_by_fiber {P : DepPoly ι} {Code : ι → Type v}
       fromCarrier i (toCarrier i ⟨⟨ctor, param, out_eq⟩, child⟩) =
         ⟨⟨ctor, param, out_eq⟩, child⟩) :
     ∀ i, Function.LeftInverse (fromCarrier i) (toCarrier i) := by
-  intro i layer
-  cases layer with
-  | mk code child =>
-    cases code with
-    | mk ctor param out_eq =>
-      exact h ctor param out_eq child
+  intro i
+  exact canonical_left_inv_at_by_fiber (i := i) (h := h)
 
 end CodeLayer
 

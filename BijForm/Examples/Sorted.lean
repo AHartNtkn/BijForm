@@ -302,40 +302,37 @@ private def sortedConstructorPayloadIso (lower : Nat) (upper : Bound)
               payload.2.1
           | true => SortedCarrier.ofNat (i := (pivot.1, upper)) pivot.property.2
               payload.2.2⟩
-  left_inv := by
-    intro layer
-    cases layer with
-    | mk code child =>
-      cases code with
-      | mk ctor param out_eq =>
-        cases ctor with
-        | leaf =>
+  left_inv := CodeLayer.canonical_left_inv_at_by_fiber (by
+    intro ctor param out_eq child
+    cases ctor with
+    | leaf =>
+        finish_code_layer_left_inv out_eq child
+    | branch =>
+        cases param with
+        | mk _i pivot =>
             cases out_eq
-            child_eta_rfl child
-        | branch =>
-            cases param with
-            | mk _i pivot =>
-                cases out_eq
-                dsimp [sortedBranchFiber]
-                rw [pivotIso.left_inv pivot]
-                have hchild :
-                    child =
-                    (fun
-                      | false => SortedCarrier.ofNat (i := (lower, some pivot.1))
-                          pivot.property.1
-                          (SortedCarrier.toNat (i := (lower, some pivot.1))
-                            pivot.property.1 (child false))
-                      | true => SortedCarrier.ofNat (i := (pivot.1, upper))
-                          pivot.property.2
-                          (SortedCarrier.toNat (i := (pivot.1, upper))
-                            pivot.property.2 (child true))) := by
-                  funext q
-                  cases q
-                  · exact (SortedCarrier.ofNat_toNat (i := (lower, some pivot.1))
-                      pivot.property.1 (child false)).symm
-                  · exact (SortedCarrier.ofNat_toNat (i := (pivot.1, upper))
-                      pivot.property.2 (child true)).symm
-                exact CodeLayer.ext_rfl hchild.symm
+            dsimp [sortedBranchFiber]
+            rw [pivotIso.left_inv pivot]
+            have hchild :
+                child =
+                (fun
+                  | false => SortedCarrier.ofNat (i := (lower, some pivot.1))
+                      pivot.property.1
+                      (SortedCarrier.toNat (i := (lower, some pivot.1))
+                        pivot.property.1 (child false))
+                  | true => SortedCarrier.ofNat (i := (pivot.1, upper))
+                      pivot.property.2
+                      (SortedCarrier.toNat (i := (pivot.1, upper))
+                        pivot.property.2 (child true))) := by
+              funext q
+              cases q
+              · exact (SortedCarrier.ofNat_toNat (i := (lower, some pivot.1))
+                  pivot.property.1 (child false)).symm
+              · exact (SortedCarrier.ofNat_toNat (i := (pivot.1, upper))
+                  pivot.property.2 (child true)).symm
+            exact CodeLayer.ext_rfl
+              (P := SortedPoly) (H := SortedInversion) (Code := SortedCarrier)
+              (i := (lower, upper)) hchild.symm)
   right_inv := by
     intro shape
     cases shape with
@@ -413,23 +410,21 @@ private def SortedCarrierLayerIso (i : SortedIx) :
           intro layer
           simp [SortedCarrier.toNat_ofNat]
       | some upper =>
-          intro layer
           by_cases h : lower ≤ upper
-          · simp [h, SortedCarrier.toNat_ofNat]
-          · cases layer with
-            | mk code child =>
-              cases code with
-              | mk ctor param out_eq =>
-                cases ctor with
-                | leaf =>
-                    cases out_eq
-                    simp [h]
-                    child_eta_rfl child
-                | branch =>
-                    cases param with
-                    | mk _i pivot =>
-                        cases out_eq
-                        exact False.elim (h pivot.bound_le)
+          · intro layer
+            simp [h, SortedCarrier.toNat_ofNat]
+          · exact CodeLayer.canonical_left_inv_at_by_fiber (by
+              intro ctor param out_eq child
+              cases ctor with
+              | leaf =>
+                  cases out_eq
+                  simp [h]
+                  child_eta_rfl child
+              | branch =>
+                  cases param with
+                  | mk _i pivot =>
+                      cases out_eq
+                      exact False.elim (h pivot.bound_le))
   right_inv := by
     cases i with
     | mk lower upper =>
