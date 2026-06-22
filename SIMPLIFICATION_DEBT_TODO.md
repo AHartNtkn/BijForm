@@ -251,6 +251,13 @@ is ordered to turn helper additions into actual deletion.
     `rg -n "connectChild|budChild|firstPendingChild|RenderPrefixChildStep|IsoImage" BijForm/StringDiagram/Traversal BijForm/StringDiagram/Bridge --glob '*.lean'`
     should show the generic first-pending surface as the public path and no
     duplicate connect/bud preservation families at call sites.
+  - Partial: the public branch computation wrappers
+    `SearchState.toDiag_connect` and `SearchState.toDiag_bud` were deleted.
+    Traversal, graph-render, and syntax round-trip proofs now instantiate
+    `SearchState.toDiag_step` with `FirstPendingStep.connect` or
+    `FirstPendingStep.bud` directly. The item remains open because branch
+    frontier-complete, order-trace, render-prefix, iso, and graph-relation
+    helper families still exist.
 
 - [x] Delete low-value generated-code and presentation pass-through wrappers.
   - Owners: `BijForm.InitialAlgebra`,

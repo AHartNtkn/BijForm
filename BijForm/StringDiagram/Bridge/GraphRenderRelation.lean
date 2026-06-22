@@ -2365,7 +2365,8 @@ theorem GraphRenderRelated.toDiag
       exact hrel.finish
   | case2 activeLabel restLabels active rest mate hmate st _hcomplete
       hcomplete hpending hstep _hstep ih =>
-      rw [SearchState.toDiag_connect st hcomplete hpending mate hmate hstep]
+      rw [SearchState.toDiag_step st hcomplete hpending
+        (FirstPendingStep.connect mate hmate) hstep]
       rw [Diag.renderTrace_connect]
       let childSt := st.connectChild hpending mate hmate
       have hchildComplete : childSt.FrontierComplete :=
@@ -2386,8 +2387,8 @@ theorem GraphRenderRelated.toDiag
         hchildValid hchildRel
   | case3 activeLabel restLabels active rest node slot hmate st _hcomplete
       hcomplete hpending hunseen hstep _hstep ih =>
-      rw [SearchState.toDiag_bud st hcomplete hpending node slot hmate hunseen
-        hstep]
+      rw [SearchState.toDiag_step st hcomplete hpending
+        (FirstPendingStep.bud node slot hmate hunseen) hstep]
       rw [Diag.renderTrace_bud]
       let childSt := st.budChild hpending node slot hmate
         (by simpa [SearchState.seenNode] using hunseen)

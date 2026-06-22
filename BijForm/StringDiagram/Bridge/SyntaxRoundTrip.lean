@@ -574,8 +574,22 @@ theorem toDiag_of_renderPrefixRelated :
               rcases sst.firstPendingStepSearch?_some_connect_exact_of_witness
                   (sst.rest_nodup hpending) searchMate hmateSearch with
                 ⟨hmateSearch', hstep⟩
-              rw [OpenPortHypergraph.SearchState.toDiag_connect sst hcomplete
-                hpending searchMate hmateSearch' hstep]
+              have hdiag :
+                  sst.toDiag hcomplete =
+                    Diag.connect
+                      (sst.restLabelIndex hpending searchMate)
+                      (sst.connect_compatible hpending searchMate
+                        hmateSearch')
+                      ((sst.connectChild hpending searchMate
+                          hmateSearch').toDiag
+                        (sst.connectChild_frontierComplete hpending
+                          searchMate hmateSearch' hcomplete)) := by
+                simpa using
+                  OpenPortHypergraph.SearchState.toDiag_step sst hcomplete
+                    hpending
+                    (OpenPortHypergraph.FirstPendingStep.connect
+                      searchMate hmateSearch') hstep
+              rw [hdiag]
               have hidx :
                   sst.restLabelIndex hpending searchMate = mate := by
                 exact fin_eq_of_val_eq (by
@@ -744,8 +758,24 @@ theorem toDiag_of_renderPrefixRelated :
               rcases sst.firstPendingStepSearch?_some_bud_exact_of_witness
                   hconnectNone nodeIndex slot hmateSearch hunseen with
                 ⟨hmateSearch', hunseen', hstep⟩
-              rw [OpenPortHypergraph.SearchState.toDiag_bud sst hcomplete
-                hpending nodeIndex slot hmateSearch' hunseen' hstep]
+              have hdiag :
+                  sst.toDiag hcomplete =
+                    Diag.bud
+                      (traceEv.toOpenPortHypergraph.raw.nodeLabel nodeIndex)
+                      (OpenPortHypergraph.SearchState.budEntry
+                        (G := traceEv.toOpenPortHypergraph) nodeIndex slot)
+                      (sst.bud_compatible hpending nodeIndex slot
+                        hmateSearch')
+                      ((sst.budChild hpending nodeIndex slot hmateSearch'
+                          hunseen').toDiag
+                        (sst.budChild_frontierComplete hpending nodeIndex slot
+                          hmateSearch' hunseen' hcomplete)) := by
+                simpa using
+                  OpenPortHypergraph.SearchState.toDiag_step sst hcomplete
+                    hpending
+                    (OpenPortHypergraph.FirstPendingStep.bud
+                      nodeIndex slot hmateSearch' hunseen') hstep
+              rw [hdiag]
               have hentryVal :
                   (OpenPortHypergraph.SearchState.budEntry
                     (G := traceEv.toOpenPortHypergraph)

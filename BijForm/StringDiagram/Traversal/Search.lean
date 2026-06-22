@@ -739,58 +739,6 @@ theorem toDiag_step {G : OpenPortHypergraph Sig boundary}
       cases hstepEq
       cases step <;> simp [firstPendingChildState]
 
-/-- Connect-branch computation rule for the owned first-pending traversal. -/
-theorem toDiag_connect {G : OpenPortHypergraph Sig boundary}
-    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
-    (st : SearchState G (activeLabel :: restLabels))
-    (hcomplete : st.FrontierComplete)
-    {active : Fin G.raw.endpointCount}
-    {rest : List (Fin G.raw.endpointCount)}
-    (hpending : st.pending = active :: rest)
-    (mate : Fin rest.length)
-    (hmate : PortHypergraph.EdgeMate G.raw active (rest.get mate))
-    (hstep :
-      st.firstPendingStepSearch? active rest =
-        some (FirstPendingStep.connect mate hmate)) :
-    st.toDiag hcomplete =
-      Diag.connect
-        (st.restLabelIndex hpending mate)
-        (st.connect_compatible hpending mate hmate)
-        ((st.connectChild hpending mate hmate).toDiag
-          (st.connectChild_frontierComplete hpending mate hmate hcomplete)) := by
-  simpa using
-    toDiag_step st hcomplete hpending
-      (FirstPendingStep.connect mate hmate) hstep
-
-/-- Bud-branch computation rule for the owned first-pending traversal. -/
-theorem toDiag_bud {G : OpenPortHypergraph Sig boundary}
-    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
-    (st : SearchState G (activeLabel :: restLabels))
-    (hcomplete : st.FrontierComplete)
-    {active : Fin G.raw.endpointCount}
-    {rest : List (Fin G.raw.endpointCount)}
-    (hpending : st.pending = active :: rest)
-    (node : Fin G.raw.nodeCount)
-    (slot : Fin (G.raw.incident node).length)
-    (hmate :
-      PortHypergraph.EdgeMate G.raw active ((G.raw.incident node).get slot))
-    (hunseen : ¬ st.seenNode node)
-    (hstep :
-      st.firstPendingStepSearch? active rest =
-        some (FirstPendingStep.bud node slot hmate hunseen)) :
-    st.toDiag hcomplete =
-      Diag.bud
-        (G.raw.nodeLabel node)
-        (budEntry node slot)
-        (st.bud_compatible hpending node slot hmate)
-        ((st.budChild hpending node slot hmate
-            (by simpa [seenNode] using hunseen)).toDiag
-          (st.budChild_frontierComplete hpending node slot hmate
-            (by simpa [seenNode] using hunseen) hcomplete)) := by
-  simpa using
-    toDiag_step st hcomplete hpending
-      (FirstPendingStep.bud node slot hmate hunseen) hstep
-
 /-- The owned graph-to-syntax traversal is invariant under related
 ordered-boundary-preserving isomorphic search states. -/
 theorem toDiag_isoRelated
@@ -830,9 +778,10 @@ theorem toDiag_isoRelated
               rightMateEdge) hchildRel
           (right.connectChild_frontierComplete hrightPending
             rightMate rightMateEdge hright)
-      rw [toDiag_connect st hcomplete hpending mate hmate hstep]
-      rw [toDiag_connect right hright hrightPending
-        rightMate rightMateEdge hrightStep]
+      rw [toDiag_step st hcomplete hpending
+        (FirstPendingStep.connect mate hmate) hstep]
+      rw [toDiag_step right hright hrightPending
+        (FirstPendingStep.connect rightMate rightMateEdge) hrightStep]
       have hidx := hrel.restLabelIndex hpending mate
       cases hidx
       have hok :
@@ -901,9 +850,11 @@ theorem toDiag_isoRelated
             rightUnseenMem)
           hrightChildCompleteUncast
       have hchild := ih rightChild hchildRel hrightChildComplete
-      rw [toDiag_bud st hcomplete hpending node slot hmate hunseen hstep]
-      rw [toDiag_bud right hright hrightPending rightNode rightSlot
-        rightMateEdge rightUnseen hrightStep]
+      rw [toDiag_step st hcomplete hpending
+        (FirstPendingStep.bud node slot hmate hunseen) hstep]
+      rw [toDiag_step right hright hrightPending
+        (FirstPendingStep.bud rightNode rightSlot rightMateEdge rightUnseen)
+        hrightStep]
       have hrightChildDiagCast :
           rightChild.toDiag hrightChildComplete =
             hfrontier ▸
