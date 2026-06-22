@@ -422,6 +422,10 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     child order trace the authority for the appended rendered edge; connect
     graph-render new-edge bound/label/endpoint-edge branches no longer rebuild
     the concrete edge record or call `connectStep_edges_get_new` directly.
+  - Partial: `GraphRenderRelated.connectChild_frontierPending` now owns the
+    connect child frontier/pending relation-field update; the main
+    `connectChild` constructor proof consumes those fields instead of locally
+    rebuilding the erased-list relation.
 
 - [ ] Introduce declarative render deltas for connect and bud.
   - Owner: `BijForm.StringDiagram.Renderer.Steps`

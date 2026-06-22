@@ -178,6 +178,22 @@ theorem pendingIndex_val {G : OpenPortHypergraph Sig boundary}
     (hrel.pendingIndex id).val = id.val :=
   rfl
 
+structure FrontierPendingFields (G : OpenPortHypergraph Sig boundary)
+    {frontier : List Sig.Port}
+    (rst : RenderState Sig frontier) (st : SearchState G frontier)
+    (endpoint_length : rst.endpoints.length = (endpointOrder G st).length) :
+    Prop where
+  frontier_id_bound :
+    ∀ id : Fin rst.frontierIds.length,
+      rst.frontierIds.get id < rst.endpoints.length
+  pending_length : rst.frontierIds.length = st.pending.length
+  pending_id :
+    ∀ id : Fin rst.frontierIds.length,
+      (endpointOrder G st).get
+          (Fin.cast endpoint_length
+            ⟨rst.frontierIds.get id, frontier_id_bound id⟩) =
+        st.pending.get (Fin.cast pending_length id)
+
 end GraphRenderRelated
 
 theorem GraphRenderRelated.edge_left_of_endpoint_val
@@ -362,6 +378,146 @@ theorem GraphRenderRelated.frontier_id_bound_of_mem
   rw [hget] at hbound
   exact hbound
 
+theorem GraphRenderRelated.connectChild_frontierPending
+    {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {frontier : List Sig.Port}
+    {rst : RenderState Sig (activeLabel :: frontier)}
+    {st : SearchState G (activeLabel :: frontier)}
+    (hrel : GraphRenderRelated G rst st)
+    {active : Fin G.raw.endpointCount}
+    {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest)
+    (mate : Fin rest.length)
+    (hmate : PortHypergraph.EdgeMate G.raw active (rest.get mate))
+    {activeId : Nat} {restIds : List Nat}
+    (hids : rst.frontierIds = activeId :: restIds)
+    (hchildEndpointLength :
+      (Diag.connectStep (st.restLabelIndex hpending mate)
+        (st.connect_compatible hpending mate hmate) rst).endpoints.length =
+        (endpointOrder G (st.connectChild hpending mate hmate)).length) :
+    GraphRenderRelated.FrontierPendingFields G
+      (Diag.connectStep (st.restLabelIndex hpending mate)
+        (st.connect_compatible hpending mate hmate) rst)
+      (st.connectChild hpending mate hmate)
+      hchildEndpointLength := by
+  let rendererMate := st.restLabelIndex hpending mate
+  let ok := st.connect_compatible hpending mate hmate
+  have hrestIdsLen : restIds.length = frontier.length :=
+    RenderState.frontierIds_cons_tail_length rst hids
+  have htailLen : restIds.length = rest.length := by
+    have hlen := hrel.pending_length
+    rw [hids, hpending] at hlen
+    exact Nat.succ.inj hlen
+  let idx : Fin restIds.length := listIndexCast restIds hrestIdsLen.symm rendererMate
+  have hidxVal : idx.val = mate.val := by
+    simp [idx, rendererMate, SearchState.restLabelIndex]
+  have hpendingVals := hrel.pending_cons_values hpending hids
+  have hchildIds :=
+    Diag.connectStep_frontierIds rendererMate ok rst hids
+  have hchildFrontierBound :
+      ∀ id : Fin (Diag.connectStep rendererMate ok rst).frontierIds.length,
+        (Diag.connectStep rendererMate ok rst).frontierIds.get id <
+          (Diag.connectStep rendererMate ok rst).endpoints.length := by
+    intro id
+    have hmemChild :
+        (Diag.connectStep rendererMate ok rst).frontierIds.get id ∈
+          eraseFin restIds idx := by
+      rw [← hchildIds]
+      exact List.get_mem (Diag.connectStep rendererMate ok rst).frontierIds id
+    have hmemRest :
+        (Diag.connectStep rendererMate ok rst).frontierIds.get id ∈
+          restIds :=
+      mem_of_mem_eraseFin restIds idx hmemChild
+    have holdMem :
+        (Diag.connectStep rendererMate ok rst).frontierIds.get id ∈
+          rst.frontierIds := by
+      rw [hids]
+      right
+      exact hmemRest
+    have hbound := hrel.frontier_id_bound_of_mem holdMem
+    change
+      (Diag.connectStep rendererMate ok rst).frontierIds.get id <
+        (Diag.connectStep rendererMate ok rst).endpoints.length
+    rw [Diag.connectStep_endpoints rendererMate ok rst]
+    exact hbound
+  have hchildPendingLen :
+      (Diag.connectStep rendererMate ok rst).frontierIds.length =
+        (st.connectChild hpending mate hmate).pending.length := by
+    rw [hchildIds]
+    exact eraseFin_length_eq_of_length_eq htailLen idx mate
+  refine
+    { frontier_id_bound := hchildFrontierBound
+      pending_length := hchildPendingLen
+      pending_id := ?_ }
+  intro id
+  have hmemChild :
+      (Diag.connectStep rendererMate ok rst).frontierIds.get id ∈
+        eraseFin restIds idx := by
+    rw [← hchildIds]
+    exact List.get_mem (Diag.connectStep rendererMate ok rst).frontierIds id
+  have hboundChild :
+      (Diag.connectStep rendererMate ok rst).frontierIds.get id <
+        rst.endpoints.length := by
+    have hmemRest :
+        (Diag.connectStep rendererMate ok rst).frontierIds.get id ∈
+          restIds :=
+      mem_of_mem_eraseFin restIds idx hmemChild
+    exact hrel.frontier_id_bound_of_mem (by
+      rw [hids]
+      right
+      exact hmemRest)
+  have haligned :
+      ∃ hbound :
+          (Diag.connectStep rendererMate ok rst).frontierIds.get id <
+            rst.endpoints.length,
+        (endpointOrder G st).get
+            (Fin.cast hrel.endpoint_length
+              ⟨(Diag.connectStep rendererMate ok rst).frontierIds.get id,
+                hbound⟩) =
+          (st.connectChild hpending mate hmate).pending.get
+            (Fin.cast hchildPendingLen id) := by
+    have hrestRel :
+        IndexedListRel
+          (fun raw endpoint =>
+            ∃ hbound : raw < rst.endpoints.length,
+              (endpointOrder G st).get
+                  (hrel.endpointIndex ⟨raw, hbound⟩) =
+                endpoint)
+          restIds rest := by
+      refine { length := htailLen, get := ?_ }
+      intro n hid hrest
+      refine ⟨hrel.frontier_id_bound_of_mem ?_, ?_⟩
+      · rw [hids]
+        right
+        exact List.get_mem restIds ⟨n, hid⟩
+      · have hidx :
+            (⟨n, hrest⟩ : Fin rest.length) =
+              Fin.cast htailLen ⟨n, hid⟩ := by
+          exact fin_eq_of_val_eq rfl
+        rw [hidx]
+        exact hpendingVals.2 ⟨n, hid⟩
+    have herased := hrestRel.erase idx mate hidxVal
+    have hget :=
+      herased.get id.val
+        (by
+          exact (congrArg List.length hchildIds) ▸ id.isLt)
+        (by
+          exact hchildPendingLen ▸ id.isLt)
+    simpa [hchildIds, connectChild] using hget
+  rcases haligned with ⟨hbound, hget⟩
+  have hfin :
+      (⟨(Diag.connectStep rendererMate ok rst).frontierIds.get id,
+          hbound⟩ : Fin rst.endpoints.length) =
+        ⟨(Diag.connectStep rendererMate ok rst).frontierIds.get id,
+          hboundChild⟩ := by
+    exact fin_eq_of_val_eq rfl
+  have hendpointOrder :
+      endpointOrder G (st.connectChild hpending mate hmate) =
+        endpointOrder G st :=
+    endpointOrder_connectChild st hpending mate hmate
+  simpa [hendpointOrder, Diag.connectStep_endpoints rendererMate ok rst,
+    hfin] using hget
+
 theorem GraphRenderRelated.connectChild
     {G : OpenPortHypergraph Sig boundary}
     {activeLabel : Sig.Port} {frontier : List Sig.Port}
@@ -414,6 +570,9 @@ theorem GraphRenderRelated.connectChild
       let horderTrace :=
         connectChild_orderTrace rst st hpending mate hmate hids
           hrel.endpoint_length hrel.edge_length hrel.node_length
+      let hfrontierPending :=
+        hrel.connectChild_frontierPending hpending mate hmate hids
+          hchildEndpointLength
       have hconnectNewEdgeGet :
           ∀ edge : Fin (Diag.connectStep rendererMate ok rst).edges.length,
             edge.val = rst.edges.length →
@@ -583,109 +742,9 @@ theorem GraphRenderRelated.connectChild
       · exact hchildEndpointLength
       · exact hchildEdgeLength
       · exact hchildNodeLength
-      · intro id
-        have hchildIds :=
-          Diag.connectStep_frontierIds rendererMate ok rst hids
-        have hmemChild :
-            (Diag.connectStep rendererMate ok rst).frontierIds.get id ∈
-              eraseFin restIds idx := by
-          rw [← hchildIds]
-          exact List.get_mem (Diag.connectStep rendererMate ok rst).frontierIds id
-        have hmemRest :
-            (Diag.connectStep rendererMate ok rst).frontierIds.get id ∈
-              restIds :=
-          mem_of_mem_eraseFin restIds idx hmemChild
-        have holdMem :
-            (Diag.connectStep rendererMate ok rst).frontierIds.get id ∈
-              rst.frontierIds := by
-          rw [hids]
-          right
-          exact hmemRest
-        have hbound := hrel.frontier_id_bound_of_mem holdMem
-        change
-          (Diag.connectStep rendererMate ok rst).frontierIds.get id <
-            (Diag.connectStep rendererMate ok rst).endpoints.length
-        rw [Diag.connectStep_endpoints rendererMate ok rst]
-        exact hbound
-      · have hchildIds :=
-          Diag.connectStep_frontierIds rendererMate ok rst hids
-        rw [hchildIds]
-        exact eraseFin_length_eq_of_length_eq htailLen idx mate
-      · intro id
-        have hchildIds :=
-          Diag.connectStep_frontierIds rendererMate ok rst hids
-        have hchildPendingLen :
-            (Diag.connectStep rendererMate ok rst).frontierIds.length =
-              (st.connectChild hpending mate hmate).pending.length := by
-          rw [hchildIds]
-          exact eraseFin_length_eq_of_length_eq htailLen idx mate
-        have hmemChild :
-            (Diag.connectStep rendererMate ok rst).frontierIds.get id ∈
-              eraseFin restIds idx := by
-          rw [← hchildIds]
-          exact List.get_mem (Diag.connectStep rendererMate ok rst).frontierIds id
-        have hboundChild :
-            (Diag.connectStep rendererMate ok rst).frontierIds.get id <
-              rst.endpoints.length := by
-          have hmemRest :
-              (Diag.connectStep rendererMate ok rst).frontierIds.get id ∈
-                restIds :=
-            mem_of_mem_eraseFin restIds idx hmemChild
-          exact hrel.frontier_id_bound_of_mem (by
-            rw [hids]
-            right
-            exact hmemRest)
-        have haligned :
-            ∃ hbound :
-                (Diag.connectStep rendererMate ok rst).frontierIds.get id <
-                  rst.endpoints.length,
-              (endpointOrder G st).get
-                  (Fin.cast hrel.endpoint_length
-                    ⟨(Diag.connectStep rendererMate ok rst).frontierIds.get id,
-                      hbound⟩) =
-                (st.connectChild hpending mate hmate).pending.get
-                  (Fin.cast hchildPendingLen id) := by
-          have hrestRel :
-              IndexedListRel
-                (fun raw endpoint =>
-                  ∃ hbound : raw < rst.endpoints.length,
-                    (endpointOrder G st).get
-                        (hrel.endpointIndex ⟨raw, hbound⟩) =
-                      endpoint)
-                restIds rest := by
-            refine { length := htailLen, get := ?_ }
-            intro n hid hrest
-            refine ⟨hrel.frontier_id_bound_of_mem ?_, ?_⟩
-            · rw [hids]
-              right
-              exact List.get_mem restIds ⟨n, hid⟩
-            · have hidx :
-                  (⟨n, hrest⟩ : Fin rest.length) =
-                    Fin.cast htailLen ⟨n, hid⟩ := by
-                exact fin_eq_of_val_eq rfl
-              rw [hidx]
-              exact hpendingVals.2 ⟨n, hid⟩
-          have herased := hrestRel.erase idx mate hidxVal
-          have hget :=
-            herased.get id.val
-              (by
-                exact (congrArg List.length hchildIds) ▸ id.isLt)
-              (by
-                exact hchildPendingLen ▸ id.isLt)
-          simpa [hchildIds, connectChild] using hget
-        rcases haligned with ⟨hbound, hget⟩
-        have hfin :
-            (⟨(Diag.connectStep rendererMate ok rst).frontierIds.get id,
-                hbound⟩ : Fin rst.endpoints.length) =
-              ⟨(Diag.connectStep rendererMate ok rst).frontierIds.get id,
-                hboundChild⟩ := by
-          exact fin_eq_of_val_eq rfl
-        have hendpointOrder :
-            endpointOrder G (st.connectChild hpending mate hmate) =
-              endpointOrder G st :=
-          endpointOrder_connectChild st hpending mate hmate
-        simpa [hendpointOrder, Diag.connectStep_endpoints rendererMate ok rst,
-          hfin] using hget
+      · exact hfrontierPending.frontier_id_bound
+      · exact hfrontierPending.pending_length
+      · exact hfrontierPending.pending_id
       · intro endpoint
         have hendpointGet :=
           Diag.connectStep_endpoints_get rendererMate ok rst endpoint
