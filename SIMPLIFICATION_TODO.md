@@ -466,6 +466,9 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
   - Partial: `GraphRenderRelated.budChild_edgeLabel` now owns the bud child
     old/new edge-label update; the main `budChild` proof consumes that field
     instead of splitting on old versus appended edges there.
+  - Partial: `GraphRenderRelated.budChild_nodeLabel` now owns the bud child
+    old/fresh node-label update; the main `budChild` proof consumes that field
+    instead of splitting on old versus appended nodes there.
 
 - [ ] Introduce declarative render deltas for connect and bud.
   - Owner: `BijForm.StringDiagram.Renderer.Steps`
