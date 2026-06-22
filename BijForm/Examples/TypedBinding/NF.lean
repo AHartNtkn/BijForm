@@ -268,7 +268,7 @@ theorem NFGeneratedLayer_child_rank_lt :
                           LayerShape.layerToShape, LayerShape.familyCarrierIso,
                           LayerShape.familyIso,
                           CtorLayer.familyIso, CtorLayer.toFamily,
-                          ArgTuple.ofChild, Iso.trans, Iso.sum,
+                          ArgTuple.ofChild, ListPiTuple.ofPi, Iso.trans, Iso.sum,
                           CodeAlgebra.finPlusNat, CodeAlgebra.finProdNatOrNat]
                       change NFCodeRank (Γ, NFSort.appTerm) app <
                         NFCodeRank (Γ, NFSort.normalExp)
@@ -310,7 +310,7 @@ theorem NFGeneratedLayer_child_rank_lt :
                             LayerShape.layerToShape, LayerShape.familyCarrierIso,
                             LayerShape.familyIso,
                             CtorLayer.familyIso, CtorLayer.toFamily,
-                            ArgTuple.ofChild, Iso.trans, Iso.sum,
+                            ArgTuple.ofChild, ListPiTuple.ofPi, Iso.trans, Iso.sum,
                             CodeAlgebra.finPlusNat, CodeAlgebra.finProdNatOrNat]
                         change NFCodeRank (NFSort.appTerm :: Γ, NFSort.normalExp) body <
                           NFCodeRank (Γ, NFSort.normalExp)
@@ -338,7 +338,7 @@ theorem NFGeneratedLayer_child_rank_lt :
                             LayerShape.layerToShape, LayerShape.familyCarrierIso,
                             LayerShape.familyIso,
                             CtorLayer.familyIso, CtorLayer.toFamily,
-                            ArgTuple.ofChild, Iso.trans, Iso.sum,
+                            ArgTuple.ofChild, ListPiTuple.ofPi, Iso.trans, Iso.sum,
                             CodeAlgebra.finPlusNat, CodeAlgebra.finProdNatOrNat]
                         change NFCodeRank (NFSort.appTerm :: Γ, NFSort.normalExp) body <
                           NFCodeRank (Γ, NFSort.normalExp)
@@ -386,7 +386,7 @@ theorem NFGeneratedLayer_child_rank_lt :
                       NFAppFamilyToCarrier, LayerShape.iso, LayerShape.layerToShape,
                       LayerShape.familyCarrierIso, LayerShape.familyIso,
                       CtorLayer.familyIso, CtorLayer.toFamily,
-                      ArgTuple.ofChild, Iso.trans, Iso.sum]
+                      ArgTuple.ofChild, ListPiTuple.ofPi, Iso.trans, Iso.sum]
                   cases q using Fin.cases with
                   | zero =>
                       change NFCodeRank (Γ, NFSort.appTerm) fn <

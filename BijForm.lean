@@ -4,6 +4,7 @@ import BijForm.Coding
 import BijForm.Pairing
 import BijForm.CodeAlgebra
 import BijForm.TupleAction
+import BijForm.DependentTuple
 import BijForm.InitialAlgebra
 import BijForm.QuotientPolynomial
 import BijForm.TypedBinding

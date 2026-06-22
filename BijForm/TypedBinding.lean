@@ -1,3 +1,4 @@
+import BijForm.DependentTuple
 import BijForm.InitialAlgebra
 import BijForm.CodeAlgebra
 
@@ -381,10 +382,9 @@ structure CtorLayer {Ty : Type} (S : Signature Ty) (Code : Poly.Ix S → Type)
       Code ((S.arg ctor q).binders ++ Γ, (S.arg ctor q).sort)
 
 /-- Product of child codes for a concrete finite constructor-argument list. -/
-def ArgTuple {Ty : Type} (S : Signature Ty) (Code : Poly.Ix S → Type)
-    (Γ : List Ty) : List (Arg Ty) → Type
-  | [] => PUnit
-  | arg :: args => Code (arg.binders ++ Γ, arg.sort) × ArgTuple S Code Γ args
+abbrev ArgTuple {Ty : Type} (S : Signature Ty) (Code : Poly.Ix S → Type)
+    (Γ : List Ty) : List (Arg Ty) → Type :=
+  ListPiTuple (fun arg => Code (arg.binders ++ Γ, arg.sort))
 
 namespace ArgTuple
 
@@ -395,23 +395,20 @@ def ofChild (Γ : List Ty) :
       ((q : Fin args.length) →
         Code (((args.get q).binders ++ Γ), (args.get q).sort)) →
       ArgTuple S Code Γ args
-  | [], _child => PUnit.unit
-  | _arg :: args, child =>
-      (child ⟨0, by simp⟩,
-        ofChild Γ (args := args) (fun q => child q.succ))
+  | args, child =>
+      ListPiTuple.ofPi
+        (F := fun arg => Code (arg.binders ++ Γ, arg.sort))
+        (xs := args) child
 
 def toChild (Γ : List Ty) :
     {args : List (Arg Ty)} →
       ArgTuple S Code Γ args →
         (q : Fin args.length) →
           Code (((args.get q).binders ++ Γ), (args.get q).sort)
-  | [], _tuple, q => False.elim (Nat.not_lt_zero q.val q.isLt)
-  | _arg :: _args, tuple, q => by
-      cases q using Fin.cases with
-      | zero =>
-          exact tuple.1
-      | succ q =>
-          exact toChild Γ tuple.2 q
+  | args, tuple =>
+      ListPiTuple.toPi
+        (F := fun arg => Code (arg.binders ++ Γ, arg.sort))
+        (xs := args) tuple
 
 theorem toChild_ofChild (Γ : List Ty) :
     {args : List (Arg Ty)} →
@@ -419,29 +416,21 @@ theorem toChild_ofChild (Γ : List Ty) :
         (q : Fin args.length) →
           Code (((args.get q).binders ++ Γ), (args.get q).sort)) →
       toChild Γ (ofChild Γ child) = child
-  | [], child => by
-      funext q
-      exact False.elim (Nat.not_lt_zero q.val q.isLt)
-  | _arg :: args, child => by
-      funext q
-      cases q using Fin.cases with
-      | zero => rfl
-      | succ q =>
-          exact congrFun
-            (toChild_ofChild Γ (args := args) (fun q => child q.succ)) q
+  | args, child => by
+      simpa [ofChild, toChild] using
+        ListPiTuple.toPi_ofPi
+        (F := fun arg => Code (arg.binders ++ Γ, arg.sort))
+        (xs := args) child
 
 theorem ofChild_toChild (Γ : List Ty) :
     {args : List (Arg Ty)} →
       (tuple : ArgTuple S Code Γ args) →
       ofChild Γ (toChild Γ tuple) = tuple
-  | [], tuple => by
-      cases tuple
-      rfl
-  | _arg :: args, tuple => by
-      cases tuple with
-      | mk head tail =>
-          change (head, ofChild Γ (toChild Γ tail)) = (head, tail)
-          rw [ofChild_toChild Γ tail]
+  | args, tuple => by
+      simpa [ofChild, toChild] using
+        ListPiTuple.ofPi_toPi
+        (F := fun arg => Code (arg.binders ++ Γ, arg.sort))
+        (xs := args) tuple
 
 def iso (Γ : List Ty) (args : List (Arg Ty)) :
     ((q : Fin args.length) →

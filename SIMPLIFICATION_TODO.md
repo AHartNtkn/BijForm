@@ -80,14 +80,17 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     equality through those helpers; remaining local `heq_of_eq` occurrences are
     child-equality witnesses or non-`CodeLayer` tuple proofs.
 
-- [ ] Move generic dependent argument tuple machinery out of typed binding.
-  - Owner: new finite-arity/dependent tuple boundary, or `DepPoly`.
+- [x] Move generic dependent argument tuple machinery out of typed binding.
+  - Owner: `BijForm.DependentTuple`
   - Evidence: `ArgTuple`, `ArgTuple.ofChild`, `ArgTuple.toChild`, and
     `ArgTuple.iso` in `BijForm/TypedBinding.lean`.
   - Action: make the dependent list-of-arguments to child-function equivalence
     reusable outside typed binding.
   - Validation: `TypedBinding` imports the generic owner; no typed-binding-only
     names are needed for generic arity tuples.
+  - Completed: `ListPiTuple` now owns the list-indexed dependent product and
+    its equivalence with `Fin`-indexed child functions. `TypedBinding.ArgTuple`
+    is a typed-binding specialization that delegates to the generic module.
 
 ## Fin, List, and Table Helpers
 
