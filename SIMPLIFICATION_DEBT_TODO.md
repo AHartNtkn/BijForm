@@ -133,6 +133,11 @@ is ordered to turn helper additions into actual deletion.
     pending/frontier alignment, edge endpoint side preservation, bud node
     incident preservation, and final connect/bud record assembly are still
     separate helper families.
+  - Partial: single-use `connectChild_edgeEndpointBounds` was deleted; connect
+    child assembly now uses the branch-independent
+    `GraphRenderRelated.edgeEndpointBounds_of_appendTrace` schema. The item
+    remains open for pending/frontier alignment, edge endpoint side
+    preservation, bud node incidents, and final connect/bud record assembly.
 
 - [x] Finish payload-local inverse boilerplate removal in coding examples.
   - Owners: `BijForm.InitialAlgebra`,
@@ -285,6 +290,10 @@ is ordered to turn helper additions into actual deletion.
     their branch-specific suffixes. The item remains open because
     `connectChild_orderTrace`, `budChild_orderTrace`, and graph-relation helper
     families still exist.
+  - Partial: unused branch getter `endpointOrder_connectChild_get` was deleted.
+    The connect order trace constructor uses the canonical append-step witness
+    directly. The item remains open because `connectChild_orderTrace`,
+    `budChild_orderTrace`, and graph-relation helper families still exist.
 
 - [x] Delete low-value generated-code and presentation pass-through wrappers.
   - Owners: `BijForm.InitialAlgebra`,

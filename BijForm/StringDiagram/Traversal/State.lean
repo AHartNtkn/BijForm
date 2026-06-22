@@ -1158,31 +1158,6 @@ def endpointOrder_connectChild_step
     rw [endpointOrder_connectChild st hpending mate hmate]
     simp
 
-theorem endpointOrder_connectChild_get
-    {G : OpenPortHypergraph Sig boundary}
-    {activeLabel : Sig.Port} {frontier : List Sig.Port}
-    (st : SearchState G (activeLabel :: frontier))
-    {active : Fin G.raw.endpointCount}
-    {rest : List (Fin G.raw.endpointCount)}
-    (hpending : st.pending = active :: rest)
-    (mate : Fin rest.length)
-    (hmate : PortHypergraph.EdgeMate G.raw active (rest.get mate))
-    (endpoint :
-      Fin (endpointOrder G (st.connectChild hpending mate hmate)).length) :
-    (endpointOrder G (st.connectChild hpending mate hmate)).get endpoint =
-      (endpointOrder G st).get
-        (listIndexCast (endpointOrder G st)
-          (congrArg List.length
-            (endpointOrder_connectChild st hpending mate hmate))
-          endpoint) :=
-  list_get_of_eq_of_val_eq
-    (endpointOrder_connectChild st hpending mate hmate) endpoint
-    (listIndexCast (endpointOrder G st)
-      (congrArg List.length
-        (endpointOrder_connectChild st hpending mate hmate))
-      endpoint)
-    rfl
-
 theorem edgeOrder_connectChild
     {G : OpenPortHypergraph Sig boundary}
     {activeLabel : Sig.Port} {frontier : List Sig.Port}
