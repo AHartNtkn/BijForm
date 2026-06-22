@@ -518,6 +518,18 @@ def carrierFinIso {ι : Type u} (shape : ι → CodeShape) (i : ι)
     {k : Nat} (h : shape i = finite k) : Carrier (shape i) ≃ᵢ Fin k :=
   finiteIso h
 
+/-- Postcompose any source-to-shape-carrier isomorphism with an infinite case. -/
+def sourceNatIso {α : Type u} {s : CodeShape}
+    (source : α ≃ᵢ Carrier s) (h : s = infinite) :
+    α ≃ᵢ Nat :=
+  Iso.trans source (infiniteIso h)
+
+/-- Postcompose any source-to-shape-carrier isomorphism with a finite case. -/
+def sourceFinIso {α : Type u} {s : CodeShape} {k : Nat}
+    (source : α ≃ᵢ Carrier s) (h : s = finite k) :
+    α ≃ᵢ Fin k :=
+  Iso.trans source (finiteIso h)
+
 end CodeShape
 
 /--
@@ -753,13 +765,13 @@ def shapeCodeIso {Source : ι → Type v}
 def shapeNatIso {Source : ι → Type v}
     (source : GeneratedCode P Source) (target : GeneratedShapeCode P) (i : ι)
     (h : target.shape i = .infinite) : Source i ≃ᵢ Nat :=
-  Iso.trans (shapeCodeIso source target i) (CodeShape.infiniteIso h)
+  CodeShape.sourceNatIso (shapeCodeIso source target i) h
 
 /-- Compose a generated source coding with a finite generated shape case. -/
 def shapeFinIso {Source : ι → Type v}
     (source : GeneratedCode P Source) (target : GeneratedShapeCode P) (i : ι)
     {k : Nat} (h : target.shape i = .finite k) : Source i ≃ᵢ Fin k :=
-  Iso.trans (shapeCodeIso source target i) (CodeShape.finiteIso h)
+  CodeShape.sourceFinIso (shapeCodeIso source target i) h
 
 end GeneratedCode
 

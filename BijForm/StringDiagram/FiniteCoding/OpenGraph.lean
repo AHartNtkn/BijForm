@@ -19,16 +19,15 @@ def singleSortedFiniteOpenGraphShapeIso
 def singleSortedFiniteOpenGraphEmptyFinOneIso
     (Sig : Signature) (data : SingleSortedFiniteCodingData Sig) :
     OpenPortHypergraphUpToIso Sig [] ≃ᵢ Fin 1 :=
-  Iso.trans (singleSortedFiniteOpenGraphShapeIso Sig data [])
-    (CodeShape.finiteIso rfl)
+  CodeShape.sourceFinIso (singleSortedFiniteOpenGraphShapeIso Sig data []) rfl
 
 /-- Nonempty-frontier open graphs inherit the natural-number syntax carrier. -/
 def singleSortedFiniteOpenGraphNonemptyNatIso
     (Sig : Signature) (data : SingleSortedFiniteCodingData Sig)
     (active : Sig.Port) (frontier : List Sig.Port) :
     OpenPortHypergraphUpToIso Sig (active :: frontier) ≃ᵢ Nat :=
-  Iso.trans (singleSortedFiniteOpenGraphShapeIso Sig data (active :: frontier))
-    (CodeShape.infiniteIso rfl)
+  CodeShape.sourceNatIso
+    (singleSortedFiniteOpenGraphShapeIso Sig data (active :: frontier)) rfl
 
 end StringDiagram
 end BijForm
