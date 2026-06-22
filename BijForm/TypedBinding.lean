@@ -229,12 +229,9 @@ def decode (i : Poly.Ix S) : FiberCode S i → Fiber (PolyOf S) i
 
 def encode (i : Poly.Ix S) : Fiber (PolyOf S) i → FiberCode S i
   | ⟨.var, p, h⟩ => by
-      cases p with
-      | mk Γ rest =>
-        cases rest with
-        | mk t v =>
-          cases h
-          exact var v
+      rcases p with ⟨Γ, t, v⟩
+      cases h
+      exact var v
   | ⟨.op c, Γ, h⟩ => by
       cases h
       exact op c rfl
@@ -245,12 +242,9 @@ theorem decode_encode (i : Poly.Ix S) (f : Fiber (PolyOf S) i) :
   | mk ctor param out_eq =>
       cases ctor with
       | var =>
-          cases param with
-          | mk Γ rest =>
-            cases rest with
-            | mk t v =>
-              cases out_eq
-              rfl
+          rcases param with ⟨Γ, t, v⟩
+          cases out_eq
+          rfl
       | op c =>
           cases out_eq
           rfl
@@ -509,12 +503,9 @@ def pairIso (Γ : List Ty) (left right : Arg Ty) :
   invFun pair := (pair.1, (pair.2, PUnit.unit))
   left_inv := by
     intro tuple
-    cases tuple with
-    | mk leftArg rest =>
-        cases rest with
-        | mk rightArg done =>
-            cases done
-            rfl
+    simpa [ofChild, toChild] using
+      (ofChild_toChild (S := S) (Code := Code) Γ
+        (args := [left, right]) tuple)
   right_inv := by
     intro pair
     cases pair
@@ -561,12 +552,10 @@ def singleIso (Γ : List Ty) {t : Ty} {Carrier : Type}
     | mk c h args =>
         have hc : c = ctor := only c h
         cases hc
+        cases h
+        cases hret
         dsimp
-        rw [CtorFamily.mk.injEq]
-        constructor
-        · rfl
-        · apply heq_of_eq
-          exact argIso.left_inv args
+        rw [argIso.left_inv args]
   right_inv := by
     intro z
     dsimp
@@ -603,25 +592,21 @@ def sumIso (Γ : List Ty) {t : Ty} {Left Right : Type}
         cases hdec : decide_left c with
         | isTrue hc =>
           cases hc
+          cases h
+          cases leftRet
           dsimp
           rw [hdec]
           dsimp
-          rw [CtorFamily.mk.injEq]
-          constructor
-          · rfl
-          · apply heq_of_eq
-            exact leftIso.left_inv args
+          rw [leftIso.left_inv args]
         | isFalse hc =>
           have hr : c = rightCtor := right_of_not_left c h hc
           cases hr
+          cases h
+          cases rightRet
           dsimp
           rw [hdec]
           dsimp
-          rw [CtorFamily.mk.injEq]
-          constructor
-          · rfl
-          · apply heq_of_eq
-            exact rightIso.left_inv args
+          rw [rightIso.left_inv args]
   right_inv := by
     intro z
     cases z with
@@ -670,11 +655,7 @@ theorem ofFamily_toFamily (Γ : List Ty) (t : Ty) :
   cases layer with
   | mk c h child =>
       dsimp [toFamily, ofFamily]
-      rw [CtorLayer.mk.injEq]
-      constructor
-      · rfl
-      · apply heq_of_eq
-        exact ArgTuple.toChild_ofChild (S := S) (Code := Code) Γ child
+      rw [ArgTuple.toChild_ofChild]
 
 theorem toFamily_ofFamily (Γ : List Ty) (t : Ty) :
     Function.RightInverse (ofFamily (S := S) (Code := Code) Γ t)
@@ -683,11 +664,7 @@ theorem toFamily_ofFamily (Γ : List Ty) (t : Ty) :
   cases family with
   | mk c h args =>
       dsimp [toFamily, ofFamily]
-      rw [CtorFamily.mk.injEq]
-      constructor
-      · rfl
-      · apply heq_of_eq
-        exact ArgTuple.ofChild_toChild (S := S) (Code := Code) Γ args
+      rw [ArgTuple.ofChild_toChild]
 
 def familyIso (Γ : List Ty) (t : Ty) :
     CtorLayer S Code Γ t ≃ᵢ CtorFamily S Code Γ t where

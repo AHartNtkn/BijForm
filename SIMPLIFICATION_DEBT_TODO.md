@@ -153,8 +153,13 @@ is ordered to turn helper additions into actual deletion.
   - Partial: `BijForm.Examples.Num` now routes same-constructor child eta
     branches through `CodeLayer.ext_rfl` instead of local `CodeLayer.ext_layer`
     plus `heq_of_eq`, and the local `child_eta_rfl child` endings there were
-    deleted. The item remains open because tuple/rest destructuring and
-    proof-field-sensitive `heq_of_eq` branches still exist in other owners.
+    deleted. `BijForm.TypedBinding` now uses direct nested sigma patterns for
+    `FiberCode` var payloads, `ArgTuple.ofChild_toChild` for pair tuple
+    reconstruction, and constructor-family inverse proofs rewrite through the
+    existing argument-tuple and constructor-iso inverse facts instead of local
+    `heq_of_eq` assembly. The item remains open because no-child layer
+    branches, finite syntax helper extensionality, example sum-tail
+    destructuring, and proof-field-sensitive `heq_of_eq` branches still exist.
 
 - [ ] Finish typed-binding proof-surface cleanup.
   - Owners: `BijForm.TypedBinding` and
@@ -274,6 +279,10 @@ is ordered to turn helper additions into actual deletion.
     source scans for `cases rest with`, `ListPiTuple.ofPi`, and
     `ArgTuple.ofChild` should show generic owner definitions plus direct
     semantic use, not proof-body plumbing.
+  - Partial: `TypedBinding.FiberCode` no longer destructs nested var payloads
+    through local `cases rest with`, and `ArgTuple.pairIso` now uses
+    `ArgTuple.ofChild_toChild` instead of manually destructing the two-element
+    tuple tail.
 
 - [x] Delete the old tracker that marked targeted slices as complete.
   - Owner: `SIMPLIFICATION_TODO.md`.
