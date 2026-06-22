@@ -787,7 +787,7 @@ def SortedSyntaxShapeIso (i : SortedIx) : SortedSyntax i ≃ᵢ SortedCarrier i 
 
 def SortedSyntaxNatIsoOfBound (i : SortedIx) (h : Bound.le i.1 i.2) :
     SortedSyntax i ≃ᵢ Nat :=
-  GeneratedCode.shapeNatIso SortedGeneratedCode SortedGeneratedShapeCode i (by
+  Iso.trans (SortedSyntaxShapeIso i) (CodeShape.infiniteIso (by
     cases i with
     | mk lower upper =>
         cases upper with
@@ -795,11 +795,11 @@ def SortedSyntaxNatIsoOfBound (i : SortedIx) (h : Bound.le i.1 i.2) :
         | some upper =>
             change SortedShape (lower, some upper) = CodeShape.infinite
             dsimp [SortedShape, Bound.le] at h ⊢
-            rw [if_pos h])
+            rw [if_pos h]))
 
 def SortedSyntaxFinOneIsoOfNotBound (i : SortedIx) (h : ¬Bound.le i.1 i.2) :
     SortedSyntax i ≃ᵢ Fin 1 :=
-  GeneratedCode.shapeFinIso SortedGeneratedCode SortedGeneratedShapeCode i (by
+  Iso.trans (SortedSyntaxShapeIso i) (CodeShape.finiteIso (by
     cases i with
     | mk lower upper =>
         cases upper with
@@ -807,7 +807,7 @@ def SortedSyntaxFinOneIsoOfNotBound (i : SortedIx) (h : ¬Bound.le i.1 i.2) :
         | some upper =>
             change SortedShape (lower, some upper) = CodeShape.finite 1
             dsimp [SortedShape, Bound.le] at h ⊢
-            rw [if_neg h])
+            rw [if_neg h]))
 
 def SortedSyntaxInfiniteNatIso (lower : Nat) :
     SortedSyntax (lower, none) ≃ᵢ Nat :=
