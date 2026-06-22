@@ -288,7 +288,7 @@ theorem IsoRelated.firstPendingStepSearch?_connect
     (mate : Fin rest.length)
     (hmate : PortHypergraph.EdgeMate G.raw active (rest.get mate)) :
     let rightMate : Fin (rest.map e.endpointEquiv.toFun).length :=
-      Fin.cast (by simp) mate
+      hr.mappedRestIndex hpending mate
     ∃ rightMateEdge :
         PortHypergraph.EdgeMate H.raw (e.endpointEquiv.toFun active)
           ((rest.map e.endpointEquiv.toFun).get rightMate),
@@ -297,16 +297,11 @@ theorem IsoRelated.firstPendingStepSearch?_connect
         some (FirstPendingStep.connect rightMate rightMateEdge) := by
   dsimp
   let rightMate : Fin (rest.map e.endpointEquiv.toFun).length :=
-    Fin.cast (by simp) mate
-  have hget :
-      (rest.map e.endpointEquiv.toFun).get rightMate =
-        e.endpointEquiv.toFun (rest.get mate) := by
-    simp [rightMate]
+    hr.mappedRestIndex hpending mate
   have rightMateEdge :
       PortHypergraph.EdgeMate H.raw (e.endpointEquiv.toFun active)
         ((rest.map e.endpointEquiv.toFun).get rightMate) := by
-    rw [hget]
-    exact PortHypergraphIso.edgeMate_preserved e hmate
+    exact hr.mappedRestIndex_edgeMate hpending mate hmate
   have hrightPending := hr.pending_cons hpending
   have hrightNodup :
       (rest.map e.endpointEquiv.toFun).Nodup :=
