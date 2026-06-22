@@ -15,8 +15,6 @@ cleanup() {
 }
 trap cleanup EXIT
 
-lake build
-
 if ! git check-ignore -q references/; then
   fail "references/ must be ignored by repository configuration"
 fi

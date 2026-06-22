@@ -27,7 +27,7 @@ lake build
 Repository policy checks are bundled with the audit executable:
 
 ```sh
-lake exe audit
+lake --dir "$(git rev-parse --show-toplevel)" exe audit
 ```
 
 The Lean toolchain is pinned in `lean-toolchain`:

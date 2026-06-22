@@ -504,25 +504,28 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
 
 - [x] Replace stale-name audit greps with Lean validation surfaces.
   - Owner: audit tooling plus quotient/example validation modules.
-  - Evidence: `scripts/audit.sh` greps for old declaration names and exact
-    source strings.
+  - Evidence: the former audit script grepped for old declaration names and
+    exact source strings.
   - Action: add Lean modules that typecheck intended quotient and example
     public surfaces, then remove greps that only prove old spellings are absent.
-  - Validation: `lake build` includes the validation modules and `scripts/audit.sh`
-    no longer contains stale-name policy greps.
+  - Validation: `lake build` includes the validation modules and the audit
+    check helper no longer contains stale-name policy greps.
   - Completed: added `BijForm.Validation.PublicSurfaces` to typecheck quotient,
     generated-code, finite string-diagram, typed-binding NF, and canonical
-    inversion public surfaces; removed the stale-name/source-shape grep blocks
-    from `scripts/audit.sh`.
+    inversion public surfaces; removed the stale-name/source-shape grep blocks.
 
-- [ ] Consolidate audit command ownership.
+- [x] Consolidate audit command ownership.
   - Owner: Lake/tooling.
-  - Evidence: `Audit.lean` shells to `scripts/audit.sh`, and the shell script
-    runs `lake build`.
+  - Evidence: `Audit.lean` used to shell to the audit script, and that shell
+    script ran `lake build`.
   - Action: make either the shell script or a real Lake script the single
     authoritative audit owner.
   - Validation: the chosen command works from repo root and from a subdirectory;
     docs name only that command.
+  - Completed: `Audit.lean` now owns root discovery, `lake build`, and policy
+    check invocation. The shell helper is `scripts/audit-checks.sh` and no
+    longer runs Lake build; README names only the subdirectory-safe Lake audit
+    command.
 
 - [x] Replace the GraphRenderRelation-only AWK `Fin.ext` audit.
   - Owner: finite-index helper boundary plus audit tooling.
@@ -532,21 +535,21 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     a documented allowed helper boundary.
   - Validation: lint evidence targets the whole tracked Lean source set or the
     AWK test files are deleted with the gate.
-  - Completed: `scripts/audit.sh` now runs the existing trivial-`Fin.ext`
-    checker over every tracked Lean source file from `git ls-files '*.lean'`.
+  - Completed: `scripts/audit-checks.sh` now runs the existing
+    trivial-`Fin.ext` checker over every tracked Lean source file from
+    `git ls-files '*.lean'`.
 
 - [ ] Make proof-gap validation semantic enough to avoid lexical false comfort.
   - Owner: formalization validation tooling.
-  - Evidence: `scripts/audit.sh` classifies `sorry` by nearby words and writes
-    fixed temp files under `/tmp`.
+  - Evidence: the audit check helper classifies `sorry` by nearby words.
   - Action: use temporary files from `mktemp` and move toward a declaration-level
     proof-gap inventory, such as declarations depending on `sorryAx` matched to
     explicit unfinished markers.
   - Validation: labeled and unlabeled proof-gap fixtures behave as intended, and
     parallel audit runs do not share fixed temp paths.
-  - Partial: `scripts/audit.sh` now stores `sorry` grep evidence in a per-run
-    `mktemp -d` directory and cleans it up on exit. Declaration-level proof-gap
-    inventory remains open.
+  - Partial: `scripts/audit-checks.sh` stores `sorry` grep evidence in a
+    per-run `mktemp -d` directory and cleans it up on exit. Declaration-level
+    proof-gap inventory remains open.
 
 - [x] Remove README declaration inventory as a second source of truth.
   - Owner: README/docs.
