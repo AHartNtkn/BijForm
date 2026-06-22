@@ -963,109 +963,95 @@ theorem GraphRenderRelated.connectChild_edgeLeft
     connectChild_orderTrace rst st hpending mate hmate hids
       hrel.endpoint_length hrel.edge_length hrel.node_length
   have hpendingVals := hrel.pending_cons_values hpending hids
+  have hleftRel :
+      AppendTraceRelation horderTrace.edge
+        (fun renderEdge graphEdge =>
+          ∀ hbound :
+              renderEdge.left <
+                (Diag.connectStep rendererMate ok rst).endpoints.length,
+            G.raw.endpointEdge
+              ((endpointOrder G (st.connectChild hpending mate hmate)).get
+                (Fin.cast hchildEndpointLength
+                  ⟨renderEdge.left, hbound⟩)) =
+              graphEdge) := by
+    refine { prefix_rel := ?_, suffix_rel := ?_ }
+    · intro prefixEdge graphEdge hval hbound
+      have hidx : graphEdge = hrel.edgeIndex prefixEdge := by
+        exact fin_eq_of_val_eq hval.symm
+      let childEndpoint :
+          Fin (endpointOrder G
+            (st.connectChild hpending mate hmate)).length :=
+        Fin.cast hchildEndpointLength
+          ⟨(rst.edges.get prefixEdge).left, hbound⟩
+      let prefixEndpoint :
+          Fin (endpointOrder G st).length :=
+        Fin.cast hrel.endpoint_length
+          ⟨(rst.edges.get prefixEdge).left, hrel.edge_left_bound prefixEdge⟩
+      have hendpoint :
+          (endpointOrder G (st.connectChild hpending mate hmate)).get
+              childEndpoint =
+            (endpointOrder G st).get prefixEndpoint := by
+        exact list_get_of_eq_of_val_eq
+          (endpointOrder_connectChild st hpending mate hmate)
+          childEndpoint prefixEndpoint
+          (by simp [childEndpoint, prefixEndpoint])
+      calc
+        G.raw.endpointEdge
+            ((endpointOrder G (st.connectChild hpending mate hmate)).get
+              childEndpoint) =
+          G.raw.endpointEdge ((endpointOrder G st).get prefixEndpoint) := by
+            exact congrArg G.raw.endpointEdge hendpoint
+        _ = (edgeOrder st).get (hrel.edgeIndex prefixEdge) :=
+            hrel.edge_left prefixEdge
+        _ = (edgeOrder st).get graphEdge := by
+            rw [hidx]
+    · intro suffixEdge graphEdge hval hbound
+      have hactiveBound : activeId < rst.endpoints.length := by
+        have hbound := hrel.frontier_id_bound
+          (⟨0, by rw [hids]; simp⟩ : Fin rst.frontierIds.length)
+        simpa [hids] using hbound
+      let activeEndpoint : Fin (endpointOrder G st).length :=
+        hrel.endpointIndex ⟨activeId, hactiveBound⟩
+      have hendpoint :
+          (endpointOrder G (st.connectChild hpending mate hmate)).get
+              (Fin.cast hchildEndpointLength
+                ⟨activeId, by
+                  simpa [horderTrace, connectChild_orderTrace] using
+                    hbound⟩) =
+            (endpointOrder G st).get activeEndpoint := by
+        exact list_get_of_eq_of_val_eq
+          (endpointOrder_connectChild st hpending mate hmate)
+          (Fin.cast hchildEndpointLength
+            ⟨activeId, by
+              simpa [horderTrace, connectChild_orderTrace] using hbound⟩)
+          activeEndpoint
+          (by simp [activeEndpoint])
+      have hcalc :
+          G.raw.endpointEdge
+              ((endpointOrder G (st.connectChild hpending mate hmate)).get
+                (Fin.cast hchildEndpointLength
+                  ⟨activeId, by
+                    simpa [horderTrace, connectChild_orderTrace] using
+                      hbound⟩)) =
+            G.raw.endpointEdge active := by
+        calc
+          G.raw.endpointEdge
+              ((endpointOrder G
+                (st.connectChild hpending mate hmate)).get
+                  (Fin.cast hchildEndpointLength
+                    ⟨activeId, by
+                      simpa [horderTrace, connectChild_orderTrace] using
+                        hbound⟩)) =
+            G.raw.endpointEdge ((endpointOrder G st).get activeEndpoint) := by
+              exact congrArg G.raw.endpointEdge hendpoint
+          _ = G.raw.endpointEdge active := by
+              exact congrArg G.raw.endpointEdge hpendingVals.1
+      simpa [horderTrace, connectChild_orderTrace] using hcalc
   intro edge
-  by_cases hold : edge.val < rst.edges.length
-  · let oldEdge : Fin rst.edges.length := ⟨edge.val, hold⟩
-    have hedgeEq :
-        (Diag.connectStep rendererMate ok rst).edges.get edge =
-          rst.edges.get oldEdge :=
-      Diag.connectStep_edges_get_old rendererMate ok rst hids edge hold
-    let childEdge :
-        Fin (edgeOrder (st.connectChild hpending mate hmate)).length :=
-      Fin.cast hchildEdgeLength edge
-    have hedgeOrder :
-        (edgeOrder (st.connectChild hpending mate hmate)).get
-            childEdge =
-          (edgeOrder st).get (hrel.edgeIndex oldEdge) := by
-      exact horderTrace.edge.get_prefix_at_right_of_val_eq
-        childEdge (hrel.edgeIndex oldEdge) (by simp [childEdge, oldEdge])
-    let childEndpoint :
-        Fin (endpointOrder G
-          (st.connectChild hpending mate hmate)).length :=
-      Fin.cast hchildEndpointLength
-        ⟨((Diag.connectStep rendererMate ok rst).edges.get edge).left,
-          hchildEdgeBounds.left edge⟩
-    let oldEndpoint :
-        Fin (endpointOrder G st).length :=
-      Fin.cast hrel.endpoint_length
-        ⟨(rst.edges.get oldEdge).left, hrel.edge_left_bound oldEdge⟩
-    have hendpoint :
-        (endpointOrder G (st.connectChild hpending mate hmate)).get
-            childEndpoint =
-          (endpointOrder G st).get oldEndpoint := by
-      exact list_get_of_eq_of_val_eq
-        (endpointOrder_connectChild st hpending mate hmate)
-        childEndpoint oldEndpoint
-        (by
-          simpa [childEndpoint, oldEndpoint] using
-            congrArg RenderEdge.left hedgeEq)
-    calc
-      G.raw.endpointEdge
-          ((endpointOrder G (st.connectChild hpending mate hmate)).get
-            childEndpoint) =
-        G.raw.endpointEdge ((endpointOrder G st).get oldEndpoint) := by
-          exact congrArg G.raw.endpointEdge hendpoint
-      _ = (edgeOrder st).get (hrel.edgeIndex oldEdge) :=
-          hrel.edge_left oldEdge
-      _ =
-        (edgeOrder (st.connectChild hpending mate hmate)).get
-            childEdge := by
-          exact hedgeOrder.symm
-  · have hnewVal : edge.val = rst.edges.length := by
-      have hlen : edge.val < rst.edges.length + 1 := by
-        exact Nat.lt_of_lt_of_eq edge.isLt
-          (Diag.connectStep_edges_length rendererMate ok rst)
-      omega
-    have hnewEdge := horderTrace.renderEdge_get edge hnewVal
-    let childEdge :
-        Fin (edgeOrder (st.connectChild hpending mate hmate)).length :=
-      Fin.cast hchildEdgeLength edge
-    have hnewOrder :
-        (edgeOrder (st.connectChild hpending mate hmate)).get
-            childEdge =
-          G.raw.endpointEdge active := by
-      exact horderTrace.edge.get_single_at_right_prefix_length
-        childEdge (by simp [childEdge, hnewVal, hrel.edge_length])
-    let childEndpoint :
-        Fin (endpointOrder G
-          (st.connectChild hpending mate hmate)).length :=
-      Fin.cast hchildEndpointLength
-        ⟨((Diag.connectStep rendererMate ok rst).edges.get edge).left,
-          hchildEdgeBounds.left edge⟩
-    let oldEndpoint :
-        Fin (endpointOrder G st).length :=
-      hrel.endpointIndex
-        ⟨activeId, by
-          have hbound := hrel.frontier_id_bound
-            (⟨0, by rw [hids]; simp⟩ : Fin rst.frontierIds.length)
-          simpa [hids] using hbound⟩
-    have hendpoint :
-        (endpointOrder G (st.connectChild hpending mate hmate)).get
-            childEndpoint =
-          (endpointOrder G st).get oldEndpoint := by
-      exact list_get_of_eq_of_val_eq
-        (endpointOrder_connectChild st hpending mate hmate)
-        childEndpoint oldEndpoint
-        (by
-          have hleft :
-              ((Diag.connectStep rendererMate ok rst).edges.get edge).left =
-                activeId := by
-            have hrenderLeft : horderTrace.renderEdge.left = activeId := by
-              simp [horderTrace, connectChild_orderTrace]
-            exact (congrArg RenderEdge.left hnewEdge).trans hrenderLeft
-          simpa [childEndpoint, oldEndpoint] using hleft)
-    calc
-      G.raw.endpointEdge
-          ((endpointOrder G (st.connectChild hpending mate hmate)).get
-            childEndpoint) =
-        G.raw.endpointEdge ((endpointOrder G st).get oldEndpoint) := by
-          exact congrArg G.raw.endpointEdge hendpoint
-      _ = G.raw.endpointEdge active := by
-          exact congrArg G.raw.endpointEdge hpendingVals.1
-      _ =
-        (edgeOrder (st.connectChild hpending mate hmate)).get
-            childEdge := by
-          exact hnewOrder.symm
+  have hidx : horderTrace.edge.rightIndex edge = Fin.cast hchildEdgeLength edge := by
+    exact fin_eq_of_val_eq rfl
+  simpa [hidx] using
+    (AppendTraceRelation.get hleftRel edge) (hchildEdgeBounds.left edge)
 
 theorem GraphRenderRelated.connectChild_edgeRight
     {G : OpenPortHypergraph Sig boundary}
