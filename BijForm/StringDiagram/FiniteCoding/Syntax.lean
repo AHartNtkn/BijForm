@@ -108,72 +108,16 @@ variable {Sig : Signature} (data : SingleSortedFiniteCodingData Sig)
 def entryTag : Type :=
   Fin (data.unaryCount + data.nonUnaryCount)
 
-def entryToTag (entry : Sig.Entry) : data.entryTag :=
-  if h : Sig.arity entry.1 = 1 then
-    (CodeAlgebra.finSum data.unaryCount data.nonUnaryCount).toFun
-      (Sum.inl (data.unaryIso.toFun ⟨entry, h⟩))
-  else
-    (CodeAlgebra.finSum data.unaryCount data.nonUnaryCount).toFun
-      (Sum.inr (data.nonUnaryIso.toFun ⟨entry, h⟩))
+def entryPartitionIso :
+    Sig.Entry ≃ᵢ (Fin data.unaryCount ⊕ Fin data.nonUnaryCount) :=
+  Iso.subtypePartition
+    (fun entry : Sig.Entry => Sig.arity entry.1 = 1)
+    data.unaryIso
+    data.nonUnaryIso
 
-def tagToEntry (tag : data.entryTag) : Sig.Entry :=
-  match (CodeAlgebra.finSum data.unaryCount data.nonUnaryCount).invFun tag with
-  | Sum.inl unary => (data.unaryIso.invFun unary).val
-  | Sum.inr nonUnary => (data.nonUnaryIso.invFun nonUnary).val
-
-theorem tagToEntry_entryToTag (entry : Sig.Entry) :
-    data.tagToEntry (data.entryToTag entry) = entry := by
-  by_cases hentry : Sig.arity entry.1 = 1
-  · simp [entryToTag, tagToEntry, hentry]
-  · simp [entryToTag, tagToEntry, hentry]
-
-theorem entryToTag_tagToEntry (tag : data.entryTag) :
-    data.entryToTag (data.tagToEntry tag) = tag := by
-  cases htag :
-      (CodeAlgebra.finSum data.unaryCount data.nonUnaryCount).invFun tag with
-  | inl unary =>
-      have hright :
-          (CodeAlgebra.finSum data.unaryCount data.nonUnaryCount).toFun
-              (Sum.inl unary) = tag := by
-        simpa [htag] using
-          (CodeAlgebra.finSum data.unaryCount data.nonUnaryCount).right_inv tag
-      unfold entryToTag tagToEntry
-      rw [htag]
-      rw [dif_pos (data.unaryIso.invFun unary).property]
-      have hunary :
-          (⟨(data.unaryIso.invFun unary).val,
-            (data.unaryIso.invFun unary).property⟩ : Sig.UnaryEntry) =
-            data.unaryIso.invFun unary := by
-        apply Subtype.ext
-        rfl
-      rw [hunary]
-      rw [data.unaryIso.right_inv unary]
-      exact hright
-  | inr nonUnary =>
-      have hright :
-          (CodeAlgebra.finSum data.unaryCount data.nonUnaryCount).toFun
-              (Sum.inr nonUnary) = tag := by
-        simpa [htag] using
-          (CodeAlgebra.finSum data.unaryCount data.nonUnaryCount).right_inv tag
-      unfold entryToTag tagToEntry
-      rw [htag]
-      rw [dif_neg (data.nonUnaryIso.invFun nonUnary).property]
-      have hnonUnary :
-          (⟨(data.nonUnaryIso.invFun nonUnary).val,
-            (data.nonUnaryIso.invFun nonUnary).property⟩ :
-              Sig.NonUnaryEntry) =
-            data.nonUnaryIso.invFun nonUnary := by
-        apply Subtype.ext
-        rfl
-      rw [hnonUnary]
-      rw [data.nonUnaryIso.right_inv nonUnary]
-      exact hright
-
-def entryIso : Sig.Entry ≃ᵢ data.entryTag where
-  toFun := data.entryToTag
-  invFun := data.tagToEntry
-  left_inv := data.tagToEntry_entryToTag
-  right_inv := data.entryToTag_tagToEntry
+def entryIso : Sig.Entry ≃ᵢ data.entryTag :=
+  Iso.trans data.entryPartitionIso
+    (CodeAlgebra.finSum data.unaryCount data.nonUnaryCount)
 
 end SingleSortedFiniteCodingData
 

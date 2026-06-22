@@ -81,6 +81,47 @@ def sum {α : Type u} {β : Type v} {γ : Type w} {δ : Type x}
     intro x
     cases x <;> simp
 
+/--
+Split a type by a decidable predicate, then encode each subtype branch.
+-/
+def subtypePartition {α : Type u} {β : Type v} {γ : Type w}
+    (p : α → Prop) [DecidablePred p]
+    (left : {a : α // p a} ≃ᵢ β)
+    (right : {a : α // ¬ p a} ≃ᵢ γ) :
+    α ≃ᵢ (β ⊕ γ) where
+  toFun a :=
+    if h : p a then
+      Sum.inl (left.toFun ⟨a, h⟩)
+    else
+      Sum.inr (right.toFun ⟨a, h⟩)
+  invFun
+    | Sum.inl b => (left.invFun b).val
+    | Sum.inr c => (right.invFun c).val
+  left_inv := by
+    intro a
+    by_cases h : p a <;> simp [h]
+  right_inv := by
+    intro tag
+    cases tag with
+    | inl b =>
+        have hp : p (left.invFun b).val :=
+          (left.invFun b).property
+        have hleft :
+            (⟨(left.invFun b).val, hp⟩ : {a : α // p a}) =
+              left.invFun b := by
+          apply Subtype.ext
+          rfl
+        simp [hp, hleft]
+    | inr c =>
+        have hn : ¬ p (right.invFun c).val :=
+          (right.invFun c).property
+        have hright :
+            (⟨(right.invFun c).val, hn⟩ : {a : α // ¬ p a}) =
+              right.invFun c := by
+          apply Subtype.ext
+          rfl
+        simp [hn, hright]
+
 /-- Transport quotients across an isomorphism when both directions preserve
 the chosen setoid relations. -/
 def quotient {α : Type u} {β : Type v} (e : α ≃ᵢ β)
