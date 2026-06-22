@@ -348,6 +348,53 @@ theorem renderTrace_edgesPrefix :
       refine ⟨stepSuffix ++ suffix, ?_⟩
       rw [renderTrace_bud, hsuffix, hstep, List.append_assoc]
 
+theorem budStep_edges
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (st : RenderState Sig (active :: frontier))
+    {activeId : Nat} {restIds : List Nat}
+    (hids : st.frontierIds = activeId :: restIds) :
+    (budStep node entry ok st).edges =
+      st.edges ++
+        [{ label := Sig.portEdge active
+           leftLabel := active
+           rightLabel := Sig.port node entry
+           left := activeId
+           right :=
+            (freshNodeEndpoints st.nextEndpoint (Sig.arity node)).get
+              (Fin.cast (by simp [freshNodeEndpoints]) entry)
+           left_label := rfl
+           right_label := (Sig.compatible_edge ok).symm
+           compatible := ok }] := by
+  unfold budStep
+  split
+  · rename_i hnil
+    exact False.elim (RenderState.frontierIds_ne_nil st hnil)
+  · rename_i activeId' restIds' hids'
+    rw [hids] at hids'
+    injection hids' with hactive hrest
+    subst activeId'
+    subst restIds'
+    rfl
+
+theorem budStep_nodes
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (st : RenderState Sig (active :: frontier)) :
+    (budStep node entry ok st).nodes =
+      st.nodes ++
+        [{ label := node
+           incident := freshNodeEndpoints st.nextEndpoint (Sig.arity node) }] := by
+  unfold budStep
+  split
+  · rename_i hids
+    exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  · rfl
+
 /--
 The edge introduced by a top-level rendered `connect` is at the first edge
 index after the render prefix.  This deterministic index fact is needed to
@@ -380,16 +427,7 @@ theorem renderTrace_connect_new_edge_get
         ⟨suffix, hsuffix⟩
       have hstep :
           (connectStep mate ok st).edges = st.edges ++ [edge] := by
-        unfold connectStep
-        split
-        · rename_i hnil
-          exact False.elim (RenderState.frontierIds_ne_nil st hnil)
-        · rename_i activeId' restIds' hids'
-          rw [hids] at hids'
-          injection hids' with hactive hrest
-          subst activeId'
-          subst restIds'
-          simp [edge, mateId]
+        simpa [edge, mateId] using connectStep_edges mate ok st hids
       rw [renderTrace_connect, hsuffix, hstep]
       simp⟩ = edge := by
   intro final mateId edge
@@ -397,16 +435,7 @@ theorem renderTrace_connect_new_edge_get
     ⟨suffix, hsuffix⟩
   have hstep :
       (connectStep mate ok st).edges = st.edges ++ [edge] := by
-    unfold connectStep
-    split
-    · rename_i hnil
-      exact False.elim (RenderState.frontierIds_ne_nil st hnil)
-    · rename_i activeId' restIds' hids'
-      rw [hids] at hids'
-      injection hids' with hactive hrest
-      subst activeId'
-      subst restIds'
-      simp [edge, mateId]
+    simpa [edge, mateId] using connectStep_edges mate ok st hids
   have hfinal :
       final.edges = st.edges ++ edge :: suffix := by
     dsimp [final]
@@ -447,16 +476,8 @@ theorem renderTrace_bud_new_edge_get
         ⟨suffix, hsuffix⟩
       have hstep :
           (budStep node entry ok st).edges = st.edges ++ [edge] := by
-        unfold budStep
-        split
-        · rename_i hnil
-          exact False.elim (RenderState.frontierIds_ne_nil st hnil)
-        · rename_i activeId' restIds' hids'
-          rw [hids] at hids'
-          injection hids' with hactive hrest
-          subst activeId'
-          subst restIds'
-          simp [edge, nodeEndpoints, entryIdx]
+        simpa [edge, nodeEndpoints, entryIdx] using
+          budStep_edges node entry ok st hids
       rw [renderTrace_bud, hsuffix, hstep]
       simp⟩ = edge := by
   intro final nodeEndpoints entryIdx edge
@@ -464,16 +485,8 @@ theorem renderTrace_bud_new_edge_get
     ⟨suffix, hsuffix⟩
   have hstep :
       (budStep node entry ok st).edges = st.edges ++ [edge] := by
-    unfold budStep
-    split
-    · rename_i hnil
-      exact False.elim (RenderState.frontierIds_ne_nil st hnil)
-    · rename_i activeId' restIds' hids'
-      rw [hids] at hids'
-      injection hids' with hactive hrest
-      subst activeId'
-      subst restIds'
-      simp [edge, nodeEndpoints, entryIdx]
+    simpa [edge, nodeEndpoints, entryIdx] using
+      budStep_edges node entry ok st hids
   have hfinal :
       final.edges = st.edges ++ edge :: suffix := by
     dsimp [final]
@@ -559,11 +572,8 @@ theorem renderTrace_bud_new_node_get
         ⟨suffix, hsuffix⟩
       have hstep :
           (budStep node entry ok st).nodes = st.nodes ++ [renderNode] := by
-        unfold budStep
-        split
-        · rename_i hnil
-          exact False.elim (RenderState.frontierIds_ne_nil st hnil)
-        · simp [renderNode, nodeEndpoints]
+        simpa [renderNode, nodeEndpoints] using
+          budStep_nodes node entry ok st
       rw [renderTrace_bud, hsuffix, hstep]
       simp⟩ = renderNode := by
   intro final nodeEndpoints renderNode
@@ -571,11 +581,8 @@ theorem renderTrace_bud_new_node_get
     ⟨suffix, hsuffix⟩
   have hstep :
       (budStep node entry ok st).nodes = st.nodes ++ [renderNode] := by
-    unfold budStep
-    split
-    · rename_i hnil
-      exact False.elim (RenderState.frontierIds_ne_nil st hnil)
-    · simp [renderNode, nodeEndpoints]
+    simpa [renderNode, nodeEndpoints] using
+      budStep_nodes node entry ok st
   have hfinal :
       final.nodes = st.nodes ++ renderNode :: suffix := by
     dsimp [final]
@@ -681,53 +688,6 @@ theorem budStep_endpoints
     (st : RenderState Sig (active :: frontier)) :
     (budStep node entry ok st).endpoints =
       st.endpoints ++ Sig.nodePorts node := by
-  unfold budStep
-  split
-  · rename_i hids
-    exact False.elim (RenderState.frontierIds_ne_nil st hids)
-  · rfl
-
-theorem budStep_edges
-    {active : Sig.Port} {frontier : List Sig.Port}
-    (node : Sig.Node)
-    (entry : Fin (Sig.arity node))
-    (ok : Sig.compatible active (Sig.port node entry))
-    (st : RenderState Sig (active :: frontier))
-    {activeId : Nat} {restIds : List Nat}
-    (hids : st.frontierIds = activeId :: restIds) :
-    (budStep node entry ok st).edges =
-      st.edges ++
-        [{ label := Sig.portEdge active
-           leftLabel := active
-           rightLabel := Sig.port node entry
-           left := activeId
-           right :=
-            (freshNodeEndpoints st.nextEndpoint (Sig.arity node)).get
-              (Fin.cast (by simp [freshNodeEndpoints]) entry)
-           left_label := rfl
-           right_label := (Sig.compatible_edge ok).symm
-           compatible := ok }] := by
-  unfold budStep
-  split
-  · rename_i hnil
-    exact False.elim (RenderState.frontierIds_ne_nil st hnil)
-  · rename_i activeId' restIds' hids'
-    rw [hids] at hids'
-    injection hids' with hactive hrest
-    subst activeId'
-    subst restIds'
-    rfl
-
-theorem budStep_nodes
-    {active : Sig.Port} {frontier : List Sig.Port}
-    (node : Sig.Node)
-    (entry : Fin (Sig.arity node))
-    (ok : Sig.compatible active (Sig.port node entry))
-    (st : RenderState Sig (active :: frontier)) :
-    (budStep node entry ok st).nodes =
-      st.nodes ++
-        [{ label := node
-           incident := freshNodeEndpoints st.nextEndpoint (Sig.arity node) }] := by
   unfold budStep
   split
   · rename_i hids
