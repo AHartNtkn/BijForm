@@ -126,10 +126,13 @@ is ordered to turn helper additions into actual deletion.
     deleted, and final child relation assembly now calls the schemas directly.
     Renderer trace first-new edge/node indices now instantiate generic
     `AppendStep.firstSuffixIndex` / `get_firstSuffixIndex`, and unused
-    `_new_*Index_val` wrappers were deleted. The item remains open because
-    pending/frontier alignment, edge endpoint side preservation, node incident
-    preservation, and final connect/bud record assembly are still separate
-    helper families.
+    `_new_*Index_val` wrappers were deleted. The single-use
+    `connectChild_nodeIncidentFields` and `connectChild_nodeIncident` helper
+    theorem surfaces were deleted; their proof work is local to
+    `connectChild` assembly now. The item remains open because
+    pending/frontier alignment, edge endpoint side preservation, bud node
+    incident preservation, and final connect/bud record assembly are still
+    separate helper families.
 
 - [ ] Finish payload-local inverse boilerplate removal in coding examples.
   - Owners: `BijForm.InitialAlgebra`,
