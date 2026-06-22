@@ -267,20 +267,6 @@ def FinChainShapeLayerPresentation :
     ShapeLayerPresentation FinChainPoly FinChainInversion :=
   FinChainLayerShapePresentation.toShapeLayerPresentation FinChainShape
 
-theorem FinChainShape_child_rank_lt :
-    ∀ {i : Nat} (z : FinChainCarrier i)
-      (q : FinChainPoly.Pos
-          (FinChainInversion.decode i
-            ((FinChainShapeLayerPresentation.layer.iso i).invFun z).1).ctor
-          (FinChainInversion.decode i
-            ((FinChainShapeLayerPresentation.layer.iso i).invFun z).1).param),
-      FinChainPoly.input
-          (FinChainInversion.decode i
-            ((FinChainShapeLayerPresentation.layer.iso i).invFun z).1).param q < i := by
-  intro i z q
-  simpa [FinChainShapeLayerPresentation, FinChainCarrier] using
-    FinChainShapeLayerPresentation.child_rank_lt z q
-
 def FinChainGeneratedShapeCode : GeneratedShapeCode FinChainPoly :=
   FinChainShapeLayerPresentation.generatedCode
 
