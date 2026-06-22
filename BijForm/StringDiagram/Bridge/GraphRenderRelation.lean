@@ -314,6 +314,18 @@ def nodeIndex {G : OpenPortHypergraph Sig boundary}
     (node : Fin rst.nodes.length) : Fin (nodeOrder st).length :=
   listIndexCast (nodeOrder st) hrel.node_length node
 
+def nodeIncidentIndex {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port}
+    {rst : RenderState Sig frontier} {st : SearchState G frontier}
+    (hrel : GraphRenderRelated G rst st)
+    (node : Fin rst.nodes.length)
+    (slot : Fin (rst.nodes.get node).incident.length) :
+    Fin (G.raw.incident ((nodeOrder st).get (hrel.nodeIndex node))).length :=
+  listIndexCast
+    (G.raw.incident ((nodeOrder st).get (hrel.nodeIndex node)))
+    (by simpa [nodeIndex] using hrel.node_incident_length node)
+    slot
+
 def pendingIndex {G : OpenPortHypergraph Sig boundary}
     {frontier : List Sig.Port}
     {rst : RenderState Sig frontier} {st : SearchState G frontier}
@@ -346,6 +358,16 @@ theorem nodeIndex_val {G : OpenPortHypergraph Sig boundary}
     (hrel : GraphRenderRelated G rst st)
     (node : Fin rst.nodes.length) :
     (hrel.nodeIndex node).val = node.val :=
+  rfl
+
+@[simp]
+theorem nodeIncidentIndex_val {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port}
+    {rst : RenderState Sig frontier} {st : SearchState G frontier}
+    (hrel : GraphRenderRelated G rst st)
+    (node : Fin rst.nodes.length)
+    (slot : Fin (rst.nodes.get node).incident.length) :
+    (hrel.nodeIncidentIndex node slot).val = slot.val :=
   rfl
 
 @[simp]
@@ -1445,10 +1467,13 @@ theorem GraphRenderRelated.connectChild
             Fin (G.raw.incident
               ((nodeOrder (st.connectChild hpending mate hmate)).get
                 childNode)).length :=
-          Fin.cast (hchildNodeIncidentLength node) slot
+          listIndexCast
+            (G.raw.incident
+              ((nodeOrder (st.connectChild hpending mate hmate)).get childNode))
+            (hchildNodeIncidentLength node) slot
         let oldGraphSlot :
             Fin (G.raw.incident ((nodeOrder st).get oldOrderNode)).length :=
-          Fin.cast (hrel.node_incident_length oldNode) oldSlot
+          hrel.nodeIncidentIndex oldNode oldSlot
         have hgraphSlotIdx :
             Fin.cast
                 (congrArg (fun graphNode => (G.raw.incident graphNode).length)
@@ -2867,10 +2892,15 @@ theorem GraphRenderRelated.budChild
                 ((nodeOrder
                   (st.budChild hpending node slot hmate hunseen)).get
                     childNode)).length :=
-            Fin.cast (hchildNodeIncidentLength renderIdx) renderSlot
+            listIndexCast
+              (G.raw.incident
+                ((nodeOrder
+                  (st.budChild hpending node slot hmate hunseen)).get
+                    childNode))
+              (hchildNodeIncidentLength renderIdx) renderSlot
           let oldGraphSlot :
               Fin (G.raw.incident ((nodeOrder st).get oldOrderNode)).length :=
-            Fin.cast (hrel.node_incident_length oldNode) oldSlot
+            hrel.nodeIncidentIndex oldNode oldSlot
           have hgraphSlotIdx :
               Fin.cast
                   (congrArg (fun graphNode =>
@@ -3010,7 +3040,12 @@ theorem GraphRenderRelated.budChild
                 ((nodeOrder
                   (st.budChild hpending node slot hmate hunseen)).get
                     childNode)).length :=
-            Fin.cast (hchildNodeIncidentLength renderIdx) renderSlot
+            listIndexCast
+              (G.raw.incident
+                ((nodeOrder
+                  (st.budChild hpending node slot hmate hunseen)).get
+                    childNode))
+              (hchildNodeIncidentLength renderIdx) renderSlot
           have hgraphSlotIdx :
               Fin.cast
                   (congrArg (fun graphNode =>
@@ -3313,7 +3348,7 @@ def GraphRenderRelated.toPortHypergraphIso
               ((nodeOrder st).get (hrel.nodeIndex node))).length := by
         simpa [slot] using hright
       have hslotCast :
-          (Fin.cast (hrel.node_incident_length node) slot).val = i := rfl
+          (hrel.nodeIncidentIndex node slot).val = i := rfl
       have hleftGet :
           (endpointOrder G st).get
               (hrel.endpointIndex
@@ -3321,8 +3356,8 @@ def GraphRenderRelated.toPortHypergraphIso
                   hrel.node_incident_bound node slot⟩) =
             (G.raw.incident
               ((nodeOrder st).get (hrel.nodeIndex node))).get
-                (Fin.cast (hrel.node_incident_length node) slot) :=
-        hrel.node_incident node slot
+                (hrel.nodeIncidentIndex node slot) := by
+        simpa [nodeIncidentIndex, nodeIndex] using hrel.node_incident node slot
       simpa [slot, hslotCast] using hleftGet
 
 end SearchState

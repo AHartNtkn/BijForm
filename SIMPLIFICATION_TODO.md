@@ -128,7 +128,7 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     `BijForm.FiniteSubtypeTable`; `Coding` no longer contains table machinery,
     and `SymmetricInteractionNet` imports the new owner directly.
 
-- [ ] Add structured list-index transport APIs.
+- [x] Add structured list-index transport APIs.
   - Owner: `BijForm.StringDiagram.Basic`
   - Evidence: heavy `Fin.cast`, `fin_eq_of_val_eq`, and manual list-index
     transport in `GraphRenderRelation`, `Renderer/Steps`, and
@@ -176,6 +176,12 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     lookups. The remaining raw `hchild*Length` hits are the pending
     relation-field bridge; dependent incident-slot casts still need a separate
     helper family.
+  - Completed: added list-owned `listIndexCast`, order-owned
+    `endpointOrderIndex`/`edgeOrderIndex`/`nodeOrderIndex`, relation-owned
+    `endpointIndex`/`edgeIndex`/`nodeIndex`/`pendingIndex`, and
+    `nodeIncidentIndex`. Proof-local child order and incident-slot transports
+    in `GraphRenderRelation` now route through helpers; the only remaining raw
+    `hchild*Length` hits are the `pending_id` relation-field bridge.
 
 ## Code Algebra and Rank Descent
 
