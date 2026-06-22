@@ -347,6 +347,95 @@ def singleSortedFiniteLayerFromShape
           rfl⟩,
         fun _ => tagged.2⟩
 
+private def singleSortedFiniteConnectLayer
+    {Sig : Signature}
+    {active : Sig.Port} {frontier : List Sig.Port}
+    {mate : Fin frontier.length}
+    (ok : Sig.compatible active (frontier.get mate))
+    (out_eq :
+      (poly Sig).out Ctor.connect
+        (⟨active, frontier, mate, ok⟩ : ConnectParam Sig) = active :: frontier)
+    (child :
+      Unit → (openFrontierShape Sig (eraseFin frontier mate)).Carrier) :
+      CodeLayer (poly Sig) (inversion Sig)
+        (fun boundary => (openFrontierShape Sig boundary).Carrier)
+        (active :: frontier) :=
+  ⟨{ ctor := Ctor.connect,
+      param := (⟨active, frontier, mate, ok⟩ : ConnectParam Sig),
+      out_eq := out_eq }, child⟩
+
+private theorem singleSortedFiniteLayer_ext_connect_ok
+    {Sig : Signature}
+    {active : Sig.Port} {frontier : List Sig.Port}
+    {mate : Fin frontier.length}
+    {ok ok' : Sig.compatible active (frontier.get mate)}
+    {out_eq :
+      (poly Sig).out Ctor.connect
+        (⟨active, frontier, mate, ok⟩ : ConnectParam Sig) = active :: frontier}
+    {out_eq' :
+      (poly Sig).out Ctor.connect
+        (⟨active, frontier, mate, ok'⟩ : ConnectParam Sig) = active :: frontier}
+    {childf childg :
+      Unit → (openFrontierShape Sig (eraseFin frontier mate)).Carrier}
+    (hchild : childf = childg) :
+    singleSortedFiniteConnectLayer ok out_eq childf =
+      singleSortedFiniteConnectLayer ok' out_eq' childg := by
+  unfold singleSortedFiniteConnectLayer
+  refine CodeLayer.canonical_ext_param
+    (P := poly Sig)
+    (Code := fun boundary => (openFrontierShape Sig boundary).Carrier)
+    (i := active :: frontier)
+    (ctor := Ctor.connect)
+    (ConnectParam.eq_of_ok) ?_
+  exact heq_of_eq hchild
+
+private def singleSortedFiniteBudLayer
+    {Sig : Signature}
+    {active : Sig.Port} {frontier : List Sig.Port}
+    {node : Sig.Node} {entry : Fin (Sig.arity node)}
+    (ok : Sig.compatible active (Sig.port node entry))
+    (out_eq :
+      (poly Sig).out Ctor.bud
+        (⟨active, frontier, node, entry, ok⟩ : BudParam Sig) =
+          active :: frontier)
+    (child :
+      Unit →
+        (openFrontierShape Sig (frontier ++ Sig.nodePortsExcept node entry)).Carrier) :
+      CodeLayer (poly Sig) (inversion Sig)
+        (fun boundary => (openFrontierShape Sig boundary).Carrier)
+        (active :: frontier) :=
+  ⟨{ ctor := Ctor.bud,
+      param := (⟨active, frontier, node, entry, ok⟩ : BudParam Sig),
+      out_eq := out_eq }, child⟩
+
+private theorem singleSortedFiniteLayer_ext_bud_ok
+    {Sig : Signature}
+    {active : Sig.Port} {frontier : List Sig.Port}
+    {node : Sig.Node} {entry : Fin (Sig.arity node)}
+    {ok ok' : Sig.compatible active (Sig.port node entry)}
+    {out_eq :
+      (poly Sig).out Ctor.bud
+        (⟨active, frontier, node, entry, ok⟩ : BudParam Sig) =
+          active :: frontier}
+    {out_eq' :
+      (poly Sig).out Ctor.bud
+        (⟨active, frontier, node, entry, ok'⟩ : BudParam Sig) =
+          active :: frontier}
+    {childf childg :
+      Unit →
+        (openFrontierShape Sig (frontier ++ Sig.nodePortsExcept node entry)).Carrier}
+    (hchild : childf = childg) :
+    singleSortedFiniteBudLayer ok out_eq childf =
+      singleSortedFiniteBudLayer ok' out_eq' childg := by
+  unfold singleSortedFiniteBudLayer
+  refine CodeLayer.canonical_ext_param
+    (P := poly Sig)
+    (Code := fun boundary => (openFrontierShape Sig boundary).Carrier)
+    (i := active :: frontier)
+    (ctor := Ctor.bud)
+    (BudParam.eq_of_ok) ?_
+  exact heq_of_eq hchild
+
 /--
 Generic finite single-sorted layer presentation.
 
@@ -422,27 +511,13 @@ def singleSortedFiniteLayerPresentation
                                     (child ())
                                 simp [singleSortedFiniteLayerToShape,
                                   singleSortedFiniteLayerFromShape, hentry]
-                                refine CodeLayer.canonical_ext_param
-                                  (P := poly Sig)
-                                  (Code := fun boundary =>
-                                    (openFrontierShape Sig boundary).Carrier)
-                                  (i := [active'])
-                                  (ctor := Ctor.bud)
-                                  (BudParam.eq_of_ok) ?_
-                                exact heq_of_eq hchild
+                                exact singleSortedFiniteLayer_ext_bud_ok hchild
                               · have hchild :
                                     (fun _ => child ()) = child := by
                                   child_eta_unit
                                 simp [singleSortedFiniteLayerToShape,
                                   singleSortedFiniteLayerFromShape, hentry]
-                                refine CodeLayer.canonical_ext_param
-                                  (P := poly Sig)
-                                  (Code := fun boundary =>
-                                    (openFrontierShape Sig boundary).Carrier)
-                                  (i := [active'])
-                                  (ctor := Ctor.bud)
-                                  (BudParam.eq_of_ok) ?_
-                                exact heq_of_eq hchild
+                                exact singleSortedFiniteLayer_ext_bud_ok hchild
           | cons first rest =>
               cases rest with
               | nil =>
@@ -479,14 +554,7 @@ def singleSortedFiniteLayerPresentation
                                     child_eta_unit
                                   simp [singleSortedFiniteLayerToShape,
                                     singleSortedFiniteLayerFromShape]
-                                  refine CodeLayer.canonical_ext_param
-                                    (P := poly Sig)
-                                    (Code := fun boundary =>
-                                      (openFrontierShape Sig boundary).Carrier)
-                                    (i := [active', first])
-                                    (ctor := Ctor.bud)
-                                    (BudParam.eq_of_ok) ?_
-                                  exact heq_of_eq hchild
+                                  exact singleSortedFiniteLayer_ext_bud_ok hchild
               | cons second rest =>
                   cases layer with
                   | mk code child =>
@@ -508,14 +576,7 @@ def singleSortedFiniteLayerPresentation
                                     child_eta_unit
                                   simp [singleSortedFiniteLayerToShape,
                                     singleSortedFiniteLayerFromShape]
-                                  refine CodeLayer.canonical_ext_param
-                                    (P := poly Sig)
-                                    (Code := fun boundary =>
-                                      (openFrontierShape Sig boundary).Carrier)
-                                    (i := active' :: first :: second :: rest)
-                                    (ctor := Ctor.connect)
-                                    (ConnectParam.eq_of_ok) ?_
-                                  exact heq_of_eq hchild
+                                  exact singleSortedFiniteLayer_ext_connect_ok hchild
                           | bud =>
                               cases param with
                               | mk active' frontier node entry ok =>
@@ -524,14 +585,7 @@ def singleSortedFiniteLayerPresentation
                                     child_eta_unit
                                   simp [singleSortedFiniteLayerToShape,
                                     singleSortedFiniteLayerFromShape]
-                                  refine CodeLayer.canonical_ext_param
-                                    (P := poly Sig)
-                                    (Code := fun boundary =>
-                                      (openFrontierShape Sig boundary).Carrier)
-                                    (i := active' :: first :: second :: rest)
-                                    (ctor := Ctor.bud)
-                                    (BudParam.eq_of_ok) ?_
-                                  exact heq_of_eq hchild)
+                                  exact singleSortedFiniteLayer_ext_bud_ok hchild)
     (by
       intro boundary shape
       cases boundary with
