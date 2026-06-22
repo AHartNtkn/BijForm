@@ -40,8 +40,7 @@ theorem openFrontierEmptyCarrier_unique {Sig : Signature}
     (z : (openFrontierShape Sig boundary).Carrier) :
     openFrontierEmptyCarrier (Sig := Sig) h = z := by
   cases h
-  apply Fin.ext
-  omega
+  exact fin_one_eq _ _
 
 def openFrontierNatCarrier {Sig : Signature}
     {boundary : List Sig.Port} (h : boundary ≠ []) :
@@ -594,8 +593,7 @@ def singleSortedFiniteLayerPresentation
                                               (fun _ => ⟨0, by decide⟩) = child := by
                                             funext q
                                             cases q
-                                            apply Fin.ext
-                                            omega
+                                            exact fin_one_eq _ _
                                           cases hchild
                                           rfl
                                       | succ val =>
@@ -672,8 +670,7 @@ def singleSortedFiniteLayerPresentation
       intro boundary shape
       cases boundary with
       | nil =>
-          apply Fin.ext
-          omega
+          exact fin_one_eq _ _
       | cons active frontier =>
           cases frontier with
           | nil =>
