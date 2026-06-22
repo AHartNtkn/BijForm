@@ -91,8 +91,9 @@ is ordered to turn helper additions into actual deletion.
     and traversal casts still remain. Traversal helper definitions for
     rest-label indices, bud entries, connect-child pending labels, and
     connect-child endpoint-order gets now use shared list/signature transport;
-    the remaining traversal hits are in render-prefix connect/bud child proof
-    clusters.
+    render-prefix connect/bud child proof clusters now use `listMapIndex`,
+    `listIndexCast`, and `eraseFin_eq_of_eq_of_val_eq`, so
+    `Traversal/State.lean` direct `Fin.cast` hits dropped to `0`.
 
 - [ ] Collapse the graph-render relation helper volume into schemas.
   - Owners: `BijForm.StringDiagram.Bridge.GraphRenderRelation`,

@@ -1548,7 +1548,10 @@ def budChild_orderTrace
       right :=
         (Diag.freshNodeEndpoints rst.nextEndpoint
           (Sig.arity (G.raw.nodeLabel node))).get
-          (Fin.cast (by simp [Diag.freshNodeEndpoints])
+          (listIndexCast
+            (Diag.freshNodeEndpoints rst.nextEndpoint
+              (Sig.arity (G.raw.nodeLabel node)))
+            (by simp [Diag.freshNodeEndpoints])
             (SearchState.budEntry (G := G) node slot))
       left_label := rfl
       right_label := (Sig.compatible_edge
@@ -1873,21 +1876,15 @@ theorem RenderPrefixRelated.connectChild_of_new_edge
         have hmap :
             (eraseFin rest mate).map (fun endpoint => endpoint.val) =
               eraseFin (rest.map (fun endpoint => endpoint.val))
-                (Fin.cast (by simp) mate) := by
-          exact map_eraseFin (fun endpoint => endpoint.val) rest mate
+                (listMapIndex (fun endpoint => endpoint.val) rest mate) := by
+          simpa [listMapIndex] using
+            map_eraseFin (fun endpoint => endpoint.val) rest mate
         rw [hmap]
-        calc
-          eraseFin (rest.map (fun endpoint => endpoint.val))
-              (Fin.cast (by simp) mate) =
-            eraseFin restIds
-              (Fin.cast (by rw [← hvals.2])
-                (Fin.cast (by simp) mate)) := by
-              exact eraseFin_eq_of_eq hvals.2 (Fin.cast (by simp) mate)
-          _ = eraseFin restIds
-              (Fin.cast hrestLen.symm (sst.restLabelIndex hpending mate)) := by
-              apply congrArg
-              exact fin_eq_of_val_eq (by
-                simp [restLabelIndex])
+        exact eraseFin_eq_of_eq_of_val_eq hvals.2
+          (listMapIndex (fun endpoint => endpoint.val) rest mate)
+          (listIndexCast restIds hrestLen.symm
+            (sst.restLabelIndex hpending mate))
+          (by simp [listMapIndex, restLabelIndex])
   processed_prefix := by
     intro edge
     have hprefix :=
@@ -1968,27 +1965,21 @@ theorem RenderPrefixRelated.budChild_of_new_edge_node
                 eraseFin
                   ((ev.toOpenPortHypergraph.raw.incident node).map
                     (fun endpoint => endpoint.val))
-                  (Fin.cast (by simp) slot) := by
-            exact map_eraseFin (fun endpoint => endpoint.val)
-              (ev.toOpenPortHypergraph.raw.incident node) slot
+                  (listMapIndex (fun endpoint => endpoint.val)
+                    (ev.toOpenPortHypergraph.raw.incident node) slot) := by
+            simpa [listMapIndex] using
+              map_eraseFin (fun endpoint => endpoint.val)
+                (ev.toOpenPortHypergraph.raw.incident node) slot
           rw [hmap]
           apply congrArg (fun tail => restIds ++ tail)
-          calc
-            eraseFin
-                ((ev.toOpenPortHypergraph.raw.incident node).map
-                  (fun endpoint => endpoint.val))
-                (Fin.cast (by simp) slot) =
-              eraseFin (Diag.freshNodeEndpoints rst.nextEndpoint
-                  (Sig.arity rendererNode))
-                (Fin.cast (by rw [← hincidentVals])
-                  (Fin.cast (by simp) slot)) := by
-                exact eraseFin_eq_of_eq hincidentVals (Fin.cast (by simp) slot)
-            _ =
-              eraseFin (Diag.freshNodeEndpoints rst.nextEndpoint
-                  (Sig.arity rendererNode))
-                (Fin.cast (by simp [Diag.freshNodeEndpoints]) entry) := by
-                apply congrArg
-                exact fin_eq_of_val_eq hslot
+          exact eraseFin_eq_of_eq_of_val_eq hincidentVals
+            (listMapIndex (fun endpoint => endpoint.val)
+              (ev.toOpenPortHypergraph.raw.incident node) slot)
+            (listIndexCast
+              (Diag.freshNodeEndpoints rst.nextEndpoint
+                (Sig.arity rendererNode))
+              (by simp [Diag.freshNodeEndpoints]) entry)
+            (by simp [listMapIndex, listIndexCast, hslot])
     simpa using
       hchildFrontierIds.trans
         (RenderState.cast_frontierIds hfrontier.symm
@@ -2113,19 +2104,20 @@ theorem IsoRelated.budChild
             (PortHypergraphIso.incidenceSlotPreserved e node slot) =
         rest.map e.endpointEquiv.toFun ++
           eraseFin ((G.raw.incident node).map e.endpointEquiv.toFun)
-            (Fin.cast (by simp) slot) := by
+            (listMapIndex e.endpointEquiv.toFun (G.raw.incident node) slot) := by
           congr 1
           have hincident :
               H.raw.incident (e.nodeEquiv.toFun node) =
                 (G.raw.incident node).map e.endpointEquiv.toFun :=
             (e.incidence_preserved node).symm
-          rw [eraseFin_eq_of_eq hincident
-            (PortHypergraphIso.incidenceSlotPreserved e node slot)]
-          apply congrArg
-          exact fin_eq_of_val_eq rfl
+          exact eraseFin_eq_of_eq_of_val_eq hincident
+            (PortHypergraphIso.incidenceSlotPreserved e node slot)
+            (listMapIndex e.endpointEquiv.toFun (G.raw.incident node) slot)
+            (by simp [PortHypergraphIso.incidenceSlotPreserved, listMapIndex])
       _ = rest.map e.endpointEquiv.toFun ++
           (eraseFin (G.raw.incident node) slot).map e.endpointEquiv.toFun := by
-          rw [map_eraseFin]
+          simpa [listMapIndex] using
+            (map_eraseFin e.endpointEquiv.toFun (G.raw.incident node) slot).symm
       _ =
           (rest ++ eraseFin (G.raw.incident node) slot).map
             e.endpointEquiv.toFun := by
