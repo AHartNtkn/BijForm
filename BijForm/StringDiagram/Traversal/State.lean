@@ -491,29 +491,13 @@ theorem pending_labels_cons {G : OpenPortHypergraph Sig boundary}
     simpa [hpending] using st.pending_labels
   simpa using hlabels
 
-theorem active_label_eq {G : OpenPortHypergraph Sig boundary}
-    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
-    (st : SearchState G (activeLabel :: restLabels))
-    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
-    (hpending : st.pending = active :: rest) :
-    G.raw.endpointLabel active = activeLabel :=
-  (st.pending_labels_cons hpending).1
-
-theorem rest_labels_eq {G : OpenPortHypergraph Sig boundary}
-    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
-    (st : SearchState G (activeLabel :: restLabels))
-    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
-    (hpending : st.pending = active :: rest) :
-    rest.map G.raw.endpointLabel = restLabels :=
-  (st.pending_labels_cons hpending).2
-
 def restLabelIndex {G : OpenPortHypergraph Sig boundary}
     {activeLabel : Sig.Port} {restLabels : List Sig.Port}
     (st : SearchState G (activeLabel :: restLabels))
     {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
     (hpending : st.pending = active :: rest)
     (mate : Fin rest.length) : Fin restLabels.length :=
-  let hrest := st.rest_labels_eq hpending
+  let hrest := (st.pending_labels_cons hpending).2
   Fin.cast (by
     rw [← hrest]
     simp) mate
@@ -526,7 +510,7 @@ theorem restLabelIndex_get {G : OpenPortHypergraph Sig boundary}
     (mate : Fin rest.length) :
     restLabels.get (st.restLabelIndex hpending mate) =
       G.raw.endpointLabel (rest.get mate) := by
-  have hrest := st.rest_labels_eq hpending
+  have hrest := (st.pending_labels_cons hpending).2
   cases hrest
   simp [restLabelIndex]
 
@@ -627,7 +611,7 @@ theorem connect_compatible {G : OpenPortHypergraph Sig boundary}
     Sig.compatible activeLabel
       (restLabels.get (st.restLabelIndex hpending mate)) := by
   have hcompat := PortHypergraph.edgeMate_compatible G.raw hmate
-  have hactive := st.active_label_eq hpending
+  have hactive := (st.pending_labels_cons hpending).1
   have hmateLabel := st.restLabelIndex_get hpending mate
   rw [hactive] at hcompat
   rw [← hmateLabel] at hcompat
@@ -660,7 +644,7 @@ theorem bud_compatible {G : OpenPortHypergraph Sig boundary}
     Sig.compatible activeLabel
       (Sig.port (G.raw.nodeLabel node) (budEntry node slot)) := by
   have hcompat := PortHypergraph.edgeMate_compatible G.raw hmate
-  have hactive := st.active_label_eq hpending
+  have hactive := (st.pending_labels_cons hpending).1
   have hslot := G.raw.incidence_label node slot
   rw [hactive] at hcompat
   rw [hslot] at hcompat
@@ -681,7 +665,7 @@ def connectChild {G : OpenPortHypergraph Sig boundary}
           eraseFin (rest.map G.raw.endpointLabel) (Fin.cast (by simp) mate) :=
         map_eraseFin G.raw.endpointLabel rest mate
       _ = eraseFin restLabels (st.restLabelIndex hpending mate) := by
-        have hrest := st.rest_labels_eq hpending
+        have hrest := (st.pending_labels_cons hpending).2
         cases hrest
         simp [restLabelIndex]
   pending_nodup :=
@@ -841,7 +825,7 @@ def budChild {G : OpenPortHypergraph Sig boundary}
         simp
       _ = restLabels ++
             Sig.nodePortsExcept (G.raw.nodeLabel node) (budEntry node slot) := by
-        rw [st.rest_labels_eq hpending,
+        rw [(st.pending_labels_cons hpending).2,
           G.raw.incident_labels_except node slot]
         rfl
   pending_nodup := by

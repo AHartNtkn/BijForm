@@ -979,7 +979,7 @@ theorem GraphRenderRelated.connectChild
                 childEdge (by simp [childEdge, hnewVal, hrel.edge_length])
             simpa [childEdge] using hget
           rw [hnewEdge, hnewOrder]
-          have hactiveLabel := st.active_label_eq hpending
+          have hactiveLabel := (st.pending_labels_cons hpending).1
           change Sig.portEdge activeLabel =
             G.raw.edgeLabel (G.raw.endpointEdge active)
           rw [← hactiveLabel]
@@ -2218,7 +2218,7 @@ theorem GraphRenderRelated.budChild
             ((Diag.budStep renderNode entry ok rst).edges.get edge).label =
                 Sig.portEdge activeLabel := hedgeLabel
             _ = G.raw.edgeLabel (G.raw.endpointEdge active) := by
-              have hactiveLabel := st.active_label_eq hpending
+              have hactiveLabel := (st.pending_labels_cons hpending).1
               rw [← hactiveLabel]
               exact G.raw.endpoint_edge_label active
             _ =
