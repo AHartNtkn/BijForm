@@ -273,6 +273,11 @@ is ordered to turn helper additions into actual deletion.
     `RenderPrefixChildStep` carrying the branch evidence. The item remains
     open because branch order-trace, iso, and graph-relation helper families
     still exist.
+  - Partial: the single-use iso wrappers `IsoRelated.connectChild` and
+    `IsoRelated.budChild` were deleted. Their relation-constructor proofs now
+    live inside `IsoRelated.firstPendingChild`, with `FirstPendingStep.IsoImage`
+    carrying branch image evidence. The item remains open because branch
+    order-trace and graph-relation helper families still exist.
 
 - [x] Delete low-value generated-code and presentation pass-through wrappers.
   - Owners: `BijForm.InitialAlgebra`,
