@@ -5,6 +5,15 @@ namespace StringDiagram
 
 open DepPoly
 
+theorem fin_eq_of_val_eq {n : Nat} {i j : Fin n} (h : i.val = j.val) :
+    i = j := by
+  apply Fin.ext
+  exact h
+
+theorem fin_mk_val_eq {n : Nat} (i : Fin n) (h : i.val < n) :
+    (⟨i.val, h⟩ : Fin n) = i :=
+  fin_eq_of_val_eq rfl
+
 /-- Remove the element at a proof-carrying index. -/
 def eraseFin {α : Type} : (xs : List α) → Fin xs.length → List α
   | [], i => nomatch i
@@ -162,8 +171,7 @@ theorem list_get_of_eq_append_cons_at_length {α : Type}
   have hidx :
       i = ⟨pref.length, by
         simp⟩ := by
-    apply Fin.ext
-    exact hval
+    exact fin_eq_of_val_eq hval
   rw [hidx]
   exact list_get_append_single_at_length pref suffix x
 
@@ -180,8 +188,7 @@ theorem list_get_of_eq_of_val_eq {α : Type} {xs ys : List α}
   have hget := list_get_of_eq h i
   have hidx :
       Fin.cast (congrArg List.length h) i = j := by
-    apply Fin.ext
-    exact hval
+    exact fin_eq_of_val_eq hval
   simpa [hidx] using hget
 
 def listPrefixIndex {α : Type} {pref full suffix : List α}
@@ -283,8 +290,7 @@ theorem list_get_map_eq_get_of_val_eq {α β : Type} (f : α → β)
   have hget := list_get_map_eq_get f hmap i
   have hidx :
       (Fin.cast (by rw [← hmap]; simp) i : Fin ys.length) = j := by
-    apply Fin.ext
-    exact hval
+    exact fin_eq_of_val_eq hval
   simpa [hidx] using hget
 
 theorem mem_of_mem_eraseFin {α : Type} :
@@ -527,16 +533,6 @@ def finCastIso {m n : Nat} (h : m = n) : Fin m ≃ᵢ Fin n where
     cases h
     rfl
 
-theorem fin_mk_val_eq {n : Nat} (i : Fin n) (h : i.val < n) :
-    (⟨i.val, h⟩ : Fin n) = i := by
-  apply Fin.ext
-  rfl
-
-theorem fin_eq_of_val_eq {n : Nat} {i j : Fin n} (h : i.val = j.val) :
-    i = j := by
-  apply Fin.ext
-  exact h
-
 def listFinIso {n : Nat} (xs : List (Fin n))
     (hnodup : xs.Nodup)
     (hcover : ∀ x : Fin n, x ∈ xs) :
@@ -651,9 +647,8 @@ theorem list_get_injective_of_nodup {α : Type} :
                             ⟨jVal, Nat.lt_of_succ_lt_succ jLt⟩ := by
                         apply list_get_injective_of_nodup xs hsplit.2
                         simpa using h
-                      apply Fin.ext
-                      have hval : iVal = jVal := congrArg Fin.val htail
-                      exact congrArg Nat.succ hval
+                      exact fin_eq_of_val_eq
+                        (congrArg Nat.succ (congrArg Fin.val htail))
 
 theorem list_length_le_of_nodup_subset {α : Type} :
     ∀ (xs ys : List α),
