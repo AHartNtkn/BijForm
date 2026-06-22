@@ -266,6 +266,12 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     presentations off `SyntaxPresentation.ofLayerMaps`. Constructor-specific
     `child_eta_rfl child` inverse proof bodies remain visible and still need a
     deeper constructor-clause helper.
+  - Partial: added `CodeLayer.canonical_left_inv_by_fiber` and
+    `finish_code_layer_left_inv` in `BijForm.InitialAlgebra`. The seven
+    `SyntaxPresentation.ofLayerIso` blocks now route canonical same-fiber
+    layer/fiber unpacking and child eta through shared helpers; the remaining
+    `child_eta_rfl child` occurrences are in non-syntax Nat/carrier layer
+    presentations with additional payload coding obligations.
 
 - [x] Factor finite and infinite sorted branch payload coding.
   - Owner: `BijForm.Examples.Sorted`, backed by `CodeAlgebra` payload lemmas.

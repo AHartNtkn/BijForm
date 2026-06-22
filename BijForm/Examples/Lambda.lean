@@ -111,28 +111,20 @@ def LamSyntaxPresentation : SyntaxPresentation LamPoly LamInversion LamSyntax :=
     (fun k =>
       { toFun := LamLayerToSyntax k
         invFun := LamSyntaxToLayer k
-        left_inv := by
-          intro layer
-          cases layer with
-          | mk code child =>
-            cases code with
-            | mk ctor param out_eq =>
+        left_inv :=
+          CodeLayer.canonical_left_inv_by_fiber
+            (toCarrier := LamLayerToSyntax)
+            (fromCarrier := LamSyntaxToLayer) (by
+              intro k ctor param out_eq child
               cases ctor with
               | var =>
                 cases param with
                 | mk k' v =>
-                  cases out_eq
-                  child_eta_rfl child
+                  finish_code_layer_left_inv out_eq child
               | lam =>
-                change LamParam LamCtor.lam at param
-                change Nat at param
-                cases out_eq
-                child_eta_rfl child
+                finish_code_layer_left_inv out_eq child
               | app =>
-                change LamParam LamCtor.app at param
-                change Nat at param
-                cases out_eq
-                child_eta_rfl child
+                finish_code_layer_left_inv out_eq child) k
         right_inv := by
           intro t
           cases t <;> simp [LamLayerToSyntax, LamSyntaxToLayer] })

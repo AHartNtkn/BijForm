@@ -93,21 +93,18 @@ def FinChainSyntaxPresentation :
     (fun i =>
       { toFun := FinChainLayerToSyntax i
         invFun := FinChainSyntaxToLayer i
-        left_inv := by
-          intro layer
-          cases layer with
-          | mk code child =>
-            cases code with
-            | mk ctor param out_eq =>
+        left_inv :=
+          CodeLayer.canonical_left_inv_by_fiber
+            (toCarrier := FinChainLayerToSyntax)
+            (fromCarrier := FinChainSyntaxToLayer) (by
+              intro i ctor param out_eq child
               cases ctor with
               | done =>
-                  cases out_eq
-                  child_eta_rfl child
+                  finish_code_layer_left_inv out_eq child
               | step =>
                   cases param with
                   | mk n tag =>
-                    cases out_eq
-                    child_eta_rfl child
+                    finish_code_layer_left_inv out_eq child) i
         right_inv := by
           intro t
           cases t with

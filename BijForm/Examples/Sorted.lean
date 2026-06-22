@@ -187,21 +187,18 @@ def SortedSyntaxPresentation : SyntaxPresentation SortedPoly SortedInversion Sor
     (fun i =>
       { toFun := SortedLayerToSyntax i
         invFun := SortedSyntaxToLayer i
-        left_inv := by
-          intro layer
-          cases layer with
-          | mk code child =>
-            cases code with
-            | mk ctor param out_eq =>
+        left_inv :=
+          CodeLayer.canonical_left_inv_by_fiber
+            (toCarrier := SortedLayerToSyntax)
+            (fromCarrier := SortedSyntaxToLayer) (by
+              intro i ctor param out_eq child
               cases ctor with
               | leaf =>
-                  cases out_eq
-                  child_eta_rfl child
+                  finish_code_layer_left_inv out_eq child
               | branch =>
                   cases param with
                   | mk _i pivot =>
-                    cases out_eq
-                    child_eta_rfl child
+                    finish_code_layer_left_inv out_eq child) i
         right_inv := by
           intro t
           cases t with

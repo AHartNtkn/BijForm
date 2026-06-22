@@ -118,21 +118,18 @@ def HBTSyntaxPresentation : SyntaxPresentation HBTPoly HBTInversion HBTSyntax :=
     (fun i =>
       { toFun := HBTLayerToSyntax i
         invFun := HBTSyntaxToLayer i
-        left_inv := by
-          intro layer
-          cases layer with
-          | mk code child =>
-            cases code with
-            | mk ctor param out_eq =>
+        left_inv :=
+          CodeLayer.canonical_left_inv_by_fiber
+            (toCarrier := HBTLayerToSyntax)
+            (fromCarrier := HBTSyntaxToLayer) (by
+              intro i ctor param out_eq child
               cases ctor with
               | leaf =>
                   cases param with
                   | mk height label =>
-                    cases out_eq
-                    child_eta_rfl child
+                    finish_code_layer_left_inv out_eq child
               | branch =>
-                  cases out_eq
-                  child_eta_rfl child
+                  finish_code_layer_left_inv out_eq child) i
         right_inv := by
           intro t
           cases t <;> simp [HBTLayerToSyntax, HBTSyntaxToLayer] })

@@ -155,48 +155,24 @@ def NumSyntaxPresentation : SyntaxPresentation NumPoly NumInversion NumSyntax :=
     (fun k =>
       { toFun := NumLayerToSyntax k
         invFun := NumSyntaxToLayer k
-        left_inv := by
-          intro layer
-          cases layer with
-          | mk code child =>
-            cases code with
-            | mk ctor param out_eq =>
+        left_inv :=
+          CodeLayer.canonical_left_inv_by_fiber
+            (toCarrier := NumLayerToSyntax)
+            (fromCarrier := NumSyntaxToLayer) (by
+              intro k ctor param out_eq child
               cases ctor with
               | var =>
                   cases param with
                   | mk k' v =>
-                    dsimp [NumPoly, NumOut] at out_eq
-                    cases out_eq.symm
-                    cases out_eq
-                    child_eta_rfl child
+                    finish_code_layer_left_inv out_eq child
               | zero =>
-                  change NumParam NumCtor.zero at param
-                  change Nat at param
-                  dsimp [NumPoly, NumOut] at out_eq
-                  cases out_eq.symm
-                  cases out_eq
-                  child_eta_rfl child
+                  finish_code_layer_left_inv out_eq child
               | succ =>
-                  change NumParam NumCtor.succ at param
-                  change Nat at param
-                  dsimp [NumPoly, NumOut] at out_eq
-                  cases out_eq.symm
-                  cases out_eq
-                  child_eta_rfl child
+                  finish_code_layer_left_inv out_eq child
               | plus =>
-                  change NumParam NumCtor.plus at param
-                  change Nat at param
-                  dsimp [NumPoly, NumOut] at out_eq
-                  cases out_eq.symm
-                  cases out_eq
-                  child_eta_rfl child
+                  finish_code_layer_left_inv out_eq child
               | times =>
-                  change NumParam NumCtor.times at param
-                  change Nat at param
-                  dsimp [NumPoly, NumOut] at out_eq
-                  cases out_eq.symm
-                  cases out_eq
-                  child_eta_rfl child
+                  finish_code_layer_left_inv out_eq child) k
         right_inv := by
           intro e
           cases e <;> simp [NumLayerToSyntax, NumSyntaxToLayer] })

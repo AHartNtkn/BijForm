@@ -138,6 +138,30 @@ theorem ext_layer {P : DepPoly ι} {H : OutputIndexInversion P}
     | mk c' child' =>
       exact ext hcode hchild
 
+/--
+Prove a canonical same-fiber layer left inverse by constructor/fiber cases.
+Callers supply only the domain-specific constructor clauses; this helper owns
+the generic `CodeLayer` and `Fiber` unpacking.
+-/
+theorem canonical_left_inv_by_fiber {P : DepPoly ι} {Code : ι → Type v}
+    {Carrier : ι → Type w}
+    {toCarrier :
+      ∀ i, CodeLayer P (OutputIndexInversion.canonical P) Code i → Carrier i}
+    {fromCarrier :
+      ∀ i, Carrier i → CodeLayer P (OutputIndexInversion.canonical P) Code i}
+    (h : ∀ {i : ι} (ctor : P.Ctor) (param : P.Param ctor)
+      (out_eq : P.out ctor param = i)
+      (child : (q : P.Pos ctor param) → Code (P.input param q)),
+      fromCarrier i (toCarrier i ⟨⟨ctor, param, out_eq⟩, child⟩) =
+        ⟨⟨ctor, param, out_eq⟩, child⟩) :
+    ∀ i, Function.LeftInverse (fromCarrier i) (toCarrier i) := by
+  intro i layer
+  cases layer with
+  | mk code child =>
+    cases code with
+    | mk ctor param out_eq =>
+      exact h ctor param out_eq child
+
 end CodeLayer
 
 /-- Prove child-function eta facts by splitting the child-position type. -/
@@ -166,6 +190,26 @@ macro_rules
               | true => $child true) := by child_eta_cases;
            rw [hchild_eta];
            rfl))
+
+/--
+Close a canonical constructor-layer inverse branch after constructor-specific
+parameter decomposition.
+-/
+syntax "finish_code_layer_left_inv " ident ident : tactic
+macro_rules
+  | `(tactic| finish_code_layer_left_inv $outEq:ident $child:ident) =>
+      `(tactic|
+        first
+        | (simp at $outEq:ident;
+           cases ($outEq:ident).symm;
+           cases $outEq:ident;
+           child_eta_rfl $child)
+        | (cases ($outEq:ident).symm;
+           cases $outEq:ident;
+           child_eta_rfl $child)
+        | (cases $outEq:ident;
+           child_eta_rfl $child)
+        | child_eta_rfl $child)
 
 def castFiberChild {P : DepPoly ι} {Code : ι → Type v} {i : ι}
     {f g : Fiber P i} (h : f = g)

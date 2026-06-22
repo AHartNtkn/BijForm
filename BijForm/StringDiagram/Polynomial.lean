@@ -133,27 +133,23 @@ def syntaxPresentation (Sig : Signature) :
     (fun boundary =>
       { toFun := layerToSyntax Sig boundary
         invFun := syntaxToLayer Sig boundary
-        left_inv := by
-          intro layer
-          cases layer with
-          | mk code child =>
-            cases code with
-            | mk ctor param out_eq =>
+        left_inv :=
+          CodeLayer.canonical_left_inv_by_fiber
+            (toCarrier := layerToSyntax Sig)
+            (fromCarrier := syntaxToLayer Sig) (by
+              intro boundary ctor param out_eq child
               cases ctor with
               | finish =>
                   cases param
-                  cases out_eq
-                  child_eta_rfl child
+                  finish_code_layer_left_inv out_eq child
               | connect =>
                   cases param with
                   | mk active frontier mate ok =>
-                    cases out_eq
-                    child_eta_rfl child
+                    finish_code_layer_left_inv out_eq child
               | bud =>
                   cases param with
                   | mk active frontier node entry ok =>
-                    cases out_eq
-                    child_eta_rfl child
+                    finish_code_layer_left_inv out_eq child) boundary
         right_inv := by
           intro t
           cases t with

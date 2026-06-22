@@ -135,36 +135,24 @@ def PeanoSyntaxPresentation : SyntaxPresentation PeanoPoly PeanoInversion PeanoS
     (fun k =>
       { toFun := PeanoLayerToSyntax k
         invFun := PeanoSyntaxToLayer k
-        left_inv := by
-          intro layer
-          cases layer with
-          | mk code child =>
-            cases code with
-            | mk ctor param out_eq =>
+        left_inv :=
+          CodeLayer.canonical_left_inv_by_fiber
+            (toCarrier := PeanoLayerToSyntax)
+            (fromCarrier := PeanoSyntaxToLayer) (by
+              intro k ctor param out_eq child
               cases ctor with
               | eq =>
                 cases param with
                 | mk k' pair =>
                   cases pair with
                   | mk lhs rhs =>
-                    dsimp [PeanoPoly, PeanoOut] at out_eq
-                    cases out_eq
-                    child_eta_rfl child
+                    finish_code_layer_left_inv out_eq child
               | not =>
-                change PeanoParam PeanoCtor.not at param
-                change Nat at param
-                cases out_eq
-                child_eta_rfl child
+                finish_code_layer_left_inv out_eq child
               | implies =>
-                change PeanoParam PeanoCtor.implies at param
-                change Nat at param
-                cases out_eq
-                child_eta_rfl child
+                finish_code_layer_left_inv out_eq child
               | forallE =>
-                change PeanoParam PeanoCtor.forallE at param
-                change Nat at param
-                cases out_eq
-                child_eta_rfl child
+                finish_code_layer_left_inv out_eq child) k
         right_inv := by
           intro e
           cases e <;> simp [PeanoLayerToSyntax, PeanoSyntaxToLayer] })
