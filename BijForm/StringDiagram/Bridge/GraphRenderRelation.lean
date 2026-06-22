@@ -2029,7 +2029,9 @@ theorem GraphRenderRelated.budChild
         let R := fun raw endpoint =>
           ∃ hbound : raw < (Diag.budStep renderNode entry ok rst).endpoints.length,
             (endpointOrder G (st.budChild hpending node slot hmate hunseen)).get
-                (Fin.cast hchildEndpointLength ⟨raw, hbound⟩) =
+                (endpointOrderIndex
+                  (st.budChild hpending node slot hmate hunseen)
+                  hchildEndpointLength ⟨raw, hbound⟩) =
               endpoint
         have hleftRel :
             ∀ (n : Nat) (hid : n < restIds.length)
@@ -2062,7 +2064,9 @@ theorem GraphRenderRelated.budChild
           let childEndpoint :
               Fin (endpointOrder G
                 (st.budChild hpending node slot hmate hunseen)).length :=
-            Fin.cast hchildEndpointLength
+            endpointOrderIndex
+              (st.budChild hpending node slot hmate hunseen)
+              hchildEndpointLength
               ⟨restIds.get ⟨n, hid⟩, hchildBound⟩
           let oldEndpoint : Fin (endpointOrder G st).length :=
             Fin.cast hrel.endpoint_length
@@ -2094,7 +2098,9 @@ theorem GraphRenderRelated.budChild
           let childEndpoint :
               Fin (endpointOrder G
                 (st.budChild hpending node slot hmate hunseen)).length :=
-            Fin.cast hchildEndpointLength
+            endpointOrderIndex
+              (st.budChild hpending node slot hmate hunseen)
+              hchildEndpointLength
               ⟨nodeEndpoints.get ⟨n, hid⟩, hchildBound⟩
           let incidentEndpoint : Fin (G.raw.incident node).length :=
             ⟨n, hincident⟩

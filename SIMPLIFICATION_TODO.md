@@ -160,6 +160,9 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
   - Partial: routed the bud-child node-incident-length proof through
     `nodeOrderIndex` for child node-order lookups. Later bud-child frontier,
     edge, and dependent incident-slot transports remain open.
+  - Partial: routed the bud-child pending/frontier pointwise endpoint relation
+    through `endpointOrderIndex`. The relation-field bridge plus later
+    bud-child label, edge, and dependent incident-slot transports remain open.
 
 ## Code Algebra and Rank Descent
 
