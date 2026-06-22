@@ -632,6 +632,55 @@ theorem toDiag_empty {G : OpenPortHypergraph Sig boundary}
     st.toDiag hcomplete = Diag.finish := by
   rw [SearchState.toDiag.eq_def]
 
+/-- Selected-step computation rule for the owned first-pending traversal. -/
+theorem toDiag_step {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {restLabels : List Sig.Port}
+    (st : SearchState G (activeLabel :: restLabels))
+    (hcomplete : st.FrontierComplete)
+    {active : Fin G.raw.endpointCount}
+    {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest)
+    (step : FirstPendingStep G st.seenNode active rest)
+    (hstep : st.firstPendingStepSearch? active rest = some step) :
+    st.toDiag hcomplete =
+      match step with
+      | FirstPendingStep.connect mate hmate =>
+          Diag.connect
+            (st.restLabelIndex hpending mate)
+            (st.connect_compatible hpending mate hmate)
+            ((st.connectChild hpending mate hmate).toDiag
+              (st.connectChild_frontierComplete hpending mate hmate
+                hcomplete))
+      | FirstPendingStep.bud node slot hmate hunseen =>
+          Diag.bud
+            (G.raw.nodeLabel node)
+            (budEntry node slot)
+            (st.bud_compatible hpending node slot hmate)
+            ((st.budChild hpending node slot hmate
+                (by simpa [seenNode] using hunseen)).toDiag
+              (st.budChild_frontierComplete hpending node slot hmate
+                (by simpa [seenNode] using hunseen) hcomplete)) := by
+  rw [SearchState.toDiag.eq_2]
+  split
+  · rename_i hnil
+    rw [hnil] at hpending
+    cases hpending
+  · rename_i active' rest' hp
+    have hcons : active' :: rest' = active :: rest := by
+      rw [← hpending, hp]
+    injection hcons with hactive hrest
+    subst active'
+    subst rest'
+    split
+    · rename_i hnone
+      rw [hstep] at hnone
+      cases hnone
+    · rename_i step' hstep'
+      rw [hstep] at hstep'
+      injection hstep' with hstepEq
+      cases hstepEq
+      cases step <;> simp
+
 /-- Connect-branch computation rule for the owned first-pending traversal. -/
 theorem toDiag_connect {G : OpenPortHypergraph Sig boundary}
     {activeLabel : Sig.Port} {restLabels : List Sig.Port}
@@ -651,31 +700,9 @@ theorem toDiag_connect {G : OpenPortHypergraph Sig boundary}
         (st.connect_compatible hpending mate hmate)
         ((st.connectChild hpending mate hmate).toDiag
           (st.connectChild_frontierComplete hpending mate hmate hcomplete)) := by
-  rw [SearchState.toDiag.eq_2]
-  split
-  · rename_i hnil
-    rw [hnil] at hpending
-    cases hpending
-  · rename_i active' rest' hp
-    have hcons : active' :: rest' = active :: rest := by
-      rw [← hpending, hp]
-    injection hcons with hactive hrest
-    subst active'
-    subst rest'
-    split
-    · rename_i hnone
-      rw [hstep] at hnone
-      cases hnone
-    · rename_i step hstep'
-      cases step with
-      | connect mate' hmate' =>
-          rw [hstep] at hstep'
-          injection hstep' with hconnect
-          cases hconnect
-          simp
-      | bud _node _slot _hmate' _hunseen =>
-          rw [hstep] at hstep'
-          cases hstep'
+  simpa using
+    toDiag_step st hcomplete hpending
+      (FirstPendingStep.connect mate hmate) hstep
 
 /-- Bud-branch computation rule for the owned first-pending traversal. -/
 theorem toDiag_bud {G : OpenPortHypergraph Sig boundary}
@@ -702,31 +729,9 @@ theorem toDiag_bud {G : OpenPortHypergraph Sig boundary}
             (by simpa [seenNode] using hunseen)).toDiag
           (st.budChild_frontierComplete hpending node slot hmate
             (by simpa [seenNode] using hunseen) hcomplete)) := by
-  rw [SearchState.toDiag.eq_2]
-  split
-  · rename_i hnil
-    rw [hnil] at hpending
-    cases hpending
-  · rename_i active' rest' hp
-    have hcons : active' :: rest' = active :: rest := by
-      rw [← hpending, hp]
-    injection hcons with hactive hrest
-    subst active'
-    subst rest'
-    split
-    · rename_i hnone
-      rw [hstep] at hnone
-      cases hnone
-    · rename_i step hstep'
-      cases step with
-      | connect _mate' _hmate' =>
-          rw [hstep] at hstep'
-          cases hstep'
-      | bud _node' _slot' _hmate' _hunseen' =>
-          rw [hstep] at hstep'
-          injection hstep' with hbud
-          cases hbud
-          simp
+  simpa using
+    toDiag_step st hcomplete hpending
+      (FirstPendingStep.bud node slot hmate hunseen) hstep
 
 /-- The owned graph-to-syntax traversal is invariant under related
 ordered-boundary-preserving isomorphic search states. -/
