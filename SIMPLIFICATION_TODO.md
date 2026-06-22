@@ -538,6 +538,9 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     explicit unfinished markers.
   - Validation: labeled and unlabeled proof-gap fixtures behave as intended, and
     parallel audit runs do not share fixed temp paths.
+  - Partial: `scripts/audit.sh` now stores `sorry` grep evidence in a per-run
+    `mktemp -d` directory and cleans it up on exit. Declaration-level proof-gap
+    inventory remains open.
 
 - [ ] Remove README declaration inventory as a second source of truth.
   - Owner: README/docs.

@@ -9,6 +9,12 @@ fail() {
 repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
+tmpdir="$(mktemp -d)"
+cleanup() {
+  rm -rf "$tmpdir"
+}
+trap cleanup EXIT
+
 lake build
 
 if ! git check-ignore -q references/; then
@@ -23,7 +29,8 @@ if git grep -n 'implemented_by' -- '*.lean'; then
   fail "implemented_by proof substitute found"
 fi
 
-if git grep -n -E '(^|[^A-Za-z0-9_])sorry([^A-Za-z0-9_]|$)' -- '*.lean' >/tmp/bijform-sorry-hits.txt; then
+sorry_hits="$tmpdir/sorry-hits.txt"
+if git grep -n -E '(^|[^A-Za-z0-9_])sorry([^A-Za-z0-9_]|$)' -- '*.lean' >"$sorry_hits"; then
   while IFS= read -r hit; do
     file="${hit%%:*}"
     rest="${hit#*:}"
@@ -31,10 +38,10 @@ if git grep -n -E '(^|[^A-Za-z0-9_])sorry([^A-Za-z0-9_]|$)' -- '*.lean' >/tmp/bi
     start=$((line > 3 ? line - 3 : 1))
     context="$(sed -n "${start},${line}p" "$file")"
     if ! printf '%s\n' "$context" | grep -Eiq 'unfinished|blueprint|proof-gap|pending proof|pending proof work|diagnostic'; then
-      cat /tmp/bijform-sorry-hits.txt >&2
+      cat "$sorry_hits" >&2
       fail "unclassified sorry found; label it as unfinished blueprinting, pending proof work, proof-gap evidence, or diagnostic"
     fi
-  done </tmp/bijform-sorry-hits.txt
+  done <"$sorry_hits"
 fi
 
 if git grep -n -E 'QuotientPresentation\.inn($|[^R[:alnum:]_])|QuotientPresentation\.inn_layer_sound|HBTChildSwap_inn_branch_sound' -- README.md BijForm; then
