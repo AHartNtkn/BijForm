@@ -5,7 +5,7 @@ This file tracks remaining cleanup needed after the current
 open until the old local proof shape, duplicate path, public wrapper, or manual
 case split has been deleted, not merely hidden behind a new helper.
 
-Current branch size against `master`:
+Pre-tracker branch size against `master`, measured before adding this file:
 
 - `35 files changed, 11264 insertions(+), 9717 deletions(-)`
 - Net: `1547` more inserted lines than deleted lines
