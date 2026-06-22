@@ -472,6 +472,9 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
   - Partial: `GraphRenderRelated.budChild_endpointLabel` now owns the bud child
     old/fresh endpoint-label update; the main `budChild` proof consumes that
     field instead of carrying endpoint suffix arithmetic locally.
+  - Partial: bud child edge-bound fields now consume the generic
+    `ValidIds.edgeEndpointBounds` package through `hchildEdgeBounds`, matching
+    the package-shaped proof input used by connect edge incidence helpers.
 
 - [ ] Introduce declarative render deltas for connect and bud.
   - Owner: `BijForm.StringDiagram.Renderer.Steps`

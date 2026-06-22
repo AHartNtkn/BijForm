@@ -2502,6 +2502,8 @@ theorem GraphRenderRelated.budChild
       have hchildValid :
           (Diag.budStep renderNode entry ok rst).ValidIds :=
         Diag.budStep_validIds renderNode entry ok rst rv
+      let hchildEdgeBounds :=
+        hchildValid.edgeEndpointBounds
       have horderTrace :=
         budChild_orderTrace rst st hpending node slot hmate hunseen hids
           hrel.endpoint_length hrel.edge_length hrel.node_length
@@ -2551,13 +2553,9 @@ theorem GraphRenderRelated.budChild
         exact hrel.budChild_edgeLabel hpending node slot hmate hunseen hids
           hchildEdgeLength edge
       · intro edge
-        exact hchildValid.edge_left_bound
-          ((Diag.budStep renderNode entry ok rst).edges.get edge)
-          (List.get_mem (Diag.budStep renderNode entry ok rst).edges edge)
+        exact hchildEdgeBounds.left edge
       · intro edge
-        exact hchildValid.edge_right_bound
-          ((Diag.budStep renderNode entry ok rst).edges.get edge)
-          (List.get_mem (Diag.budStep renderNode entry ok rst).edges edge)
+        exact hchildEdgeBounds.right edge
       · intro edge
         by_cases hold : edge.val < rst.edges.length
         · let oldEdge : Fin rst.edges.length := ⟨edge.val, hold⟩
