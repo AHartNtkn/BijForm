@@ -2761,75 +2761,28 @@ theorem GraphRenderRelated.budChild_nodeLabel
   let renderNode := G.raw.nodeLabel node
   let entry := SearchState.budEntry (G := G) node slot
   let ok := st.bud_compatible hpending node slot hmate
-  have horderTrace :=
+  let horderTrace :=
     budChild_orderTrace rst st hpending node slot hmate hunseen hids
       hrel.endpoint_length hrel.edge_length hrel.node_length
+  have hlabelRel :
+      AppendTraceRelation horderTrace.node
+        (fun renderNode graphNode =>
+          renderNode.label = G.raw.nodeLabel graphNode) := by
+    refine { prefix_rel := ?_, suffix_rel := ?_ }
+    · intro oldNode graphNode hval
+      have hidx : graphNode = hrel.nodeIndex oldNode := by
+        exact fin_eq_of_val_eq hval.symm
+      simpa [hidx] using hrel.node_label oldNode
+    · intro renderNodeIdx graphNode _hval
+      simp [horderTrace, budChild_orderTrace]
   intro renderIdx
-  by_cases hold : renderIdx.val < rst.nodes.length
-  · let oldNode : Fin rst.nodes.length := ⟨renderIdx.val, hold⟩
-    have hnode :
-        (Diag.budStep renderNode entry ok rst).nodes.get renderIdx =
-          rst.nodes.get oldNode := by
-      simpa [oldNode] using
-        Diag.budStep_nodes_get_old renderNode entry ok rst
-          renderIdx hold
-    let childNode :
-        Fin (nodeOrder
-          (st.budChild hpending node slot hmate hunseen)).length :=
-      Fin.cast hchildNodeLength renderIdx
-    let oldOrderNode : Fin (nodeOrder st).length :=
-      hrel.nodeIndex oldNode
-    have horder :
-        (nodeOrder (st.budChild hpending node slot hmate hunseen)).get
-            childNode =
-          (nodeOrder st).get oldOrderNode := by
-      exact horderTrace.node.get_prefix_at_right_of_val_eq
-        childNode oldOrderNode
-        (by simp [childNode, oldOrderNode, oldNode])
-    calc
-      ((Diag.budStep renderNode entry ok rst).nodes.get renderIdx).label =
-          (rst.nodes.get oldNode).label := by
-        exact congrArg RenderNode.label hnode
-      _ = G.raw.nodeLabel ((nodeOrder st).get oldOrderNode) :=
-          hrel.node_label oldNode
-      _ =
-        G.raw.nodeLabel
-          ((nodeOrder (st.budChild hpending node slot hmate hunseen)).get
-            childNode) := by
-          rw [horder]
-  · have hnewVal : renderIdx.val = rst.nodes.length := by
-      have hlen : renderIdx.val < rst.nodes.length + 1 := by
-        exact Nat.lt_of_lt_of_eq renderIdx.isLt
-          (Diag.budStep_nodes_length renderNode entry ok rst)
-      omega
-    have hnode :
-        (Diag.budStep renderNode entry ok rst).nodes.get renderIdx =
-          { label := renderNode
-            incident := Diag.freshNodeEndpoints rst.nextEndpoint
-              (Sig.arity renderNode) } := by
-      simpa [renderNode] using
-        Diag.budStep_nodes_get_new renderNode entry ok rst
-          renderIdx hnewVal
-    let childNode :
-        Fin (nodeOrder
-          (st.budChild hpending node slot hmate hunseen)).length :=
-      Fin.cast hchildNodeLength renderIdx
-    have horder :
-        (nodeOrder (st.budChild hpending node slot hmate hunseen)).get
-            childNode = node := by
-      exact horderTrace.node.get_single_at_right_prefix_length
-        childNode (by simp [childNode, hnewVal, hrel.node_length])
-    calc
-      ((Diag.budStep renderNode entry ok rst).nodes.get renderIdx).label =
-          renderNode := by
-        exact congrArg RenderNode.label hnode
-      _ = G.raw.nodeLabel node := by
-        rfl
-      _ =
-        G.raw.nodeLabel
-          ((nodeOrder (st.budChild hpending node slot hmate hunseen)).get
-            childNode) := by
-          rw [horder]
+  let childNode :
+      Fin (nodeOrder
+        (st.budChild hpending node slot hmate hunseen)).length :=
+    Fin.cast hchildNodeLength renderIdx
+  have hidx : horderTrace.node.rightIndex renderIdx = childNode := by
+    exact fin_eq_of_val_eq rfl
+  simpa [childNode, hidx] using AppendTraceRelation.get hlabelRel renderIdx
 
 theorem GraphRenderRelated.budChild
     {G : OpenPortHypergraph Sig boundary}

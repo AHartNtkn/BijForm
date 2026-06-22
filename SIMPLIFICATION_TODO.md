@@ -492,6 +492,9 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
   - Partial: `GraphRenderRelated.budChild_edgeLabel` now consumes
     `AppendTraceRelation` as well, so connect and bud edge-label preservation
     share the same generic append-relation proof path.
+  - Partial: `GraphRenderRelated.budChild_nodeLabel` now consumes
+    `AppendTraceRelation`, moving its old/fresh node-label split into the
+    generic append-relation proof path.
 
 - [ ] Introduce declarative render deltas for connect and bud.
   - Owner: `BijForm.StringDiagram.Renderer.Steps`
