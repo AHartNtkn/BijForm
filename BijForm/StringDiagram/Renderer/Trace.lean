@@ -694,6 +694,31 @@ theorem budStep_endpoints
     exact False.elim (RenderState.frontierIds_ne_nil st hids)
   · rfl
 
+def connectStep_endpointPrefix
+    {active : Sig.Port} {frontier boundary : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (st : RenderState Sig (active :: frontier))
+    (pref : st.EndpointPrefix boundary) :
+    (connectStep mate ok st).EndpointPrefix boundary where
+  suffix := pref.suffix
+  endpoints_eq := by
+    rw [connectStep_endpoints]
+    exact pref.endpoints_eq
+
+def budStep_endpointPrefix
+    {active : Sig.Port} {frontier boundary : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (st : RenderState Sig (active :: frontier))
+    (pref : st.EndpointPrefix boundary) :
+    (budStep node entry ok st).EndpointPrefix boundary where
+  suffix := pref.suffix ++ Sig.nodePorts node
+  endpoints_eq := by
+    rw [budStep_endpoints]
+    rw [pref.endpoints_eq, List.append_assoc]
+
 theorem budStep_edges_length
     {active : Sig.Port} {frontier : List Sig.Port}
     (node : Sig.Node)

@@ -773,12 +773,7 @@ theorem toDiag_of_renderPrefixRelated :
                   (connectStep_validIds mate ok rst rhv)
                   (connectStep_endpointPartition mate ok rst rhv rhp)
                   (connectStep_nodeIncidentNodup mate ok rst rhn)
-                  (by
-                    refine
-                      { suffix := rpref.suffix
-                        endpoints_eq := ?_ }
-                    rw [connectStep_endpoints]
-                    exact rpref.endpoints_eq)
+                  (connectStep_endpointPrefix mate ok rst rpref)
                   (connectStep_ownerIdPartition mate ok rst rho)
                   (connectStep_reachability mate ok rst rhr)
                   hv hp hn pref ho hall
@@ -1007,12 +1002,7 @@ theorem toDiag_of_renderPrefixRelated :
                   (budStep_validIds node entry ok rst rhv)
                   (budStep_endpointPartition node entry ok rst rhv rhp)
                   (budStep_nodeIncidentNodup node entry ok rst rhn)
-                  (by
-                    refine
-                      { suffix := rpref.suffix ++ Sig.nodePorts node
-                        endpoints_eq := ?_ }
-                    rw [budStep_endpoints]
-                    rw [rpref.endpoints_eq, List.append_assoc])
+                  (budStep_endpointPrefix node entry ok rst rpref)
                   (budStep_ownerIdPartition node entry ok rst rhv rho)
                   (budStep_reachability node entry ok rst rhr)
                   hv hp hn pref ho hall searchChildA hchildRelA
