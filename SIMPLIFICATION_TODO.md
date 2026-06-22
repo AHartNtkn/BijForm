@@ -461,6 +461,10 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     and processed-edge nodup after consuming the active endpoint; `connectChild`,
     `budChild`, and their remaining-edge descent proofs now use those helpers.
     The full `SearchStepDelta`/generic preservation theorem remains open.
+  - Partial: added generic `fin_cons_prefix_iff` for one-element `Fin` prefix
+    extensions and routed the connect/bud `RenderPrefixRelated` processed/seen
+    prefix updates through it. Branch-facing preservation theorems still need a
+    `FirstPendingStep` child-delta owner.
 
 - [ ] Generalize first-pending finite search correctness.
   - Owner: `BijForm.StringDiagram.Traversal.Search`

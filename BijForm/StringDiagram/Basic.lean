@@ -446,6 +446,33 @@ theorem listPrefixIndex_val {α : Type} {pref full suffix : List α}
     (listPrefixIndex hfull i).val = i.val :=
   rfl
 
+theorem fin_cons_prefix_iff {n oldLen newLen : Nat}
+    {old : List (Fin n)} {new : Fin n}
+    (oldPrefix : ∀ item : Fin n, item ∈ old ↔ item.val < oldLen)
+    (newVal : new.val = oldLen)
+    (newLenEq : newLen = oldLen + 1) :
+    ∀ item : Fin n, item ∈ new :: old ↔ item.val < newLen := by
+  intro item
+  constructor
+  · intro hmem
+    simp at hmem
+    rcases hmem with hnew | hold
+    · have hval : item.val = oldLen := by
+        rw [hnew]
+        exact newVal
+      omega
+    · have holdLt := (oldPrefix item).1 hold
+      omega
+  · intro hlt
+    have hcases : item.val < oldLen ∨ item.val = oldLen := by
+      omega
+    simp
+    rcases hcases with hold | hnew
+    · right
+      exact (oldPrefix item).2 hold
+    · left
+      exact fin_eq_of_val_eq (hnew.trans newVal.symm)
+
 theorem append_pointwise_relation {α β : Type} {R : α → β → Prop}
     {leftIds rightIds : List α} {leftLabels rightLabels : List β}
     (hleftLen : leftIds.length = leftLabels.length)

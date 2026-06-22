@@ -1688,28 +1688,9 @@ theorem RenderPrefixRelated.connectChild_of_new_edge
                 simp [restLabelIndex])
   processed_prefix := by
     intro edge
-    constructor
-    · intro hmem
-      simp [connectChild] at hmem
-      rcases hmem with hnew | hold
-      · have hval : edge.val = rst.edges.length := by
-          rw [hnew]
-          exact hactiveEdge
-        omega
-      · have holdLt := (hrel.processed_prefix edge).1 hold
-        omega
-    · intro hlt
-      have hlt' : edge.val < rst.edges.length + 1 := by
-        simpa [hedgesLength] using hlt
-      have hcases : edge.val < rst.edges.length ∨
-          edge.val = rst.edges.length := by
-        omega
-      simp [connectChild]
-      rcases hcases with hold | hnew
-      · right
-        exact (hrel.processed_prefix edge).2 hold
-      · left
-        exact fin_eq_of_val_eq (hnew.trans hactiveEdge.symm)
+    have hprefix :=
+      fin_cons_prefix_iff hrel.processed_prefix hactiveEdge hedgesLength edge
+    simpa [connectChild] using hprefix
   seen_prefix := by
     intro node
     constructor
@@ -1812,52 +1793,14 @@ theorem RenderPrefixRelated.budChild_of_new_edge_node
           (Diag.budStep rendererNode entry ok rst)).symm
   processed_prefix := by
     intro edge
-    constructor
-    · intro hmem
-      simp [budChild] at hmem
-      rcases hmem with hnew | hold
-      · have hval : edge.val = rst.edges.length := by
-          rw [hnew]
-          exact hactiveEdge
-        omega
-      · have holdLt := (hrel.processed_prefix edge).1 hold
-        omega
-    · intro hlt
-      have hlt' : edge.val < rst.edges.length + 1 := by
-        simpa [hedgesLength] using hlt
-      have hcases : edge.val < rst.edges.length ∨
-          edge.val = rst.edges.length := by
-        omega
-      simp [budChild]
-      rcases hcases with hold | hnew
-      · right
-        exact (hrel.processed_prefix edge).2 hold
-      · left
-        exact fin_eq_of_val_eq (hnew.trans hactiveEdge.symm)
+    have hprefix :=
+      fin_cons_prefix_iff hrel.processed_prefix hactiveEdge hedgesLength edge
+    simpa [budChild] using hprefix
   seen_prefix := by
     intro candidate
-    constructor
-    · intro hmem
-      simp [budChild] at hmem
-      rcases hmem with hnew | hold
-      · have hval : candidate.val = rst.nodes.length := by
-          rw [hnew]
-          exact hnewNode
-        omega
-      · have holdLt := (hrel.seen_prefix candidate).1 hold
-        omega
-    · intro hlt
-      have hlt' : candidate.val < rst.nodes.length + 1 := by
-        simpa [hnodesLength] using hlt
-      have hcases : candidate.val < rst.nodes.length ∨
-          candidate.val = rst.nodes.length := by
-        omega
-      simp [budChild]
-      rcases hcases with hold | hnew
-      · right
-        exact (hrel.seen_prefix candidate).2 hold
-      · left
-        exact fin_eq_of_val_eq (hnew.trans hnewNode.symm)
+    have hprefix :=
+      fin_cons_prefix_iff hrel.seen_prefix hnewNode hnodesLength candidate
+    simpa [budChild] using hprefix
 
 theorem IsoRelated.connectChild
     {G H : OpenPortHypergraph Sig boundary}
