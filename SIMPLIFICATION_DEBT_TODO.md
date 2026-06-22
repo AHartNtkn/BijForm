@@ -150,6 +150,11 @@ is ordered to turn helper additions into actual deletion.
   - Validation:
     `rg -n "heq_of_eq|child_eta_rfl child|cases rest with" BijForm/Examples BijForm/TypedBinding.lean BijForm/StringDiagram/FiniteCoding/Syntax.lean`
     should show only owner-level helper implementations or nothing.
+  - Partial: `BijForm.Examples.Num` now routes same-constructor child eta
+    branches through `CodeLayer.ext_rfl` instead of local `CodeLayer.ext_layer`
+    plus `heq_of_eq`, and the local `child_eta_rfl child` endings there were
+    deleted. The item remains open because tuple/rest destructuring and
+    proof-field-sensitive `heq_of_eq` branches still exist in other owners.
 
 - [ ] Finish typed-binding proof-surface cleanup.
   - Owners: `BijForm.TypedBinding` and
