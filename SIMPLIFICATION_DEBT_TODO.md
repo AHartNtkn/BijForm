@@ -124,9 +124,12 @@ is ordered to turn helper additions into actual deletion.
     transport step instead of repeating local `rightIndex = listIndexCast`
     proof blocks. The old connect/bud label helper theorem declarations were
     deleted, and final child relation assembly now calls the schemas directly.
-    The item remains open because pending/frontier alignment, edge endpoint
-    side preservation, node incident preservation, and final connect/bud record
-    assembly are still separate helper families.
+    Renderer trace first-new edge/node indices now instantiate generic
+    `AppendStep.firstSuffixIndex` / `get_firstSuffixIndex`, and unused
+    `_new_*Index_val` wrappers were deleted. The item remains open because
+    pending/frontier alignment, edge endpoint side preservation, node incident
+    preservation, and final connect/bud record assembly are still separate
+    helper families.
 
 - [ ] Finish payload-local inverse boilerplate removal in coding examples.
   - Owners: `BijForm.InitialAlgebra`,

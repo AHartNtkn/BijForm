@@ -292,7 +292,8 @@ theorem renderTrace_connect_active_endpointEdge_val
       RenderState.edgeEvidenceOfPartition,
       RenderState.endpointEdgeEvidenceOfPartition] using heq
   exact (congrArg Fin.val hraw).trans (by
-    simp [edgeIndex])
+    simp [edgeIndex, renderTrace_connect_new_edgeIndex,
+      AppendStep.firstSuffixIndex])
 
 /--
 In a completed render trace whose current step is `bud`, the active frontier
@@ -353,7 +354,8 @@ theorem renderTrace_bud_active_endpointEdge_val
       RenderState.edgeEvidenceOfPartition,
       RenderState.endpointEdgeEvidenceOfPartition] using heq
   exact (congrArg Fin.val hraw).trans (by
-    simp [edgeIndex])
+    simp [edgeIndex, renderTrace_bud_new_edgeIndex,
+      AppendStep.firstSuffixIndex])
 
 /--
 Exact arbitrary-prefix recognition for rendered `bud`.  The constructor found
@@ -477,7 +479,8 @@ theorem renderTrace_bud_entry_edgeMate_exact_of_evidence
         hincidentVals slot entryIdx (by simpa [entryIdx] using hslotVal)
     exact hget.trans hrightEq.symm
   have hnodeIndexVal : nodeIndex.val = st.nodes.length := by
-    simp [nodeIndex, nodeIndexRaw]
+    simp [nodeIndex, nodeIndexRaw, renderTrace_bud_new_nodeIndex,
+      AppendStep.firstSuffixIndex]
   refine ⟨hactiveBound, nodeIndex, slot, hnodeIndexVal, hnodeLabel, hslotVal,
     hincidentVals, ?_⟩
   simpa [G, final] using

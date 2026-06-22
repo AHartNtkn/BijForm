@@ -372,33 +372,11 @@ def renderTrace_connect_new_edgeIndex
       left_label := rfl
       right_label := (Sig.compatible_edge ok).symm
       compatible := ok }
-  exact ⟨st.edges.length, by
-      let traceAppend :=
-        renderTrace_edgesAppend child (connectStep mate ok st)
-      have hstep :
-          (connectStep mate ok st).edges = st.edges ++ [edge] := by
-        simpa [edge, mateId] using connectStep_edges mate ok st hids
-      rw [renderTrace_connect]
-      have htraceLen := traceAppend.step.length
-      have hstepLen :
-          (connectStep mate ok st).edges.length = st.edges.length + 1 := by
-        rw [hstep]
-        simp
-      rw [htraceLen, hstepLen]
-      omega⟩
-
-@[simp]
-theorem renderTrace_connect_new_edgeIndex_val
-    {active : Sig.Port} {frontier : List Sig.Port}
-    (mate : Fin frontier.length)
-    (ok : Sig.compatible active (frontier.get mate))
-    (child : Diag Sig (eraseFin frontier mate))
-    (st : RenderState Sig (active :: frontier))
-    {activeId : Nat} {restIds : List Nat}
-    (hids : st.frontierIds = activeId :: restIds) :
-    (renderTrace_connect_new_edgeIndex mate ok child st hids).val =
-      st.edges.length := by
-  simp [renderTrace_connect_new_edgeIndex]
+  let traceAppend :=
+    renderTrace_edgesAppend child (connectStep mate ok st)
+  have hstep : AppendStep st.edges (connectStep mate ok st).edges [edge] :=
+    ⟨by simpa [edge, mateId] using connectStep_edges mate ok st hids⟩
+  exact AppendStep.firstSuffixIndex hstep traceAppend.step
 
 /--
 The edge introduced by a top-level rendered `connect` is at the first edge
@@ -441,9 +419,8 @@ theorem renderTrace_connect_new_edge_get
       dsimp [final]
       rw [renderTrace_connect]
       exact traceAppend.step.eq_append⟩
-  exact (AppendStep.trans hstep htrace).get_first_suffix_at
-    (renderTrace_connect_new_edgeIndex mate ok child st hids)
-    (renderTrace_connect_new_edgeIndex_val mate ok child st hids)
+  simpa [renderTrace_connect_new_edgeIndex, mateId, edge] using
+    AppendStep.get_firstSuffixIndex hstep htrace
 
 /-- The first edge index allocated by a top-level rendered `bud`. -/
 def renderTrace_bud_new_edgeIndex
@@ -468,35 +445,13 @@ def renderTrace_bud_new_edgeIndex
       left_label := rfl
       right_label := (Sig.compatible_edge ok).symm
       compatible := ok }
-  exact ⟨st.edges.length, by
-      let traceAppend :=
-        renderTrace_edgesAppend child (budStep node entry ok st)
-      have hstep :
-          (budStep node entry ok st).edges = st.edges ++ [edge] := by
-        simpa [edge, nodeEndpoints, entryIdx] using
-          budStep_edges node entry ok st hids
-      rw [renderTrace_bud]
-      have htraceLen := traceAppend.step.length
-      have hstepLen :
-          (budStep node entry ok st).edges.length = st.edges.length + 1 := by
-        rw [hstep]
-        simp
-      rw [htraceLen, hstepLen]
-      omega⟩
-
-@[simp]
-theorem renderTrace_bud_new_edgeIndex_val
-    {active : Sig.Port} {frontier : List Sig.Port}
-    (node : Sig.Node)
-    (entry : Fin (Sig.arity node))
-    (ok : Sig.compatible active (Sig.port node entry))
-    (child : Diag Sig (frontier ++ Sig.nodePortsExcept node entry))
-    (st : RenderState Sig (active :: frontier))
-    {activeId : Nat} {restIds : List Nat}
-    (hids : st.frontierIds = activeId :: restIds) :
-    (renderTrace_bud_new_edgeIndex node entry ok child st hids).val =
-      st.edges.length := by
-  simp [renderTrace_bud_new_edgeIndex]
+  let traceAppend :=
+    renderTrace_edgesAppend child (budStep node entry ok st)
+  have hstep : AppendStep st.edges (budStep node entry ok st).edges [edge] :=
+    ⟨by
+      simpa [edge, nodeEndpoints, entryIdx] using
+        budStep_edges node entry ok st hids⟩
+  exact AppendStep.firstSuffixIndex hstep traceAppend.step
 
 /--
 The edge introduced by a top-level rendered `bud` is at the first edge index
@@ -542,9 +497,8 @@ theorem renderTrace_bud_new_edge_get
       dsimp [final]
       rw [renderTrace_bud]
       exact traceAppend.step.eq_append⟩
-  exact (AppendStep.trans hstep htrace).get_first_suffix_at
-    (renderTrace_bud_new_edgeIndex node entry ok child st hids)
-    (renderTrace_bud_new_edgeIndex_val node entry ok child st hids)
+  simpa [renderTrace_bud_new_edgeIndex, nodeEndpoints, entryIdx, edge] using
+    AppendStep.get_firstSuffixIndex hstep htrace
 
 /--
 Constructor nodes already in a render state remain an ordered prefix of the
@@ -589,33 +543,13 @@ def renderTrace_bud_new_nodeIndex
   let renderNode : RenderNode Sig :=
     { label := node
       incident := nodeEndpoints }
-  exact ⟨st.nodes.length, by
-      let traceAppend :=
-        renderTrace_nodesAppend child (budStep node entry ok st)
-      have hstep :
-          (budStep node entry ok st).nodes = st.nodes ++ [renderNode] := by
-        simpa [renderNode, nodeEndpoints] using
-          budStep_nodes node entry ok st
-      rw [renderTrace_bud]
-      have htraceLen := traceAppend.step.length
-      have hstepLen :
-          (budStep node entry ok st).nodes.length = st.nodes.length + 1 := by
-        rw [hstep]
-        simp
-      rw [htraceLen, hstepLen]
-      omega⟩
-
-@[simp]
-theorem renderTrace_bud_new_nodeIndex_val
-    {active : Sig.Port} {frontier : List Sig.Port}
-    (node : Sig.Node)
-    (entry : Fin (Sig.arity node))
-    (ok : Sig.compatible active (Sig.port node entry))
-    (child : Diag Sig (frontier ++ Sig.nodePortsExcept node entry))
-    (st : RenderState Sig (active :: frontier)) :
-    (renderTrace_bud_new_nodeIndex node entry ok child st).val =
-      st.nodes.length := by
-  simp [renderTrace_bud_new_nodeIndex]
+  let traceAppend :=
+    renderTrace_nodesAppend child (budStep node entry ok st)
+  have hstep : AppendStep st.nodes (budStep node entry ok st).nodes [renderNode] :=
+    ⟨by
+      simpa [renderNode, nodeEndpoints] using
+        budStep_nodes node entry ok st⟩
+  exact AppendStep.firstSuffixIndex hstep traceAppend.step
 
 /--
 The constructor node introduced by a top-level rendered `bud` is at the first
@@ -651,9 +585,8 @@ theorem renderTrace_bud_new_node_get
       dsimp [final]
       rw [renderTrace_bud]
       exact traceAppend.step.eq_append⟩
-  exact (AppendStep.trans hstep htrace).get_first_suffix_at
-    (renderTrace_bud_new_nodeIndex node entry ok child st)
-    (renderTrace_bud_new_nodeIndex_val node entry ok child st)
+  simpa [renderTrace_bud_new_nodeIndex, nodeEndpoints, renderNode] using
+    AppendStep.get_firstSuffixIndex hstep htrace
 
 def renderTrace_endpointPrefix :
     ∀ {frontier : List Sig.Port} (d : Diag Sig frontier)

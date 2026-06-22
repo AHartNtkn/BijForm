@@ -270,6 +270,33 @@ theorem get_first_suffix_at {α : Type} {pref full : List α}
     full.get i = x :=
   list_get_of_eq_append_cons_at_length h.eq_append i hval
 
+def firstSuffixIndex {α : Type} {pref mid full : List α}
+    {x : α} {suffix : List α}
+    (hstep : AppendStep pref mid [x])
+    (htrace : AppendStep mid full suffix) : Fin full.length :=
+  ⟨pref.length, by
+    rw [htrace.eq_append, hstep.eq_append]
+    simp⟩
+
+@[simp]
+theorem firstSuffixIndex_val {α : Type} {pref mid full : List α}
+    {x : α} {suffix : List α}
+    (hstep : AppendStep pref mid [x])
+    (htrace : AppendStep mid full suffix) :
+    (firstSuffixIndex hstep htrace).val = pref.length :=
+  rfl
+
+theorem get_firstSuffixIndex {α : Type} {pref mid full : List α}
+    {x : α} {suffix : List α}
+    (hstep : AppendStep pref mid [x])
+    (htrace : AppendStep mid full suffix) :
+    full.get (firstSuffixIndex hstep htrace) = x := by
+  have h : AppendStep pref full (x :: suffix) :=
+    ⟨by
+      rw [htrace.eq_append, hstep.eq_append]
+      simp⟩
+  exact h.get_first_suffix_at (firstSuffixIndex hstep htrace) rfl
+
 theorem mem_prefix {α : Type} {pref full suffix : List α} {x : α}
     (h : AppendStep pref full suffix) (hmem : x ∈ pref) :
     x ∈ full := by
