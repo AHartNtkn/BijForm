@@ -193,6 +193,11 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     generates common projection and child-bound facts.
   - Validation: Num, Lambda, Peano, Sorted, NF, and finite string-diagram rank
     proofs use generic codec-path lemmas instead of bespoke nested-code names.
+  - Partial: added right-associated `toNatSum3` and `toNatSum4` builders with
+    branch-bound lemmas. `natOrProdOrProdNat` and `prodOrNatOrProdOrNat` now
+    assemble through those builders while preserving their public names and
+    carrier shapes. Example rank proofs still need to move from specialized
+    nested-code theorem names to the generic branch-path lemmas.
 
 - [ ] Add generic child-bound propagation through codec combinators.
   - Owner: `BijForm.CodeAlgebra`
