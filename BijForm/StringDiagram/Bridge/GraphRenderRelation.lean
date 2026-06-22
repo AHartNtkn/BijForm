@@ -2088,11 +2088,117 @@ theorem GraphRenderRelated.budChild_nodeIncident
       (endpointOrder G (st.budChild hpending node slot hmate hunseen)).get
           childEndpoint =
         (G.raw.incident node).get graphSlot := hendpoint
+    _ =
+      (G.raw.incident
+        ((nodeOrder
+          (st.budChild hpending node slot hmate hunseen)).get
+            childNode)).get childGraphSlot := hgraphIncident
+
+theorem GraphRenderRelated.budChild_edgeLabel
+    {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {frontier : List Sig.Port}
+    {rst : RenderState Sig (activeLabel :: frontier)}
+    {st : SearchState G (activeLabel :: frontier)}
+    (hrel : GraphRenderRelated G rst st)
+    {active : Fin G.raw.endpointCount}
+    {rest : List (Fin G.raw.endpointCount)}
+    (hpending : st.pending = active :: rest)
+    (node : Fin G.raw.nodeCount)
+    (slot : Fin (G.raw.incident node).length)
+    (hmate :
+      PortHypergraph.EdgeMate G.raw active ((G.raw.incident node).get slot))
+    (hunseen : node ∉ st.seenNodes)
+    {activeId : Nat} {restIds : List Nat}
+    (hids : rst.frontierIds = activeId :: restIds)
+    (hchildEdgeLength :
+      (Diag.budStep (G.raw.nodeLabel node)
+        (SearchState.budEntry (G := G) node slot)
+        (st.bud_compatible hpending node slot hmate) rst).edges.length =
+        (edgeOrder (st.budChild hpending node slot hmate hunseen)).length) :
+    ∀ edge : Fin (Diag.budStep (G.raw.nodeLabel node)
+        (SearchState.budEntry (G := G) node slot)
+        (st.bud_compatible hpending node slot hmate) rst).edges.length,
+      ((Diag.budStep (G.raw.nodeLabel node)
+        (SearchState.budEntry (G := G) node slot)
+        (st.bud_compatible hpending node slot hmate) rst).edges.get edge).label =
+        G.raw.edgeLabel
+          ((edgeOrder (st.budChild hpending node slot hmate hunseen)).get
+            (Fin.cast hchildEdgeLength edge)) := by
+  let renderNode := G.raw.nodeLabel node
+  let entry := SearchState.budEntry (G := G) node slot
+  let ok := st.bud_compatible hpending node slot hmate
+  have horderTrace :=
+    budChild_orderTrace rst st hpending node slot hmate hunseen hids
+      hrel.endpoint_length hrel.edge_length hrel.node_length
+  intro edge
+  by_cases hold : edge.val < rst.edges.length
+  · let oldEdge : Fin rst.edges.length := ⟨edge.val, hold⟩
+    have hedge :
+        (Diag.budStep renderNode entry ok rst).edges.get edge =
+          rst.edges.get oldEdge := by
+      simpa [oldEdge] using
+        Diag.budStep_edges_get_old renderNode entry ok rst hids
+          edge hold
+    let childEdge :
+        Fin (edgeOrder (st.budChild hpending node slot hmate hunseen)).length :=
+      Fin.cast hchildEdgeLength edge
+    have horder :
+        (edgeOrder
+          (st.budChild hpending node slot hmate hunseen)).get
+            childEdge =
+          (edgeOrder st).get (hrel.edgeIndex oldEdge) := by
+      exact horderTrace.edge.get_prefix_at_right_of_val_eq
+        childEdge (hrel.edgeIndex oldEdge)
+        (by simp [childEdge, oldEdge])
+    calc
+      ((Diag.budStep renderNode entry ok rst).edges.get edge).label =
+          (rst.edges.get oldEdge).label := by
+        exact congrArg RenderEdge.label hedge
       _ =
-        (G.raw.incident
-          ((nodeOrder
-            (st.budChild hpending node slot hmate hunseen)).get
-              childNode)).get childGraphSlot := hgraphIncident
+          G.raw.edgeLabel
+            ((edgeOrder st).get (hrel.edgeIndex oldEdge)) :=
+          hrel.edge_label oldEdge
+      _ =
+          G.raw.edgeLabel
+            ((edgeOrder
+              (st.budChild hpending node slot hmate hunseen)).get
+                childEdge) := by
+          rw [horder]
+  · have hnewVal : edge.val = rst.edges.length := by
+      have hlen : edge.val < rst.edges.length + 1 := by
+        exact Nat.lt_of_lt_of_eq edge.isLt
+          (Diag.budStep_edges_length renderNode entry ok rst)
+      omega
+    have hedgeLabel :
+        ((Diag.budStep renderNode entry ok rst).edges.get edge).label =
+          Sig.portEdge activeLabel := by
+      have hedge :=
+        Diag.budStep_edges_get_new renderNode entry ok rst hids
+          edge hnewVal
+      exact congrArg RenderEdge.label hedge
+    let childEdge :
+        Fin (edgeOrder (st.budChild hpending node slot hmate hunseen)).length :=
+      Fin.cast hchildEdgeLength edge
+    have horder :
+        (edgeOrder
+          (st.budChild hpending node slot hmate hunseen)).get
+            childEdge =
+          G.raw.endpointEdge active := by
+      exact horderTrace.edge.get_single_at_right_prefix_length
+        childEdge (by simp [childEdge, hnewVal, hrel.edge_length])
+    calc
+      ((Diag.budStep renderNode entry ok rst).edges.get edge).label =
+          Sig.portEdge activeLabel := hedgeLabel
+      _ = G.raw.edgeLabel (G.raw.endpointEdge active) := by
+        have hactiveLabel := (st.pending_labels_cons hpending).1
+        rw [← hactiveLabel]
+        exact G.raw.endpoint_edge_label active
+      _ =
+          G.raw.edgeLabel
+            ((edgeOrder
+              (st.budChild hpending node slot hmate hunseen)).get
+                childEdge) := by
+          rw [horder]
 
 theorem GraphRenderRelated.budChild
     {G : OpenPortHypergraph Sig boundary}
@@ -2303,82 +2409,8 @@ theorem GraphRenderRelated.budChild
                       childEndpoint) := by
                 rw [horder]
       · intro edge
-        by_cases hold : edge.val < rst.edges.length
-        · let oldEdge : Fin rst.edges.length := ⟨edge.val, hold⟩
-          have hedge :
-              (Diag.budStep renderNode entry ok rst).edges.get edge =
-                rst.edges.get oldEdge := by
-            simpa [oldEdge] using
-              Diag.budStep_edges_get_old renderNode entry ok rst hids
-                edge hold
-          have horder :
-              (edgeOrder
-                (st.budChild hpending node slot hmate hunseen)).get
-                  (edgeOrderIndex
-                    (st.budChild hpending node slot hmate hunseen)
-                    hchildEdgeLength edge) =
-                (edgeOrder st).get (Fin.cast hrel.edge_length oldEdge) := by
-            exact horderTrace.edge.get_prefix_at_right_of_val_eq
-              (edgeOrderIndex
-                (st.budChild hpending node slot hmate hunseen)
-                hchildEdgeLength edge)
-              (Fin.cast hrel.edge_length oldEdge)
-              (by simp [oldEdge])
-          calc
-            ((Diag.budStep renderNode entry ok rst).edges.get edge).label =
-                (rst.edges.get oldEdge).label := by
-              exact congrArg RenderEdge.label hedge
-            _ =
-                G.raw.edgeLabel
-                  ((edgeOrder st).get (Fin.cast hrel.edge_length oldEdge)) :=
-                hrel.edge_label oldEdge
-            _ =
-                G.raw.edgeLabel
-                  ((edgeOrder
-                    (st.budChild hpending node slot hmate hunseen)).get
-                      (edgeOrderIndex
-                        (st.budChild hpending node slot hmate hunseen)
-                        hchildEdgeLength edge)) := by
-                rw [horder]
-        · have hnewVal : edge.val = rst.edges.length := by
-            have hlen : edge.val < rst.edges.length + 1 := by
-              exact Nat.lt_of_lt_of_eq edge.isLt
-                (Diag.budStep_edges_length renderNode entry ok rst)
-            omega
-          have hedgeLabel :
-              ((Diag.budStep renderNode entry ok rst).edges.get edge).label =
-                Sig.portEdge activeLabel := by
-            have hedge :=
-              Diag.budStep_edges_get_new renderNode entry ok rst hids
-                edge hnewVal
-            exact congrArg RenderEdge.label hedge
-          have horder :
-              (edgeOrder
-                (st.budChild hpending node slot hmate hunseen)).get
-                  (edgeOrderIndex
-                    (st.budChild hpending node slot hmate hunseen)
-                    hchildEdgeLength edge) =
-                G.raw.endpointEdge active := by
-            exact horderTrace.edge.get_single_at_right_prefix_length
-              (edgeOrderIndex
-                (st.budChild hpending node slot hmate hunseen)
-                hchildEdgeLength edge)
-              (by simp [hnewVal, hrel.edge_length])
-          calc
-            ((Diag.budStep renderNode entry ok rst).edges.get edge).label =
-                Sig.portEdge activeLabel := hedgeLabel
-            _ = G.raw.edgeLabel (G.raw.endpointEdge active) := by
-              have hactiveLabel := (st.pending_labels_cons hpending).1
-              rw [← hactiveLabel]
-              exact G.raw.endpoint_edge_label active
-            _ =
-                G.raw.edgeLabel
-                  ((edgeOrder
-                    (st.budChild hpending node slot hmate hunseen)).get
-                      (edgeOrderIndex
-                        (st.budChild hpending node slot hmate hunseen)
-                        hchildEdgeLength edge)) := by
-              rw [horder]
+        exact hrel.budChild_edgeLabel hpending node slot hmate hunseen hids
+          hchildEdgeLength edge
       · intro edge
         exact hchildValid.edge_left_bound
           ((Diag.budStep renderNode entry ok rst).edges.get edge)

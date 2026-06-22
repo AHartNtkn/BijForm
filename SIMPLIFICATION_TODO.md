@@ -463,6 +463,9 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     node-label transport through the unchanged node trace; the main
     `connectChild` proof no longer carries stale trace/frontier locals left
     over from the extracted edge-field proofs.
+  - Partial: `GraphRenderRelated.budChild_edgeLabel` now owns the bud child
+    old/new edge-label update; the main `budChild` proof consumes that field
+    instead of splitting on old versus appended edges there.
 
 - [ ] Introduce declarative render deltas for connect and bud.
   - Owner: `BijForm.StringDiagram.Renderer.Steps`
