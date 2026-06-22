@@ -163,6 +163,10 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
   - Partial: routed the bud-child pending/frontier pointwise endpoint relation
     through `endpointOrderIndex`. The relation-field bridge plus later
     bud-child label, edge, and dependent incident-slot transports remain open.
+  - Partial: routed bud-child endpoint-label and edge-label preservation
+    branches through `endpointOrderIndex` and `edgeOrderIndex`. The pending
+    relation-field bridge plus later edge-left/right and dependent
+    incident-slot transports remain open.
 
 ## Code Algebra and Rank Descent
 
