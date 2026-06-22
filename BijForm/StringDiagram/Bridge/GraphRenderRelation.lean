@@ -252,6 +252,44 @@ structure GraphRenderRelated (G : OpenPortHypergraph Sig boundary)
           ((nodeOrder st).get (Fin.cast node_length node))).get
             (Fin.cast (node_incident_length node) slot)
 
+theorem GraphRenderRelated.edge_left_of_endpoint_val
+    {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port}
+    {rst : RenderState Sig frontier} {st : SearchState G frontier}
+    (hrel : GraphRenderRelated G rst st)
+    {endpoint : Fin rst.endpoints.length} {edge : Fin rst.edges.length}
+    (hleft : endpoint.val = (rst.edges.get edge).left) :
+    G.raw.endpointEdge
+        ((endpointOrder G st).get
+          (Fin.cast hrel.endpoint_length endpoint)) =
+      (edgeOrder st).get (Fin.cast hrel.edge_length edge) := by
+  have hendpoint :
+      endpoint =
+        (⟨(rst.edges.get edge).left, hrel.edge_left_bound edge⟩ :
+          Fin rst.endpoints.length) :=
+    fin_eq_of_val_eq hleft
+  rw [hendpoint]
+  exact hrel.edge_left edge
+
+theorem GraphRenderRelated.edge_right_of_endpoint_val
+    {G : OpenPortHypergraph Sig boundary}
+    {frontier : List Sig.Port}
+    {rst : RenderState Sig frontier} {st : SearchState G frontier}
+    (hrel : GraphRenderRelated G rst st)
+    {endpoint : Fin rst.endpoints.length} {edge : Fin rst.edges.length}
+    (hright : endpoint.val = (rst.edges.get edge).right) :
+    G.raw.endpointEdge
+        ((endpointOrder G st).get
+          (Fin.cast hrel.endpoint_length endpoint)) =
+      (edgeOrder st).get (Fin.cast hrel.edge_length edge) := by
+  have hendpoint :
+      endpoint =
+        (⟨(rst.edges.get edge).right, hrel.edge_right_bound edge⟩ :
+          Fin rst.endpoints.length) :=
+    fin_eq_of_val_eq hright
+  rw [hendpoint]
+  exact hrel.edge_right edge
+
 theorem initial_graphRenderRelated
     (G : OpenPortHypergraph Sig boundary) :
     GraphRenderRelated G (RenderState.initial Sig boundary) (initial G) where
@@ -3118,36 +3156,18 @@ def GraphRenderRelated.toPortHypergraphIso
       simpa [edgeIndex] using
         RenderState.endpointEdgeOfPartition_endpoint hp endpoint
     rcases hside with hleft | hright
-    · have hendpoint :
-          endpoint =
-            (⟨(rst.edges.get edgeIndex).left,
-              hrel.edge_left_bound edgeIndex⟩ : Fin rst.endpoints.length) := by
-        apply Fin.ext
-        exact hleft
-      rw [hendpoint]
-      have hedge :
-          RenderState.endpointEdgeOfPartition hp
-              (⟨(rst.edges.get edgeIndex).left,
-                hrel.edge_left_bound edgeIndex⟩ :
-                Fin rst.endpoints.length) = edgeIndex := by
-        exact RenderState.endpointEdgeOfPartition_left hv hp edgeIndex
-      rw [hedge]
-      exact hrel.edge_left edgeIndex
-    · have hendpoint :
-          endpoint =
-            (⟨(rst.edges.get edgeIndex).right,
-              hrel.edge_right_bound edgeIndex⟩ : Fin rst.endpoints.length) := by
-        apply Fin.ext
-        exact hright
-      rw [hendpoint]
-      have hedge :
-          RenderState.endpointEdgeOfPartition hp
-              (⟨(rst.edges.get edgeIndex).right,
-                hrel.edge_right_bound edgeIndex⟩ :
-                Fin rst.endpoints.length) = edgeIndex := by
-        exact RenderState.endpointEdgeOfPartition_right hv hp edgeIndex
-      rw [hedge]
-      exact hrel.edge_right edgeIndex
+    · change
+        G.raw.endpointEdge
+            ((endpointOrder G st).get
+              (Fin.cast hrel.endpoint_length endpoint)) =
+          (edgeOrder st).get (Fin.cast hrel.edge_length edgeIndex)
+      exact hrel.edge_left_of_endpoint_val hleft
+    · change
+        G.raw.endpointEdge
+            ((endpointOrder G st).get
+              (Fin.cast hrel.endpoint_length endpoint)) =
+          (edgeOrder st).get (Fin.cast hrel.edge_length edgeIndex)
+      exact hrel.edge_right_of_endpoint_val hright
   · intro node
     dsimp [R, nodeEquiv, Iso.trans, finCastIso, listFinIso,
       RenderState.OpenPortHypergraphEvidence.toOpenPortHypergraph,
