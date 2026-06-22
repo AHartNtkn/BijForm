@@ -209,56 +209,45 @@ def PeanoNatLayerShapeLayerPresentation :
   CodeLayerPresentation.ofMaps
     PeanoNatLayerShapeTo
     PeanoNatLayerShapeInv
-    (by
-    intro k x
-    have hshape :
-        Function.LeftInverse (PeanoNatLayerShapeInv k) (PeanoNatLayerShapeTo k) := by
-      intro x
-      cases x with
-      | mk code child =>
-        cases code with
-        | mk ctor param out_eq =>
-          cases ctor with
-          | eq =>
-            cases param with
-            | mk k' pair =>
-              cases pair with
-              | mk lhs rhs =>
-                dsimp [PeanoPoly, PeanoOut] at out_eq
-                cases out_eq
-                dsimp [PeanoNatLayerShapeTo, PeanoNatLayerShapeInv]
-                rw [(NumNatIso k).left_inv lhs, (NumNatIso k).left_inv rhs]
-                have hchild : (fun q => nomatch q) = child := by
-                  child_eta_cases
-                cases hchild
-                refine CodeLayer.ext_layer
-                  (P := PeanoPoly) (H := PeanoInversion) (Code := fun _ => Nat)
-                  (i := k) ?_ ?_
-                · apply congrArg
-                    (fun h =>
-                      (⟨PeanoCtor.eq, ⟨k, (lhs, rhs)⟩, h⟩ : Fiber PeanoPoly k))
-                  apply Subsingleton.elim
-                · apply heq_of_eq
-                  child_eta_cases
-          | not =>
-              change PeanoParam PeanoCtor.not at param
-              change Nat at param
-              cases out_eq
-              dsimp [PeanoNatLayerShapeTo, PeanoNatLayerShapeInv]
-              child_eta_rfl child
-          | implies =>
-              change PeanoParam PeanoCtor.implies at param
-              change Nat at param
-              cases out_eq
-              dsimp [PeanoNatLayerShapeTo, PeanoNatLayerShapeInv]
-              child_eta_rfl child
-          | forallE =>
-              change PeanoParam PeanoCtor.forallE at param
-              change Nat at param
-              cases out_eq
-              dsimp [PeanoNatLayerShapeTo, PeanoNatLayerShapeInv]
-              child_eta_rfl child
-    exact hshape x)
+    (CodeLayer.canonical_left_inv_by_fiber (by
+      intro k ctor param out_eq child
+      cases ctor with
+      | eq =>
+        cases param with
+        | mk k' pair =>
+          cases pair with
+          | mk lhs rhs =>
+            simp [PeanoPoly, PeanoOut] at out_eq
+            cases out_eq
+            dsimp [PeanoNatLayerShapeTo, PeanoNatLayerShapeInv]
+            rw [(NumNatIso k).left_inv lhs, (NumNatIso k).left_inv rhs]
+            have hchild : (fun q => nomatch q) = child := by
+              child_eta_cases
+            cases hchild
+            refine CodeLayer.ext_layer
+              (P := PeanoPoly) (H := PeanoInversion) (Code := fun _ => Nat)
+              (i := k) ?_ ?_
+            · apply congrArg
+                (fun h =>
+                  (⟨PeanoCtor.eq, ⟨k, (lhs, rhs)⟩, h⟩ : Fiber PeanoPoly k))
+              apply Subsingleton.elim
+            · apply heq_of_eq
+              child_eta_cases
+      | not =>
+          simp [PeanoPoly, PeanoOut] at out_eq
+          cases out_eq
+          dsimp [PeanoNatLayerShapeTo, PeanoNatLayerShapeInv]
+          child_eta_rfl child
+      | implies =>
+          simp [PeanoPoly, PeanoOut] at out_eq
+          cases out_eq
+          dsimp [PeanoNatLayerShapeTo, PeanoNatLayerShapeInv]
+          child_eta_rfl child
+      | forallE =>
+          simp [PeanoPoly, PeanoOut] at out_eq
+          cases out_eq
+          dsimp [PeanoNatLayerShapeTo, PeanoNatLayerShapeInv]
+          child_eta_rfl child))
     (by
     intro k x
     have hshape :

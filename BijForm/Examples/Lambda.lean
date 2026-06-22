@@ -169,28 +169,17 @@ def LamNatLayerShapeLayerPresentation :
   CodeLayerPresentation.ofMaps
     LamNatLayerShapeTo
     LamNatLayerShapeInv
-    (by
-      intro k layer
-      cases layer with
-      | mk code child =>
-        cases code with
-        | mk ctor param out_eq =>
-          cases ctor with
-          | var =>
-            cases param with
-            | mk k' v =>
-              cases out_eq
-              child_eta_rfl child
-          | lam =>
-            change LamParam LamCtor.lam at param
-            change Nat at param
-            cases out_eq
-            child_eta_rfl child
-          | app =>
-            change LamParam LamCtor.app at param
-            change Nat at param
-            cases out_eq
-            child_eta_rfl child)
+    (CodeLayer.canonical_left_inv_by_fiber (by
+      intro k ctor param out_eq child
+      cases ctor with
+      | var =>
+        cases param with
+        | mk k' v =>
+          finish_code_layer_left_inv out_eq child
+      | lam =>
+        finish_code_layer_left_inv out_eq child
+      | app =>
+        finish_code_layer_left_inv out_eq child))
     (by
       intro k shape
       cases shape with

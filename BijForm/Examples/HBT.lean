@@ -180,35 +180,24 @@ def HBTNatLayerShapeLayerPresentation :
           | Sum.inr p => ⟨⟨HBTCtor.branch, (m : Nat), rfl⟩, fun
               | false => p.1
               | true => p.2⟩)
-    (by
-      intro i x
+    (CodeLayer.canonical_left_inv_by_fiber (by
+      intro i ctor param out_eq child
       cases i with
       | zero =>
-          cases x with
-          | mk code child =>
-              cases code with
-              | mk ctor param out_eq =>
-                cases ctor with
-                | leaf =>
-                    cases param with
-                    | mk height label =>
-                      cases out_eq
-                      child_eta_rfl child
-                | branch => cases out_eq
+          cases ctor with
+          | leaf =>
+              cases param with
+              | mk height label =>
+                finish_code_layer_left_inv out_eq child
+          | branch => cases out_eq
       | succ m =>
-          cases x with
-          | mk code child =>
-              cases code with
-              | mk ctor param out_eq =>
-                cases ctor with
-                | leaf =>
-                    cases param with
-                    | mk height label =>
-                      cases out_eq
-                      child_eta_rfl child
-                | branch =>
-                    cases out_eq
-                    child_eta_rfl child)
+          cases ctor with
+          | leaf =>
+              cases param with
+              | mk height label =>
+                finish_code_layer_left_inv out_eq child
+          | branch =>
+              finish_code_layer_left_inv out_eq child))
     (by
       intro i shape
       cases i with

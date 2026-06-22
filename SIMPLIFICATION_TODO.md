@@ -272,6 +272,12 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     layer/fiber unpacking and child eta through shared helpers; the remaining
     `child_eta_rfl child` occurrences are in non-syntax Nat/carrier layer
     presentations with additional payload coding obligations.
+  - Partial: routed the five core example `CodeLayerPresentation.ofMaps`
+    layer-shape left inverses through `CodeLayer.canonical_left_inv_by_fiber`.
+    HBT, Num, Peano, Lambda, and FinChain no longer own the outer
+    layer/fiber destructuring in those blocks. Remaining surfaces are fixed
+    sorted carrier/payload isomorphisms, typed-binding internals, and finite
+    string-diagram frontier-case proofs.
 
 - [x] Factor finite and infinite sorted branch payload coding.
   - Owner: `BijForm.Examples.Sorted`, backed by `CodeAlgebra` payload lemmas.

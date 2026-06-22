@@ -175,37 +175,26 @@ def FinChainLayerShapeLayerPresentation :
           | Sum.inl _ => ⟨⟨FinChainCtor.done, (n + 1 : Nat), rfl⟩, fun q => nomatch q⟩
           | Sum.inr pair =>
               ⟨⟨FinChainCtor.step, ⟨n, pair.1⟩, rfl⟩, fun _ => pair.2⟩)
-    (by
-      intro i layer
+    (CodeLayer.canonical_left_inv_by_fiber (by
+      intro i ctor param out_eq child
       cases i with
       | zero =>
-          cases layer with
-          | mk code child =>
-            cases code with
-            | mk ctor param out_eq =>
-              cases ctor with
-              | done =>
-                  cases out_eq
-                  child_eta_rfl child
-              | step =>
-                  cases param with
-                  | mk _m _tag => cases out_eq
+          cases ctor with
+          | done =>
+              finish_code_layer_left_inv out_eq child
+          | step =>
+              cases param with
+              | mk _m _tag => cases out_eq
       | succ n =>
-          cases layer with
-          | mk code child =>
-            cases code with
-            | mk ctor param out_eq =>
-              cases ctor with
-              | done =>
-                  cases out_eq
-                  child_eta_rfl child
-              | step =>
-                  cases param with
-                  | mk m tag =>
-                      have hmn : m = n := Nat.succ.inj out_eq
-                      cases hmn
-                      cases out_eq
-                      child_eta_rfl child)
+          cases ctor with
+          | done =>
+              finish_code_layer_left_inv out_eq child
+          | step =>
+              cases param with
+              | mk m tag =>
+                  have hmn : m = n := Nat.succ.inj out_eq
+                  cases hmn
+                  finish_code_layer_left_inv out_eq child))
     (by
       intro i shape
       cases i with

@@ -235,83 +235,62 @@ def NumNatLayerShapeLayerPresentation :
   CodeLayerPresentation.ofMaps
     NumNatLayerShapeTo
     NumNatLayerShapeInv
-    (by
-    intro k x
-    have hshape :
-        Function.LeftInverse (NumNatLayerShapeInv k) (NumNatLayerShapeTo k) := by
-      intro x
-      cases x with
-      | mk code child =>
-          cases code with
-          | mk ctor param out_eq =>
-            cases ctor with
-            | var =>
-              cases param with
-              | mk k' v =>
-                dsimp [NumPoly, NumOut] at out_eq
-                cases out_eq.symm
-                cases out_eq
-                cases v with
-                | mk val isLt =>
-                  dsimp [NumNatLayerShapeTo, NumNatLayerShapeInv]
-                  rw [dif_pos isLt]
-                  have hchild : (fun q => nomatch q) = child := by
-                    child_eta_cases
-                  cases hchild
-                  apply CodeLayer.ext_layer
-                    (P := NumPoly) (H := NumInversion) (Code := fun _ => Nat) (i := k)
-                  · rfl
-                  · apply heq_of_eq
-                    child_eta_cases
-            | zero =>
-              change NumParam NumCtor.zero at param
-              change Nat at param
-              dsimp [NumPoly, NumOut] at out_eq
-              cases out_eq.symm
-              cases out_eq
-              dsimp [NumNatLayerShapeTo, NumNatLayerShapeInv]
-              have hnot : ¬k + 1 < k + 1 := by omega
-              rw [dif_neg hnot]
-              have hchild : (fun q => nomatch q) = child := by
-                child_eta_cases
-              cases hchild
-              apply CodeLayer.ext_layer
-                (P := NumPoly) (H := NumInversion) (Code := fun _ => Nat) (i := k)
-              · rfl
-              · apply heq_of_eq
-                child_eta_cases
-            | succ =>
-              change NumParam NumCtor.succ at param
-              change Nat at param
-              dsimp [NumPoly, NumOut] at out_eq
-              cases out_eq.symm
-              cases out_eq
-              dsimp [NumNatLayerShapeTo, NumNatLayerShapeInv]
-              have hchild : (fun _ => child ()) = child := by
-                child_eta_cases
-              cases hchild
-              apply CodeLayer.ext_layer
-                (P := NumPoly) (H := NumInversion) (Code := fun _ => Nat) (i := k)
-              · rfl
-              · apply heq_of_eq
-                child_eta_cases
-            | plus =>
-              change NumParam NumCtor.plus at param
-              change Nat at param
-              dsimp [NumPoly, NumOut] at out_eq
-              cases out_eq.symm
-              cases out_eq
-              dsimp [NumNatLayerShapeTo, NumNatLayerShapeInv]
-              child_eta_rfl child
-            | times =>
-              change NumParam NumCtor.times at param
-              change Nat at param
-              dsimp [NumPoly, NumOut] at out_eq
-              cases out_eq.symm
-              cases out_eq
-              dsimp [NumNatLayerShapeTo, NumNatLayerShapeInv]
-              child_eta_rfl child
-    exact hshape x)
+    (CodeLayer.canonical_left_inv_by_fiber (by
+      intro k ctor param out_eq child
+      cases ctor with
+      | var =>
+        cases param with
+        | mk k' v =>
+          simp [NumPoly, NumOut] at out_eq
+          cases out_eq
+          cases v with
+          | mk val isLt =>
+            dsimp [NumNatLayerShapeTo, NumNatLayerShapeInv]
+            rw [dif_pos isLt]
+            have hchild : (fun q => nomatch q) = child := by
+              child_eta_cases
+            cases hchild
+            apply CodeLayer.ext_layer
+              (P := NumPoly) (H := NumInversion) (Code := fun _ => Nat) (i := k)
+            · rfl
+            · apply heq_of_eq
+              child_eta_cases
+      | zero =>
+        simp [NumPoly, NumOut] at out_eq
+        cases out_eq
+        dsimp [NumNatLayerShapeTo, NumNatLayerShapeInv]
+        have hnot : ¬k + 1 < k + 1 := by omega
+        rw [dif_neg hnot]
+        have hchild : (fun q => nomatch q) = child := by
+          child_eta_cases
+        cases hchild
+        apply CodeLayer.ext_layer
+          (P := NumPoly) (H := NumInversion) (Code := fun _ => Nat) (i := k)
+        · rfl
+        · apply heq_of_eq
+          child_eta_cases
+      | succ =>
+        simp [NumPoly, NumOut] at out_eq
+        cases out_eq
+        dsimp [NumNatLayerShapeTo, NumNatLayerShapeInv]
+        have hchild : (fun _ => child ()) = child := by
+          child_eta_cases
+        cases hchild
+        apply CodeLayer.ext_layer
+          (P := NumPoly) (H := NumInversion) (Code := fun _ => Nat) (i := k)
+        · rfl
+        · apply heq_of_eq
+          child_eta_cases
+      | plus =>
+        simp [NumPoly, NumOut] at out_eq
+        cases out_eq
+        dsimp [NumNatLayerShapeTo, NumNatLayerShapeInv]
+        child_eta_rfl child
+      | times =>
+        simp [NumPoly, NumOut] at out_eq
+        cases out_eq
+        dsimp [NumNatLayerShapeTo, NumNatLayerShapeInv]
+        child_eta_rfl child))
     (by
     intro k x
     have hshape :
