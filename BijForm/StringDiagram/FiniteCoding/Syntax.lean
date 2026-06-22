@@ -271,20 +271,244 @@ end SingleSortedFiniteCodingData
   | active :: first :: [] => two active first
   | active :: first :: second :: rest => many active first second rest
 
+private def singleSortedFiniteOneFrontierBudShape
+    {Sig : Signature} {node : Sig.Node} (entry : Fin (Sig.arity node))
+    (child :
+      Unit → (openFrontierShape Sig (Sig.nodePortsExcept node entry)).Carrier) :
+    Sig.UnaryEntry ⊕ (Sig.NonUnaryEntry × Nat) :=
+  if hentry : Sig.arity node = 1 then
+    Sum.inl ⟨⟨node, entry⟩, hentry⟩
+  else
+    have hne : Sig.nodePortsExcept node entry ≠ [] :=
+      Signature.nodePortsExcept_ne_nil_of_arity_ne_one
+        (Nat.lt_of_le_of_lt (Nat.zero_le entry.val) entry.isLt) hentry
+    Sum.inr
+      (⟨⟨node, entry⟩, hentry⟩,
+        (openFrontierNonemptyIso (Sig := Sig) hne).toFun (child ()))
+
+@[simp] private theorem singleSortedFiniteOneFrontierBudShape_unary
+    {Sig : Signature} {node : Sig.Node} {entry : Fin (Sig.arity node)}
+    (hentry : Sig.arity node = 1) :
+    singleSortedFiniteOneFrontierBudShape entry
+        (fun _ =>
+          openFrontierEmptyCarrier (Sig := Sig)
+            (Signature.nodePortsExcept_eq_nil_of_arity_one hentry)) =
+      Sum.inl ⟨⟨node, entry⟩, hentry⟩ := by
+  simp [singleSortedFiniteOneFrontierBudShape, hentry]
+
+@[simp] private theorem singleSortedFiniteOneFrontierBudShape_nonunary
+    {Sig : Signature} {node : Sig.Node} {entry : Fin (Sig.arity node)}
+    (hentry : Sig.arity node ≠ 1) (payload : Nat) :
+    singleSortedFiniteOneFrontierBudShape entry
+        (fun _ =>
+          (openFrontierNonemptyIso (Sig := Sig)
+            (Signature.nodePortsExcept_ne_nil_of_arity_ne_one
+              (Nat.lt_of_le_of_lt (Nat.zero_le entry.val) entry.isLt)
+              hentry)).invFun payload) =
+      Sum.inr (⟨⟨node, entry⟩, hentry⟩, payload) := by
+  simp [singleSortedFiniteOneFrontierBudShape, hentry, openFrontierNonemptyIso]
+
+/-- Complete one-step finite frontier model for one boundary. -/
+structure SingleSortedFiniteFrontierCase
+    {Sig : Signature} (data : SingleSortedFiniteCodingData Sig)
+    (boundary : List Sig.Port) where
+  Shape : Type
+  carrierIso : Shape ≃ᵢ (openFrontierShape Sig boundary).Carrier
+  toShape :
+    CodeLayer (poly Sig) (inversion Sig)
+      (fun boundary => (openFrontierShape Sig boundary).Carrier) boundary →
+      Shape
+  fromShape :
+    Shape →
+      CodeLayer (poly Sig) (inversion Sig)
+        (fun boundary => (openFrontierShape Sig boundary).Carrier) boundary
+
+/-- The owner for finite frontier shape, carrier, and layer conversion data. -/
+@[simp] def singleSortedFiniteFrontierCase
+    {Sig : Signature} (data : SingleSortedFiniteCodingData Sig) :
+    ∀ boundary, SingleSortedFiniteFrontierCase data boundary :=
+  openBoundaryCases
+    (motive := fun boundary => SingleSortedFiniteFrontierCase data boundary)
+    { Shape := Fin 1
+      carrierIso := Iso.refl (Fin 1)
+      toShape := by
+        intro layer
+        cases layer with
+        | mk code child =>
+            cases code with
+            | mk ctor param out_eq =>
+                cases ctor with
+                | finish =>
+                    cases param
+                    exact ⟨0, by decide⟩
+                | connect =>
+                    cases param
+                    cases out_eq
+                | bud =>
+                    cases param
+                    cases out_eq
+      fromShape := fun _tag =>
+        ⟨⟨.finish, (), rfl⟩, fun q => nomatch q⟩ }
+    (fun active =>
+      { Shape := Sig.UnaryEntry ⊕ (Sig.NonUnaryEntry × Nat)
+        carrierIso :=
+          Iso.trans
+            (Iso.sum data.unaryIso
+              (Iso.prod data.nonUnaryIso (Iso.refl Nat)))
+            (CodeAlgebra.finiteRecursiveNat
+              data.unaryCount data.nonUnaryCount data.nonUnaryCount_pos)
+        toShape := by
+          intro layer
+          cases layer with
+          | mk code child =>
+              cases code with
+              | mk ctor param out_eq =>
+                  cases ctor with
+                  | finish =>
+                      cases param
+                      cases out_eq
+                  | connect =>
+                      cases param with
+                      | mk _ frontier mate _ =>
+                          cases out_eq
+                          exact fin_zero_elim mate
+                  | bud =>
+                      cases param with
+                      | mk _ frontier node entry _ =>
+                          cases out_eq
+                          exact singleSortedFiniteOneFrontierBudShape entry child
+        fromShape := fun shape =>
+          match shape with
+          | Sum.inl unary =>
+              let entry := unary.val
+              have hnil : Sig.nodePortsExcept entry.1 entry.2 = [] :=
+                Signature.nodePortsExcept_eq_nil_of_arity_one
+                  unary.property
+              ⟨⟨.bud,
+                  ⟨active, [], entry.1, entry.2,
+                    data.compatibleAll active _⟩,
+                  rfl⟩,
+                fun _ => openFrontierEmptyCarrier (Sig := Sig) hnil⟩
+          | Sum.inr tagged =>
+              let entry := tagged.1.val
+              have hne : Sig.nodePortsExcept entry.1 entry.2 ≠ [] :=
+                Signature.nodePortsExcept_ne_nil_of_arity_ne_one
+                  (Nat.lt_of_le_of_lt (Nat.zero_le entry.2.val) entry.2.isLt)
+                  tagged.1.property
+              ⟨⟨.bud,
+                  ⟨active, [], entry.1, entry.2,
+                    data.compatibleAll active _⟩,
+                  rfl⟩,
+                fun _ =>
+                  (openFrontierNonemptyIso (Sig := Sig) hne).invFun tagged.2⟩ })
+    (fun active first =>
+      { Shape := Fin 1 ⊕ (Sig.Entry × Nat)
+        carrierIso :=
+          Iso.trans
+            (Iso.sum (Iso.refl (Fin 1))
+              (Iso.prod data.entryIso (Iso.refl Nat)))
+            (CodeAlgebra.finiteRecursiveNat 1
+              (data.unaryCount + data.nonUnaryCount)
+              (Nat.lt_add_right data.nonUnaryCount data.unaryCount_pos))
+        toShape := by
+          intro layer
+          cases layer with
+          | mk code child =>
+              cases code with
+              | mk ctor param out_eq =>
+                  cases ctor with
+                  | finish =>
+                      cases param
+                      cases out_eq
+                  | connect =>
+                      cases param
+                      cases out_eq
+                      exact Sum.inl ⟨0, by decide⟩
+                  | bud =>
+                      cases param with
+                      | mk _ frontier node entry _ =>
+                          cases out_eq
+                          exact Sum.inr (⟨node, entry⟩, child ())
+        fromShape := fun shape =>
+          match shape with
+          | Sum.inl _connect =>
+              ⟨⟨.connect,
+                  ⟨active, [first], ⟨0, by simp⟩,
+                    data.compatibleAll active first⟩,
+                  rfl⟩,
+                fun _ => ⟨0, by decide⟩⟩
+          | Sum.inr tagged =>
+              let entry := tagged.1
+              ⟨⟨.bud,
+                  ⟨active, [first], entry.1, entry.2,
+                    data.compatibleAll active _⟩,
+                  rfl⟩,
+                fun _ => tagged.2⟩ })
+    (fun active first second rest =>
+      { Shape :=
+          (Fin (first :: second :: rest).length × Nat) ⊕
+            (Sig.Entry × Nat)
+        carrierIso :=
+          Iso.trans
+            (Iso.sum (Iso.refl (Fin (first :: second :: rest).length × Nat))
+              (Iso.prod data.entryIso (Iso.refl Nat)))
+            (CodeAlgebra.finSumProdNat
+              (first :: second :: rest).length
+              (data.unaryCount + data.nonUnaryCount)
+              (by simp)
+              (Nat.lt_add_right data.nonUnaryCount data.unaryCount_pos))
+        toShape := by
+          intro layer
+          cases layer with
+          | mk code child =>
+              cases code with
+              | mk ctor param out_eq =>
+                  cases ctor with
+                  | finish =>
+                      cases param
+                      cases out_eq
+                  | connect =>
+                      cases param with
+                      | mk _ frontier mate _ =>
+                          cases out_eq
+                          have hne :
+                              eraseFin (first :: second :: rest) mate ≠ [] :=
+                            eraseFin_ne_nil_of_length_gt_one mate (by simp)
+                          exact Sum.inl
+                            (mate,
+                              (openFrontierNonemptyIso (Sig := Sig) hne).toFun
+                                (child ()))
+                  | bud =>
+                      cases param with
+                      | mk _ frontier node entry _ =>
+                          cases out_eq
+                          exact Sum.inr (⟨node, entry⟩, child ())
+        fromShape := fun shape =>
+          match shape with
+          | Sum.inl tagged =>
+              have hne :
+                  eraseFin (first :: second :: rest) tagged.1 ≠ [] :=
+                eraseFin_ne_nil_of_length_gt_one tagged.1 (by simp)
+              ⟨⟨.connect,
+                  ⟨active, first :: second :: rest, tagged.1,
+                    data.compatibleAll active
+                      ((first :: second :: rest).get tagged.1)⟩,
+                  rfl⟩,
+                fun _ =>
+                  (openFrontierNonemptyIso (Sig := Sig) hne).invFun tagged.2⟩
+          | Sum.inr tagged =>
+              let entry := tagged.1
+              ⟨⟨.bud,
+                  ⟨active, first :: second :: rest, entry.1, entry.2,
+                    data.compatibleAll active _⟩,
+                  rfl⟩,
+                fun _ => tagged.2⟩ })
+
 /-- The one-step branch shape generated from finite single-sorted signature data. -/
 def singleSortedFiniteLayerShape
-    {Sig : Signature} (_data : SingleSortedFiniteCodingData Sig) :
+    {Sig : Signature} (data : SingleSortedFiniteCodingData Sig) :
     List Sig.Port → Type :=
-  openBoundaryCases
-    (motive := fun _ => Type)
-    (Fin 1)
-    (fun _active =>
-      Sig.UnaryEntry ⊕ (Sig.NonUnaryEntry × Nat))
-    (fun _active _first =>
-      Fin 1 ⊕ (Sig.Entry × Nat))
-    (fun _active first second rest =>
-      (Fin (first :: second :: rest).length × Nat) ⊕
-        (Sig.Entry × Nat))
+  fun boundary => (singleSortedFiniteFrontierCase data boundary).Shape
 
 /-- Carrier isomorphism for the generated one-step branch shape. -/
 def singleSortedFiniteLayerShapeCarrierIso
@@ -292,33 +516,23 @@ def singleSortedFiniteLayerShapeCarrierIso
     ∀ boundary,
       singleSortedFiniteLayerShape data boundary ≃ᵢ
         (openFrontierShape Sig boundary).Carrier :=
-  openBoundaryCases
-    (motive := fun boundary =>
-      singleSortedFiniteLayerShape data boundary ≃ᵢ
-        (openFrontierShape Sig boundary).Carrier)
-    (Iso.refl (Fin 1))
-    (fun _active =>
-      Iso.trans
-        (Iso.sum data.unaryIso
-          (Iso.prod data.nonUnaryIso (Iso.refl Nat)))
-        (CodeAlgebra.finiteRecursiveNat
-          data.unaryCount data.nonUnaryCount data.nonUnaryCount_pos))
-    (fun _active _first =>
-      Iso.trans
-        (Iso.sum (Iso.refl (Fin 1))
-          (Iso.prod data.entryIso (Iso.refl Nat)))
-        (CodeAlgebra.finiteRecursiveNat 1
-          (data.unaryCount + data.nonUnaryCount)
-          (Nat.lt_add_right data.nonUnaryCount data.unaryCount_pos)))
-    (fun _active first second rest =>
-      Iso.trans
-        (Iso.sum (Iso.refl (Fin (first :: second :: rest).length × Nat))
-          (Iso.prod data.entryIso (Iso.refl Nat)))
-        (CodeAlgebra.finSumProdNat
-          (first :: second :: rest).length
-          (data.unaryCount + data.nonUnaryCount)
-          (by simp)
-          (Nat.lt_add_right data.nonUnaryCount data.unaryCount_pos)))
+  fun boundary => (singleSortedFiniteFrontierCase data boundary).carrierIso
+
+def singleSortedFiniteLayerToShape
+    {Sig : Signature} (data : SingleSortedFiniteCodingData Sig) :
+    ∀ boundary,
+      CodeLayer (poly Sig) (inversion Sig)
+        (fun boundary => (openFrontierShape Sig boundary).Carrier) boundary →
+      singleSortedFiniteLayerShape data boundary :=
+  fun boundary => (singleSortedFiniteFrontierCase data boundary).toShape
+
+def singleSortedFiniteLayerFromShape
+    {Sig : Signature} (data : SingleSortedFiniteCodingData Sig) :
+    ∀ boundary,
+      singleSortedFiniteLayerShape data boundary →
+      CodeLayer (poly Sig) (inversion Sig)
+        (fun boundary => (openFrontierShape Sig boundary).Carrier) boundary :=
+  fun boundary => (singleSortedFiniteFrontierCase data boundary).fromShape
 
 /-- Rank used by the finite single-sorted frontier compiler. -/
 def singleSortedFiniteRank
@@ -364,208 +578,6 @@ def singleSortedFiniteRank
       simp [singleSortedFiniteRank, openFrontierNonemptyIso,
         CodeShape.infiniteIso, Iso.refl]
 
-private def singleSortedFiniteOneFrontierBudShape
-    {Sig : Signature} {node : Sig.Node} (entry : Fin (Sig.arity node))
-    (child :
-      Unit → (openFrontierShape Sig (Sig.nodePortsExcept node entry)).Carrier) :
-    Sig.UnaryEntry ⊕ (Sig.NonUnaryEntry × Nat) :=
-  if hentry : Sig.arity node = 1 then
-    Sum.inl ⟨⟨node, entry⟩, hentry⟩
-  else
-    have hne : Sig.nodePortsExcept node entry ≠ [] :=
-      Signature.nodePortsExcept_ne_nil_of_arity_ne_one
-        (Nat.lt_of_le_of_lt (Nat.zero_le entry.val) entry.isLt) hentry
-    Sum.inr
-      (⟨⟨node, entry⟩, hentry⟩,
-        (openFrontierNonemptyIso (Sig := Sig) hne).toFun (child ()))
-
-@[simp] private theorem singleSortedFiniteOneFrontierBudShape_unary
-    {Sig : Signature} {node : Sig.Node} {entry : Fin (Sig.arity node)}
-    (hentry : Sig.arity node = 1) :
-    singleSortedFiniteOneFrontierBudShape entry
-        (fun _ =>
-          openFrontierEmptyCarrier (Sig := Sig)
-            (Signature.nodePortsExcept_eq_nil_of_arity_one hentry)) =
-      Sum.inl ⟨⟨node, entry⟩, hentry⟩ := by
-  simp [singleSortedFiniteOneFrontierBudShape, hentry]
-
-@[simp] private theorem singleSortedFiniteOneFrontierBudShape_nonunary
-    {Sig : Signature} {node : Sig.Node} {entry : Fin (Sig.arity node)}
-    (hentry : Sig.arity node ≠ 1) (payload : Nat) :
-    singleSortedFiniteOneFrontierBudShape entry
-        (fun _ =>
-          (openFrontierNonemptyIso (Sig := Sig)
-            (Signature.nodePortsExcept_ne_nil_of_arity_ne_one
-              (Nat.lt_of_le_of_lt (Nat.zero_le entry.val) entry.isLt)
-              hentry)).invFun payload) =
-      Sum.inr (⟨⟨node, entry⟩, hentry⟩, payload) := by
-  simp [singleSortedFiniteOneFrontierBudShape, hentry, openFrontierNonemptyIso]
-
-def singleSortedFiniteLayerToShape
-    {Sig : Signature} (data : SingleSortedFiniteCodingData Sig) :
-    ∀ boundary,
-      CodeLayer (poly Sig) (inversion Sig)
-        (fun boundary => (openFrontierShape Sig boundary).Carrier) boundary →
-      singleSortedFiniteLayerShape data boundary :=
-  openBoundaryCases
-    (motive := fun boundary =>
-      CodeLayer (poly Sig) (inversion Sig)
-        (fun boundary => (openFrontierShape Sig boundary).Carrier) boundary →
-      singleSortedFiniteLayerShape data boundary)
-    (by
-      intro layer
-      cases layer with
-      | mk code child =>
-          cases code with
-          | mk ctor param out_eq =>
-              cases ctor with
-              | finish =>
-                  cases param
-                  exact ⟨0, by decide⟩
-              | connect =>
-                  cases param
-                  cases out_eq
-              | bud =>
-                  cases param
-                  cases out_eq)
-    (fun active => by
-      intro layer
-      cases layer with
-      | mk code child =>
-          cases code with
-          | mk ctor param out_eq =>
-              cases ctor with
-              | finish =>
-                  cases param
-                  cases out_eq
-              | connect =>
-                  cases param with
-                  | mk _ frontier mate _ =>
-                      cases out_eq
-                      exact fin_zero_elim mate
-              | bud =>
-                  cases param with
-                  | mk _ frontier node entry _ =>
-                      cases out_eq
-                      exact singleSortedFiniteOneFrontierBudShape entry child)
-    (fun active first => by
-      intro layer
-      cases layer with
-      | mk code child =>
-          cases code with
-          | mk ctor param out_eq =>
-              cases ctor with
-              | finish =>
-                  cases param
-                  cases out_eq
-              | connect =>
-                  cases param
-                  cases out_eq
-                  exact Sum.inl ⟨0, by decide⟩
-              | bud =>
-                  cases param with
-                  | mk _ frontier node entry _ =>
-                      cases out_eq
-                      exact Sum.inr (⟨node, entry⟩, child ()))
-    (fun active first second rest => by
-      intro layer
-      cases layer with
-      | mk code child =>
-          cases code with
-          | mk ctor param out_eq =>
-              cases ctor with
-              | finish =>
-                  cases param
-                  cases out_eq
-              | connect =>
-                  cases param with
-                  | mk _ frontier mate _ =>
-                      cases out_eq
-                      have hne :
-                          eraseFin (first :: second :: rest) mate ≠ [] :=
-                        eraseFin_ne_nil_of_length_gt_one mate (by simp)
-                      exact Sum.inl
-                        (mate,
-                          (openFrontierNonemptyIso (Sig := Sig) hne).toFun
-                            (child ()))
-              | bud =>
-                  cases param with
-                  | mk _ frontier node entry _ =>
-                      cases out_eq
-                      exact Sum.inr (⟨node, entry⟩, child ()))
-
-def singleSortedFiniteLayerFromShape
-    {Sig : Signature} (data : SingleSortedFiniteCodingData Sig) :
-    ∀ boundary,
-      singleSortedFiniteLayerShape data boundary →
-      CodeLayer (poly Sig) (inversion Sig)
-        (fun boundary => (openFrontierShape Sig boundary).Carrier) boundary :=
-  openBoundaryCases
-    (motive := fun boundary =>
-      singleSortedFiniteLayerShape data boundary →
-      CodeLayer (poly Sig) (inversion Sig)
-        (fun boundary => (openFrontierShape Sig boundary).Carrier) boundary)
-    (fun _tag =>
-      ⟨⟨.finish, (), rfl⟩, fun q => nomatch q⟩)
-    (fun active shape =>
-      match shape with
-      | Sum.inl unary =>
-          let entry := unary.val
-          have hnil : Sig.nodePortsExcept entry.1 entry.2 = [] :=
-            Signature.nodePortsExcept_eq_nil_of_arity_one
-              unary.property
-          ⟨⟨.bud,
-              ⟨active, [], entry.1, entry.2,
-                data.compatibleAll active _⟩,
-              rfl⟩,
-            fun _ => openFrontierEmptyCarrier (Sig := Sig) hnil⟩
-      | Sum.inr tagged =>
-          let entry := tagged.1.val
-          have hne : Sig.nodePortsExcept entry.1 entry.2 ≠ [] :=
-            Signature.nodePortsExcept_ne_nil_of_arity_ne_one
-              (Nat.lt_of_le_of_lt (Nat.zero_le entry.2.val) entry.2.isLt)
-              tagged.1.property
-          ⟨⟨.bud,
-              ⟨active, [], entry.1, entry.2,
-                data.compatibleAll active _⟩,
-              rfl⟩,
-            fun _ =>
-              (openFrontierNonemptyIso (Sig := Sig) hne).invFun tagged.2⟩)
-    (fun active first shape =>
-      match shape with
-      | Sum.inl _connect =>
-          ⟨⟨.connect,
-              ⟨active, [first], ⟨0, by simp⟩,
-                data.compatibleAll active first⟩,
-              rfl⟩,
-            fun _ => ⟨0, by decide⟩⟩
-      | Sum.inr tagged =>
-          let entry := tagged.1
-          ⟨⟨.bud,
-              ⟨active, [first], entry.1, entry.2,
-                data.compatibleAll active _⟩,
-              rfl⟩,
-            fun _ => tagged.2⟩)
-    (fun active first second rest shape =>
-      match shape with
-      | Sum.inl tagged =>
-          have hne :
-              eraseFin (first :: second :: rest) tagged.1 ≠ [] :=
-            eraseFin_ne_nil_of_length_gt_one tagged.1 (by simp)
-          ⟨⟨.connect,
-              ⟨active, first :: second :: rest, tagged.1,
-                data.compatibleAll active
-                  ((first :: second :: rest).get tagged.1)⟩,
-              rfl⟩,
-            fun _ =>
-              (openFrontierNonemptyIso (Sig := Sig) hne).invFun tagged.2⟩
-      | Sum.inr tagged =>
-          let entry := tagged.1
-          ⟨⟨.bud,
-              ⟨active, first :: second :: rest, entry.1, entry.2,
-                data.compatibleAll active _⟩,
-              rfl⟩,
-            fun _ => tagged.2⟩)
 
 private def singleSortedFiniteConnectLayer
     {Sig : Signature}

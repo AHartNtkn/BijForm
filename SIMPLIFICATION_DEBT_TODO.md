@@ -34,22 +34,22 @@ is ordered to turn helper additions into actual deletion.
     across the shape carrier, carrier iso, maps, inverse proofs, and rank proof.
   - Delete: repeated frontier cardinality splits across layer shape, carrier
     iso, to/from shape maps, inverse proofs, and rank proofs.
-  - Replace with: one `FrontierCase` table or eliminator that stores the
-    allowed constructor case, carrier iso, child carrier, and rank contribution.
+  - Replace with: one `SingleSortedFiniteFrontierCase` owner that stores the
+    shape, carrier iso, layer-to-shape map, and shape-to-layer map for a
+    boundary; public layer surfaces are projections from that owner.
   - Validation:
     `lake env lean BijForm/StringDiagram/FiniteCoding/Syntax.lean`, `lake build`,
     `git diff --check`, and a scoped source scan over
     `singleSortedFiniteLayerShape`, `singleSortedFiniteLayerShapeCarrierIso`,
-    `singleSortedFiniteLayerToShape`, `singleSortedFiniteLayerFromShape`,
-    `singleSortedFiniteLayer_left_inv`, `singleSortedFiniteLayer_right_inv`, and
-    `singleSortedFiniteLayer_shape_child_rank_lt` that requires
-    `openBoundaryCases` in each block and rejects direct list-boundary equation
-    clauses or local `cases boundary/frontier/rest` classification.
+    `singleSortedFiniteLayerToShape`, and `singleSortedFiniteLayerFromShape`
+    that requires projection from `singleSortedFiniteFrontierCase` and rejects
+    separate `openBoundaryCases` bodies; inverse and rank proofs may eliminate
+    frontier cases only after consuming those projection surfaces.
   - Completed: `BijForm.StringDiagram.FiniteCoding.Syntax` now owns boundary
-    classification through `openBoundaryCases` for the layer shape, carrier
-    iso, layer-to-shape map, shape-to-layer map, inverse proofs, and child-rank
-    proof. One-frontier entry arity dispatch remains isolated in
-    `singleSortedFiniteOneFrontierBudShape` and is not a frontier classifier.
+    classification through `singleSortedFiniteFrontierCase`; the layer shape,
+    carrier iso, layer-to-shape map, and shape-to-layer map are projections from
+    that owner. One-frontier entry arity dispatch is data inside that frontier
+    case rather than a separate frontier classifier.
 
 - [x] Finish deleting raw string-diagram index transport scaffolding.
   - Owners: `BijForm.StringDiagram.Basic`,
