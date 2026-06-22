@@ -228,6 +228,29 @@ macro_rules
            child_eta_rfl $child)
         | child_eta_rfl $child)
 
+@[simp]
+theorem nat_lt_max_succ_left (a b : Nat) : a < Nat.max a b + 1 :=
+  Nat.lt_succ_of_le (Nat.le_max_left a b)
+
+@[simp]
+theorem nat_lt_max_succ_right (a b : Nat) : b < Nat.max a b + 1 :=
+  Nat.lt_succ_of_le (Nat.le_max_right a b)
+
+/--
+Close structural syntax child-rank descent goals after the local rank equations
+are tagged as simp rules.
+-/
+syntax "finish_rank_descent" : tactic
+macro_rules
+  | `(tactic| finish_rank_descent) =>
+      `(tactic|
+        (intro idx z q
+         cases z <;>
+           simp_all! [OutputIndexInversion.canonical] <;>
+           try cases q <;>
+           simp_all! [OutputIndexInversion.canonical] <;>
+           try omega))
+
 def castFiberChild {P : DepPoly ι} {Code : ι → Type v} {i : ι}
     {f g : Fiber P i} (h : f = g)
     (child : (q : P.Pos f.ctor f.param) → Code (P.input f.param q)) :

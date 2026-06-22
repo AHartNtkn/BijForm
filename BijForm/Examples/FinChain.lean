@@ -14,6 +14,7 @@ inductive FinChainSyntax : Nat → Type
 
 namespace FinChainSyntax
 
+@[simp]
 def rank : ∀ {i : Nat}, FinChainSyntax i → Nat
   | _, done => 0
   | _, step _ child => rank child + 1
@@ -79,13 +80,7 @@ theorem FinChain_layer_child_rank_lt :
             (FinChainSyntaxToLayer i z).1).param),
       FinChainSyntax.rank ((FinChainSyntaxToLayer i z).2 q) <
         FinChainSyntax.rank z := by
-  intro i z q
-  cases z with
-  | done => cases q
-  | step tag child =>
-      cases q
-      simp [FinChainSyntaxToLayer, FinChainInversion,
-        OutputIndexInversion.canonical, FinChainSyntax.rank]
+  finish_rank_descent
 
 def FinChainSyntaxPresentation :
     SyntaxPresentation FinChainPoly FinChainInversion FinChainSyntax :=

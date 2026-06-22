@@ -17,6 +17,7 @@ inductive PeanoSyntax : Nat → Type
 
 namespace PeanoSyntax
 
+@[simp]
 def rank : ∀ {k : Nat}, PeanoSyntax k → Nat
   | _, eq _ _ => 0
   | _, not e => rank e + 1
@@ -106,29 +107,7 @@ theorem Peano_layer_child_rank_lt :
           (PeanoInversion.decode k (PeanoSyntaxToLayer k z).1).param),
       PeanoSyntax.rank ((PeanoSyntaxToLayer k z).2 q) <
         PeanoSyntax.rank z := by
-  intro k z q
-  cases z with
-  | eq lhs rhs => cases q
-  | not e =>
-      cases q
-      simp [PeanoSyntaxToLayer, PeanoInversion,
-        OutputIndexInversion.canonical,
-        PeanoSyntax.rank]
-  | implies lhs rhs =>
-      cases q
-      · simpa [PeanoSyntaxToLayer, PeanoInversion,
-          OutputIndexInversion.canonical,
-          PeanoSyntax.rank] using
-          Nat.lt_succ_of_le (Nat.le_max_left (PeanoSyntax.rank lhs) (PeanoSyntax.rank rhs))
-      · simpa [PeanoSyntaxToLayer, PeanoInversion,
-          OutputIndexInversion.canonical,
-          PeanoSyntax.rank] using
-          Nat.lt_succ_of_le (Nat.le_max_right (PeanoSyntax.rank lhs) (PeanoSyntax.rank rhs))
-  | forallE e =>
-      cases q
-      simp [PeanoSyntaxToLayer, PeanoInversion,
-        OutputIndexInversion.canonical,
-        PeanoSyntax.rank]
+  finish_rank_descent
 
 def PeanoSyntaxPresentation : SyntaxPresentation PeanoPoly PeanoInversion PeanoSyntax :=
   SyntaxPresentation.ofLayerIso

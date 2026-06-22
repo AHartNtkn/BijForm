@@ -113,18 +113,7 @@ theorem layer_child_rank_lt (Sig : Signature) :
             (syntaxToLayer Sig boundary z).1).param),
       Diag.rank ((syntaxToLayer Sig boundary z).2 q) <
         Diag.rank z := by
-  intro boundary z q
-  cases z with
-  | finish =>
-      cases q
-  | connect mate ok child =>
-      cases q
-      simp [syntaxToLayer, inversion,
-        OutputIndexInversion.canonical, Diag.rank]
-  | bud node entry ok child =>
-      cases q
-      simp [syntaxToLayer, inversion,
-        OutputIndexInversion.canonical, Diag.rank]
+  finish_rank_descent
 
 /-- Presentation of typed rooted open diagram syntax as generated code data. -/
 def syntaxPresentation (Sig : Signature) :

@@ -15,6 +15,7 @@ inductive HBTSyntax : Nat → Type
 
 namespace HBTSyntax
 
+@[simp]
 def rank : ∀ {i : Nat}, HBTSyntax i → Nat
   | _, leaf _ => 0
   | _, branch lhs rhs => Nat.max (rank lhs) (rank rhs) + 1
@@ -96,17 +97,7 @@ theorem HBT_layer_child_rank_lt :
           (HBTInversion.decode i (HBTSyntaxToLayer i z).1).param),
       HBTSyntax.rank ((HBTSyntaxToLayer i z).2 q) <
         HBTSyntax.rank z := by
-  intro i z q
-  cases z with
-  | leaf label => cases q
-  | branch lhs rhs =>
-      cases q
-      · simpa [HBTSyntaxToLayer, HBTInversion,
-          OutputIndexInversion.canonical, HBTSyntax.rank] using
-          Nat.lt_succ_of_le (Nat.le_max_left (HBTSyntax.rank lhs) (HBTSyntax.rank rhs))
-      · simpa [HBTSyntaxToLayer, HBTInversion,
-          OutputIndexInversion.canonical, HBTSyntax.rank] using
-          Nat.lt_succ_of_le (Nat.le_max_right (HBTSyntax.rank lhs) (HBTSyntax.rank rhs))
+  finish_rank_descent
 
 /--
 Generated coding data for height-bounded trees. The example supplies only

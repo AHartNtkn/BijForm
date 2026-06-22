@@ -16,6 +16,7 @@ inductive LamSyntax : Nat → Type
 
 namespace LamSyntax
 
+@[simp]
 def rank : ∀ {k : Nat}, LamSyntax k → Nat
   | _, var _ => 0
   | _, lam body => rank body + 1
@@ -90,21 +91,7 @@ theorem Lam_layer_child_rank_lt :
           (LamInversion.decode k (LamSyntaxToLayer k z).1).param),
       LamSyntax.rank ((LamSyntaxToLayer k z).2 q) <
         LamSyntax.rank z := by
-  intro k z q
-  cases z with
-  | var v => cases q
-  | lam body =>
-      cases q
-      simp [LamSyntaxToLayer, LamInversion,
-        OutputIndexInversion.canonical, LamSyntax.rank]
-  | app fn arg =>
-      cases q
-      · simpa [LamSyntaxToLayer, LamInversion,
-          OutputIndexInversion.canonical, LamSyntax.rank] using
-          Nat.lt_succ_of_le (Nat.le_max_left (LamSyntax.rank fn) (LamSyntax.rank arg))
-      · simpa [LamSyntaxToLayer, LamInversion,
-          OutputIndexInversion.canonical, LamSyntax.rank] using
-          Nat.lt_succ_of_le (Nat.le_max_right (LamSyntax.rank fn) (LamSyntax.rank arg))
+  finish_rank_descent
 
 def LamSyntaxPresentation : SyntaxPresentation LamPoly LamInversion LamSyntax :=
   SyntaxPresentation.ofLayerIso

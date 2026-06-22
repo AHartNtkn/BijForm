@@ -90,6 +90,7 @@ inductive SortedSyntax : SortedIx → Type
 
 namespace SortedSyntax
 
+@[simp]
 def rank : ∀ {i : SortedIx}, SortedSyntax i → Nat
   | _, leaf => 0
   | _, branch _ lhs rhs => Nat.max (rank lhs) (rank rhs) + 1
@@ -170,17 +171,7 @@ theorem Sorted_layer_child_rank_lt :
             (SortedSyntaxToLayer i z).1).param),
       SortedSyntax.rank ((SortedSyntaxToLayer i z).2 q) <
         SortedSyntax.rank z := by
-  intro i z q
-  cases z with
-  | leaf => cases q
-  | branch pivot lhs rhs =>
-      cases q
-      · simpa [SortedSyntaxToLayer, SortedInversion,
-          OutputIndexInversion.canonical, sortedBranchFiber, SortedSyntax.rank] using
-          Nat.lt_succ_of_le (Nat.le_max_left (SortedSyntax.rank lhs) (SortedSyntax.rank rhs))
-      · simpa [SortedSyntaxToLayer, SortedInversion,
-          OutputIndexInversion.canonical, sortedBranchFiber, SortedSyntax.rank] using
-          Nat.lt_succ_of_le (Nat.le_max_right (SortedSyntax.rank lhs) (SortedSyntax.rank rhs))
+  finish_rank_descent
 
 def SortedSyntaxPresentation : SyntaxPresentation SortedPoly SortedInversion SortedSyntax :=
   SyntaxPresentation.ofLayerIso

@@ -17,6 +17,7 @@ inductive NumSyntax : Nat → Type
 
 namespace NumSyntax
 
+@[simp]
 def rank : ∀ {k : Nat}, NumSyntax k → Nat
   | _, var _ => 0
   | _, zero => 0
@@ -121,34 +122,7 @@ theorem Num_layer_child_rank_lt :
           (NumInversion.decode k (NumSyntaxToLayer k z).1).param),
       NumSyntax.rank ((NumSyntaxToLayer k z).2 q) <
         NumSyntax.rank z := by
-  intro k z q
-  cases z with
-  | var v => cases q
-  | zero => cases q
-  | succ e =>
-      cases q
-      simp [NumSyntaxToLayer, NumInversion,
-        OutputIndexInversion.canonical, NumSyntax.rank]
-  | plus lhs rhs =>
-      cases q
-      · simpa [NumSyntaxToLayer, NumInversion,
-          OutputIndexInversion.canonical,
-          NumSyntax.rank] using
-          Nat.lt_succ_of_le (Nat.le_max_left (NumSyntax.rank lhs) (NumSyntax.rank rhs))
-      · simpa [NumSyntaxToLayer, NumInversion,
-          OutputIndexInversion.canonical,
-          NumSyntax.rank] using
-          Nat.lt_succ_of_le (Nat.le_max_right (NumSyntax.rank lhs) (NumSyntax.rank rhs))
-  | times lhs rhs =>
-      cases q
-      · simpa [NumSyntaxToLayer, NumInversion,
-          OutputIndexInversion.canonical,
-          NumSyntax.rank] using
-          Nat.lt_succ_of_le (Nat.le_max_left (NumSyntax.rank lhs) (NumSyntax.rank rhs))
-      · simpa [NumSyntaxToLayer, NumInversion,
-          OutputIndexInversion.canonical,
-          NumSyntax.rank] using
-          Nat.lt_succ_of_le (Nat.le_max_right (NumSyntax.rank lhs) (NumSyntax.rank rhs))
+  finish_rank_descent
 
 def NumSyntaxPresentation : SyntaxPresentation NumPoly NumInversion NumSyntax :=
   SyntaxPresentation.ofLayerIso

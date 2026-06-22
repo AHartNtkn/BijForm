@@ -1380,6 +1380,7 @@ namespace Diag
 variable {Sig : Signature}
 
 /-- Structural rank used for the generated syntax coding. -/
+@[simp]
 def rank : ∀ {boundary : List Sig.Port}, Diag Sig boundary → Nat
   | _, finish => 0
   | _, connect _ _ child => rank child + 1
