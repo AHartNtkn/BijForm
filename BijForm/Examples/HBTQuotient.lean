@@ -102,6 +102,33 @@ def HBTQuotBranch (m : Nat) (lhs rhs : Mu HBTPoly m) :
     | false => lhs
     | true => rhs)
 
+theorem HBTChildSwap_branch_congr {m : Nat}
+    {lhs lhs' rhs rhs' : Mu HBTPoly m}
+    (hlhs : QuotientPresentation.Rel HBTChildSwapQuotient m lhs lhs')
+    (hrhs : QuotientPresentation.Rel HBTChildSwapQuotient m rhs rhs') :
+    QuotientPresentation.Rel HBTChildSwapQuotient (m + 1)
+      (HBTQuotBranch m lhs rhs) (HBTQuotBranch m lhs' rhs') := by
+  apply QuotientPresentation.Rel.congr
+  intro q
+  cases q
+  · exact hlhs
+  · exact hrhs
+
+theorem HBTChildSwap_branch_eta {m : Nat}
+    (child : Bool → Mu HBTPoly m) :
+    QuotientPresentation.Rel HBTChildSwapQuotient (m + 1)
+      (HBTQuotBranch m (child false) (child true))
+      (Mu.sup (P := HBTPoly) .branch m rfl child) := by
+  apply QuotientPresentation.Rel.congr
+  intro q
+  cases q <;> exact QuotientPresentation.Rel.refl _
+
+theorem HBTChildSwap_branch_swap_rel {m : Nat}
+    (lhs rhs : Mu HBTPoly m) :
+    QuotientPresentation.Rel HBTChildSwapQuotient (m + 1)
+      (HBTQuotBranch m lhs rhs) (HBTQuotBranch m rhs lhs) :=
+  QuotientPresentation.Rel.layer (HBTSwapLayerRel.branch lhs rhs)
+
 /-- Canonical Nat normal form for height-bounded trees modulo branch-child
 swapping. -/
 def HBTChildSwapNorm : ∀ i, Mu HBTPoly i → Nat
@@ -202,11 +229,11 @@ theorem HBTChildSwap_denorm_norm_rel :
           (Mu.sup (P := HBTPoly) .branch m rfl child)
         rw [TupleAction.BinarySwap.decode_encode_of_le hab]
         dsimp [HBTQuotBranch, a, b]
-        apply QuotientPresentation.Rel.congr
-        intro q
-        cases q
-        · exact HBTChildSwap_denorm_norm_rel m (child false)
-        · exact HBTChildSwap_denorm_norm_rel m (child true)
+        exact QuotientPresentation.Rel.trans
+          (HBTChildSwap_branch_congr
+            (HBTChildSwap_denorm_norm_rel m (child false))
+            (HBTChildSwap_denorm_norm_rel m (child true)))
+          (HBTChildSwap_branch_eta child)
       · change QuotientPresentation.Rel HBTChildSwapQuotient (m + 1)
           (HBTQuotBranch m
             (HBTChildSwapDenorm m
@@ -222,33 +249,13 @@ theorem HBTChildSwap_denorm_norm_rel :
           (Mu.sup (P := HBTPoly) .branch m rfl child)
         rw [TupleAction.BinarySwap.decode_encode_of_not_le hab]
         dsimp [HBTQuotBranch, a, b]
-        have hchildren :
-            QuotientPresentation.Rel HBTChildSwapQuotient (m + 1)
-              (HBTQuotBranch m
-                (HBTChildSwapDenorm m (HBTChildSwapNorm m (child true)))
-                (HBTChildSwapDenorm m (HBTChildSwapNorm m (child false))))
-              (HBTQuotBranch m (child true) (child false)) := by
-          apply QuotientPresentation.Rel.congr
-          intro q
-          cases q
-          · exact HBTChildSwap_denorm_norm_rel m (child true)
-          · exact HBTChildSwap_denorm_norm_rel m (child false)
-        have hswap :
-            QuotientPresentation.Rel HBTChildSwapQuotient (m + 1)
-              (HBTQuotBranch m (child true) (child false))
-              (HBTQuotBranch m (child false) (child true)) :=
-          QuotientPresentation.Rel.symm
-            (QuotientPresentation.Rel.layer
-              (HBTSwapLayerRel.branch (child false) (child true)))
-        have htarget :
-            QuotientPresentation.Rel HBTChildSwapQuotient (m + 1)
-              (HBTQuotBranch m (child false) (child true))
-              (Mu.sup (P := HBTPoly) .branch m rfl child) := by
-          apply QuotientPresentation.Rel.congr
-          intro q
-          cases q <;> exact QuotientPresentation.Rel.refl _
-        exact QuotientPresentation.Rel.trans hchildren
-          (QuotientPresentation.Rel.trans hswap htarget)
+        exact QuotientPresentation.Rel.trans
+          (HBTChildSwap_branch_congr
+            (HBTChildSwap_denorm_norm_rel m (child true))
+            (HBTChildSwap_denorm_norm_rel m (child false)))
+          (QuotientPresentation.Rel.trans
+            (HBTChildSwap_branch_swap_rel (child true) (child false))
+            (HBTChildSwap_branch_eta child))
 
 theorem HBTChildSwap_norm_respects :
     ∀ {i : Nat} {x y : Mu HBTPoly i},
@@ -289,29 +296,16 @@ theorem HBTChildSwap_norm_respects :
 quotient relation. -/
 def HBTChildSwapDescendedNatCode :
     QuotientPresentation.DescendedGeneratedCode HBTChildSwapQuotient
-      HBTNatGeneratedCode (fun _ => Nat) where
-  encode i n :=
-    HBTChildSwapNorm i
-      (HBTNatGeneratedCode.decode i n)
-  decode i n :=
-    HBTNatGeneratedCode.encode i (HBTChildSwapDenorm i n)
-  encode_respects := by
-    intro i a b hab
-    exact HBTChildSwap_norm_respects hab
-  decode_encode_rel := by
-    intro i a
-    dsimp [QuotientPresentation.CodeRel]
-    dsimp [GeneratedNatCode.encode, GeneratedNatCode.decode,
-      GeneratedCode.encode, GeneratedCode.decode]
-    rw [WellFoundedCode.decode_encode]
-    exact HBTChildSwap_denorm_norm_rel i
-      (HBTNatGeneratedCode.decode i a)
-  encode_decode := by
-    intro i n
-    dsimp [GeneratedNatCode.encode, GeneratedNatCode.decode,
-      GeneratedCode.encode, GeneratedCode.decode]
-    rw [WellFoundedCode.decode_encode]
-    exact HBTChildSwap_norm_denorm i n
+      HBTNatGeneratedCode (fun _ => Nat) :=
+  QuotientPresentation.DescendedGeneratedCode.ofMuNormalizer
+    (C := HBTNatGeneratedCode)
+    HBTChildSwapNorm
+    HBTChildSwapDenorm
+    (by
+      intro i x y hxy
+      exact HBTChildSwap_norm_respects hxy)
+    HBTChildSwap_denorm_norm_rel
+    HBTChildSwap_norm_denorm
 
 /-- Height-bounded trees modulo branch-child swapping are concretely coded by
 `Nat`. The coding is obtained by descending the generated HBT Nat code through

@@ -327,6 +327,43 @@ namespace DescendedGeneratedCode
 variable {Q : QuotientPresentation P} {Code : ι → Type v}
 variable {C : GeneratedCode P Code} {Out : ι → Type w}
 
+def ofMuNormalizer
+    (normalize : ∀ i, Mu P i → Out i)
+    (denormalize : ∀ i, Out i → Mu P i)
+    (normalize_respects :
+      ∀ {i : ι} {x y : Mu P i}, Rel Q i x y →
+        normalize i x = normalize i y)
+    (denormalize_normalize_rel :
+      ∀ i (x : Mu P i), Rel Q i (denormalize i (normalize i x)) x)
+    (normalize_denormalize :
+      ∀ i (z : Out i), normalize i (denormalize i z) = z) :
+    DescendedGeneratedCode Q C Out where
+  encode i a := normalize i (C.decode i a)
+  decode i z := C.encode i (denormalize i z)
+  encode_respects := by
+    intro i a b hab
+    exact normalize_respects hab
+  decode_encode_rel := by
+    intro i a
+    change CodeRel Q C.toWellFoundedCode i
+      (C.encode i
+        (denormalize i (normalize i (C.decode i a)))) a
+    dsimp [CodeRel]
+    rw [show
+      C.toWellFoundedCode.decode i
+          (C.encode i (denormalize i (normalize i (C.decode i a)))) =
+        denormalize i (normalize i (C.decode i a)) by
+      exact C.toWellFoundedCode.decode_encode i _]
+    exact denormalize_normalize_rel i (C.decode i a)
+  encode_decode := by
+    intro i z
+    change normalize i
+      (C.decode i (C.encode i (denormalize i z))) = z
+    rw [show C.decode i (C.encode i (denormalize i z)) =
+        denormalize i z by
+      exact GeneratedCode.decode_encode C i _]
+    exact normalize_denormalize i z
+
 def codeCarrierIso (D : DescendedGeneratedCode Q C Out) (i : ι) :
     GeneratedCodeCarrier Q C i ≃ᵢ Out i :=
   DescendedCode.codeCarrierIso D i

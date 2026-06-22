@@ -358,6 +358,12 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     pair coding through existing `CodeAlgebra.unorderedPair*` APIs.
   - Validation: HBT quotient example exposes the same public final isomorphisms
     through generic quotient descent.
+  - Partial: added `QuotientPresentation.DescendedGeneratedCode.ofMuNormalizer`
+    for generated-code descent from `Mu` normalizer/denormalizer laws. HBT
+    branch congruence, eta, and swap relation chains are now named helper
+    lemmas, and `HBTChildSwapDescendedNatCode` is an instantiation of the
+    generic normalizer helper. The broader generic binary child-swap descent
+    abstraction remains open.
 
 - [ ] Generate finite string-diagram entry tables for finite signatures.
   - Owner: `BijForm.StringDiagram.FiniteCoding.Syntax`
