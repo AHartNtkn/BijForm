@@ -117,13 +117,16 @@ is ordered to turn helper additions into actual deletion.
     should move materially toward deletion, and the raw `Fin.cast` scan for
     this file should approach zero outside owner transport lemmas.
   - Partial: label preservation now uses shared append-trace schemas
-    `GraphRenderRelated.edgeLabel_of_appendTrace` and
+    `GraphRenderRelated.endpointLabel_of_appendTrace`,
+    `GraphRenderRelated.edgeLabel_of_appendTrace`, and
     `GraphRenderRelated.nodeLabel_of_appendTrace`; bridge proofs also consume
     `AppendTraceRelation.get_listIndexCast` for the common right-index
     transport step instead of repeating local `rightIndex = listIndexCast`
-    proof blocks. The item remains open because pending/frontier alignment,
-    edge endpoint side preservation, node incident preservation, and final
-    connect/bud record assembly are still separate helper families.
+    proof blocks. The old connect/bud label helper theorem declarations were
+    deleted, and final child relation assembly now calls the schemas directly.
+    The item remains open because pending/frontier alignment, edge endpoint
+    side preservation, node incident preservation, and final connect/bud record
+    assembly are still separate helper families.
 
 - [ ] Finish payload-local inverse boilerplate removal in coding examples.
   - Owners: `BijForm.InitialAlgebra`,
