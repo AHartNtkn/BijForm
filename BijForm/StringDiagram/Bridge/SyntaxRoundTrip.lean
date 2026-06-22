@@ -228,29 +228,12 @@ theorem renderTrace_connect_edgeMate_of_invariants
       (⟨mateId, hmateBound⟩ : Fin final.endpoints.length).val =
         (final.edges.get edgeIndex).right :=
     hrightEq.symm
-  constructor
-  · intro hsame
-    have hval := congrArg (fun endpoint => endpoint.val) hsame
-    have hne := RenderState.edge_left_ne_right_of_partition hp edgeIndex
-    exact hne (by
-      calc
-        (final.edges.get edgeIndex).left =
-            (⟨activeId, hactiveBound⟩ : Fin final.endpoints.length).val :=
-          hactiveVal.symm
-        _ = (⟨mateId, hmateBound⟩ : Fin final.endpoints.length).val := hval
-        _ = (final.edges.get edgeIndex).right := hmateVal)
-  · have hleft :=
-      RenderState.endpointEdgeOfPartition_eq_of_endpoint_side hp
-        (⟨activeId, hactiveBound⟩ : Fin final.endpoints.length)
-        edgeIndex (Or.inl hactiveVal)
-    have hright :=
-      RenderState.endpointEdgeOfPartition_eq_of_endpoint_side hp
-        (⟨mateId, hmateBound⟩ : Fin final.endpoints.length)
-        edgeIndex (Or.inr hmateVal)
-    simpa [G, RenderState.PortHypergraphEvidence.toPortHypergraph,
-      RenderState.portHypergraphEvidenceOfInvariants,
-      RenderState.edgeEvidenceOfPartition,
-      RenderState.endpointEdgeEvidenceOfPartition] using hleft.trans hright.symm
+  simpa [G, final] using
+    RenderState.edgeMateOfInvariants_of_endpoint_sides
+      hv hp hn pref ho
+      (⟨activeId, hactiveBound⟩ : Fin final.endpoints.length)
+      (⟨mateId, hmateBound⟩ : Fin final.endpoints.length)
+      edgeIndex hactiveVal hmateVal
 
 /--
 In a completed render trace whose current step is `connect`, the active
@@ -628,28 +611,12 @@ theorem renderTrace_bud_entry_edgeMate_exact_of_invariants
     exact hget.trans hrightEq.symm
   refine ⟨hactiveBound, nodeIndex, slot, rfl, hnodeLabel, hslotVal,
     hincidentVals, ?_⟩
-  constructor
-  · intro hsame
-    have hval := congrArg (fun endpoint => endpoint.val) hsame
-    have hne := RenderState.edge_left_ne_right_of_partition hp edgeIndex
-    exact hne (by
-      calc
-        (final.edges.get edgeIndex).left =
-            (⟨activeId, hactiveBound⟩ : Fin final.endpoints.length).val :=
-          hleftEq
-        _ = ((G.incident nodeIndex).get slot).val := hval
-        _ = (final.edges.get edgeIndex).right := hincidentVal)
-  · have hleft :=
-      RenderState.endpointEdgeOfPartition_eq_of_endpoint_side hp
-        (⟨activeId, hactiveBound⟩ : Fin final.endpoints.length)
-        edgeIndex (Or.inl hleftEqRaw.symm)
-    have hright :=
-      RenderState.endpointEdgeOfPartition_eq_of_endpoint_side hp
-        ((G.incident nodeIndex).get slot) edgeIndex (Or.inr hincidentVal)
-    simpa [G, RenderState.PortHypergraphEvidence.toPortHypergraph,
-      RenderState.portHypergraphEvidenceOfInvariants,
-      RenderState.edgeEvidenceOfPartition,
-      RenderState.endpointEdgeEvidenceOfPartition] using hleft.trans hright.symm
+  simpa [G, final] using
+    RenderState.edgeMateOfInvariants_of_endpoint_sides
+      hv hp hn pref ho
+      (⟨activeId, hactiveBound⟩ : Fin final.endpoints.length)
+      ((G.incident nodeIndex).get slot)
+      edgeIndex hleftEqRaw.symm hincidentVal
 
 /--
 Arbitrary-prefix version of rendered `bud` recognition.  If a completed render
@@ -766,28 +733,12 @@ theorem renderTrace_bud_entry_edgeMate_of_invariants
         RenderState.incidentOfValidIds, edge, slot, renderNode,
         nodeEndpoints, entryIdx]
       simpa [entryIdx] using hentryGet.trans hrightEq.symm
-    constructor
-    · intro hsame
-      have hval := congrArg (fun endpoint => endpoint.val) hsame
-      have hne := RenderState.edge_left_ne_right_of_partition hp edgeIndex
-      exact hne (by
-        calc
-          (final.edges.get edgeIndex).left =
-              (⟨activeId, hactiveBound⟩ : Fin final.endpoints.length).val :=
-            hleftEq
-          _ = ((G.incident nodeIndex).get slot).val := hval
-          _ = (final.edges.get edgeIndex).right := hincidentVal)
-    · have hleft :=
-        RenderState.endpointEdgeOfPartition_eq_of_endpoint_side hp
-          (⟨activeId, hactiveBound⟩ : Fin final.endpoints.length)
-          edgeIndex (Or.inl hleftEqRaw.symm)
-      have hright :=
-        RenderState.endpointEdgeOfPartition_eq_of_endpoint_side hp
-          ((G.incident nodeIndex).get slot) edgeIndex (Or.inr hincidentVal)
-      simpa [G, RenderState.PortHypergraphEvidence.toPortHypergraph,
-        RenderState.portHypergraphEvidenceOfInvariants,
-        RenderState.edgeEvidenceOfPartition,
-        RenderState.endpointEdgeEvidenceOfPartition] using hleft.trans hright.symm
+    simpa [G, final] using
+      RenderState.edgeMateOfInvariants_of_endpoint_sides
+        hv hp hn pref ho
+        (⟨activeId, hactiveBound⟩ : Fin final.endpoints.length)
+        ((G.incident nodeIndex).get slot)
+        edgeIndex hleftEqRaw.symm hincidentVal
 
 /--
 If a search state is related to a renderer prefix of a completed render trace,
