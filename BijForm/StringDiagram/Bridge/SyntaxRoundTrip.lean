@@ -620,28 +620,6 @@ theorem toDiag_of_renderPrefixRelated :
                 exact openEvidence_endpointEdge_val_of_endpoint_eq
                   (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall)
                   hactiveEq hactiveEdgeRaw
-              have hpendingVals :
-                  (sst.connectChild hpending searchMate hmateSearch').pending.map
-                      (fun endpoint => endpoint.val) =
-                    (connectStep mate ok rst).frontierIds := by
-                have hvalsChild :=
-                  hrel.connectChild_pending_vals hpending searchMate
-                    hmateSearch' mate ok (by simp [searchMate])
-                simpa using hvalsChild
-              have hchildRelRaw :
-                  OpenPortHypergraph.SearchState.RenderPrefixRelated
-                    (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall) (connectStep mate ok rst)
-                    (by
-                      cases hidx
-                      exact sst.connectChild hpending searchMate hmateSearch') := by
-                cases hidx
-                exact hrel.connectChild_of_new_edge hpending searchMate
-                  hmateSearch' (connectStep mate ok rst) hpendingVals
-                  hactiveEdge
-                  (connectStep_edges_length mate ok rst)
-                  (by
-                    have hnodes := connectStep_nodes mate ok rst
-                    exact congrArg List.length hnodes)
               have hchildComplete :
                   (sst.connectChild hpending searchMate hmateSearch').FrontierComplete :=
                 sst.connectChild_frontierComplete hpending searchMate
@@ -651,7 +629,12 @@ theorem toDiag_of_renderPrefixRelated :
                     (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall) (connectStep mate ok rst)
                     (sst.connectChild hpending searchMate hmateSearch') := by
                 cases hidx
-                simpa using hchildRelRaw
+                exact hrel.connectChild_of_new_edge hpending searchMate
+                  hmateSearch' ok hactiveEdge
+                  (connectStep_edges_length mate ok rst)
+                  (by
+                    have hnodes := connectStep_nodes mate ok rst
+                    exact congrArg List.length hnodes)
               have hchild :=
                 ih (connectStep mate ok rst)
                   (connectStep_validIds mate ok rst rhv)
@@ -803,28 +786,6 @@ theorem toDiag_of_renderPrefixRelated :
                     hnodeLabel hentryVal)
               let searchChildB :=
                 sst.budChild hpending nodeIndex slot hmateSearch' hunseen'
-              let childRstB :
-                  RenderState Sig
-                    (frontier ++
-                      Sig.nodePortsExcept
-                        ((RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph.raw.nodeLabel
-                          nodeIndex)
-                        (OpenPortHypergraph.SearchState.budEntry
-                          (G := (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph)
-                          nodeIndex slot)) :=
-                hfrontier.symm ▸ budStep node entry ok rst
-              have hpendingVals :
-                  searchChildB.pending.map (fun endpoint => endpoint.val) =
-                    (budStep node entry ok rst).frontierIds := by
-                exact hrel.budChild_pending_vals hpending nodeIndex slot
-                  hmateSearch' hunseen' node entry ok hincidentVals hslotVal
-              have hpendingValsB :
-                  searchChildB.pending.map (fun endpoint => endpoint.val) =
-                    childRstB.frontierIds := by
-                simpa [childRstB] using
-                  hpendingVals.trans
-                    (RenderState.cast_frontierIds hfrontier.symm
-                      (budStep node entry ok rst)).symm
               have hactiveEdgeRaw :=
                 renderTrace_bud_active_endpointEdge_val
                   node entry ok child rst hv hp hn pref ho hids hactiveBound
@@ -837,23 +798,23 @@ theorem toDiag_of_renderPrefixRelated :
               have hchildRelB :
                   OpenPortHypergraph.SearchState.RenderPrefixRelated
                     (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall)
-                    childRstB searchChildB := by
+                    (hfrontier.symm ▸ budStep node entry ok rst) searchChildB := by
                 exact hrel.budChild_of_new_edge_node hpending nodeIndex slot
-                  hmateSearch' hunseen' childRstB hpendingValsB
+                  hmateSearch' hunseen' node entry ok hfrontier hincidentVals hslotVal
                   hactiveEdge hnewNode
                   (by
                     have hcast :=
                       RenderState.cast_edges hfrontier.symm
                         (budStep node entry ok rst)
                     have hlen := congrArg List.length hcast
-                    simpa [childRstB, hlen] using
+                    simpa [hlen] using
                       budStep_edges_length node entry ok rst)
                   (by
                     have hcast :=
                       RenderState.cast_nodes hfrontier.symm
                         (budStep node entry ok rst)
                     have hlen := congrArg List.length hcast
-                    simpa [childRstB, hlen] using
+                    simpa [hlen] using
                       budStep_nodes_length node entry ok rst)
               let searchChildA : OpenPortHypergraph.SearchState
                   (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall).toOpenPortHypergraph
@@ -863,7 +824,7 @@ theorem toDiag_of_renderPrefixRelated :
                   OpenPortHypergraph.SearchState.RenderPrefixRelated
                     (RenderState.openEvidenceOfInvariants hv hp hn pref ho hall)
                     (budStep node entry ok rst) searchChildA := by
-                simpa [searchChildA, childRstB] using
+                simpa [searchChildA] using
                   OpenPortHypergraph.SearchState.RenderPrefixRelated.cast_cancel_left
                     hfrontier hchildRelB
               have hchildCompleteB : searchChildB.FrontierComplete :=
