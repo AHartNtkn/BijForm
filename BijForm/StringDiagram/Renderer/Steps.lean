@@ -114,46 +114,31 @@ theorem freshNodeEndpoints_label_append
           hbound⟩ =
       (Sig.nodePorts node).get
         (Fin.cast (by simp [freshNodeEndpoints, Signature.nodePorts]) i) := by
-  have hget :=
-    freshNodeEndpoints_get st.nextEndpoint (Sig.arity node) i
-  have hbound' :
-      st.nextEndpoint + i.val <
-        (st.endpoints ++ Sig.nodePorts node).length := by
-    simpa [← hget] using hbound
+  let endpoint : Fin (st.endpoints ++ Sig.nodePorts node).length :=
+    ⟨(freshNodeEndpoints st.nextEndpoint (Sig.arity node)).get i, hbound⟩
+  let nodePort : Fin (Sig.nodePorts node).length :=
+    Fin.cast (by simp [freshNodeEndpoints, Signature.nodePorts]) i
   have hright :
-      st.endpoints.length ≤ st.nextEndpoint + i.val := by
+      st.endpoints.length ≤ endpoint.val := by
+    have hget :=
+      freshNodeEndpoints_get st.nextEndpoint (Sig.arity node) i
+    change st.endpoints.length ≤
+      (freshNodeEndpoints st.nextEndpoint (Sig.arity node)).get i
+    rw [hget]
     have hnext := hv.nextEndpoint_eq
     omega
-  calc
-    (st.endpoints ++ Sig.nodePorts node).get
-        ⟨(freshNodeEndpoints st.nextEndpoint (Sig.arity node)).get i,
-          hbound⟩ =
-        (st.endpoints ++ Sig.nodePorts node).get
-          ⟨st.nextEndpoint + i.val, hbound'⟩ := by
-          apply congrArg (fun idx =>
-            (st.endpoints ++ Sig.nodePorts node).get idx)
-          apply Fin.ext
-          exact hget
-    _ =
-        (Sig.nodePorts node).get
-          ⟨st.nextEndpoint + i.val - st.endpoints.length, by
-            have hlen :
-                (st.endpoints ++ Sig.nodePorts node).length =
-                  st.endpoints.length + (Sig.nodePorts node).length := by
-              simp
-            omega⟩ := by
-          exact list_get_append_right st.endpoints (Sig.nodePorts node)
-            hright hbound'
-    _ =
-        (Sig.nodePorts node).get
-          (Fin.cast (by simp [freshNodeEndpoints, Signature.nodePorts]) i) := by
-          have hsub :
-              st.nextEndpoint + i.val - st.endpoints.length = i.val := by
-            have hnext := hv.nextEndpoint_eq
-            omega
-          apply congrArg (fun idx => (Sig.nodePorts node).get idx)
-          apply Fin.ext
-          simp [hsub]
+  have hval : endpoint.val - st.endpoints.length = nodePort.val := by
+    have hget :=
+      freshNodeEndpoints_get st.nextEndpoint (Sig.arity node) i
+    change
+      (freshNodeEndpoints st.nextEndpoint (Sig.arity node)).get i -
+        st.endpoints.length = nodePort.val
+    rw [hget]
+    have hnext := hv.nextEndpoint_eq
+    simp [nodePort]
+    omega
+  exact list_get_of_eq_append_right_of_val_eq rfl endpoint nodePort
+    hright hval
 
 /--
 One `connect` rendering step.  The type records the frontier effect: the
