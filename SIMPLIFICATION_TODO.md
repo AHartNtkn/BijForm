@@ -157,6 +157,9 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     and node-incident proof regions through the order-list helpers where the
     cast was pure order-index transport. Later bud-child and dependent
     incident-slot transports remain open.
+  - Partial: routed the bud-child node-incident-length proof through
+    `nodeOrderIndex` for child node-order lookups. Later bud-child frontier,
+    edge, and dependent incident-slot transports remain open.
 
 ## Code Algebra and Rank Descent
 
