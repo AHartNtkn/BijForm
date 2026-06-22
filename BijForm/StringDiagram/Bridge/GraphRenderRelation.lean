@@ -2097,104 +2097,26 @@ theorem GraphRenderRelated.budChild_endpointLabel
   let horderTrace :=
     budChild_orderTrace rst st hpending node slot hmate hunseen hids
       hrel.endpoint_length hrel.edge_length hrel.node_length
+  have hendpointRel :
+      AppendTraceRelation horderTrace.endpoint
+        (fun renderEndpoint graphEndpoint =>
+          renderEndpoint = G.raw.endpointLabel graphEndpoint) := by
+    refine { prefix_rel := ?_, suffix_rel := ?_ }
+    · intro prefixEndpoint graphEndpoint hval
+      have hidx : graphEndpoint = hrel.endpointIndex prefixEndpoint := by
+        exact fin_eq_of_val_eq hval.symm
+      simpa [hidx] using hrel.endpoint_label prefixEndpoint
+    · intro suffixPort suffixEndpoint hval
+      have hinc := G.raw.incidence_label node suffixEndpoint
+      simpa [Signature.nodePorts, renderNode, hval] using hinc.symm
   intro endpoint
-  by_cases hold : endpoint.val < rst.endpoints.length
-  · let oldEndpoint : Fin rst.endpoints.length := ⟨endpoint.val, hold⟩
-    have hrender :
-        (Diag.budStep renderNode entry ok rst).endpoints.get endpoint =
-          rst.endpoints.get oldEndpoint := by
-      simpa [oldEndpoint] using
-        Diag.budStep_endpoints_get_old renderNode entry ok rst
-          endpoint hold
-    let childEndpoint :
-        Fin (endpointOrder G
-          (st.budChild hpending node slot hmate hunseen)).length :=
-      Fin.cast hchildEndpointLength endpoint
-    have horder :
-        (endpointOrder G
-            (st.budChild hpending node slot hmate hunseen)).get
-            childEndpoint =
-          (endpointOrder G st).get (hrel.endpointIndex oldEndpoint) := by
-      exact horderTrace.endpoint.get_prefix_at_right_of_val_eq
-        childEndpoint (hrel.endpointIndex oldEndpoint)
-        (by simp [childEndpoint, oldEndpoint])
-    calc
-      (Diag.budStep renderNode entry ok rst).endpoints.get endpoint =
-          rst.endpoints.get oldEndpoint := hrender
-      _ =
-          G.raw.endpointLabel
-            ((endpointOrder G st).get (hrel.endpointIndex oldEndpoint)) :=
-          hrel.endpoint_label oldEndpoint
-      _ =
-          G.raw.endpointLabel
-            ((endpointOrder G
-              (st.budChild hpending node slot hmate hunseen)).get
-                childEndpoint) := by
-          rw [horder]
-  · have hle : rst.endpoints.length ≤ endpoint.val :=
-      Nat.le_of_not_gt hold
-    have hslotArity :
-        endpoint.val - rst.endpoints.length < Sig.arity renderNode := by
-      have hb :
-          endpoint.val < rst.endpoints.length + Sig.arity renderNode := by
-        exact Nat.lt_of_lt_of_eq endpoint.isLt
-          (Diag.budStep_endpoints_length renderNode entry ok rst)
-      omega
-    let renderSlot : Fin (Sig.nodePorts renderNode).length :=
-      ⟨endpoint.val - rst.endpoints.length, by
-        simpa [Signature.nodePorts] using hslotArity⟩
-    let graphSlot : Fin (G.raw.incident node).length :=
-      ⟨endpoint.val - rst.endpoints.length, by
-        rw [G.raw.incident_length node]
-        change endpoint.val - rst.endpoints.length < Sig.arity renderNode
-        exact hslotArity⟩
-    have hrender :
-        (Diag.budStep renderNode entry ok rst).endpoints.get endpoint =
-          (Sig.nodePorts renderNode).get renderSlot := by
-      simpa [renderSlot] using
-        Diag.budStep_endpoints_get_new renderNode entry ok rst
-          endpoint hle
-    let childEndpoint :
-        Fin (endpointOrder G
-          (st.budChild hpending node slot hmate hunseen)).length :=
-      Fin.cast hchildEndpointLength endpoint
-    have horder :
-        (endpointOrder G
-            (st.budChild hpending node slot hmate hunseen)).get
-            childEndpoint =
-          (G.raw.incident node).get graphSlot := by
-      exact horderTrace.endpoint.get_suffix_at_right_of_val_eq
-        childEndpoint graphSlot
-        (by
-          have holdLen :
-              (endpointOrder G st).length = rst.endpoints.length :=
-            hrel.endpoint_length.symm
-          rw [holdLen]
-          simpa [childEndpoint] using hle)
-        (by
-          have holdLen :
-              (endpointOrder G st).length = rst.endpoints.length :=
-            hrel.endpoint_length.symm
-          rw [holdLen]
-          simp [childEndpoint, graphSlot])
-    have hlabel :
-        (Sig.nodePorts renderNode).get renderSlot =
-          G.raw.endpointLabel ((G.raw.incident node).get graphSlot) := by
-      have hinc := G.raw.incidence_label node graphSlot
-      rw [hinc]
-      simp [Signature.nodePorts, renderNode, renderSlot, graphSlot]
-    calc
-      (Diag.budStep renderNode entry ok rst).endpoints.get endpoint =
-          (Sig.nodePorts renderNode).get renderSlot := hrender
-      _ =
-          G.raw.endpointLabel ((G.raw.incident node).get graphSlot) :=
-          hlabel
-      _ =
-          G.raw.endpointLabel
-            ((endpointOrder G
-              (st.budChild hpending node slot hmate hunseen)).get
-                childEndpoint) := by
-          rw [horder]
+  let childEndpoint :
+      Fin (endpointOrder G
+        (st.budChild hpending node slot hmate hunseen)).length :=
+    Fin.cast hchildEndpointLength endpoint
+  have hidx : horderTrace.endpoint.rightIndex endpoint = childEndpoint := by
+    exact fin_eq_of_val_eq rfl
+  simpa [childEndpoint, hidx] using AppendTraceRelation.get hendpointRel endpoint
 
 theorem GraphRenderRelated.budChild_edgeLabel
     {G : OpenPortHypergraph Sig boundary}

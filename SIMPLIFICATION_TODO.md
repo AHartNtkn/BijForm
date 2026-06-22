@@ -469,9 +469,9 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
   - Partial: `GraphRenderRelated.budChild_nodeLabel` now owns the bud child
     old/fresh node-label update; the main `budChild` proof consumes that field
     instead of splitting on old versus appended nodes there.
-  - Partial: `GraphRenderRelated.budChild_endpointLabel` now owns the bud child
-    old/fresh endpoint-label update; the main `budChild` proof consumes that
-    field instead of carrying endpoint suffix arithmetic locally.
+  - Partial: `GraphRenderRelated.budChild_endpointLabel` now consumes
+    `AppendTraceRelation`, moving its old/fresh endpoint-label split into the
+    generic append-relation proof path.
   - Partial: bud child edge-bound fields now consume the generic
     `ValidIds.edgeEndpointBounds` package through `hchildEdgeBounds`, matching
     the package-shaped proof input used by connect edge incidence helpers.
