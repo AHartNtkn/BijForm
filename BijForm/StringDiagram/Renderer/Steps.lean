@@ -779,11 +779,12 @@ theorem connectStep_validIds {active : Sig.Port} {frontier : List Sig.Port}
     · intro n hid hfrontier
       let idx : Fin restIds.length := listIndexCast restIds hrest.symm mate
       have hrel :
-          ∀ (n : Nat) (hx : n < restIds.length)
-            (hy : n < frontier.length),
-            ∃ hbound : restIds.get ⟨n, hx⟩ < st.endpoints.length,
-              st.endpoints.get ⟨restIds.get ⟨n, hx⟩, hbound⟩ =
-                frontier.get ⟨n, hy⟩ := by
+          IndexedListRel
+            (fun id label =>
+              ∃ hbound : id < st.endpoints.length,
+                st.endpoints.get ⟨id, hbound⟩ = label)
+            restIds frontier := by
+        refine { length := hrest, get := ?_ }
         intro n hx hy
         have hlabel :=
           hv.frontier_tail_label hids hrest ⟨n, hx⟩
@@ -792,12 +793,7 @@ theorem connectStep_validIds {active : Sig.Port} {frontier : List Sig.Port}
           right
           exact List.get_mem restIds ⟨n, hx⟩
         · simpa using hlabel
-      have haligned :=
-        eraseFin_pointwise_relation
-          (R := fun id label =>
-            ∃ hbound : id < st.endpoints.length,
-              st.endpoints.get ⟨id, hbound⟩ = label)
-          hrest hrel idx mate (by simp [idx]) n hid hfrontier
+      have haligned := (hrel.erase idx mate (by simp [idx])).get n hid hfrontier
       rcases haligned with ⟨hbound, hlabel⟩
       simpa using hlabel
     · intro edge hmem
@@ -1070,13 +1066,13 @@ theorem budStep_validIds {active : Sig.Port} {frontier : List Sig.Port}
       let portEntry : Fin (Sig.nodePorts node).length :=
         listIndexCast (Sig.nodePorts node) (by simp [Signature.nodePorts]) entry
       have hleft :
-          ∀ (n : Nat) (hid : n < restIds.length)
-            (hlabel : n < frontier.length),
-            ∃ hbound : restIds.get ⟨n, hid⟩ <
-                (st.endpoints ++ Sig.nodePorts node).length,
-              (st.endpoints ++ Sig.nodePorts node).get
-                  ⟨restIds.get ⟨n, hid⟩, hbound⟩ =
-                frontier.get ⟨n, hlabel⟩ := by
+          IndexedListRel
+            (fun id label =>
+              ∃ hbound : id < (st.endpoints ++ Sig.nodePorts node).length,
+                (st.endpoints ++ Sig.nodePorts node).get
+                  ⟨id, hbound⟩ = label)
+            restIds frontier := by
+        refine { length := hrest, get := ?_ }
         intro n hid hlabel
         have oldLabel :=
           hv.frontier_tail_label hids hrest ⟨n, hid⟩
@@ -1095,47 +1091,25 @@ theorem budStep_validIds {active : Sig.Port} {frontier : List Sig.Port}
                   (old_bound_lift oldBound)
           _ = frontier.get ⟨n, hlabel⟩ := by
               simpa using oldLabel
-      have hright :
-          ∀ (n : Nat)
-            (hid : n < (eraseFin nodeEndpoints entryIdx).length)
-            (hlabel : n < (Sig.nodePortsExcept node entry).length),
-            ∃ hbound : (eraseFin nodeEndpoints entryIdx).get ⟨n, hid⟩ <
-                (st.endpoints ++ Sig.nodePorts node).length,
-              (st.endpoints ++ Sig.nodePorts node).get
-                  ⟨(eraseFin nodeEndpoints entryIdx).get ⟨n, hid⟩,
-                    hbound⟩ =
-                (Sig.nodePortsExcept node entry).get ⟨n, hlabel⟩ := by
-        intro n hid hlabel
-        have hlabel' :
-            n < (eraseFin (Sig.nodePorts node) portEntry).length := by
-          simpa [Signature.nodePortsExcept, portEntry] using hlabel
-        have haligned :=
-          eraseFin_pointwise_relation
-            (R := fun id label =>
+      have hrightBase :
+          IndexedListRel
+            (fun id label =>
               ∃ hbound : id <
                   (st.endpoints ++ Sig.nodePorts node).length,
                 (st.endpoints ++ Sig.nodePorts node).get
                     ⟨id, hbound⟩ = label)
-            (by simp [nodeEndpoints, Signature.nodePorts])
-            nodeEndpoints_labels entryIdx portEntry
-            (by simp [entryIdx, portEntry])
-            n hid hlabel'
-        rcases haligned with ⟨hbound, hlabelEq⟩
-        refine ⟨hbound, ?_⟩
-        simpa [Signature.nodePortsExcept, portEntry] using hlabelEq
+            nodeEndpoints (Sig.nodePorts node) := by
+        refine { length := by simp [nodeEndpoints, Signature.nodePorts], get := ?_ }
+        exact nodeEndpoints_labels
+      have hright := hrightBase.erase entryIdx portEntry (by simp [entryIdx, portEntry])
+      have hfullRel :=
+        hleft.append hright
       have haligned :=
-        append_pointwise_relation
-          (R := fun id label =>
-            ∃ hbound : id < (st.endpoints ++ Sig.nodePorts node).length,
-              (st.endpoints ++ Sig.nodePorts node).get
-                ⟨id, hbound⟩ = label)
-          hrest
+        hfullRel.get n hid
           (by
-            simp [Signature.nodePortsExcept, nodeEndpoints,
-              Signature.nodePorts, eraseFin_length])
-          hleft hright n hid hfrontier
-      rcases haligned with ⟨hbound, hlabelEq⟩
-      simpa using hlabelEq
+            simpa [Signature.nodePortsExcept, portEntry] using hfrontier)
+      rcases haligned with ⟨_hbound, hlabelEq⟩
+      simpa [Signature.nodePortsExcept, portEntry] using hlabelEq
     · intro edge hmem
       simp at hmem
       rcases hmem with hold | hnew
