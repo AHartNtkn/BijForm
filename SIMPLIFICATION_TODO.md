@@ -362,8 +362,13 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     for generated-code descent from `Mu` normalizer/denormalizer laws. HBT
     branch congruence, eta, and swap relation chains are now named helper
     lemmas, and `HBTChildSwapDescendedNatCode` is an instantiation of the
-    generic normalizer helper. The broader generic binary child-swap descent
-    abstraction remains open.
+    generic normalizer helper. Added
+    `QuotientPresentation.Rel.unorderedPair_decode_encode_repair`; HBT now
+    routes branch-pair coding through `CodeAlgebra.unorderedPairCode` and
+    `CodeAlgebra.unorderedPairNat` directly instead of the `TupleAction`
+    binary-swap wrapper. The broader generic binary child-swap descent
+    abstraction that eliminates the domain-specific recursive
+    normalizer/denormalizer remains open.
 
 - [x] Generate finite string-diagram entry tables for finite signatures.
   - Owner: `BijForm.StringDiagram.FiniteCoding.Syntax`

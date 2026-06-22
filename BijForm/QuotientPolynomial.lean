@@ -1,4 +1,5 @@
 import BijForm.InitialAlgebra
+import BijForm.CodeAlgebra
 
 namespace BijForm
 namespace DepPoly
@@ -70,6 +71,44 @@ inductive Rel (Q : QuotientPresentation P) :
       Rel Q i x y → Rel Q i y x
   | trans {i : ι} {x y z : Mu P i} :
       Rel Q i x y → Rel Q i y z → Rel Q i x z
+
+namespace Rel
+
+theorem unorderedPair_decode_encode_repair
+    (Q : QuotientPresentation P)
+    {childIndex outIndex : ι}
+    (normalize : Mu P childIndex → Nat)
+    (denormalize : Nat → Mu P childIndex)
+    (mk : Mu P childIndex → Mu P childIndex → Mu P outIndex)
+    (lhs rhs : Mu P childIndex)
+    {target : Mu P outIndex}
+    (hleft : Rel Q childIndex (denormalize (normalize lhs)) lhs)
+    (hright : Rel Q childIndex (denormalize (normalize rhs)) rhs)
+    (branch_congr :
+      ∀ {a a' b b' : Mu P childIndex},
+        Rel Q childIndex a a' →
+        Rel Q childIndex b b' →
+          Rel Q outIndex (mk a b) (mk a' b'))
+    (branch_swap :
+      ∀ a b : Mu P childIndex, Rel Q outIndex (mk a b) (mk b a))
+    (branch_eta : Rel Q outIndex (mk lhs rhs) target) :
+    Rel Q outIndex
+      (mk
+        (denormalize
+          (CodeAlgebra.unorderedPairNat.invFun
+            (CodeAlgebra.unorderedPairCode (normalize lhs) (normalize rhs))).val.1)
+        (denormalize
+          (CodeAlgebra.unorderedPairNat.invFun
+            (CodeAlgebra.unorderedPairCode (normalize lhs) (normalize rhs))).val.2))
+      target := by
+  by_cases hle : normalize lhs ≤ normalize rhs
+  · rw [CodeAlgebra.unorderedPairNat_inv_unorderedPairCode_of_le hle]
+    exact Rel.trans (branch_congr hleft hright) branch_eta
+  · rw [CodeAlgebra.unorderedPairNat_inv_unorderedPairCode_of_not_le hle]
+    exact Rel.trans (branch_congr hright hleft)
+      (Rel.trans (branch_swap rhs lhs) branch_eta)
+
+end Rel
 
 /-- The generated quotient relation bundled as an explicit setoid, so quotient
 equality can be reflected back to the generated relation when proving
