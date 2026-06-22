@@ -175,6 +175,19 @@ theorem edgeMateCandidate?_isSome_of_edgeMate (G : PortHypergraph Sig boundary)
     (edgeMateCandidate? G endpoint mate).isSome := by
   simp [edgeMateCandidate?, hmate.1, hmate.2]
 
+theorem edgeMateCandidate?_some_of_edgeMate (G : PortHypergraph Sig boundary)
+    {endpoint mate : Fin G.endpointCount}
+    (hmate : EdgeMate G endpoint mate) :
+    ∃ data : EdgeMateData G endpoint mate,
+      edgeMateCandidate? G endpoint mate = some data := by
+  cases hcase : edgeMateCandidate? G endpoint mate with
+  | none =>
+      have hsome := edgeMateCandidate?_isSome_of_edgeMate G hmate
+      rw [hcase] at hsome
+      simp at hsome
+  | some data =>
+      exact ⟨data, rfl⟩
+
 /-- Search the finite endpoint set for the mate of a concrete endpoint. -/
 def edgeMateSearch? (G : PortHypergraph Sig boundary)
     (endpoint : Fin G.endpointCount) :
