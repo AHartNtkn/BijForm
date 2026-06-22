@@ -448,43 +448,6 @@ theorem IsoRelated.processed_mem_reflected
     simp
   simpa [hpre] using hedge'
 
-theorem IsoRelated.transport_contracts
-    {G H : OpenPortHypergraph Sig boundary}
-    {e : PortHypergraphIso G.raw H.raw}
-    {frontier : List Sig.Port}
-    {left : SearchState G frontier} {right : SearchState H frontier}
-    (hr : IsoRelated e left right)
-    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
-    (hleft : left.pending = active :: rest)
-    {leftEndpoint : Fin G.raw.endpointCount}
-    {rightEndpoint : Fin H.raw.endpointCount}
-    (hleftPending : leftEndpoint ∈ left.pending)
-    (hrightPending : rightEndpoint ∈ right.pending)
-    {leftNode : Fin G.raw.nodeCount}
-    {rightNode : Fin H.raw.nodeCount}
-    (hleftSeen : leftNode ∈ left.seenNodes)
-    (hrightSeen : rightNode ∈ right.seenNodes)
-    {leftEdge : Fin G.raw.edgeCount}
-    {rightEdge : Fin H.raw.edgeCount}
-    (hleftProcessed : leftEdge ∈ left.processedEdges)
-    (hrightProcessed : rightEdge ∈ right.processedEdges) :
-    right.pending =
-        e.endpointEquiv.toFun active ::
-          rest.map e.endpointEquiv.toFun ∧
-      e.endpointEquiv.toFun leftEndpoint ∈ right.pending ∧
-      e.endpointEquiv.invFun rightEndpoint ∈ left.pending ∧
-      e.nodeEquiv.toFun leftNode ∈ right.seenNodes ∧
-      e.nodeEquiv.invFun rightNode ∈ left.seenNodes ∧
-      e.edgeEquiv.toFun leftEdge ∈ right.processedEdges ∧
-      e.edgeEquiv.invFun rightEdge ∈ left.processedEdges := by
-  exact ⟨hr.pending_cons hleft,
-    hr.pending_mem_preserved hleftPending,
-    hr.pending_mem_reflected hrightPending,
-    hr.seen_mem_preserved hleftSeen,
-    hr.seen_mem_reflected hrightSeen,
-    hr.processed_mem_preserved hleftProcessed,
-    hr.processed_mem_reflected hrightProcessed⟩
-
 theorem pending_cons_nodup {G : OpenPortHypergraph Sig boundary}
     {activeLabel : Sig.Port} {restLabels : List Sig.Port}
     (st : SearchState G (activeLabel :: restLabels))

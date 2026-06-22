@@ -1612,40 +1612,6 @@ theorem endpointOwnersOf_unique_transport_reflected
     owner' = endpointOwnersOfReflected e owner :=
   endpointOwnersOfReflected_unique e owner owner'
 
-theorem transport_contracts_preserved {G H : PortHypergraph Sig boundary}
-    (e : PortHypergraphIso G H)
-    {endpoint mate : Fin G.endpointCount}
-    (hmate : PortHypergraph.EdgeMate G endpoint mate)
-    (owner : PortHypergraph.endpointOwnersOf G endpoint) :
-    PortHypergraph.EdgeMate H
-        (e.endpointEquiv.toFun endpoint) (e.endpointEquiv.toFun mate) ∧
-      PortHypergraph.endpointOwnerEndpoint H
-          (endpointOwnersOfPreserved e owner).1 =
-        e.endpointEquiv.toFun endpoint ∧
-      (∀ owner' : PortHypergraph.endpointOwnersOf H
-          (e.endpointEquiv.toFun endpoint),
-        owner' = endpointOwnersOfPreserved e owner) := by
-  exact ⟨edgeMate_preserved e hmate,
-    (endpointOwnersOfPreserved e owner).2,
-    endpointOwnersOfPreserved_unique e owner⟩
-
-theorem transport_contracts_reflected {G H : PortHypergraph Sig boundary}
-    (e : PortHypergraphIso G H)
-    {endpoint mate : Fin H.endpointCount}
-    (hmate : PortHypergraph.EdgeMate H endpoint mate)
-    (owner : PortHypergraph.endpointOwnersOf H endpoint) :
-    PortHypergraph.EdgeMate G
-        (e.endpointEquiv.invFun endpoint) (e.endpointEquiv.invFun mate) ∧
-      PortHypergraph.endpointOwnerEndpoint G
-          (endpointOwnersOfReflected e owner).1 =
-        e.endpointEquiv.invFun endpoint ∧
-      (∀ owner' : PortHypergraph.endpointOwnersOf G
-          (e.endpointEquiv.invFun endpoint),
-        owner' = endpointOwnersOfReflected e owner) := by
-  exact ⟨edgeMate_reflected e hmate,
-    (endpointOwnersOfReflected e owner).2,
-    endpointOwnersOfReflected_unique e owner⟩
-
 end PortHypergraphIso
 
 end StringDiagram
