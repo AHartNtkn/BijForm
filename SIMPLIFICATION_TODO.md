@@ -394,8 +394,7 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     compositions use generic helper APIs rather than bespoke trans chains.
   - Completed: reviewed public example isomorphism wrappers. The retained
     `*NatIso`, `*FinIso`, and `*ShapeIso` names are public characterization
-    surfaces checked by `BijForm.Validation.PublicSurfaces`; scanned
-    compositions already go through `GeneratedCode.natCodeIso`,
+    surfaces; scanned compositions already go through `GeneratedCode.natCodeIso`,
     `GeneratedCode.rankedNatCodeIso`, `GeneratedCode.shapeNatIso`,
     `GeneratedCode.shapeFinIso`, typed-binding `syntaxCodeIso`, or quotient
     descent helpers.
@@ -646,7 +645,7 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     derived namespace theorems. `ofPreserved`, `refl`, `symm`, and `trans`
     provide only forward preservation data.
 
-## Quotients and Validation Tooling
+## Quotient Helpers
 
 - [x] Extract generic quotient-normal-form coding.
   - Owner: new quotient-code boundary or `BijForm.QuotientPolynomial`
@@ -672,64 +671,3 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
   - Completed: added `Iso.transportSetoid` and `Iso.quotientTransport` in
     `BijForm.Coding`; `syntaxSetoid`, `codeSetoid`, `syntaxCarrierIso`, and
     `codeIso` now route through the generic transport.
-
-- [x] Replace stale-name audit greps with Lean validation surfaces.
-  - Owner: audit tooling plus quotient/example validation modules.
-  - Evidence: the former audit script grepped for old declaration names and
-    exact source strings.
-  - Action: add Lean modules that typecheck intended quotient and example
-    public surfaces, then remove greps that only prove old spellings are absent.
-  - Validation: `lake build` includes the validation modules and the audit
-    check helper no longer contains stale-name policy greps.
-  - Completed: added `BijForm.Validation.PublicSurfaces` to typecheck quotient,
-    generated-code, finite string-diagram, typed-binding NF, and canonical
-    inversion public surfaces; removed the stale-name/source-shape grep blocks.
-
-- [x] Consolidate audit command ownership.
-  - Owner: Lake/tooling.
-  - Evidence: `Audit.lean` used to shell to the audit script, and that shell
-    script ran `lake build`.
-  - Action: make either the shell script or a real Lake script the single
-    authoritative audit owner.
-  - Validation: the chosen command works from repo root and from a subdirectory;
-    docs name only that command.
-  - Completed: `Audit.lean` now owns root discovery, `lake build`, and policy
-    check invocation. The shell helper is `scripts/audit-checks.sh` and no
-    longer runs Lake build; README names only the subdirectory-safe Lake audit
-    command.
-
-- [x] Replace the GraphRenderRelation-only AWK `Fin.ext` audit.
-  - Owner: finite-index helper boundary plus audit tooling.
-  - Evidence: `scripts/check-trivial-fin-ext.awk` parses formatting in one file
-    while raw `Fin.ext` can exist elsewhere.
-  - Action: remove the AWK gate or replace it with a project-wide lint that has
-    a documented allowed helper boundary.
-  - Validation: lint evidence targets the whole tracked Lean source set or the
-    AWK test files are deleted with the gate.
-  - Completed: `scripts/audit-checks.sh` now runs the existing
-    trivial-`Fin.ext` checker over every tracked Lean source file from
-    `git ls-files '*.lean'`.
-
-- [ ] Make proof-gap validation semantic enough to avoid lexical false comfort.
-  - Owner: formalization validation tooling.
-  - Evidence: the audit check helper classifies `sorry` by nearby words.
-  - Action: use temporary files from `mktemp` and move toward a declaration-level
-    proof-gap inventory, such as declarations depending on `sorryAx` matched to
-    explicit unfinished markers.
-  - Validation: labeled and unlabeled proof-gap fixtures behave as intended, and
-    parallel audit runs do not share fixed temp paths.
-  - Partial: `scripts/audit-checks.sh` stores `sorry` grep evidence in a
-    per-run `mktemp -d` directory and cleans it up on exit. Declaration-level
-    proof-gap inventory remains open.
-
-- [x] Remove README declaration inventory as a second source of truth.
-  - Owner: README/docs.
-  - Evidence: README manually lists large declaration inventories, and audit
-    tooling then protects pieces of that list with stale-name greps.
-  - Action: shrink README to stable module-level orientation or generate
-    declaration inventories from source state.
-  - Validation: no audit grep exists solely to keep README declaration names
-    current.
-  - Completed: README now gives module-level orientation and example summaries
-    without a hand-written declaration inventory; audit greps no longer include
-    README as a stale declaration-name surface.

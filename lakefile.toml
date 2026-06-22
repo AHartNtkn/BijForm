@@ -8,7 +8,3 @@ name = "BijForm"
 [[lean_exe]]
 name = "bijform"
 root = "Main"
-
-[[lean_exe]]
-name = "audit"
-root = "Audit"

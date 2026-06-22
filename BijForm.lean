@@ -11,4 +11,3 @@ import BijForm.QuotientPolynomial
 import BijForm.TypedBinding
 import BijForm.StringDiagram
 import BijForm.Examples
-import BijForm.Validation.PublicSurfaces
