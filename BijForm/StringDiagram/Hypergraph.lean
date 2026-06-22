@@ -717,6 +717,53 @@ theorem rawReachesBoundary_to_portReachesBoundaryOfInvariants
         exact fin_eq_of_val_eq rfl
       simpa [htarget] using hreachTo
 
+theorem allConstructorsReachBoundaryOfInvariants
+    {st : RenderState Sig []} {boundary : List Sig.Port}
+    (hv : st.ValidIds) (hp : st.EndpointPartition)
+    (hn : st.NodeIncidentNodup)
+    (pref : st.EndpointPrefix boundary)
+    (ho : st.OwnerIdPartition boundary)
+    (hr : st.Reachability boundary) :
+    PortHypergraph.AllConstructorsReachBoundary
+      (portHypergraphEvidenceOfInvariants hv hp hn pref ho).toPortHypergraph := by
+  let ev : RenderState.PortHypergraphEvidence st boundary :=
+    portHypergraphEvidenceOfInvariants hv hp hn pref ho
+  let G := ev.toPortHypergraph
+  change PortHypergraph.AllConstructorsReachBoundary G
+  intro node
+  have hnodeMem : st.nodes.get node ∈ st.nodes :=
+    List.get_mem st.nodes node
+  rcases hr.node_reaches (st.nodes.get node) hnodeMem with
+    ⟨rawSlot, rawReach⟩
+  let slot : Fin (G.incident node).length :=
+    Fin.cast
+      (by
+        simp [G, ev, RenderState.PortHypergraphEvidence.toPortHypergraph,
+          RenderState.portHypergraphEvidenceOfInvariants,
+          RenderState.incidenceEvidenceOfValidIds,
+          RenderState.incidentOfValidIds])
+      rawSlot
+  refine ⟨slot, ?_⟩
+  have hrawBound :
+      (st.nodes.get node).incident.get rawSlot < st.endpoints.length :=
+    hv.node_incident_bound (st.nodes.get node) hnodeMem rawSlot
+  have hrawReach :
+      PortHypergraph.PortReachesBoundary G
+        (⟨(st.nodes.get node).incident.get rawSlot, hrawBound⟩ :
+          Fin st.endpoints.length) :=
+    rawReachesBoundary_to_portReachesBoundaryOfInvariants
+      hv hp hn pref ho hrawBound rawReach
+  have hendpoint :
+      (G.incident node).get slot =
+        (⟨(st.nodes.get node).incident.get rawSlot, hrawBound⟩ :
+          Fin st.endpoints.length) := by
+    exact fin_eq_of_val_eq (by
+      simp [G, ev, RenderState.PortHypergraphEvidence.toPortHypergraph,
+        RenderState.portHypergraphEvidenceOfInvariants,
+        RenderState.incidenceEvidenceOfValidIds,
+        RenderState.incidentOfValidIds, slot])
+  exact hendpoint.symm ▸ hrawReach
+
 /-- Evidence that a completed render trace presents an open semantic graph. -/
 structure OpenPortHypergraphEvidence
     (st : RenderState Sig []) (boundary : List Sig.Port) where
@@ -747,6 +794,110 @@ def toOpenPortHypergraph {st : RenderState Sig []} {boundary : List Sig.Port}
   allConstructorsReachBoundary := ev.allConstructorsReachBoundary
 
 end OpenPortHypergraphEvidence
+
+/--
+Packaged renderer invariant evidence.  Graph/open evidence and semantic
+reachability facts are derived projections, so callers cannot mix fields from
+different renderer states.
+-/
+structure RenderTraceEvidence
+    {frontier : List Sig.Port} (st : RenderState Sig frontier)
+    (boundary : List Sig.Port) where
+  validIds : st.ValidIds
+  endpointPartition : st.EndpointPartition
+  nodeIncidentNodup : st.NodeIncidentNodup
+  endpointPrefix : st.EndpointPrefix boundary
+  ownerIdPartition : st.OwnerIdPartition boundary
+  reachability : st.Reachability boundary
+
+namespace RenderTraceEvidence
+
+def graphEvidence
+    {boundary : List Sig.Port} {st : RenderState Sig []}
+    (ev : RenderTraceEvidence st boundary) :
+    PortHypergraphEvidence st boundary :=
+  portHypergraphEvidenceOfInvariants ev.validIds ev.endpointPartition
+    ev.nodeIncidentNodup ev.endpointPrefix ev.ownerIdPartition
+
+def toPortHypergraph
+    {boundary : List Sig.Port} {st : RenderState Sig []}
+    (ev : RenderTraceEvidence st boundary) :
+    PortHypergraph Sig boundary :=
+  ev.graphEvidence.toPortHypergraph
+
+theorem portReachesBoundary
+    {boundary : List Sig.Port} {st : RenderState Sig []}
+    (ev : RenderTraceEvidence st boundary)
+    {id : Nat} (hbound : id < st.endpoints.length)
+    (reach : st.RawReachesBoundary boundary.length id) :
+    PortHypergraph.PortReachesBoundary ev.toPortHypergraph ⟨id, hbound⟩ := by
+  simpa [toPortHypergraph, graphEvidence] using
+    rawReachesBoundary_to_portReachesBoundaryOfInvariants
+      ev.validIds ev.endpointPartition ev.nodeIncidentNodup
+      ev.endpointPrefix ev.ownerIdPartition hbound reach
+
+theorem allConstructorsReachBoundary
+    {boundary : List Sig.Port} {st : RenderState Sig []}
+    (ev : RenderTraceEvidence st boundary) :
+    PortHypergraph.AllConstructorsReachBoundary ev.toPortHypergraph := by
+  simpa [toPortHypergraph, graphEvidence] using
+    allConstructorsReachBoundaryOfInvariants ev.validIds
+      ev.endpointPartition ev.nodeIncidentNodup ev.endpointPrefix
+      ev.ownerIdPartition ev.reachability
+
+def openEvidence
+    {boundary : List Sig.Port} {st : RenderState Sig []}
+    (ev : RenderTraceEvidence st boundary) :
+    OpenPortHypergraphEvidence st boundary where
+  graph := ev.graphEvidence
+  allConstructorsReachBoundary := by
+    simpa [toPortHypergraph] using ev.allConstructorsReachBoundary
+
+def toOpenPortHypergraph
+    {boundary : List Sig.Port} {st : RenderState Sig []}
+    (ev : RenderTraceEvidence st boundary) :
+    OpenPortHypergraph Sig boundary :=
+  ev.openEvidence.toOpenPortHypergraph
+
+def ofInvariants
+    {frontier boundary : List Sig.Port} {st : RenderState Sig frontier}
+    (hv : st.ValidIds)
+    (hp : st.EndpointPartition)
+    (hn : st.NodeIncidentNodup)
+    (pref : st.EndpointPrefix boundary)
+    (ho : st.OwnerIdPartition boundary)
+    (hr : st.Reachability boundary) :
+    RenderTraceEvidence st boundary where
+  validIds := hv
+  endpointPartition := hp
+  nodeIncidentNodup := hn
+  endpointPrefix := pref
+  ownerIdPartition := ho
+  reachability := hr
+
+def initial (boundary : List Sig.Port) :
+    RenderTraceEvidence (RenderState.initial Sig boundary) boundary where
+  validIds := initial_validIds boundary
+  endpointPartition := initial_endpointPartition boundary
+  nodeIncidentNodup := initial_nodeIncidentNodup boundary
+  endpointPrefix := initial_endpointPrefix boundary
+  ownerIdPartition := initial_ownerIdPartition boundary
+  reachability := initial_reachability boundary
+
+theorem edgeMate_of_endpoint_sides
+    {boundary : List Sig.Port} {st : RenderState Sig []}
+    (ev : RenderTraceEvidence st boundary)
+    (left right : Fin st.endpoints.length)
+    (edgeIndex : Fin st.edges.length)
+    (hleft : left.val = (st.edges.get edgeIndex).left)
+    (hright : right.val = (st.edges.get edgeIndex).right) :
+    PortHypergraph.EdgeMate ev.toPortHypergraph left right := by
+  simpa [toPortHypergraph, graphEvidence] using
+    edgeMateOfInvariants_of_endpoint_sides ev.validIds
+      ev.endpointPartition ev.nodeIncidentNodup ev.endpointPrefix
+      ev.ownerIdPartition left right edgeIndex hleft hright
+
+end RenderTraceEvidence
 
 end RenderState
 
@@ -810,44 +961,10 @@ theorem renderTrace_allConstructorsReachBoundary
     renderTrace_ownerIdPartition d st boundary hv ho
   let finalHr : final.Reachability boundary :=
     renderTrace_reachability d st hr
-  let ev : RenderState.PortHypergraphEvidence final boundary :=
-    RenderState.portHypergraphEvidenceOfInvariants
-      finalHv finalHp finalHn finalPref finalHo
-  let G := ev.toPortHypergraph
-  change PortHypergraph.AllConstructorsReachBoundary G
-  intro node
-  have hnodeMem : final.nodes.get node ∈ final.nodes :=
-    List.get_mem final.nodes node
-  rcases finalHr.node_reaches (final.nodes.get node) hnodeMem with
-    ⟨rawSlot, rawReach⟩
-  let slot : Fin (G.incident node).length :=
-    Fin.cast
-      (by
-        simp [G, ev, RenderState.PortHypergraphEvidence.toPortHypergraph,
-          RenderState.portHypergraphEvidenceOfInvariants,
-          RenderState.incidenceEvidenceOfValidIds,
-          RenderState.incidentOfValidIds])
-      rawSlot
-  refine ⟨slot, ?_⟩
-  have hrawBound :
-      (final.nodes.get node).incident.get rawSlot < final.endpoints.length :=
-    finalHv.node_incident_bound (final.nodes.get node) hnodeMem rawSlot
-  have hrawReach :
-      PortHypergraph.PortReachesBoundary G
-        (⟨(final.nodes.get node).incident.get rawSlot, hrawBound⟩ :
-          Fin final.endpoints.length) :=
-    RenderState.rawReachesBoundary_to_portReachesBoundaryOfInvariants
-      finalHv finalHp finalHn finalPref finalHo hrawBound rawReach
-  have hendpoint :
-      (G.incident node).get slot =
-        (⟨(final.nodes.get node).incident.get rawSlot, hrawBound⟩ :
-          Fin final.endpoints.length) := by
-    exact fin_eq_of_val_eq (by
-      simp [G, ev, RenderState.PortHypergraphEvidence.toPortHypergraph,
-        RenderState.portHypergraphEvidenceOfInvariants,
-        RenderState.incidenceEvidenceOfValidIds,
-        RenderState.incidentOfValidIds, slot])
-  exact hendpoint.symm ▸ hrawReach
+  simpa [renderTrace_graphEvidence, final, finalHv, finalHp, finalHn,
+    finalPref, finalHo] using
+    RenderState.allConstructorsReachBoundaryOfInvariants
+      finalHv finalHp finalHn finalPref finalHo finalHr
 
 theorem renderTraceFromBoundary_allConstructorsReachBoundary
     {boundary : List Sig.Port} (d : Diag Sig boundary) :
@@ -878,6 +995,28 @@ def renderTrace_openEvidence
   graph := renderTrace_graphEvidence d st hv hp hn pref ho
   allConstructorsReachBoundary :=
     renderTrace_allConstructorsReachBoundary d st hv hp hn pref ho hr
+
+def renderTrace_evidence
+    {frontier boundary : List Sig.Port} (d : Diag Sig frontier)
+    (st : RenderState Sig frontier)
+    (ev : RenderState.RenderTraceEvidence st boundary) :
+    RenderState.RenderTraceEvidence (renderTrace d st) boundary where
+  validIds := renderTrace_validIds d st ev.validIds
+  endpointPartition :=
+    renderTrace_endpointPartition d st ev.validIds ev.endpointPartition
+  nodeIncidentNodup := renderTrace_nodeIncidentNodup d st ev.nodeIncidentNodup
+  endpointPrefix := renderTrace_endpointPrefixOfPrefix d st ev.endpointPrefix
+  ownerIdPartition :=
+    renderTrace_ownerIdPartition d st boundary ev.validIds
+      ev.ownerIdPartition
+  reachability := renderTrace_reachability d st ev.reachability
+
+def renderTraceFromBoundary_evidence
+    {boundary : List Sig.Port} (d : Diag Sig boundary) :
+    RenderState.RenderTraceEvidence (renderTraceFromBoundary d) boundary := by
+  simpa [renderTraceFromBoundary] using
+    renderTrace_evidence d (RenderState.initial Sig boundary)
+      (RenderState.RenderTraceEvidence.initial boundary)
 
 /--
 Renderer validity: the trace produced from traversal syntax carries exactly

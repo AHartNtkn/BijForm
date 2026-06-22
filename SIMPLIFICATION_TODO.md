@@ -604,6 +604,15 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
   - Action: add `RenderTraceEvidence` with projections for graph evidence, open
     evidence, endpoint prefix, owner partition, and reachability.
   - Validation: bridge files no longer assemble the invariant tuple manually.
+  - Partial: added `RenderState.RenderTraceEvidence` with projections for
+    graph evidence, open evidence, semantic graph/open graph values,
+    reachability conversion, all-constructors reachability, and endpoint-side
+    edge mates. `Diag.renderTrace_evidence` and
+    `Diag.renderTraceFromBoundary_evidence` produce the package for traces, and
+    `Bridge.Quotient` now consumes the package instead of locally rebuilding
+    `RenderState.openEvidenceOfInvariants`. Recursive tuple signatures in
+    `SyntaxRoundTrip` and `GraphRenderRelation.toPortHypergraphIso` remain
+    open.
 
 - [ ] Table-drive finite string-diagram frontier cases.
   - Owner: `BijForm.StringDiagram.FiniteCoding.Syntax`

@@ -38,18 +38,14 @@ theorem Diag.fromGraph_toOpenPortHypergraph
     {Sig : Signature} {boundary : List Sig.Port}
     (d : Diag Sig boundary) :
     OpenPortHypergraph.fromGraph (Diag.toOpenPortHypergraph d) = d := by
-  let hv := renderTraceFromBoundary_validIds d
-  let hp := renderTraceFromBoundary_endpointPartition d
-  let hn := renderTraceFromBoundary_nodeIncidentNodup d
-  let pref := renderTraceFromBoundary_endpointPrefix d
-  let ho := renderTraceFromBoundary_ownerIdPartition d
-  let hall := renderTraceFromBoundary_allConstructorsReachBoundary d
-  let ev := RenderState.openEvidenceOfInvariants hv hp hn pref ho hall
+  let evidence := Diag.renderTraceFromBoundary_evidence d
+  let ev := evidence.openEvidence
   have hrel :
       OpenPortHypergraph.SearchState.RenderPrefixRelated ev
         (RenderState.initial Sig boundary)
         (OpenPortHypergraph.SearchState.initial ev.toOpenPortHypergraph) := by
-    simpa [ev, RenderState.openEvidenceOfInvariants,
+    simpa [ev, evidence, RenderState.RenderTraceEvidence.openEvidence,
+      RenderState.RenderTraceEvidence.graphEvidence, renderTraceFromBoundary_evidence,
       renderTraceFromBoundary_openEvidence, renderTraceFromBoundary_graphEvidence,
       Diag.toOpenPortHypergraph] using
       OpenPortHypergraph.SearchState.initial_renderPrefixRelated d
@@ -64,11 +60,15 @@ theorem Diag.fromGraph_toOpenPortHypergraph
       (RenderState.initial_endpointPrefix boundary)
       (RenderState.initial_ownerIdPartition boundary)
       (RenderState.initial_reachability boundary)
-      hv hp hn pref ho hall
+      evidence.validIds evidence.endpointPartition evidence.nodeIncidentNodup
+      evidence.endpointPrefix evidence.ownerIdPartition
+      evidence.allConstructorsReachBoundary
       (OpenPortHypergraph.SearchState.initial ev.toOpenPortHypergraph)
       hrel hcomplete
   simpa [OpenPortHypergraph.fromGraph, Diag.toOpenPortHypergraph, ev,
-    RenderState.openEvidenceOfInvariants, renderTraceFromBoundary_openEvidence,
+    evidence, RenderState.RenderTraceEvidence.openEvidence,
+    RenderState.RenderTraceEvidence.graphEvidence,
+    renderTraceFromBoundary_evidence, renderTraceFromBoundary_openEvidence,
     renderTraceFromBoundary_graphEvidence] using hreplay
 
 /--
@@ -92,21 +92,20 @@ theorem OpenPortHypergraph.toOpenPortHypergraph_fromGraph_iso
       (RenderState.initial_validIds boundary)
       (OpenPortHypergraph.SearchState.initial_graphRenderRelated G)
   rcases htrace with ⟨finalSt, hfinal, hrelFinal⟩
-  let hv := Diag.renderTraceFromBoundary_validIds d
-  let hp := Diag.renderTraceFromBoundary_endpointPartition d
-  let hn := Diag.renderTraceFromBoundary_nodeIncidentNodup d
-  let pref := Diag.renderTraceFromBoundary_endpointPrefix d
-  let ho := Diag.renderTraceFromBoundary_ownerIdPartition d
-  let hall := Diag.renderTraceFromBoundary_allConstructorsReachBoundary d
+  let evidence := Diag.renderTraceFromBoundary_evidence d
   have hexhausted : finalSt.GraphExhausted :=
     finalSt.graphExhausted_of_empty_frontier hfinal
   refine ⟨?_⟩
   simpa [d, OpenPortHypergraph.fromGraph, Diag.toOpenPortHypergraph,
-    Diag.renderTraceFromBoundary, Diag.renderTraceFromBoundary_openEvidence,
-    Diag.renderTraceFromBoundary_graphEvidence,
-    RenderState.openEvidenceOfInvariants] using
+    Diag.renderTraceFromBoundary, evidence, Diag.renderTraceFromBoundary_evidence,
+    RenderState.RenderTraceEvidence.openEvidence,
+    RenderState.RenderTraceEvidence.graphEvidence,
+    Diag.renderTraceFromBoundary_openEvidence,
+    Diag.renderTraceFromBoundary_graphEvidence] using
     OpenPortHypergraph.SearchState.GraphRenderRelated.toPortHypergraphIso
-      hv hp hn pref ho hall hrelFinal hexhausted
+      evidence.validIds evidence.endpointPartition evidence.nodeIncidentNodup
+      evidence.endpointPrefix evidence.ownerIdPartition
+      evidence.allConstructorsReachBoundary hrelFinal hexhausted
 
 /--
 Semantic bridge assembly between traversal syntax and open port-hypergraphs up
