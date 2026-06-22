@@ -1386,6 +1386,20 @@ structure BudChildOrderTrace
     AppendTrace rst.nodes childRst.nodes [renderNode]
       (nodeOrder st) (nodeOrder childSt) [node]
 
+theorem ConnectChildOrderTrace.renderEdge_get
+    {G : OpenPortHypergraph Sig boundary}
+    {activeLabel : Sig.Port} {frontier childFrontier : List Sig.Port}
+    {rst : RenderState Sig (activeLabel :: frontier)}
+    {childRst : RenderState Sig childFrontier}
+    {st : SearchState G (activeLabel :: frontier)}
+    {childSt : SearchState G childFrontier}
+    {active : Fin G.raw.endpointCount}
+    (trace : ConnectChildOrderTrace rst childRst st childSt active)
+    (edge : Fin childRst.edges.length)
+    (hval : edge.val = rst.edges.length) :
+    childRst.edges.get edge = trace.renderEdge :=
+  trace.edge.left_step.get_single_at_length edge hval
+
 def connectChild_orderTrace
     {G : OpenPortHypergraph Sig boundary}
     {activeLabel : Sig.Port} {frontier : List Sig.Port}

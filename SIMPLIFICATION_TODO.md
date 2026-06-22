@@ -418,6 +418,10 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     `IndexedListRel` now packages connect/bud frontier-to-pending relation
     composition. The graph-specific label/bound/incidence deltas are still
     open.
+  - Partial: `ConnectChildOrderTrace.renderEdge_get` now makes the connect
+    child order trace the authority for the appended rendered edge; connect
+    graph-render new-edge bound/label/endpoint-edge branches no longer rebuild
+    the concrete edge record or call `connectStep_edges_get_new` directly.
 
 - [ ] Introduce declarative render deltas for connect and bud.
   - Owner: `BijForm.StringDiagram.Renderer.Steps`
