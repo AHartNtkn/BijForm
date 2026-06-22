@@ -267,7 +267,7 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     `child_eta_rfl child` inverse proof bodies remain visible and still need a
     deeper constructor-clause helper.
 
-- [ ] Factor finite and infinite sorted branch payload coding.
+- [x] Factor finite and infinite sorted branch payload coding.
   - Owner: `BijForm.Examples.Sorted`, backed by `CodeAlgebra` payload lemmas.
   - Evidence: `SortedFiniteConstructorPayloadIso`,
     `SortedInfiniteConstructorPayloadIso`, and parallel child-rank proofs.
@@ -279,6 +279,9 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     with one `sortedConstructorPayloadIso` parameterized by upper bound and
     pivot codec. The finite and infinite child-rank lemmas remain separate and
     still need a parameterized descent helper.
+  - Completed: added `sortedConstructorPayload_child_rank_lt` parameterized by
+    upper bound, pivot codec, tail codec, and left/right `SubcodeLt` witnesses.
+    Finite and infinite child-rank theorems are now thin instantiations.
 
 - [ ] Generalize typed-binding NF constructor-family carrier coding.
   - Owner: `BijForm.TypedBinding`
