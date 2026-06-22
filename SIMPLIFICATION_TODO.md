@@ -438,6 +438,10 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     `connectChild_nodeIncidentFields` now own the connect child unchanged-node
     incident length/bound updates; the main `connectChild` proof consumes those
     fields instead of defining local incident-field functions.
+  - Partial: `GraphRenderRelated.connectChild_nodeIncident` now owns the
+    dependent endpoint/graph incident-slot transport for connect children; the
+    main `connectChild` proof no longer carries the local `hendpointIdx` /
+    `hgraphSlotIdx` reconstruction block.
 
 - [ ] Introduce declarative render deltas for connect and bud.
   - Owner: `BijForm.StringDiagram.Renderer.Steps`
