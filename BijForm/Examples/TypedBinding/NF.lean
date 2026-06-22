@@ -211,18 +211,20 @@ def NFAppFamilyCarrierIso (Γ : List NFSort) :
 
 def NFNormalGeneratedShapeIso (Γ : List NFSort) :
     LayerShape NFSignature NFCode Γ .normalExp ≃ᵢ NFCode (Γ, .normalExp) :=
-  Iso.trans (LayerShape.familyIso (S := NFSignature) (Code := NFCode) Γ .normalExp)
-    (Iso.trans (Iso.sum (Var.finIso Γ .normalExp) (NFNormalFamilyCarrierIso Γ))
-      (Iso.trans
-        (Iso.sum (Iso.refl (Fin (normalExpCount Γ)))
-          (CodeAlgebra.finProdNatOrNat (appTermCount Γ)))
-        (CodeAlgebra.finPlusNat (normalExpCount Γ))))
+  Iso.trans
+    (LayerShape.familyCarrierIso (S := NFSignature) (Code := NFCode)
+      Γ .normalExp (Var.finIso Γ .normalExp) (NFNormalFamilyCarrierIso Γ))
+    (Iso.trans
+      (Iso.sum (Iso.refl (Fin (normalExpCount Γ)))
+        (CodeAlgebra.finProdNatOrNat (appTermCount Γ)))
+      (CodeAlgebra.finPlusNat (normalExpCount Γ)))
 
 def NFAppGeneratedShapeIso (Γ : List NFSort) :
     LayerShape NFSignature NFCode Γ .appTerm ≃ᵢ NFCode (Γ, .appTerm) :=
-  Iso.trans (LayerShape.familyIso (S := NFSignature) (Code := NFCode) Γ .appTerm)
-    (Iso.trans (Iso.sum (Var.finIso Γ .appTerm) (NFAppFamilyCarrierIso Γ))
-      (CodeAlgebra.finTaggedProdNat (appTermCount Γ)))
+  Iso.trans
+    (LayerShape.familyCarrierIso (S := NFSignature) (Code := NFCode)
+      Γ .appTerm (Var.finIso Γ .appTerm) (NFAppFamilyCarrierIso Γ))
+    (CodeAlgebra.finTaggedProdNat (appTermCount Γ))
 
 def NFGeneratedShapeIso :
     ∀ Γ t, LayerShape NFSignature NFCode Γ t ≃ᵢ NFCode (Γ, t)
@@ -263,7 +265,8 @@ theorem NFGeneratedLayer_child_rank_lt :
                         simp [app, tail, hcount, NFGeneratedShapeIso,
                           NFNormalGeneratedShapeIso, NFNormalFamilyCarrierIso,
                           NFNormalFamilyToCarrier, LayerShape.iso,
-                          LayerShape.layerToShape, LayerShape.familyIso,
+                          LayerShape.layerToShape, LayerShape.familyCarrierIso,
+                          LayerShape.familyIso,
                           CtorLayer.familyIso, CtorLayer.toFamily,
                           ArgTuple.ofChild, Iso.trans, Iso.sum,
                           CodeAlgebra.finPlusNat, CodeAlgebra.finProdNatOrNat]
@@ -304,7 +307,8 @@ theorem NFGeneratedLayer_child_rank_lt :
                           simp [body, tail, hc, NFGeneratedShapeIso,
                             NFNormalGeneratedShapeIso, NFNormalFamilyCarrierIso,
                             NFNormalFamilyToCarrier, LayerShape.iso,
-                            LayerShape.layerToShape, LayerShape.familyIso,
+                            LayerShape.layerToShape, LayerShape.familyCarrierIso,
+                            LayerShape.familyIso,
                             CtorLayer.familyIso, CtorLayer.toFamily,
                             ArgTuple.ofChild, Iso.trans, Iso.sum,
                             CodeAlgebra.finPlusNat, CodeAlgebra.finProdNatOrNat]
@@ -331,7 +335,8 @@ theorem NFGeneratedLayer_child_rank_lt :
                           simp [body, tail, hpos, NFGeneratedShapeIso,
                             NFNormalGeneratedShapeIso, NFNormalFamilyCarrierIso,
                             NFNormalFamilyToCarrier, LayerShape.iso,
-                            LayerShape.layerToShape, LayerShape.familyIso,
+                            LayerShape.layerToShape, LayerShape.familyCarrierIso,
+                            LayerShape.familyIso,
                             CtorLayer.familyIso, CtorLayer.toFamily,
                             ArgTuple.ofChild, Iso.trans, Iso.sum,
                             CodeAlgebra.finPlusNat, CodeAlgebra.finProdNatOrNat]
@@ -379,7 +384,8 @@ theorem NFGeneratedLayer_child_rank_lt :
                     simp [fn, arg, pair, NFGeneratedShapeIso,
                       NFAppGeneratedShapeIso, NFAppFamilyCarrierIso,
                       NFAppFamilyToCarrier, LayerShape.iso, LayerShape.layerToShape,
-                      LayerShape.familyIso, CtorLayer.familyIso, CtorLayer.toFamily,
+                      LayerShape.familyCarrierIso, LayerShape.familyIso,
+                      CtorLayer.familyIso, CtorLayer.toFamily,
                       ArgTuple.ofChild, Iso.trans, Iso.sum]
                   cases q using Fin.cases with
                   | zero =>

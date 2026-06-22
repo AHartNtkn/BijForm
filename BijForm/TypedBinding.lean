@@ -588,6 +588,14 @@ def familyIso (Γ : List Ty) (t : Ty) :
     LayerShape S Code Γ t ≃ᵢ (Var Γ t ⊕ CtorFamily S Code Γ t) :=
   Iso.sum (Iso.refl (Var Γ t)) (CtorLayer.familyIso (S := S) (Code := Code) Γ t)
 
+def familyCarrierIso (Γ : List Ty) (t : Ty)
+    {VarCode CtorCode : Type}
+    (varIso : Var Γ t ≃ᵢ VarCode)
+    (ctorIso : CtorFamily S Code Γ t ≃ᵢ CtorCode) :
+    LayerShape S Code Γ t ≃ᵢ (VarCode ⊕ CtorCode) :=
+  Iso.trans (familyIso (S := S) (Code := Code) Γ t)
+    (Iso.sum varIso ctorIso)
+
 end LayerShape
 
 /-- Layer-local descent obligation for carrier codings built from the generated
