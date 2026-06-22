@@ -66,9 +66,9 @@ fi
 
 bash scripts/test-trivial-fin-ext-audit.sh
 
-if ! awk -f scripts/check-trivial-fin-ext.awk \
-    BijForm/StringDiagram/Bridge/GraphRenderRelation.lean; then
-  fail "trivial inline Fin reconstruction proof found in GraphRenderRelation; use fin_eq_of_val_eq or a more specific helper"
+mapfile -t lean_files < <(git ls-files '*.lean')
+if ! awk -f scripts/check-trivial-fin-ext.awk "${lean_files[@]}"; then
+  fail "trivial inline Fin reconstruction proof found; use fin_eq_of_val_eq or a more specific helper"
 fi
 
 printf 'audit: ok\n'

@@ -520,7 +520,7 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
   - Validation: the chosen command works from repo root and from a subdirectory;
     docs name only that command.
 
-- [ ] Replace the GraphRenderRelation-only AWK `Fin.ext` audit.
+- [x] Replace the GraphRenderRelation-only AWK `Fin.ext` audit.
   - Owner: finite-index helper boundary plus audit tooling.
   - Evidence: `scripts/check-trivial-fin-ext.awk` parses formatting in one file
     while raw `Fin.ext` can exist elsewhere.
@@ -528,6 +528,8 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     a documented allowed helper boundary.
   - Validation: lint evidence targets the whole tracked Lean source set or the
     AWK test files are deleted with the gate.
+  - Completed: `scripts/audit.sh` now runs the existing trivial-`Fin.ext`
+    checker over every tracked Lean source file from `git ls-files '*.lean'`.
 
 - [ ] Make proof-gap validation semantic enough to avoid lexical false comfort.
   - Owner: formalization validation tooling.
