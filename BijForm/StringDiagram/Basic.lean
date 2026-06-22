@@ -235,6 +235,144 @@ theorem get_single_at_length {α : Type} {pref full : List α} {x : α}
 
 end AppendStep
 
+/--
+Paired append witnesses for two traces whose old prefixes and new suffixes have
+the same lengths.  This packages the index transport needed when a render trace
+and an underlying semantic trace grow in lockstep.
+-/
+structure AppendTrace {α β : Type}
+    (leftPref leftFull leftSuffix : List α)
+    (rightPref rightFull rightSuffix : List β) : Prop where
+  prefix_length : leftPref.length = rightPref.length
+  suffix_length : leftSuffix.length = rightSuffix.length
+  left_step : AppendStep leftPref leftFull leftSuffix
+  right_step : AppendStep rightPref rightFull rightSuffix
+
+namespace AppendTrace
+
+theorem length {α β : Type}
+    {leftPref leftFull leftSuffix : List α}
+    {rightPref rightFull rightSuffix : List β}
+    (h : AppendTrace leftPref leftFull leftSuffix
+      rightPref rightFull rightSuffix) :
+    leftFull.length = rightFull.length := by
+  rw [AppendStep.length h.left_step, AppendStep.length h.right_step,
+    h.prefix_length, h.suffix_length]
+
+def rightIndex {α β : Type}
+    {leftPref leftFull leftSuffix : List α}
+    {rightPref rightFull rightSuffix : List β}
+    (h : AppendTrace leftPref leftFull leftSuffix
+      rightPref rightFull rightSuffix)
+    (i : Fin leftFull.length) : Fin rightFull.length :=
+  Fin.cast h.length i
+
+@[simp]
+theorem rightIndex_val {α β : Type}
+    {leftPref leftFull leftSuffix : List α}
+    {rightPref rightFull rightSuffix : List β}
+    (h : AppendTrace leftPref leftFull leftSuffix
+      rightPref rightFull rightSuffix)
+    (i : Fin leftFull.length) :
+    (h.rightIndex i).val = i.val :=
+  rfl
+
+def prefixRightIndex {α β : Type}
+    {leftPref leftFull leftSuffix : List α}
+    {rightPref rightFull rightSuffix : List β}
+    (h : AppendTrace leftPref leftFull leftSuffix
+      rightPref rightFull rightSuffix)
+    (i : Fin leftFull.length) (hi : i.val < leftPref.length) :
+    Fin rightPref.length :=
+  ⟨i.val, by simpa [h.prefix_length] using hi⟩
+
+@[simp]
+theorem prefixRightIndex_val {α β : Type}
+    {leftPref leftFull leftSuffix : List α}
+    {rightPref rightFull rightSuffix : List β}
+    (h : AppendTrace leftPref leftFull leftSuffix
+      rightPref rightFull rightSuffix)
+    (i : Fin leftFull.length) (hi : i.val < leftPref.length) :
+    (h.prefixRightIndex i hi).val = i.val :=
+  rfl
+
+theorem get_prefix_of_val_eq {α β : Type}
+    {leftPref leftFull leftSuffix : List α}
+    {rightPref rightFull rightSuffix : List β}
+    (h : AppendTrace leftPref leftFull leftSuffix
+      rightPref rightFull rightSuffix)
+    (i : Fin leftFull.length) (j : Fin rightPref.length)
+    (hval : i.val = j.val) :
+    rightFull.get (h.rightIndex i) = rightPref.get j := by
+  exact AppendStep.get_prefix_of_val_eq h.right_step
+    (h.rightIndex i) j (by simpa using hval)
+
+theorem get_prefix {α β : Type}
+    {leftPref leftFull leftSuffix : List α}
+    {rightPref rightFull rightSuffix : List β}
+    (h : AppendTrace leftPref leftFull leftSuffix
+      rightPref rightFull rightSuffix)
+    (i : Fin leftFull.length) (hi : i.val < leftPref.length) :
+    rightFull.get (h.rightIndex i) =
+      rightPref.get (h.prefixRightIndex i hi) := by
+  exact h.get_prefix_of_val_eq i (h.prefixRightIndex i hi) rfl
+
+theorem get_prefix_at_right_of_val_eq {α β : Type}
+    {leftPref leftFull leftSuffix : List α}
+    {rightPref rightFull rightSuffix : List β}
+    (h : AppendTrace leftPref leftFull leftSuffix
+      rightPref rightFull rightSuffix)
+    (i : Fin rightFull.length) (j : Fin rightPref.length)
+    (hval : i.val = j.val) :
+    rightFull.get i = rightPref.get j :=
+  AppendStep.get_prefix_of_val_eq h.right_step i j hval
+
+theorem get_suffix_of_val_eq {α β : Type}
+    {leftPref leftFull leftSuffix : List α}
+    {rightPref rightFull rightSuffix : List β}
+    (h : AppendTrace leftPref leftFull leftSuffix
+      rightPref rightFull rightSuffix)
+    (i : Fin leftFull.length) (j : Fin rightSuffix.length)
+    (hi : leftPref.length ≤ i.val)
+    (hval : i.val - leftPref.length = j.val) :
+    rightFull.get (h.rightIndex i) = rightSuffix.get j := by
+  exact AppendStep.get_suffix_of_val_eq h.right_step
+    (h.rightIndex i) j
+    (by simpa [h.prefix_length] using hi)
+    (by simpa [h.prefix_length] using hval)
+
+theorem get_suffix_at_right_of_val_eq {α β : Type}
+    {leftPref leftFull leftSuffix : List α}
+    {rightPref rightFull rightSuffix : List β}
+    (h : AppendTrace leftPref leftFull leftSuffix
+      rightPref rightFull rightSuffix)
+    (i : Fin rightFull.length) (j : Fin rightSuffix.length)
+    (hi : rightPref.length ≤ i.val)
+    (hval : i.val - rightPref.length = j.val) :
+    rightFull.get i = rightSuffix.get j :=
+  AppendStep.get_suffix_of_val_eq h.right_step i j hi hval
+
+theorem get_single_at_prefix_length {α β : Type}
+    {leftPref leftFull leftSuffix : List α}
+    {rightPref rightFull : List β} {x : β}
+    (h : AppendTrace leftPref leftFull leftSuffix
+      rightPref rightFull [x])
+    (i : Fin leftFull.length) (hval : i.val = leftPref.length) :
+    rightFull.get (h.rightIndex i) = x := by
+  exact AppendStep.get_single_at_length h.right_step
+    (h.rightIndex i) (by simpa [h.prefix_length] using hval)
+
+theorem get_single_at_right_prefix_length {α β : Type}
+    {leftPref leftFull leftSuffix : List α}
+    {rightPref rightFull : List β} {x : β}
+    (h : AppendTrace leftPref leftFull leftSuffix
+      rightPref rightFull [x])
+    (i : Fin rightFull.length) (hval : i.val = rightPref.length) :
+    rightFull.get i = x :=
+  AppendStep.get_single_at_length h.right_step i hval
+
+end AppendTrace
+
 def listIndexCast {α : Type} (xs : List α) {n : Nat}
     (h : n = xs.length) (i : Fin n) : Fin xs.length :=
   Fin.cast h i
