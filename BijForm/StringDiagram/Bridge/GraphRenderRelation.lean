@@ -2283,208 +2283,148 @@ theorem GraphRenderRelated.budChild_edgeRight
   let entryIdx : Fin nodeEndpoints.length :=
     listIndexCast nodeEndpoints
       (by simp [nodeEndpoints, Diag.freshNodeEndpoints, renderNode]) entry
-  have horderTrace :=
+  let horderTrace :=
     budChild_orderTrace rst st hpending node slot hmate hunseen hids
       hrel.endpoint_length hrel.edge_length hrel.node_length
+  have hrightRel :
+      AppendTraceRelation horderTrace.edge
+        (fun renderEdge graphEdge =>
+          ∀ hbound :
+              renderEdge.right <
+                (Diag.budStep renderNode entry ok rst).endpoints.length,
+            G.raw.endpointEdge
+              ((endpointOrder G
+                (st.budChild hpending node slot hmate hunseen)).get
+                  (Fin.cast hchildEndpointLength
+                    ⟨renderEdge.right, hbound⟩)) =
+              graphEdge) := by
+    refine { prefix_rel := ?_, suffix_rel := ?_ }
+    · intro prefixEdge graphEdge hval hbound
+      have hidx : graphEdge = hrel.edgeIndex prefixEdge := by
+        exact fin_eq_of_val_eq hval.symm
+      let childEndpoint :
+          Fin (endpointOrder G
+            (st.budChild hpending node slot hmate hunseen)).length :=
+        Fin.cast hchildEndpointLength
+          ⟨(rst.edges.get prefixEdge).right, hbound⟩
+      let prefixEndpoint : Fin (endpointOrder G st).length :=
+        hrel.endpointIndex
+          ⟨(rst.edges.get prefixEdge).right,
+            hrel.edge_right_bound prefixEdge⟩
+      have hendpoint :
+          (endpointOrder G
+            (st.budChild hpending node slot hmate hunseen)).get
+              childEndpoint =
+            (endpointOrder G st).get prefixEndpoint := by
+        exact horderTrace.endpoint.get_prefix_at_right_of_val_eq
+          childEndpoint prefixEndpoint
+          (by simp [childEndpoint, prefixEndpoint])
+      calc
+        G.raw.endpointEdge
+            ((endpointOrder G
+              (st.budChild hpending node slot hmate hunseen)).get
+                childEndpoint) =
+          G.raw.endpointEdge ((endpointOrder G st).get prefixEndpoint) := by
+            exact congrArg G.raw.endpointEdge hendpoint
+        _ = (edgeOrder st).get (hrel.edgeIndex prefixEdge) :=
+            hrel.edge_right prefixEdge
+        _ = (edgeOrder st).get graphEdge := by
+            rw [hidx]
+    · intro suffixEdge graphEdge hval hbound
+      have hnodeBound :
+          nodeEndpoints.get entryIdx <
+            (Diag.budStep renderNode entry ok rst).endpoints.length := by
+        simpa [horderTrace, budChild_orderTrace, nodeEndpoints, entryIdx,
+          renderNode] using hbound
+      let childEndpoint :
+          Fin (endpointOrder G
+            (st.budChild hpending node slot hmate hunseen)).length :=
+        Fin.cast hchildEndpointLength
+          ⟨nodeEndpoints.get entryIdx, hnodeBound⟩
+      have hrawGe : rst.endpoints.length ≤ nodeEndpoints.get entryIdx := by
+        have hfreshMem :
+            nodeEndpoints.get entryIdx ∈ nodeEndpoints :=
+          List.get_mem nodeEndpoints entryIdx
+        have hfreshGe := Diag.freshNodeEndpoints_mem_ge hfreshMem
+        simpa [nodeEndpoints, renderNode, hnextEndpoint] using hfreshGe
+      have hrightBound :
+          nodeEndpoints.get entryIdx <
+            rst.endpoints.length + Sig.arity renderNode := by
+        have hbound' := hnodeBound
+        rw [Diag.budStep_endpoints_length (G.raw.nodeLabel node)
+          (SearchState.budEntry (G := G) node slot)
+          (st.bud_compatible hpending node slot hmate) rst] at hbound'
+        simpa [renderNode, entry, ok] using hbound'
+      let graphSlot : Fin (G.raw.incident node).length :=
+        ⟨nodeEndpoints.get entryIdx - rst.endpoints.length, by
+          rw [G.raw.incident_length node]
+          change
+            nodeEndpoints.get entryIdx - rst.endpoints.length <
+              Sig.arity renderNode
+          omega⟩
+      have hendpointRaw :
+          (endpointOrder G
+            (st.budChild hpending node slot hmate hunseen)).get
+              childEndpoint =
+            (G.raw.incident node).get graphSlot := by
+        exact horderTrace.endpoint.get_suffix_at_right_of_val_eq
+          childEndpoint graphSlot
+          (by
+            have holdLen :
+                (endpointOrder G st).length = rst.endpoints.length :=
+              hrel.endpoint_length.symm
+            rw [holdLen]
+            simpa [childEndpoint] using hrawGe)
+          (by
+            have holdLen :
+                (endpointOrder G st).length = rst.endpoints.length :=
+              hrel.endpoint_length.symm
+            rw [holdLen]
+            simp [childEndpoint, graphSlot])
+      have hentryIdxVal : entryIdx.val = slot.val := by
+        simp [entryIdx, entry, SearchState.budEntry, nodeEndpoints,
+          renderNode]
+      have hedgeSlotIdx : graphSlot = slot := by
+        exact fin_eq_of_val_eq (by
+          change
+            nodeEndpoints.get entryIdx - rst.endpoints.length = slot.val
+          have hsub :
+              nodeEndpoints.get entryIdx - rst.endpoints.length =
+                entryIdx.val := by
+            simpa [nodeEndpoints] using
+              Diag.freshNodeEndpoints_get_sub_of_eq
+                (start := rst.nextEndpoint)
+                (base := rst.endpoints.length)
+                (arity := Sig.arity renderNode)
+                hnextEndpoint entryIdx
+          exact hsub.trans hentryIdxVal)
+      have hendpoint :
+          (endpointOrder G
+            (st.budChild hpending node slot hmate hunseen)).get
+              childEndpoint =
+            (G.raw.incident node).get slot := by
+        simpa [hedgeSlotIdx] using hendpointRaw
+      have hcalc :
+          G.raw.endpointEdge
+              ((endpointOrder G
+                (st.budChild hpending node slot hmate hunseen)).get
+                  childEndpoint) =
+            G.raw.endpointEdge active := by
+        calc
+          G.raw.endpointEdge
+              ((endpointOrder G
+                (st.budChild hpending node slot hmate hunseen)).get
+                  childEndpoint) =
+            G.raw.endpointEdge ((G.raw.incident node).get slot) := by
+              exact congrArg G.raw.endpointEdge hendpoint
+          _ = G.raw.endpointEdge active := hmate.2.symm
+      simpa [horderTrace, budChild_orderTrace, nodeEndpoints, entryIdx,
+        renderNode, childEndpoint] using hcalc
   intro edge
-  by_cases hold : edge.val < rst.edges.length
-  · let oldEdge : Fin rst.edges.length := ⟨edge.val, hold⟩
-    have hedge :
-        (Diag.budStep renderNode entry ok rst).edges.get edge =
-          rst.edges.get oldEdge := by
-      simpa [oldEdge] using
-        Diag.budStep_edges_get_old renderNode entry ok rst hids
-          edge hold
-    let childEdge :
-        Fin (edgeOrder (st.budChild hpending node slot hmate hunseen)).length :=
-      Fin.cast hchildEdgeLength edge
-    have horder :
-        (edgeOrder
-          (st.budChild hpending node slot hmate hunseen)).get
-            childEdge =
-          (edgeOrder st).get (hrel.edgeIndex oldEdge) := by
-      exact horderTrace.edge.get_prefix_at_right_of_val_eq
-        childEdge (hrel.edgeIndex oldEdge)
-        (by simp [childEdge, oldEdge])
-    let childEndpoint :
-        Fin (endpointOrder G
-          (st.budChild hpending node slot hmate hunseen)).length :=
-      Fin.cast hchildEndpointLength
-        ⟨((Diag.budStep renderNode entry ok rst).edges.get edge).right,
-          hchildEdgeBounds.right edge⟩
-    let oldEndpoint : Fin (endpointOrder G st).length :=
-      hrel.endpointIndex
-        ⟨(rst.edges.get oldEdge).right, hrel.edge_right_bound oldEdge⟩
-    have hrawHold :
-        ((Diag.budStep renderNode entry ok rst).edges.get edge).right <
-          rst.endpoints.length := by
-      have hraw := congrArg RenderEdge.right hedge
-      rw [hraw]
-      exact hrel.edge_right_bound oldEdge
-    have hendpointRaw :
-        (endpointOrder G (st.budChild hpending node slot hmate hunseen)).get
-            childEndpoint =
-          (endpointOrder G st).get
-            (Fin.cast hrel.endpoint_length
-              ⟨((Diag.budStep renderNode entry ok rst).edges.get edge).right,
-                hrawHold⟩) := by
-      exact horderTrace.endpoint.get_prefix_at_right_of_val_eq
-        childEndpoint
-        (Fin.cast hrel.endpoint_length
-          ⟨((Diag.budStep renderNode entry ok rst).edges.get edge).right,
-            hrawHold⟩)
-        (by simp [childEndpoint])
-    have hidx :
-        (Fin.cast hrel.endpoint_length
-            ⟨((Diag.budStep renderNode entry ok rst).edges.get edge).right,
-              hrawHold⟩ :
-          Fin (endpointOrder G st).length) = oldEndpoint := by
-      exact fin_eq_of_val_eq (congrArg RenderEdge.right hedge)
-    have hendpoint :
-        (endpointOrder G (st.budChild hpending node slot hmate hunseen)).get
-            childEndpoint =
-          (endpointOrder G st).get oldEndpoint := by
-      rw [← hidx]
-      exact hendpointRaw
-    calc
-      G.raw.endpointEdge
-          ((endpointOrder G
-            (st.budChild hpending node slot hmate hunseen)).get
-              childEndpoint) =
-        G.raw.endpointEdge ((endpointOrder G st).get oldEndpoint) := by
-          exact congrArg G.raw.endpointEdge hendpoint
-      _ = (edgeOrder st).get (hrel.edgeIndex oldEdge) :=
-          hrel.edge_right oldEdge
-      _ =
-        (edgeOrder (st.budChild hpending node slot hmate hunseen)).get
-            childEdge := by
-          exact horder.symm
-  · have hnewVal : edge.val = rst.edges.length := by
-      have hlen : edge.val < rst.edges.length + 1 := by
-        exact Nat.lt_of_lt_of_eq edge.isLt
-          (Diag.budStep_edges_length renderNode entry ok rst)
-      omega
-    have hrightRaw :
-        ((Diag.budStep renderNode entry ok rst).edges.get edge).right =
-          nodeEndpoints.get entryIdx := by
-      have hedge :=
-        Diag.budStep_edges_get_new renderNode entry ok rst hids
-          edge hnewVal
-      simpa [nodeEndpoints, entryIdx, renderNode] using
-        congrArg RenderEdge.right hedge
-    let childEdge :
-        Fin (edgeOrder (st.budChild hpending node slot hmate hunseen)).length :=
-      Fin.cast hchildEdgeLength edge
-    have horder :
-        (edgeOrder
-          (st.budChild hpending node slot hmate hunseen)).get
-            childEdge =
-          G.raw.endpointEdge active := by
-      exact horderTrace.edge.get_single_at_right_prefix_length
-        childEdge (by simp [childEdge, hnewVal, hrel.edge_length])
-    let childEndpoint :
-        Fin (endpointOrder G
-          (st.budChild hpending node slot hmate hunseen)).length :=
-      Fin.cast hchildEndpointLength
-        ⟨((Diag.budStep renderNode entry ok rst).edges.get edge).right,
-          hchildEdgeBounds.right edge⟩
-    have hrawGe :
-        rst.endpoints.length ≤
-          ((Diag.budStep renderNode entry ok rst).edges.get edge).right := by
-      rw [hrightRaw]
-      have hfreshMem :
-          nodeEndpoints.get entryIdx ∈ nodeEndpoints :=
-        List.get_mem nodeEndpoints entryIdx
-      have hfreshGe := Diag.freshNodeEndpoints_mem_ge hfreshMem
-      simpa [nodeEndpoints, renderNode, hnextEndpoint] using
-        hfreshGe
-    have hrightBound :
-        ((Diag.budStep renderNode entry ok rst).edges.get edge).right <
-          rst.endpoints.length + Sig.arity renderNode := by
-      have hbound := hchildEdgeBounds.right edge
-      rw [Diag.budStep_endpoints_length (G.raw.nodeLabel node)
-        (SearchState.budEntry (G := G) node slot)
-        (st.bud_compatible hpending node slot hmate) rst] at hbound
-      simpa [renderNode, entry, ok] using hbound
-    have hendpointRaw :
-        (endpointOrder G (st.budChild hpending node slot hmate hunseen)).get
-            childEndpoint =
-          (G.raw.incident node).get
-            ⟨((Diag.budStep renderNode entry ok rst).edges.get edge).right -
-                rst.endpoints.length,
-              by
-                rw [G.raw.incident_length node]
-                change
-                  ((Diag.budStep renderNode entry ok rst).edges.get edge).right -
-                    rst.endpoints.length < Sig.arity renderNode
-                omega⟩ := by
-      exact horderTrace.endpoint.get_suffix_at_right_of_val_eq
-        childEndpoint
-        ⟨((Diag.budStep renderNode entry ok rst).edges.get edge).right -
-            rst.endpoints.length,
-          by
-            rw [G.raw.incident_length node]
-            change
-              ((Diag.budStep renderNode entry ok rst).edges.get edge).right -
-                rst.endpoints.length < Sig.arity renderNode
-            omega⟩
-        (by
-          have holdLen :
-              (endpointOrder G st).length = rst.endpoints.length :=
-            hrel.endpoint_length.symm
-          rw [holdLen]
-          simpa [childEndpoint] using hrawGe)
-        (by
-          have holdLen :
-              (endpointOrder G st).length = rst.endpoints.length :=
-            hrel.endpoint_length.symm
-          rw [holdLen]
-          simp [childEndpoint])
-    have hentryIdxVal : entryIdx.val = slot.val := by
-      simp [entryIdx, entry, SearchState.budEntry, nodeEndpoints,
-        renderNode]
-    have hedgeSlotIdx :
-        (⟨((Diag.budStep renderNode entry ok rst).edges.get edge).right -
-              rst.endpoints.length,
-            by
-              rw [G.raw.incident_length node]
-              change
-                ((Diag.budStep renderNode entry ok rst).edges.get edge).right -
-                  rst.endpoints.length < Sig.arity renderNode
-              omega⟩ : Fin (G.raw.incident node).length) = slot := by
-      exact fin_eq_of_val_eq (by
-        change
-          ((Diag.budStep renderNode entry ok rst).edges.get edge).right -
-            rst.endpoints.length = slot.val
-        rw [hrightRaw]
-        have hsub :
-            nodeEndpoints.get entryIdx - rst.endpoints.length =
-              entryIdx.val := by
-          simpa [nodeEndpoints] using
-            Diag.freshNodeEndpoints_get_sub_of_eq
-              (start := rst.nextEndpoint)
-              (base := rst.endpoints.length)
-              (arity := Sig.arity renderNode)
-              hnextEndpoint entryIdx
-        exact hsub.trans hentryIdxVal)
-    have hendpoint :
-        (endpointOrder G (st.budChild hpending node slot hmate hunseen)).get
-            childEndpoint =
-          (G.raw.incident node).get slot := by
-      rw [hedgeSlotIdx] at hendpointRaw
-      exact hendpointRaw
-    calc
-      G.raw.endpointEdge
-          ((endpointOrder G
-            (st.budChild hpending node slot hmate hunseen)).get
-              childEndpoint) =
-        G.raw.endpointEdge ((G.raw.incident node).get slot) := by
-          exact congrArg G.raw.endpointEdge hendpoint
-      _ = G.raw.endpointEdge active := hmate.2.symm
-      _ =
-        (edgeOrder (st.budChild hpending node slot hmate hunseen)).get
-            childEdge := by
-          exact horder.symm
+  have hidx : horderTrace.edge.rightIndex edge = Fin.cast hchildEdgeLength edge := by
+    exact fin_eq_of_val_eq rfl
+  simpa [hidx] using
+    (AppendTraceRelation.get hrightRel edge) (hchildEdgeBounds.right edge)
 
 theorem GraphRenderRelated.budChild_nodeLabel
     {G : OpenPortHypergraph Sig boundary}
