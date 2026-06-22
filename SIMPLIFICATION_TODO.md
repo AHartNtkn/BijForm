@@ -482,6 +482,9 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     old/new right-endpoint incidence update, including fresh node-slot
     arithmetic; the main `budChild` proof consumes that field instead of
     rebuilding endpoint and edge-order transport locally.
+  - Partial: the main `GraphRenderRelated.budChild` constructor proof no
+    longer carries stale fresh-endpoint, pending-value, or trace locals after
+    delegating those fields to helper theorems.
 
 - [ ] Introduce declarative render deltas for connect and bud.
   - Owner: `BijForm.StringDiagram.Renderer.Steps`

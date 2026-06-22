@@ -2927,12 +2927,6 @@ theorem GraphRenderRelated.budChild
   | nil =>
       exact False.elim (RenderState.frontierIds_ne_nil rst hids)
   | cons activeId restIds =>
-      let nodeEndpoints := Diag.freshNodeEndpoints rst.nextEndpoint
-        (Sig.arity renderNode)
-      let entryIdx : Fin nodeEndpoints.length :=
-        listIndexCast nodeEndpoints
-          (by simp [nodeEndpoints, Diag.freshNodeEndpoints, renderNode]) entry
-      have hpendingVals := hrel.pending_cons_values hpending hids
       have hseenChildNodup :
           (node :: st.seenNodes).Nodup := by
         constructor
@@ -2964,9 +2958,6 @@ theorem GraphRenderRelated.budChild
         Diag.budStep_validIds renderNode entry ok rst rv
       let hchildEdgeBounds :=
         hchildValid.edgeEndpointBounds
-      have horderTrace :=
-        budChild_orderTrace rst st hpending node slot hmate hunseen hids
-          hrel.endpoint_length hrel.edge_length hrel.node_length
       let hfrontierPending :=
         hrel.budChild_frontierPending rv hpending node slot hmate hunseen hids
           hchildEndpointLength
