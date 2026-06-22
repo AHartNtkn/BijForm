@@ -465,6 +465,9 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     child old/new right-endpoint incidence update, including mate/rest frontier
     endpoint reconstruction; the main `connectChild` proof consumes that field
     instead of rebuilding the case split locally.
+  - Partial: `GraphRenderRelated.connectChild_edgeRight` now consumes
+    `AppendTraceRelation`, so connect left/right edge incidence share the same
+    generic append-relation proof path.
   - Partial: `GraphRenderRelated.connectChild_nodeLabel` now owns connect child
     node-label transport through the unchanged node trace; the main
     `connectChild` proof no longer carries stale trace/frontier locals left
