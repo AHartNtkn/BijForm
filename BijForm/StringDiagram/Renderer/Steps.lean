@@ -99,8 +99,7 @@ theorem freshNodeEndpoints_nodup (start arity : Nat) :
   change (freshNodeEndpoints start arity).get i =
     (freshNodeEndpoints start arity).get j at hget
   rw [freshNodeEndpoints_get, freshNodeEndpoints_get] at hget
-  apply Fin.ext
-  omega
+  exact fin_eq_of_val_eq (by omega)
 
 theorem freshNodeEndpoints_label_append
     {frontier : List Sig.Port} (st : RenderState Sig frontier)
