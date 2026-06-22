@@ -134,6 +134,19 @@ theorem list_get_of_eq_append_left {α : Type}
   subst full
   exact list_get_append_left pref suffix hi i.isLt
 
+theorem list_get_of_eq_append_right {α : Type}
+    {full pref suffix : List α}
+    (hfull : full = pref ++ suffix)
+    (i : Fin full.length) (hi : pref.length ≤ i.val) :
+    full.get i =
+      suffix.get ⟨i.val - pref.length, by
+        subst full
+        have hlen : (pref ++ suffix).length = pref.length + suffix.length := by
+          simp
+        omega⟩ := by
+  subst full
+  exact list_get_append_right pref suffix hi i.isLt
+
 theorem list_get_append_single_at_length {α : Type}
     (xs ys : List α) (x : α) :
     (xs ++ x :: ys).get ⟨xs.length, by simp⟩ = x := by

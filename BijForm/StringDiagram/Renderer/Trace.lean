@@ -930,28 +930,12 @@ theorem budStep_endpoints_get_new
   have hslotBound : i - rst.endpoints.length < (Sig.nodePorts node).length := by
     simpa [Signature.nodePorts] using
       (by omega : i - rst.endpoints.length < Sig.arity node)
-  have hchildSome :
-      (budStep node entry ok rst).endpoints[i]? =
-        some ((budStep node entry ok rst).endpoints.get endpoint) :=
-    by simp [i]
-  have hnewSome :
-      (budStep node entry ok rst).endpoints[i]? =
-        some ((Sig.nodePorts node).get
-          ⟨i - rst.endpoints.length, hslotBound⟩) := by
-    rw [budStep_endpoints node entry ok rst]
-    have hright :
-        (rst.endpoints ++ Sig.nodePorts node)[i]? =
-          (Sig.nodePorts node)[i - rst.endpoints.length]? :=
-      List.getElem?_append_right (l₁ := rst.endpoints)
-        (l₂ := Sig.nodePorts node) (by simpa [i] using hnew)
-    have hsome :
-        (Sig.nodePorts node)[i - rst.endpoints.length]? =
-          some ((Sig.nodePorts node).get
-            ⟨i - rst.endpoints.length, hslotBound⟩) :=
-      List.getElem?_eq_getElem hslotBound
-    exact hright.trans hsome
-  rw [hchildSome] at hnewSome
-  injection hnewSome with hget
+  have hget :=
+    list_get_of_eq_append_right
+      (budStep_endpoints node entry ok rst)
+      endpoint
+      (by simpa [i] using hnew)
+  simpa [i, hslotBound] using hget
 
 def renderTrace_endpointPrefix :
     ∀ {frontier : List Sig.Port} (d : Diag Sig frontier)
