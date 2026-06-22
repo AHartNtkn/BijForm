@@ -174,9 +174,9 @@ is ordered to turn helper additions into actual deletion.
     `rg -n "LayerShape\\.familyCarrierIso|cases rest with|heq_of_eq|child_eta_rfl child" BijForm/TypedBinding.lean BijForm/Examples/TypedBinding/NF.lean`
     should have no old-model proof-body hits.
 
-- [ ] Delete specialized nested-code theorem surfaces after generic routing.
+- [x] Delete specialized nested-code theorem surfaces after generic routing.
   - Owner: `BijForm.CodeAlgebra`.
-  - Why this remains open: `CodeAlgebra.lean` still contains specialized theorem
+  - Original debt: `CodeAlgebra.lean` still contained specialized theorem
     families named for concrete nested shapes:
     `sumProdNat_toFun_*`, `natOrProdOrProdNat_toFun_*`, and
     `prodOrNatOrProdOrNat_toFun_*`.
@@ -187,6 +187,9 @@ is ordered to turn helper additions into actual deletion.
   - Validation:
     `rg -n "sumProdNat_toFun|natOrProdOrProdNat_toFun|prodOrNatOrProdOrNat_toFun" BijForm --glob '*.lean'`
     should be empty unless a remaining name is the canonical generic theorem.
+  - Completed: the specialized `*_toFun_*` theorem families were deleted.
+    Remaining `sumProdNat` inverse proofs call generic `toNatSum_inr_lt_of_le`
+    and `prodNat_toFun_*_le` facts directly, and the validation scan is empty.
 
 - [ ] Make packaged render evidence the only bridge-visible invariant API.
   - Owners: `BijForm.StringDiagram.Hypergraph` and

@@ -494,25 +494,23 @@ theorem SubcodeLe.toNatFinProd_payload {α : Type u} {β : Type v}
 def sumProdNat : (Nat ⊕ (Nat × Nat)) ≃ᵢ Nat :=
   toNatSum (Iso.refl Nat) prodNat
 
-theorem sumProdNat_toFun_inr_fst_lt (p : Nat × Nat) :
-    p.1 < sumProdNat.toFun (Sum.inr p) := by
-  exact toNatSum_inr_lt_of_le (Iso.refl Nat) prodNat (prodNat_toFun_fst_le p)
-
-theorem sumProdNat_toFun_inr_snd_lt (p : Nat × Nat) :
-    p.2 < sumProdNat.toFun (Sum.inr p) := by
-  exact toNatSum_inr_lt_of_le (Iso.refl Nat) prodNat (prodNat_toFun_snd_le p)
-
 theorem sumProdNat_invFun_inr_fst_lt {n a b : Nat}
     (h : sumProdNat.invFun n = Sum.inr (a, b)) : a < n := by
   have hright := Iso.toFun_eq_of_invFun_eq sumProdNat h
-  have hlt := sumProdNat_toFun_inr_fst_lt (a, b)
+  have hlt :
+      a < sumProdNat.toFun (Sum.inr (a, b)) :=
+    toNatSum_inr_lt_of_le (Iso.refl Nat) prodNat
+      (prodNat_toFun_fst_le (a, b))
   rw [hright] at hlt
   exact hlt
 
 theorem sumProdNat_invFun_inr_snd_lt {n a b : Nat}
     (h : sumProdNat.invFun n = Sum.inr (a, b)) : b < n := by
   have hright := Iso.toFun_eq_of_invFun_eq sumProdNat h
-  have hlt := sumProdNat_toFun_inr_snd_lt (a, b)
+  have hlt :
+      b < sumProdNat.toFun (Sum.inr (a, b)) :=
+    toNatSum_inr_lt_of_le (Iso.refl Nat) prodNat
+      (prodNat_toFun_snd_le (a, b))
   rw [hright] at hlt
   exact hlt
 
@@ -520,57 +518,9 @@ def natOrProdOrProdNat :
     (Nat ⊕ ((Nat × Nat) ⊕ (Nat × Nat))) ≃ᵢ Nat :=
   toNatSum3 (Iso.refl Nat) prodNat prodNat
 
-theorem natOrProdOrProdNat_toFun_inl_le (n : Nat) :
-    n ≤ natOrProdOrProdNat.toFun (Sum.inl n) := by
-  exact toNatSum3_inl_le_of_le (Iso.refl Nat) prodNat prodNat (Nat.le_refl n)
-
-theorem natOrProdOrProdNat_toFun_inr_inl_fst_le (p : Nat × Nat) :
-    p.1 ≤ natOrProdOrProdNat.toFun (Sum.inr (Sum.inl p)) := by
-  exact Nat.le_of_lt
-    (toNatSum3_inr_inl_lt_of_le (Iso.refl Nat) prodNat prodNat
-      (prodNat_toFun_fst_le p))
-
-theorem natOrProdOrProdNat_toFun_inr_inl_snd_le (p : Nat × Nat) :
-    p.2 ≤ natOrProdOrProdNat.toFun (Sum.inr (Sum.inl p)) := by
-  exact Nat.le_of_lt
-    (toNatSum3_inr_inl_lt_of_le (Iso.refl Nat) prodNat prodNat
-      (prodNat_toFun_snd_le p))
-
-theorem natOrProdOrProdNat_toFun_inr_inr_fst_le (p : Nat × Nat) :
-    p.1 ≤ natOrProdOrProdNat.toFun (Sum.inr (Sum.inr p)) := by
-  exact Nat.le_of_lt
-    (toNatSum3_inr_inr_lt_of_le (Iso.refl Nat) prodNat prodNat
-      (prodNat_toFun_fst_le p))
-
-theorem natOrProdOrProdNat_toFun_inr_inr_snd_le (p : Nat × Nat) :
-    p.2 ≤ natOrProdOrProdNat.toFun (Sum.inr (Sum.inr p)) := by
-  exact Nat.le_of_lt
-    (toNatSum3_inr_inr_lt_of_le (Iso.refl Nat) prodNat prodNat
-      (prodNat_toFun_snd_le p))
-
 def prodOrNatOrProdOrNat :
     ((Nat × Nat) ⊕ (Nat ⊕ ((Nat × Nat) ⊕ Nat))) ≃ᵢ Nat :=
   toNatSum4 prodNat (Iso.refl Nat) prodNat (Iso.refl Nat)
-
-theorem prodOrNatOrProdOrNat_toFun_inr_inl_lt (n : Nat) :
-    n < prodOrNatOrProdOrNat.toFun (Sum.inr (Sum.inl n)) := by
-  exact toNatSum4_inr_inl_lt_of_le prodNat (Iso.refl Nat) prodNat
-    (Iso.refl Nat) (Nat.le_refl n)
-
-theorem prodOrNatOrProdOrNat_toFun_inr_inr_inl_fst_lt (p : Nat × Nat) :
-    p.1 < prodOrNatOrProdOrNat.toFun (Sum.inr (Sum.inr (Sum.inl p))) := by
-  exact toNatSum4_inr_inr_inl_lt_of_le prodNat (Iso.refl Nat) prodNat
-    (Iso.refl Nat) (prodNat_toFun_fst_le p)
-
-theorem prodOrNatOrProdOrNat_toFun_inr_inr_inl_snd_lt (p : Nat × Nat) :
-    p.2 < prodOrNatOrProdOrNat.toFun (Sum.inr (Sum.inr (Sum.inl p))) := by
-  exact toNatSum4_inr_inr_inl_lt_of_le prodNat (Iso.refl Nat) prodNat
-    (Iso.refl Nat) (prodNat_toFun_snd_le p)
-
-theorem prodOrNatOrProdOrNat_toFun_inr_inr_inr_lt (n : Nat) :
-    n < prodOrNatOrProdOrNat.toFun (Sum.inr (Sum.inr (Sum.inr n))) := by
-  exact toNatSum4_inr_inr_inr_lt_of_le prodNat (Iso.refl Nat) prodNat
-    (Iso.refl Nat) (Nat.le_refl n)
 
 def finPrefixNat {α : Type u} (k : Nat) (tail : α ≃ᵢ Nat) :
     (Fin k ⊕ α) ≃ᵢ Nat :=
