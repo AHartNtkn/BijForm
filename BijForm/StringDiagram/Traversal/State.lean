@@ -621,6 +621,53 @@ theorem IsoRelated.mappedRestIndex_edgeMate
   rw [hr.mappedRestIndex_get hpending mate]
   exact PortHypergraphIso.edgeMate_preserved e hmate
 
+def IsoRelated.mappedRestPreimageIndex {G H : OpenPortHypergraph Sig boundary}
+    {e : PortHypergraphIso G.raw H.raw}
+    {frontier : List Sig.Port}
+    {left : SearchState G frontier} {right : SearchState H frontier}
+    (_hr : IsoRelated e left right)
+    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
+    (_hpending : left.pending = active :: rest)
+    (rightMate : Fin (rest.map e.endpointEquiv.toFun).length) :
+    Fin rest.length :=
+  Fin.cast (by simp) rightMate
+
+theorem IsoRelated.mappedRestPreimageIndex_get
+    {G H : OpenPortHypergraph Sig boundary}
+    {e : PortHypergraphIso G.raw H.raw}
+    {frontier : List Sig.Port}
+    {left : SearchState G frontier} {right : SearchState H frontier}
+    (hr : IsoRelated e left right)
+    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
+    (hpending : left.pending = active :: rest)
+    (rightMate : Fin (rest.map e.endpointEquiv.toFun).length) :
+    (rest.map e.endpointEquiv.toFun).get rightMate =
+      e.endpointEquiv.toFun
+        (rest.get (hr.mappedRestPreimageIndex hpending rightMate)) := by
+  simp [mappedRestPreimageIndex]
+
+theorem IsoRelated.mappedRestPreimageIndex_edgeMate
+    {G H : OpenPortHypergraph Sig boundary}
+    {e : PortHypergraphIso G.raw H.raw}
+    {frontier : List Sig.Port}
+    {left : SearchState G frontier} {right : SearchState H frontier}
+    (hr : IsoRelated e left right)
+    {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
+    (hpending : left.pending = active :: rest)
+    (rightMate : Fin (rest.map e.endpointEquiv.toFun).length)
+    (hmateRight :
+      PortHypergraph.EdgeMate H.raw (e.endpointEquiv.toFun active)
+        ((rest.map e.endpointEquiv.toFun).get rightMate)) :
+    PortHypergraph.EdgeMate G.raw active
+      (rest.get (hr.mappedRestPreimageIndex hpending rightMate)) := by
+  have hmateMapped :
+      PortHypergraph.EdgeMate H.raw (e.endpointEquiv.toFun active)
+        (e.endpointEquiv.toFun
+          (rest.get (hr.mappedRestPreimageIndex hpending rightMate))) := by
+    simpa [hr.mappedRestPreimageIndex_get hpending rightMate] using hmateRight
+  have hreflected := PortHypergraphIso.edgeMate_reflected e hmateMapped
+  simpa using hreflected
+
 theorem constructor_seen_of_pending {G : OpenPortHypergraph Sig boundary}
     {frontier : List Sig.Port}
     (st : SearchState G frontier)

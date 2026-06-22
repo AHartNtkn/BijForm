@@ -309,9 +309,9 @@ theorem IsoRelated.firstPendingConnectSearch?_none
     {activeLabel : Sig.Port} {restLabels : List Sig.Port}
     {left : SearchState G (activeLabel :: restLabels)}
     {right : SearchState H (activeLabel :: restLabels)}
-    (_hr : IsoRelated e left right)
+    (hr : IsoRelated e left right)
     {active : Fin G.raw.endpointCount} {rest : List (Fin G.raw.endpointCount)}
-    (_hpending : left.pending = active :: rest)
+    (hpending : left.pending = active :: rest)
     (hconnect :
       firstPendingConnectSearch? G left.seenNode active rest = none) :
     firstPendingConnectSearch? H right.seenNode (e.endpointEquiv.toFun active)
@@ -325,19 +325,10 @@ theorem IsoRelated.firstPendingConnectSearch?_none
           H right.seenNode hright with
         ⟨rightMate, hmateRight, _hstepEq⟩
       let leftMate : Fin rest.length :=
-        Fin.cast (by simp) rightMate
-      have hget :
-          (rest.map e.endpointEquiv.toFun).get rightMate =
-            e.endpointEquiv.toFun (rest.get leftMate) := by
-        simp [leftMate]
-      have hmateRight' :
-          PortHypergraph.EdgeMate H.raw (e.endpointEquiv.toFun active)
-            (e.endpointEquiv.toFun (rest.get leftMate)) := by
-        simpa [hget] using hmateRight
+        hr.mappedRestPreimageIndex hpending rightMate
       have hmateLeft :
-          PortHypergraph.EdgeMate G.raw active (rest.get leftMate) := by
-        have hreflected := PortHypergraphIso.edgeMate_reflected e hmateRight'
-        simpa using hreflected
+          PortHypergraph.EdgeMate G.raw active (rest.get leftMate) :=
+        hr.mappedRestPreimageIndex_edgeMate hpending rightMate hmateRight
       rcases firstPendingConnectSearch?_exists_of_witness
           G left.seenNode leftMate hmateLeft with
         ⟨leftStep, hleftStep⟩
