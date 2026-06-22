@@ -94,13 +94,16 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
 
 ## Fin, List, and Table Helpers
 
-- [ ] Finish replacing raw `Fin.ext` with shared helpers.
+- [x] Finish replacing raw `Fin.ext` with shared helpers.
   - Owner: `BijForm.Coding`
   - Evidence: direct `Fin.ext` remains in `BijForm/StringDiagram/Basic.lean`
     and `BijForm/Examples/Num.lean`.
   - Action: route these through `fin_eq_of_val_eq` or a more specific helper.
   - Validation: `rg -n "Fin\\.ext" BijForm` only shows the helper
     implementation or justified nontrivial uses.
+  - Completed: all non-owner occurrences now use `fin_eq_of_val_eq`; the only
+    remaining `Fin.ext` source hit is the helper implementation in
+    `BijForm/Coding.lean`.
 
 - [ ] Add reusable `Fin 0` eliminators and empty-code isomorphisms.
   - Owner: `BijForm.Coding` and `BijForm.CodeAlgebra`

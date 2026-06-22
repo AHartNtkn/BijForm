@@ -346,7 +346,7 @@ def NumNatLayerShapeLayerPresentation :
           by_cases h : tag.val < k + 1
           · rw [dif_pos h]
           · rw [dif_neg h]
-            exact congrArg Sum.inl (Fin.ext (by
+            exact congrArg Sum.inl (fin_eq_of_val_eq (by
               have hlt := tag.isLt
               change k + 1 = tag.val
               omega))

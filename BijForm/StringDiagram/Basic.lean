@@ -907,7 +907,7 @@ theorem nodePortsExcept_eq_of_val
     Sig.nodePortsExcept nodeA entryA =
       Sig.nodePortsExcept nodeB entryB := by
   cases hnode
-  have hentry : entryA = entryB := Fin.ext hval
+  have hentry : entryA = entryB := fin_eq_of_val_eq hval
   cases hentry
   rfl
 
@@ -965,7 +965,7 @@ theorem bud_transport
     Diag.bud nodeA entryA okA childA =
       Diag.bud nodeB entryB okB childB := by
   cases hnode
-  have hentry : entryB = entryA := Fin.ext hentryVal
+  have hentry : entryB = entryA := fin_eq_of_val_eq hentryVal
   cases hentry
   cases hfrontier
   have hok : okB = okA := Subsingleton.elim _ _
