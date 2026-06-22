@@ -78,8 +78,11 @@ is ordered to turn helper additions into actual deletion.
     `childIndex := Fin.cast ...` boilerplate. A follow-up edge-left/right and
     bud node-incident pass removed the remaining bridge-local raw casts, so
     `GraphRenderRelation.lean` direct `Fin.cast` hits dropped from `103` to
-    `0`. The item remains open because non-bridge renderer, traversal, and
-    hypergraph casts still remain.
+    `0`. Hypergraph proof-body casts now route through `listIndexCast`,
+    `eraseFin_eq_of_eq_of_val_eq`, and signature node-port index helpers;
+    `Hypergraph.lean` direct `Fin.cast` hits are down to the two
+    `PortHypergraphIso` incidence-slot transport helper implementations. The
+    item remains open because renderer and traversal casts still remain.
 
 - [ ] Collapse the graph-render relation helper volume into schemas.
   - Owners: `BijForm.StringDiagram.Bridge.GraphRenderRelation`,

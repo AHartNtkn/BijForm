@@ -808,6 +808,15 @@ theorem eraseFin_eq_of_eq {α : Type} {xs ys : List α}
   cases hxy
   simp
 
+theorem eraseFin_eq_of_eq_of_val_eq {α : Type} {xs ys : List α}
+    (hxy : xs = ys) (i : Fin xs.length) (j : Fin ys.length)
+    (hval : i.val = j.val) :
+    eraseFin xs i = eraseFin ys j := by
+  have hidx :
+      Fin.cast (by rw [← hxy]) i = j :=
+    fin_eq_of_val_eq hval
+  simpa [hidx] using eraseFin_eq_of_eq hxy i
+
 theorem nodup_append_of_nodup_disjoint {α : Type} :
     ∀ (xs ys : List α),
       xs.Nodup →
@@ -1272,9 +1281,17 @@ theorem compatible_comm {left right : Sig.Port}
 def nodePorts (node : Sig.Node) : List Sig.Port :=
   List.ofFn fun slot : Fin (Sig.arity node) => Sig.port node slot
 
+def nodePortsIndex (node : Sig.Node) (entry : Fin (Sig.arity node)) :
+    Fin (Sig.nodePorts node).length :=
+  listIndexCast (Sig.nodePorts node) (by simp [nodePorts]) entry
+
+def nodePortIndexOfLength (node : Sig.Node) {n : Nat}
+    (h : n = Sig.arity node) (slot : Fin n) : Fin (Sig.arity node) :=
+  Fin.cast h slot
+
 def nodePortsExcept (node : Sig.Node) (entry : Fin (Sig.arity node)) :
     List Sig.Port :=
-  eraseFin (Sig.nodePorts node) (Fin.cast (by simp [nodePorts]) entry)
+  eraseFin (Sig.nodePorts node) (Sig.nodePortsIndex node entry)
 
 theorem nodePortsExcept_eq_of_val
     {nodeA nodeB : Sig.Node}

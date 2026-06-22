@@ -71,7 +71,8 @@ structure PortHypergraph (Sig : Signature) (boundary : List Sig.Port) where
   incidence_label :
     ∀ (node : Fin nodeCount) (slot : Fin (incident node).length),
       endpointLabel ((incident node).get slot) =
-        Sig.port (nodeLabel node) (Fin.cast (incident_length node) slot)
+        Sig.port (nodeLabel node)
+          (Sig.nodePortIndexOfLength (nodeLabel node) (incident_length node) slot)
   endpoint_owner :
     ∀ endpoint : Fin endpointCount,
       ∃ owner : EndpointOwner boundary.length nodeCount
@@ -334,17 +335,24 @@ theorem incident_labels_except (G : PortHypergraph Sig boundary)
     (slot : Fin (G.incident node).length) :
     (eraseFin (G.incident node) slot).map G.endpointLabel =
       Sig.nodePortsExcept (G.nodeLabel node)
-        (Fin.cast (G.incident_length node) slot) := by
+        (Sig.nodePortIndexOfLength (G.nodeLabel node)
+          (G.incident_length node) slot) := by
   calc
     (eraseFin (G.incident node) slot).map G.endpointLabel =
         eraseFin ((G.incident node).map G.endpointLabel)
-          (Fin.cast (by simp) slot) :=
-      map_eraseFin G.endpointLabel (G.incident node) slot
+          (listMapIndex G.endpointLabel (G.incident node) slot) := by
+      simpa [listMapIndex] using map_eraseFin G.endpointLabel (G.incident node) slot
     _ = Sig.nodePortsExcept (G.nodeLabel node)
-          (Fin.cast (G.incident_length node) slot) := by
+          (Sig.nodePortIndexOfLength (G.nodeLabel node)
+            (G.incident_length node) slot) := by
       have hlabels := G.incident_labels node
-      rw [eraseFin_eq_of_eq hlabels]
-      simp [Signature.nodePortsExcept, Signature.nodePorts]
+      exact eraseFin_eq_of_eq_of_val_eq hlabels
+        (listMapIndex G.endpointLabel (G.incident node) slot)
+        (Sig.nodePortsIndex (G.nodeLabel node)
+          (Sig.nodePortIndexOfLength (G.nodeLabel node)
+            (G.incident_length node) slot))
+        (by simp [listMapIndex, Signature.nodePortsIndex,
+          Signature.nodePortIndexOfLength])
 
 /--
 A port endpoint has a path to the ordered boundary when it is a boundary
@@ -681,9 +689,11 @@ theorem rawReachesBoundary_to_portReachesBoundaryOfInvariants
       have hnodeMem : st.nodes.get nodeIndex ∈ st.nodes :=
         List.get_mem st.nodes nodeIndex
       let fromSlot' : Fin (incidentOfValidIds hv nodeIndex).length :=
-        Fin.cast (by simp [incidentOfValidIds]) fromSlot
+        listIndexCast (incidentOfValidIds hv nodeIndex)
+          (by simp [incidentOfValidIds]) fromSlot
       let toSlot' : Fin (incidentOfValidIds hv nodeIndex).length :=
-        Fin.cast (by simp [incidentOfValidIds]) toSlot
+        listIndexCast (incidentOfValidIds hv nodeIndex)
+          (by simp [incidentOfValidIds]) toSlot
       have hfromBound :=
         hv.node_incident_bound (st.nodes.get nodeIndex) hnodeMem fromSlot
       have htoBound :=
@@ -736,7 +746,7 @@ theorem allConstructorsReachBoundaryOfInvariants
   rcases hr.node_reaches (st.nodes.get node) hnodeMem with
     ⟨rawSlot, rawReach⟩
   let slot : Fin (G.incident node).length :=
-    Fin.cast
+    listIndexCast (G.incident node)
       (by
         simp [G, ev, RenderState.PortHypergraphEvidence.toPortHypergraph,
           RenderState.portHypergraphEvidenceOfInvariants,
@@ -1100,7 +1110,7 @@ theorem toOpenPortHypergraph_connect_boundary_edgeMate
       rightLabel := frontier.get mate
       left := 0
       right :=
-        restIds.get (Fin.cast (by
+        restIds.get (listIndexCast restIds (by
           have hids :
               (RenderState.initial Sig (active :: frontier)).frontierIds =
                 0 :: restIds := by
@@ -1191,7 +1201,7 @@ theorem toOpenPortHypergraph_bud_boundary_entry_edgeMate
     freshNodeEndpoints (RenderState.initial Sig (active :: frontier)).nextEndpoint
       (Sig.arity node)
   let entryIdx : Fin nodeEndpoints.length :=
-    Fin.cast (by simp [nodeEndpoints]) entry
+    listIndexCast nodeEndpoints (by simp [nodeEndpoints]) entry
   let edge : RenderEdge Sig :=
     { label := Sig.portEdge active
       leftLabel := active
@@ -1230,7 +1240,7 @@ theorem toOpenPortHypergraph_bud_boundary_entry_edgeMate
       nodeEndpoints] at *
     rw [hnodeIndex]
   let slot : Fin (G.raw.incident nodeIndex).length :=
-    Fin.cast (by
+    listIndexCast (G.raw.incident nodeIndex) (by
       calc
         Sig.arity node = Sig.arity (G.raw.nodeLabel nodeIndex) := by
           rw [hnodeLabel]
@@ -1262,12 +1272,12 @@ theorem toOpenPortHypergraph_bud_boundary_entry_edgeMate
         simpa [edge] using congrArg RenderEdge.right hedgeIndex
       have hentryGet :
           (st.nodes.get nodeIndex).incident.get
-              (Fin.cast (by
+              (listIndexCast (st.nodes.get nodeIndex).incident (by
                 rw [hincidentList]
                 simp [nodeEndpoints]) entry) =
             nodeEndpoints.get entryIdx := by
         exact list_get_of_eq_of_val_eq hincidentList
-          (Fin.cast (by
+          (listIndexCast (st.nodes.get nodeIndex).incident (by
             rw [hincidentList]
             simp [nodeEndpoints]) entry)
           entryIdx
