@@ -1922,7 +1922,8 @@ theorem budStep_validIds {active : Sig.Port} {frontier : List Sig.Port}
             (st.endpoints ++ Sig.nodePorts node).get
                 ⟨renderNode.incident.get slot, old_bound_lift hbound⟩ =
               Sig.port renderNode.label
-                (Fin.cast (hv.node_incident_length renderNode hold) slot) := by
+                (Sig.nodePortIndexOfLength renderNode.label
+                  (hv.node_incident_length renderNode hold) slot) := by
           calc
             (st.endpoints ++ Sig.nodePorts node).get
                 ⟨renderNode.incident.get slot, old_bound_lift hbound⟩ =
@@ -1932,8 +1933,9 @@ theorem budStep_validIds {active : Sig.Port} {frontier : List Sig.Port}
                     (old_bound_lift hbound)
             _ =
                 Sig.port renderNode.label
-                  (Fin.cast (hv.node_incident_length renderNode hold) slot) :=
-                  hlabel
+                  (Sig.nodePortIndexOfLength renderNode.label
+                    (hv.node_incident_length renderNode hold) slot) := by
+                  simpa [Signature.nodePortIndexOfLength] using hlabel
         simpa [childEndpoints_eq] using hcalc
       · cases hnew
         have hlabel :=
