@@ -247,6 +247,29 @@ theorem get_first_suffix_at {α : Type} {pref full : List α}
     full.get i = x :=
   list_get_of_eq_append_cons_at_length h.eq_append i hval
 
+theorem mem_prefix {α : Type} {pref full suffix : List α} {x : α}
+    (h : AppendStep pref full suffix) (hmem : x ∈ pref) :
+    x ∈ full := by
+  rw [h.eq_append]
+  exact List.mem_append_left suffix hmem
+
+theorem mem_suffix {α : Type} {pref full suffix : List α} {x : α}
+    (h : AppendStep pref full suffix) (hmem : x ∈ suffix) :
+    x ∈ full := by
+  rw [h.eq_append]
+  exact List.mem_append_right pref hmem
+
+theorem mem_cases {α : Type} {pref full suffix : List α} {x : α}
+    (h : AppendStep pref full suffix) (hmem : x ∈ full) :
+    x ∈ pref ∨ x ∈ suffix := by
+  rw [h.eq_append] at hmem
+  exact List.mem_append.mp hmem
+
+theorem mem_single {α : Type} {pref full : List α} {x : α}
+    (h : AppendStep pref full [x]) :
+    x ∈ full := by
+  exact h.mem_suffix (by simp)
+
 end AppendStep
 
 /--

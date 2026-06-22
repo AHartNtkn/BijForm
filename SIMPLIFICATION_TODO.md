@@ -538,9 +538,10 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     through delta-derived facts.
   - Partial: `Renderer.Steps.RenderDelta` now owns connect/bud endpoint, edge,
     node, and frontier append facts; the public one-step get/length/prefix facts
-    are step-owned and `Renderer.Trace` no longer reconstructs them. The
-    invariant-preservation families and remaining membership cases still need
-    to be derived through the delta model before this item is complete.
+    are step-owned and `Renderer.Trace` no longer reconstructs them. Old/new
+    membership facts now use `RenderDelta` and generic `AppendStep` membership
+    projections. The invariant-preservation families still need to be derived
+    through the delta model before this item is complete.
 
 - [ ] Factor render trace prefix/index proofs.
   - Owner: `BijForm.StringDiagram.Renderer.Trace`
