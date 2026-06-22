@@ -275,6 +275,10 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     pivot codec and child-bound witnesses.
   - Validation: source search for duplicated finite/infinite sorted payload
     proof blocks drops.
+  - Partial: replaced the separate finite/infinite constructor payload isos
+    with one `sortedConstructorPayloadIso` parameterized by upper bound and
+    pivot codec. The finite and infinite child-rank lemmas remain separate and
+    still need a parameterized descent helper.
 
 - [ ] Generalize typed-binding NF constructor-family carrier coding.
   - Owner: `BijForm.TypedBinding`
