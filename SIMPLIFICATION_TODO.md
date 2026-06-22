@@ -580,7 +580,7 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     pending-cons membership and processed-edge nodup, plus the generic
     `fin_cons_prefix_iff` prefix update used by the low-level branch proofs.
 
-- [ ] Generalize first-pending finite search correctness.
+- [x] Generalize first-pending finite search correctness.
   - Owner: `BijForm.StringDiagram.Traversal.Search`
   - Evidence: `firstPendingConnectSearch?`, `firstPendingBudSearch?`, and
     `firstPendingStepSearch?` duplicate `findSome?` witness, exactness, and
@@ -589,6 +589,13 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     connect-before-bud priority in one result type.
   - Validation: `toDiag_step`, `toDiag_connect`, `toDiag_bud`, and
     `toDiag_isoRelated` still build.
+  - Completed: `FirstPendingStepSearchView` and
+    `firstPendingStepSearch?_view` now own the combined search case split:
+    selected connect, selected bud with connect-search failure evidence, or
+    no result with a proof that the step is not ready. The public readiness,
+    priority, and exact connect/bud witness lemmas now destruct that view
+    instead of separately unfolding `firstPendingStepSearch?`; the redundant
+    intermediate combined-search witness helpers were removed.
 
 - [ ] Package render trace evidence.
   - Owner: `BijForm.StringDiagram.Hypergraph`
