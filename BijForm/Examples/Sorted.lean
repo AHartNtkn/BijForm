@@ -707,9 +707,9 @@ theorem SortedInfiniteConstructorPayload_child_rank_lt (lower : Nat) :
                 OutputIndexInversion.canonical, sortedBranchFiber, Bound.le, rhsCode,
                 SortedCarrierLayerIso] using hlt
 
-def SortedLayerShapePresentation :
-    LayerShapePresentation SortedPoly SortedInversion SortedCarrier SortedLayerShape :=
-  LayerShapePresentation.ofCarrierLayerIso SortedCarrierLayerIso SortedCarrierRank (by
+def SortedLayerPresentation :
+    LayerPresentation SortedPoly SortedInversion SortedCarrier :=
+  LayerPresentation.ofCarrierLayerIso SortedCarrierLayerIso SortedCarrierRank (by
     intro i z q
     cases i with
     | mk lower upper =>
@@ -753,7 +753,7 @@ def SortedLayerShapePresentation :
 
 def SortedShapeLayerPresentation :
     ShapeLayerPresentation SortedPoly SortedInversion :=
-  SortedLayerShapePresentation.toShapeLayerPresentation SortedShape
+  ShapeLayerPresentation.ofLayerPresentation SortedShape SortedLayerPresentation
 
 def SortedGeneratedShapeCode : GeneratedShapeCode SortedPoly :=
   SortedShapeLayerPresentation.generatedCode

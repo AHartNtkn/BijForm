@@ -438,20 +438,14 @@ theorem NumNat_layer_child_lt :
               (a := Sum.inr (Sum.inr (child false, child true))) htail
             simpa [NumNatLayerShapeTo] using hlt
 
-def NumNatLayerShapePresentation :
-    LayerShapePresentation NumPoly NumInversion (fun _ => Nat) NumNatLayerShape :=
-  LayerShapePresentation.ofLayerChildRank
+def NumNatLayerPresentation : NatLayerPresentation NumPoly NumInversion :=
+  LayerPresentation.ofLayerShapeChildRank
     NumNatLayerShapeLayerPresentation
     (fun k => CodeAlgebra.finPrefixNat (k + 2) CodeAlgebra.natOrProdOrProdNat)
     (fun _ n => n)
     (by
     intro k layer q
     exact NumNat_layer_child_lt layer q)
-
-def NumNatLayerPresentation : NatLayerPresentation NumPoly NumInversion :=
-  NumNatLayerShapePresentation.toNatLayerPresentationOfRankEq (by
-    intro _ _
-    rfl)
 
 def NumNatGeneratedCode : GeneratedNatCode NumPoly :=
   NumNatLayerPresentation.generatedCode

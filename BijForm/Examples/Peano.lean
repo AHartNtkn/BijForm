@@ -343,21 +343,14 @@ theorem PeanoNat_layer_child_lt :
           simpa [c, PeanoNatLayerShapeTo] using
             CodeAlgebra.prodOrNatOrProdOrNat_toFun_inr_inr_inr_lt c
 
-def PeanoNatLayerShapePresentation :
-    LayerShapePresentation PeanoPoly PeanoInversion (fun _ => Nat)
-      (fun _ => PeanoNatLayerShape) :=
-  LayerShapePresentation.ofLayerChildRank
+def PeanoNatLayerPresentation : NatLayerPresentation PeanoPoly PeanoInversion :=
+  LayerPresentation.ofLayerShapeChildRank
     PeanoNatLayerShapeLayerPresentation
     (fun _ => CodeAlgebra.prodOrNatOrProdOrNat)
     (fun _ n => n)
     (by
     intro k layer q
     exact PeanoNat_layer_child_lt layer q)
-
-def PeanoNatLayerPresentation : NatLayerPresentation PeanoPoly PeanoInversion :=
-  PeanoNatLayerShapePresentation.toNatLayerPresentationOfRankEq (by
-    intro _ _
-    rfl)
 
 def PeanoNatGeneratedCode : GeneratedNatCode PeanoPoly :=
   PeanoNatLayerPresentation.generatedCode

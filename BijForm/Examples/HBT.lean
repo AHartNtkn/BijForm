@@ -223,9 +223,8 @@ def HBTNatLayerShapeLayerPresentation :
               cases p
               rfl)
 
-def HBTNatLayerShapePresentation :
-    LayerShapePresentation HBTPoly HBTInversion (fun _ => Nat) HBTNatLayerShape :=
-  LayerShapePresentation.ofShapeChildRank
+def HBTNatLayerPresentation : NatLayerPresentation HBTPoly HBTInversion :=
+  LayerPresentation.ofShapeChildRank
     HBTNatLayerShapeLayerPresentation
     HBTNatLayerCarrierIso
     (fun _ n => n)
@@ -245,11 +244,6 @@ def HBTNatLayerShapePresentation :
             cases q
             · exact CodeAlgebra.sumProdNat_toFun_inr_fst_lt pair
             · exact CodeAlgebra.sumProdNat_toFun_inr_snd_lt pair)
-
-def HBTNatLayerPresentation : NatLayerPresentation HBTPoly HBTInversion :=
-  HBTNatLayerShapePresentation.toNatLayerPresentationOfRankEq (by
-    intro _ _
-    rfl)
 
 /-- Generated Nat coding data for height-bounded trees. The recursive encoder
 and decoder are produced by `GeneratedNatCode`, not by an example-specific

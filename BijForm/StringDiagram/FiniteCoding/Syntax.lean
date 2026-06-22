@@ -797,15 +797,15 @@ private theorem singleSortedFiniteLayer_shape_child_rank_lt
 def singleSortedFiniteGeneratedShapeCode
     (Sig : Signature) (data : SingleSortedFiniteCodingData Sig) :
     GeneratedShapeCode (poly Sig) :=
-  ((LayerShapePresentation.ofShapeChildRank
-    (singleSortedFiniteLayerPresentation data)
-    (singleSortedFiniteLayerShapeCarrierIso data)
-    (singleSortedFiniteRank data)
-    (by
-      intro boundary shape q
-      exact singleSortedFiniteLayer_shape_child_rank_lt
-        (data := data) (boundary := boundary) shape q)).toShapeLayerPresentation
-        (openFrontierShape Sig)).generatedCode
+  (ShapeLayerPresentation.ofLayerPresentation (openFrontierShape Sig)
+    (LayerPresentation.ofShapeChildRank
+      (singleSortedFiniteLayerPresentation data)
+      (singleSortedFiniteLayerShapeCarrierIso data)
+      (singleSortedFiniteRank data)
+      (by
+        intro boundary shape q
+        exact singleSortedFiniteLayer_shape_child_rank_lt
+          (data := data) (boundary := boundary) shape q))).generatedCode
 
 /-- Syntax for any open frontier is coded by the generated open-frontier shape. -/
 def singleSortedFiniteSyntaxShapeIso

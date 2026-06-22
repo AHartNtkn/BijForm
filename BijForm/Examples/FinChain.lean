@@ -229,9 +229,9 @@ def FinChainLayerShapeLayerPresentation :
               cases pair
               rfl)
 
-def FinChainLayerShapePresentation :
-    LayerShapePresentation FinChainPoly FinChainInversion FinChainCarrier FinChainLayerShape :=
-  LayerShapePresentation.ofShapeChildRank
+def FinChainLayerPresentation :
+    LayerPresentation FinChainPoly FinChainInversion FinChainCarrier :=
+  LayerPresentation.ofShapeChildRank
     FinChainLayerShapeLayerPresentation
     FinChainLayerCarrierIso
     (fun i _ => i)
@@ -249,7 +249,7 @@ def FinChainLayerShapePresentation :
 
 def FinChainShapeLayerPresentation :
     ShapeLayerPresentation FinChainPoly FinChainInversion :=
-  FinChainLayerShapePresentation.toShapeLayerPresentation FinChainShape
+  ShapeLayerPresentation.ofLayerPresentation FinChainShape FinChainLayerPresentation
 
 def FinChainGeneratedShapeCode : GeneratedShapeCode FinChainPoly :=
   FinChainShapeLayerPresentation.generatedCode

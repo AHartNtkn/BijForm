@@ -21,7 +21,7 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     `GeneratedCode` aliases, and shape codings store a canonical `code` field
     instead of duplicating generated-code fields.
 
-- [ ] Unify layer-presentation records.
+- [x] Unify layer-presentation records.
   - Owner: `BijForm.DependentPolynomial.LayerPresentation`
   - Evidence: `LayerShapePresentation`, `SyntaxPresentation`,
     `NatLayerPresentation`, `RankedNatLayerPresentation`, and
@@ -30,6 +30,9 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     views from it.
   - Validation: source search for old wrapper assembly shrinks and all examples
     build through the unified abstraction.
+  - Completed: `LayerPresentation` is the sole layer/rank/descent record;
+    syntax, Nat, and ranked-Nat presentations are views, and shape presentation
+    stores only shape metadata plus a canonical presentation.
 
 - [ ] Split initial algebra machinery out of `DependentPolynomial.lean`.
   - Owner: new `BijForm.InitialAlgebra` or equivalent core module.

@@ -96,6 +96,7 @@ lake exe bijform
   - `Mu`
   - `OutputIndexInversion`
   - `WellFoundedCode`
+  - `LayerPresentation`
   - `GeneratedCode`
   - `GeneratedShapeCode`
   - `GeneratedRankedNatCode`
@@ -547,6 +548,12 @@ CodeLayer P inversion Code i
 
 This is the reusable point where output-index inversion is exposed instead of
 hidden behind an opaque constructor isomorphism.
+
+`LayerPresentation` is the canonical owner for generated layer coding data. It
+stores the same-fiber `CodeLayerPresentation`, the carrier rank, and the child
+descent proof. Syntax, Nat, ranked-Nat, and shape presentations are views or
+metadata wrappers over this record rather than independent layer/rank/descent
+records.
 
 `GeneratedNatCode` is the `Nat`-carrier view of `GeneratedCode`; its constructor
 uses the identity rank on `Nat`, so it requires recursive child codes to be

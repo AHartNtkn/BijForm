@@ -789,75 +789,81 @@ def transCarrier (D : CodeLayerPresentation P H Code Shape)
 
 end CodeLayerPresentation
 
-/-- A layer presentation factored through an intermediate domain-specific
-shape.  The library owns the composition from raw `CodeLayer` to the final
-carrier; examples supply only the raw-to-shape presentation, the shape-to-carrier
-isomorphism, and the carrier descent proof. -/
-structure LayerShapePresentation
+/-- Canonical layer presentation for generated coding.  This is the only record
+that owns the one-step layer isomorphism, rank, and recursive descent proof. -/
+structure LayerPresentation
     (P : DepPoly ι)
     (H : OutputIndexInversion P)
-    (Code : ι → Type v)
-    (Shape : ι → Type w) where
-  layerShape : CodeLayerPresentation P H Code Shape
-  carrier : ∀ i, Shape i ≃ᵢ Code i
+    (Code : ι → Type v) where
+  layer : CodeLayerPresentation P H Code Code
   rank : ∀ i, Code i → Nat
   child_rank_lt :
     ∀ {i : ι} (z : Code i)
-      (q : P.Pos
-          (H.decode i
-            ((((layerShape.transCarrier carrier).iso i).invFun z).1)).ctor
-          (H.decode i
-            ((((layerShape.transCarrier carrier).iso i).invFun z).1)).param),
-      rank (P.input
-          (H.decode i
-            ((((layerShape.transCarrier carrier).iso i).invFun z).1)).param q)
-          ((((layerShape.transCarrier carrier).iso i).invFun z).2 q) <
-        rank i z
+      (q : P.Pos (H.decode i (((layer.iso i).invFun z).1)).ctor
+          (H.decode i (((layer.iso i).invFun z).1)).param),
+      rank (P.input (H.decode i (((layer.iso i).invFun z).1)).param q)
+          (((layer.iso i).invFun z).2 q) < rank i z
 
-namespace LayerShapePresentation
+namespace LayerPresentation
 
 variable {P : DepPoly ι} {H : OutputIndexInversion P}
 variable {Code : ι → Type v} {Shape : ι → Type w}
 
-def layer (D : LayerShapePresentation P H Code Shape) :
-    CodeLayerPresentation P H Code Code :=
-  D.layerShape.transCarrier D.carrier
-
-/--
-Build a layer-shape presentation from its reusable components.  This keeps the
-record assembly in the library while examples provide the domain-specific raw
-shape presentation, carrier isomorphism, rank, and descent proof.
--/
-def ofComponents
-    (layerShape : CodeLayerPresentation P H Code Shape)
-    (carrier : ∀ i, Shape i ≃ᵢ Code i)
+def ofLayer
+    (layer : CodeLayerPresentation P H Code Code)
     (rank : ∀ i, Code i → Nat)
     (child_rank_lt :
       ∀ {i : ι} (z : Code i)
-        (q : P.Pos
-            (H.decode i
-              ((((layerShape.transCarrier carrier).iso i).invFun z).1)).ctor
-            (H.decode i
-              ((((layerShape.transCarrier carrier).iso i).invFun z).1)).param),
-        rank (P.input
-            (H.decode i
-              ((((layerShape.transCarrier carrier).iso i).invFun z).1)).param q)
-            ((((layerShape.transCarrier carrier).iso i).invFun z).2 q) <
-          rank i z) :
-    LayerShapePresentation P H Code Shape where
-  layerShape := layerShape
-  carrier := carrier
+        (q : P.Pos (H.decode i (((layer.iso i).invFun z).1)).ctor
+            (H.decode i (((layer.iso i).invFun z).1)).param),
+        rank (P.input (H.decode i (((layer.iso i).invFun z).1)).param q)
+            (((layer.iso i).invFun z).2 q) < rank i z) :
+    LayerPresentation P H Code where
+  layer := layer
   rank := rank
   child_rank_lt := by
     intro i z q
     exact child_rank_lt z q
 
-/--
-Build a layer-shape presentation from a layer-local descent proof. The caller
-proves rank descent for each raw layer, and the library transports that fact
-across the final carrier code.
--/
+def ofLayerMaps
+    (toCarrier : ∀ i, CodeLayer P H Code i → Code i)
+    (fromCarrier : ∀ i, Code i → CodeLayer P H Code i)
+    (left_inv : ∀ i, Function.LeftInverse (fromCarrier i) (toCarrier i))
+    (right_inv : ∀ i, Function.RightInverse (fromCarrier i) (toCarrier i))
+    (rank : ∀ i, Code i → Nat)
+    (child_rank_lt :
+      ∀ {i : ι} (z : Code i)
+        (q : P.Pos (H.decode i ((fromCarrier i z).1)).ctor
+            (H.decode i ((fromCarrier i z).1)).param),
+        rank (P.input (H.decode i ((fromCarrier i z).1)).param q)
+            ((fromCarrier i z).2 q) < rank i z) :
+    LayerPresentation P H Code where
+  layer := CodeLayerPresentation.ofMaps toCarrier fromCarrier left_inv right_inv
+  rank := rank
+  child_rank_lt := by
+    intro i z q
+    exact child_rank_lt z q
+
 def ofLayerChildRank
+    (layer : CodeLayerPresentation P H Code Code)
+    (rank : ∀ i, Code i → Nat)
+    (layer_child_rank_lt :
+      ∀ {i : ι} (x : CodeLayer P H Code i)
+        (q : P.Pos (H.decode i x.1).ctor (H.decode i x.1).param),
+        rank (P.input (H.decode i x.1).param q) (x.2 q) <
+          rank i ((layer.iso i).toFun x)) :
+    LayerPresentation P H Code where
+  layer := layer
+  rank := rank
+  child_rank_lt := by
+    intro i z q
+    simpa using layer_child_rank_lt ((layer.iso i).invFun z) q
+
+/--
+Build a canonical layer presentation from a layer-local descent proof after
+factoring the one-step layer through an intermediate domain-specific shape.
+-/
+def ofLayerShapeChildRank
     (layerShape : CodeLayerPresentation P H Code Shape)
     (carrier : ∀ i, Shape i ≃ᵢ Code i)
     (rank : ∀ i, Code i → Nat)
@@ -866,18 +872,12 @@ def ofLayerChildRank
         (q : P.Pos (H.decode i x.1).ctor (H.decode i x.1).param),
         rank (P.input (H.decode i x.1).param q) (x.2 q) <
           rank i (((layerShape.transCarrier carrier).iso i).toFun x)) :
-    LayerShapePresentation P H Code Shape where
-  layerShape := layerShape
-  carrier := carrier
-  rank := rank
-  child_rank_lt := by
-    intro i z q
-    simpa using
-      layer_child_rank_lt (((layerShape.transCarrier carrier).iso i).invFun z) q
+    LayerPresentation P H Code :=
+  ofLayerChildRank (layerShape.transCarrier carrier) rank layer_child_rank_lt
 
 /--
-Build a layer-shape presentation from a descent proof over the intermediate
-shape carrier.
+Build a canonical layer presentation from a descent proof over an intermediate
+domain-specific shape.
 -/
 def ofShapeChildRank
     (layerShape : CodeLayerPresentation P H Code Shape)
@@ -890,20 +890,14 @@ def ofShapeChildRank
         rank (P.input (H.decode i ((layerShape.fromCarrier i shape).1)).param q)
             ((layerShape.fromCarrier i shape).2 q) <
           rank i ((carrier i).toFun shape)) :
-    LayerShapePresentation P H Code Shape where
-  layerShape := layerShape
-  carrier := carrier
+    LayerPresentation P H Code where
+  layer := layerShape.transCarrier carrier
   rank := rank
   child_rank_lt := by
     intro i z q
     simpa [CodeLayerPresentation.iso, CodeLayerPresentation.transCarrier] using
       shape_child_rank_lt ((carrier i).invFun z) q
 
-/--
-Build a layer-shape presentation when the generated shape is the carrier
-family itself.  Examples supply the domain-specific one-step isomorphism and
-rank proof; the library owns the presentation assembly.
--/
 def ofCarrierLayerIso
     (layer : ∀ i, CodeLayer P H Code i ≃ᵢ Code i)
     (rank : ∀ i, Code i → Nat)
@@ -913,30 +907,28 @@ def ofCarrierLayerIso
             (H.decode i (((layer i).invFun z).1)).param),
         rank (P.input (H.decode i (((layer i).invFun z).1)).param q)
             (((layer i).invFun z).2 q) < rank i z) :
-    LayerShapePresentation P H Code Code where
-  layerShape := CodeLayerPresentation.ofIso layer
-  carrier := fun i => Iso.refl (Code i)
-  rank := rank
-  child_rank_lt := by
-    intro i z q
-    exact child_rank_lt z q
+    LayerPresentation P H Code :=
+  ofLayer (CodeLayerPresentation.ofIso layer) rank child_rank_lt
 
-end LayerShapePresentation
+def generatedCode (D : LayerPresentation P H Code) :
+    GeneratedCode P Code :=
+  GeneratedCode.ofLayerChildRank H D.layer.iso D.rank (by
+    intro i x
+    rw [← (D.layer.iso i).left_inv x]
+    intro q
+    simpa using D.child_rank_lt ((D.layer.iso i).toFun x) q)
 
-/-- Presentation of readable syntax as a generated code family.  The library
-compiles the one-step layer presentation into `GeneratedCode`. -/
-structure SyntaxPresentation
+def iso (D : LayerPresentation P H Code) (i : ι) : Mu P i ≃ᵢ Code i :=
+  D.generatedCode.iso i
+
+end LayerPresentation
+
+/-- Readable syntax presentation as a view of canonical layer presentations. -/
+abbrev SyntaxPresentation
     (P : DepPoly ι)
     (H : OutputIndexInversion P)
-    (Syntax : ι → Type v) where
-  layer : CodeLayerPresentation P H Syntax Syntax
-  rank : ∀ i, Syntax i → Nat
-  child_rank_lt :
-    ∀ {i : ι} (z : Syntax i)
-      (q : P.Pos (H.decode i (((layer.iso i).invFun z).1)).ctor
-          (H.decode i (((layer.iso i).invFun z).1)).param),
-      rank (P.input (H.decode i (((layer.iso i).invFun z).1)).param q)
-          (((layer.iso i).invFun z).2 q) < rank i z
+    (Syntax : ι → Type v) :=
+  LayerPresentation P H Syntax
 
 namespace SyntaxPresentation
 
@@ -951,12 +943,8 @@ def ofLayer
             (H.decode i (((layer.iso i).invFun z).1)).param),
         rank (P.input (H.decode i (((layer.iso i).invFun z).1)).param q)
             (((layer.iso i).invFun z).2 q) < rank i z) :
-    SyntaxPresentation P H Syntax where
-  layer := layer
-  rank := rank
-  child_rank_lt := by
-    intro i z q
-    exact child_rank_lt z q
+    SyntaxPresentation P H Syntax :=
+  LayerPresentation.ofLayer layer rank child_rank_lt
 
 def ofLayerMaps
     (toSyntax : ∀ i, CodeLayer P H Syntax i → Syntax i)
@@ -970,187 +958,106 @@ def ofLayerMaps
             (H.decode i ((fromSyntax i z).1)).param),
         rank (P.input (H.decode i ((fromSyntax i z).1)).param q)
             ((fromSyntax i z).2 q) < rank i z) :
-    SyntaxPresentation P H Syntax where
-  layer := CodeLayerPresentation.ofMaps toSyntax fromSyntax left_inv right_inv
-  rank := rank
-  child_rank_lt := by
-    intro i z q
-    exact child_rank_lt z q
+    SyntaxPresentation P H Syntax :=
+  LayerPresentation.ofLayerMaps toSyntax fromSyntax left_inv right_inv rank
+    child_rank_lt
 
 def generatedCode (D : SyntaxPresentation P H Syntax) :
     GeneratedCode P Syntax :=
-  GeneratedCode.ofLayerChildRank H D.layer.iso D.rank (by
-    intro i x
-    rw [← (D.layer.iso i).left_inv x]
-    intro q
-    simpa using D.child_rank_lt ((D.layer.iso i).toFun x) q)
+  LayerPresentation.generatedCode D
 
 def iso (D : SyntaxPresentation P H Syntax) (i : ι) : Mu P i ≃ᵢ Syntax i :=
   D.generatedCode.iso i
 
 end SyntaxPresentation
 
-/-- Presentation of a Nat carrier layer. -/
-structure NatLayerPresentation
+/-- Nat-carrier presentation as a view of canonical layer presentations. -/
+abbrev NatLayerPresentation
     (P : DepPoly ι)
-    (H : OutputIndexInversion P) where
-  layer : CodeLayerPresentation P H (fun _ => Nat) (fun _ => Nat)
-  child_lt :
-    ∀ {i : ι} (n : Nat)
-      (q : P.Pos (H.decode i (((layer.iso i).invFun n).1)).ctor
-          (H.decode i (((layer.iso i).invFun n).1)).param),
-      (((layer.iso i).invFun n).2 q) < n
+    (H : OutputIndexInversion P) :=
+  LayerPresentation P H (fun _ => Nat)
 
 namespace NatLayerPresentation
 
 variable {P : DepPoly ι} {H : OutputIndexInversion P}
 
+def ofLayerChildLt
+    (layer : CodeLayerPresentation P H (fun _ => Nat) (fun _ => Nat))
+    (child_lt :
+      ∀ {i : ι} (x : CodeLayer P H (fun _ => Nat) i)
+        (q : P.Pos (H.decode i x.1).ctor (H.decode i x.1).param),
+        x.2 q < (layer.iso i).toFun x) :
+    NatLayerPresentation P H :=
+  LayerPresentation.ofLayerChildRank layer (fun _ n => n) (by
+    intro i x q
+    exact child_lt x q)
+
 def generatedCode (D : NatLayerPresentation P H) : GeneratedNatCode P :=
-  GeneratedNatCode.ofLayerChildLt H D.layer.iso (by
-    intro i x
-    rw [← (D.layer.iso i).left_inv x]
-    intro q
-    simpa using D.child_lt ((D.layer.iso i).toFun x) q)
+  LayerPresentation.generatedCode D
 
 def iso (D : NatLayerPresentation P H) (i : ι) : Mu P i ≃ᵢ Nat :=
   D.generatedCode.iso i
 
 end NatLayerPresentation
 
-/-- Presentation of a ranked Nat carrier layer. -/
-structure RankedNatLayerPresentation
+/-- Ranked Nat-carrier presentation as a view of canonical layer presentations. -/
+abbrev RankedNatLayerPresentation
     (P : DepPoly ι)
-    (H : OutputIndexInversion P) where
-  layer : CodeLayerPresentation P H (fun _ => Nat) (fun _ => Nat)
-  rank : ι → Nat → Nat
-  child_rank_lt :
-    ∀ {i : ι} (n : Nat)
-      (q : P.Pos (H.decode i (((layer.iso i).invFun n).1)).ctor
-          (H.decode i (((layer.iso i).invFun n).1)).param),
-      rank (P.input (H.decode i (((layer.iso i).invFun n).1)).param q)
-          (((layer.iso i).invFun n).2 q) < rank i n
+    (H : OutputIndexInversion P) :=
+  LayerPresentation P H (fun _ => Nat)
 
 namespace RankedNatLayerPresentation
 
 variable {P : DepPoly ι} {H : OutputIndexInversion P}
 
+def ofLayerChildRank
+    (layer : CodeLayerPresentation P H (fun _ => Nat) (fun _ => Nat))
+    (rank : ι → Nat → Nat)
+    (layer_child_rank_lt :
+      ∀ {i : ι} (x : CodeLayer P H (fun _ => Nat) i)
+        (q : P.Pos (H.decode i x.1).ctor (H.decode i x.1).param),
+        rank (P.input (H.decode i x.1).param q) (x.2 q) <
+          rank i ((layer.iso i).toFun x)) :
+    RankedNatLayerPresentation P H :=
+  LayerPresentation.ofLayerChildRank layer rank layer_child_rank_lt
+
 def generatedCode (D : RankedNatLayerPresentation P H) :
     GeneratedRankedNatCode P :=
-  GeneratedRankedNatCode.ofLayerChildRank H D.layer.iso D.rank (by
-    intro i x
-    rw [← (D.layer.iso i).left_inv x]
-    intro q
-    simpa using D.child_rank_lt ((D.layer.iso i).toFun x) q)
+  LayerPresentation.generatedCode D
 
 def iso (D : RankedNatLayerPresentation P H) (i : ι) : Mu P i ≃ᵢ Nat :=
   D.generatedCode.iso i
 
 end RankedNatLayerPresentation
 
-/-- Presentation of a finite/infinite shape-coded carrier layer. -/
+/-- Shape-coded presentation stores shape metadata and one canonical layer
+presentation for that carrier family. -/
 structure ShapeLayerPresentation
     (P : DepPoly ι)
     (H : OutputIndexInversion P) where
   shape : ι → CodeShape
-  layer : CodeLayerPresentation P H (fun i => (shape i).Carrier)
-    (fun i => (shape i).Carrier)
-  rank : ∀ i, (shape i).Carrier → Nat
-  child_rank_lt :
-    ∀ {i : ι} (z : (shape i).Carrier)
-      (q : P.Pos (H.decode i (((layer.iso i).invFun z).1)).ctor
-          (H.decode i (((layer.iso i).invFun z).1)).param),
-      rank (P.input (H.decode i (((layer.iso i).invFun z).1)).param q)
-          (((layer.iso i).invFun z).2 q) < rank i z
+  presentation : LayerPresentation P H (fun i => (shape i).Carrier)
 
 namespace ShapeLayerPresentation
 
 variable {P : DepPoly ι} {H : OutputIndexInversion P}
 
-def generatedCode (D : ShapeLayerPresentation P H) : GeneratedShapeCode P :=
-  GeneratedShapeCode.ofLayerChildRank D.shape H D.layer.iso D.rank (by
-    intro i x
-    rw [← (D.layer.iso i).left_inv x]
-    intro q
-    simpa using D.child_rank_lt ((D.layer.iso i).toFun x) q)
+def ofLayerPresentation
+    (shape : ι → CodeShape)
+    (presentation : LayerPresentation P H (fun i => (shape i).Carrier)) :
+    ShapeLayerPresentation P H where
+  shape := shape
+  presentation := presentation
+
+def generatedCode (D : ShapeLayerPresentation P H) : GeneratedShapeCode P where
+  shape := D.shape
+  code := D.presentation.generatedCode
 
 def iso (D : ShapeLayerPresentation P H) (i : ι) :
     Mu P i ≃ᵢ (D.shape i).Carrier :=
   D.generatedCode.iso i
 
 end ShapeLayerPresentation
-
-namespace LayerShapePresentation
-
-variable {P : DepPoly ι} {H : OutputIndexInversion P}
-variable {Shape : ι → Type w}
-
-def toSyntaxPresentation {Syntax : ι → Type v}
-    (D : LayerShapePresentation P H Syntax Shape) :
-    SyntaxPresentation P H Syntax where
-  layer := D.layer
-  rank := D.rank
-  child_rank_lt := by
-    intro i z q
-    exact D.child_rank_lt z q
-
-def toNatLayerPresentation
-    (D : LayerShapePresentation P H (fun _ => Nat) Shape)
-    (child_lt :
-      ∀ {i : ι} (n : Nat)
-        (q : P.Pos
-            (H.decode i (((D.layer.iso i).invFun n).1)).ctor
-            (H.decode i (((D.layer.iso i).invFun n).1)).param),
-        (((D.layer.iso i).invFun n).2 q) < n) :
-    NatLayerPresentation P H where
-  layer := D.layer
-  child_lt := child_lt
-
-def toNatLayerPresentationOfRankEq
-    (D : LayerShapePresentation P H (fun _ => Nat) Shape)
-    (rank_eq : ∀ i n, D.rank i n = n) :
-    NatLayerPresentation P H where
-  layer := D.layer
-  child_lt := by
-    intro i n q
-    simpa [rank_eq] using D.child_rank_lt n q
-
-def toRankedNatLayerPresentation
-    (D : LayerShapePresentation P H (fun _ => Nat) Shape)
-    (rank : ι → Nat → Nat)
-    (child_rank_lt :
-      ∀ {i : ι} (n : Nat)
-        (q : P.Pos
-            (H.decode i (((D.layer.iso i).invFun n).1)).ctor
-            (H.decode i (((D.layer.iso i).invFun n).1)).param),
-        rank (P.input
-            (H.decode i (((D.layer.iso i).invFun n).1)).param q)
-            (((D.layer.iso i).invFun n).2 q) < rank i n) :
-    RankedNatLayerPresentation P H where
-  layer := D.layer
-  rank := rank
-  child_rank_lt := child_rank_lt
-
-def toRankedNatLayerPresentationSelf
-    (D : LayerShapePresentation P H (fun _ => Nat) Shape) :
-    RankedNatLayerPresentation P H where
-  layer := D.layer
-  rank := D.rank
-  child_rank_lt := by
-    intro i n q
-    exact D.child_rank_lt n q
-
-def toShapeLayerPresentation
-    (shape : ι → CodeShape)
-    (D : LayerShapePresentation P H (fun i => (shape i).Carrier) Shape) :
-    ShapeLayerPresentation P H where
-  shape := shape
-  layer := D.layer
-  rank := D.rank
-  child_rank_lt := by
-    intro i z q
-    exact D.child_rank_lt z q
-
-end LayerShapePresentation
 
 /-- A well-founded one-step coding of each same-fiber polynomial layer induces
 a bijective coding of the dependent initial algebra. -/
