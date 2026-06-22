@@ -829,6 +829,18 @@ def ofLayer
     SyntaxPresentation P H Syntax :=
   LayerPresentation.ofLayer layer rank child_rank_lt
 
+def ofLayerIso
+    (layer : ∀ i, CodeLayer P H Syntax i ≃ᵢ Syntax i)
+    (rank : ∀ i, Syntax i → Nat)
+    (child_rank_lt :
+      ∀ {i : ι} (z : Syntax i)
+        (q : P.Pos (H.decode i (((layer i).invFun z).1)).ctor
+            (H.decode i (((layer i).invFun z).1)).param),
+        rank (P.input (H.decode i (((layer i).invFun z).1)).param q)
+            (((layer i).invFun z).2 q) < rank i z) :
+    SyntaxPresentation P H Syntax :=
+  LayerPresentation.ofCarrierLayerIso layer rank child_rank_lt
+
 def ofLayerMaps
     (toSyntax : ∀ i, CodeLayer P H Syntax i → Syntax i)
     (fromSyntax : ∀ i, Syntax i → CodeLayer P H Syntax i)

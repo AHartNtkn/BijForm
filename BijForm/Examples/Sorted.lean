@@ -183,29 +183,30 @@ theorem Sorted_layer_child_rank_lt :
           Nat.lt_succ_of_le (Nat.le_max_right (SortedSyntax.rank lhs) (SortedSyntax.rank rhs))
 
 def SortedSyntaxPresentation : SyntaxPresentation SortedPoly SortedInversion SortedSyntax :=
-  SyntaxPresentation.ofLayerMaps
-    SortedLayerToSyntax
-    SortedSyntaxToLayer
-    (by
-      intro i layer
-      cases layer with
-      | mk code child =>
-        cases code with
-        | mk ctor param out_eq =>
-          cases ctor with
-          | leaf =>
-              cases out_eq
-              child_eta_rfl child
-          | branch =>
-              cases param with
-              | mk _i pivot =>
-                cases out_eq
-                child_eta_rfl child)
-    (by
-      intro i t
-      cases t with
-      | leaf => rfl
-      | branch pivot lhs rhs => rfl)
+  SyntaxPresentation.ofLayerIso
+    (fun i =>
+      { toFun := SortedLayerToSyntax i
+        invFun := SortedSyntaxToLayer i
+        left_inv := by
+          intro layer
+          cases layer with
+          | mk code child =>
+            cases code with
+            | mk ctor param out_eq =>
+              cases ctor with
+              | leaf =>
+                  cases out_eq
+                  child_eta_rfl child
+              | branch =>
+                  cases param with
+                  | mk _i pivot =>
+                    cases out_eq
+                    child_eta_rfl child
+        right_inv := by
+          intro t
+          cases t with
+          | leaf => rfl
+          | branch pivot lhs rhs => rfl })
     (fun _ t => SortedSyntax.rank t)
     Sorted_layer_child_rank_lt
 

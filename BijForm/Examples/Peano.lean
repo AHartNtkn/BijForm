@@ -131,42 +131,43 @@ theorem Peano_layer_child_rank_lt :
         PeanoSyntax.rank]
 
 def PeanoSyntaxPresentation : SyntaxPresentation PeanoPoly PeanoInversion PeanoSyntax :=
-  SyntaxPresentation.ofLayerMaps
-    PeanoLayerToSyntax
-    PeanoSyntaxToLayer
-    (by
-      intro k layer
-      cases layer with
-      | mk code child =>
-        cases code with
-        | mk ctor param out_eq =>
-          cases ctor with
-          | eq =>
-            cases param with
-            | mk k' pair =>
-              cases pair with
-              | mk lhs rhs =>
-                dsimp [PeanoPoly, PeanoOut] at out_eq
+  SyntaxPresentation.ofLayerIso
+    (fun k =>
+      { toFun := PeanoLayerToSyntax k
+        invFun := PeanoSyntaxToLayer k
+        left_inv := by
+          intro layer
+          cases layer with
+          | mk code child =>
+            cases code with
+            | mk ctor param out_eq =>
+              cases ctor with
+              | eq =>
+                cases param with
+                | mk k' pair =>
+                  cases pair with
+                  | mk lhs rhs =>
+                    dsimp [PeanoPoly, PeanoOut] at out_eq
+                    cases out_eq
+                    child_eta_rfl child
+              | not =>
+                change PeanoParam PeanoCtor.not at param
+                change Nat at param
                 cases out_eq
                 child_eta_rfl child
-          | not =>
-            change PeanoParam PeanoCtor.not at param
-            change Nat at param
-            cases out_eq
-            child_eta_rfl child
-          | implies =>
-            change PeanoParam PeanoCtor.implies at param
-            change Nat at param
-            cases out_eq
-            child_eta_rfl child
-          | forallE =>
-            change PeanoParam PeanoCtor.forallE at param
-            change Nat at param
-            cases out_eq
-            child_eta_rfl child)
-    (by
-      intro k e
-      cases e <;> simp [PeanoLayerToSyntax, PeanoSyntaxToLayer])
+              | implies =>
+                change PeanoParam PeanoCtor.implies at param
+                change Nat at param
+                cases out_eq
+                child_eta_rfl child
+              | forallE =>
+                change PeanoParam PeanoCtor.forallE at param
+                change Nat at param
+                cases out_eq
+                child_eta_rfl child
+        right_inv := by
+          intro e
+          cases e <;> simp [PeanoLayerToSyntax, PeanoSyntaxToLayer] })
     (fun _ e => PeanoSyntax.rank e)
     Peano_layer_child_rank_lt
 

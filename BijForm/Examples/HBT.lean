@@ -114,27 +114,28 @@ the local layer coding over `HBTInversion`; the full object-layer step is
 produced by the generated-code construction.
 -/
 def HBTSyntaxPresentation : SyntaxPresentation HBTPoly HBTInversion HBTSyntax :=
-  SyntaxPresentation.ofLayerMaps
-    HBTLayerToSyntax
-    HBTSyntaxToLayer
-    (by
-      intro i layer
-      cases layer with
-      | mk code child =>
-        cases code with
-        | mk ctor param out_eq =>
-          cases ctor with
-          | leaf =>
-              cases param with
-              | mk height label =>
-                cases out_eq
-                child_eta_rfl child
-          | branch =>
-              cases out_eq
-              child_eta_rfl child)
-    (by
-      intro i t
-      cases t <;> simp [HBTLayerToSyntax, HBTSyntaxToLayer])
+  SyntaxPresentation.ofLayerIso
+    (fun i =>
+      { toFun := HBTLayerToSyntax i
+        invFun := HBTSyntaxToLayer i
+        left_inv := by
+          intro layer
+          cases layer with
+          | mk code child =>
+            cases code with
+            | mk ctor param out_eq =>
+              cases ctor with
+              | leaf =>
+                  cases param with
+                  | mk height label =>
+                    cases out_eq
+                    child_eta_rfl child
+              | branch =>
+                  cases out_eq
+                  child_eta_rfl child
+        right_inv := by
+          intro t
+          cases t <;> simp [HBTLayerToSyntax, HBTSyntaxToLayer] })
     (fun _ t => HBTSyntax.rank t)
     HBT_layer_child_rank_lt
 

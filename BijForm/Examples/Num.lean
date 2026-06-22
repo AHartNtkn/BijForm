@@ -151,54 +151,55 @@ theorem Num_layer_child_rank_lt :
           Nat.lt_succ_of_le (Nat.le_max_right (NumSyntax.rank lhs) (NumSyntax.rank rhs))
 
 def NumSyntaxPresentation : SyntaxPresentation NumPoly NumInversion NumSyntax :=
-  SyntaxPresentation.ofLayerMaps
-    NumLayerToSyntax
-    NumSyntaxToLayer
-    (by
-      intro k layer
-      cases layer with
-      | mk code child =>
-        cases code with
-        | mk ctor param out_eq =>
-          cases ctor with
-          | var =>
-              cases param with
-              | mk k' v =>
-                dsimp [NumPoly, NumOut] at out_eq
-                cases out_eq.symm
-                cases out_eq
-                child_eta_rfl child
-          | zero =>
-              change NumParam NumCtor.zero at param
-              change Nat at param
-              dsimp [NumPoly, NumOut] at out_eq
-              cases out_eq.symm
-              cases out_eq
-              child_eta_rfl child
-          | succ =>
-              change NumParam NumCtor.succ at param
-              change Nat at param
-              dsimp [NumPoly, NumOut] at out_eq
-              cases out_eq.symm
-              cases out_eq
-              child_eta_rfl child
-          | plus =>
-              change NumParam NumCtor.plus at param
-              change Nat at param
-              dsimp [NumPoly, NumOut] at out_eq
-              cases out_eq.symm
-              cases out_eq
-              child_eta_rfl child
-          | times =>
-              change NumParam NumCtor.times at param
-              change Nat at param
-              dsimp [NumPoly, NumOut] at out_eq
-              cases out_eq.symm
-              cases out_eq
-              child_eta_rfl child)
-    (by
-      intro k e
-      cases e <;> simp [NumLayerToSyntax, NumSyntaxToLayer])
+  SyntaxPresentation.ofLayerIso
+    (fun k =>
+      { toFun := NumLayerToSyntax k
+        invFun := NumSyntaxToLayer k
+        left_inv := by
+          intro layer
+          cases layer with
+          | mk code child =>
+            cases code with
+            | mk ctor param out_eq =>
+              cases ctor with
+              | var =>
+                  cases param with
+                  | mk k' v =>
+                    dsimp [NumPoly, NumOut] at out_eq
+                    cases out_eq.symm
+                    cases out_eq
+                    child_eta_rfl child
+              | zero =>
+                  change NumParam NumCtor.zero at param
+                  change Nat at param
+                  dsimp [NumPoly, NumOut] at out_eq
+                  cases out_eq.symm
+                  cases out_eq
+                  child_eta_rfl child
+              | succ =>
+                  change NumParam NumCtor.succ at param
+                  change Nat at param
+                  dsimp [NumPoly, NumOut] at out_eq
+                  cases out_eq.symm
+                  cases out_eq
+                  child_eta_rfl child
+              | plus =>
+                  change NumParam NumCtor.plus at param
+                  change Nat at param
+                  dsimp [NumPoly, NumOut] at out_eq
+                  cases out_eq.symm
+                  cases out_eq
+                  child_eta_rfl child
+              | times =>
+                  change NumParam NumCtor.times at param
+                  change Nat at param
+                  dsimp [NumPoly, NumOut] at out_eq
+                  cases out_eq.symm
+                  cases out_eq
+                  child_eta_rfl child
+        right_inv := by
+          intro e
+          cases e <;> simp [NumLayerToSyntax, NumSyntaxToLayer] })
     (fun _ e => NumSyntax.rank e)
     Num_layer_child_rank_lt
 

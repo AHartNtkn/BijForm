@@ -107,34 +107,35 @@ theorem Lam_layer_child_rank_lt :
           Nat.lt_succ_of_le (Nat.le_max_right (LamSyntax.rank fn) (LamSyntax.rank arg))
 
 def LamSyntaxPresentation : SyntaxPresentation LamPoly LamInversion LamSyntax :=
-  SyntaxPresentation.ofLayerMaps
-    LamLayerToSyntax
-    LamSyntaxToLayer
-    (by
-      intro k layer
-      cases layer with
-      | mk code child =>
-        cases code with
-        | mk ctor param out_eq =>
-          cases ctor with
-          | var =>
-            cases param with
-            | mk k' v =>
-              cases out_eq
-              child_eta_rfl child
-          | lam =>
-            change LamParam LamCtor.lam at param
-            change Nat at param
-            cases out_eq
-            child_eta_rfl child
-          | app =>
-            change LamParam LamCtor.app at param
-            change Nat at param
-            cases out_eq
-            child_eta_rfl child)
-    (by
-      intro k t
-      cases t <;> simp [LamLayerToSyntax, LamSyntaxToLayer])
+  SyntaxPresentation.ofLayerIso
+    (fun k =>
+      { toFun := LamLayerToSyntax k
+        invFun := LamSyntaxToLayer k
+        left_inv := by
+          intro layer
+          cases layer with
+          | mk code child =>
+            cases code with
+            | mk ctor param out_eq =>
+              cases ctor with
+              | var =>
+                cases param with
+                | mk k' v =>
+                  cases out_eq
+                  child_eta_rfl child
+              | lam =>
+                change LamParam LamCtor.lam at param
+                change Nat at param
+                cases out_eq
+                child_eta_rfl child
+              | app =>
+                change LamParam LamCtor.app at param
+                change Nat at param
+                cases out_eq
+                child_eta_rfl child
+        right_inv := by
+          intro t
+          cases t <;> simp [LamLayerToSyntax, LamSyntaxToLayer] })
     (fun _ t => LamSyntax.rank t)
     Lam_layer_child_rank_lt
 

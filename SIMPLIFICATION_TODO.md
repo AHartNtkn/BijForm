@@ -261,6 +261,11 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     instantiate with domain-specific constructor clauses and rank.
   - Validation: source search for `SyntaxPresentation.ofLayerMaps` and
     repeated `child_eta_rfl child` proof bodies drops in examples.
+  - Partial: added `SyntaxPresentation.ofLayerIso` and migrated HBT, Num,
+    FinChain, Lambda, Peano, Sorted, and string-diagram polynomial syntax
+    presentations off `SyntaxPresentation.ofLayerMaps`. Constructor-specific
+    `child_eta_rfl child` inverse proof bodies remain visible and still need a
+    deeper constructor-clause helper.
 
 - [ ] Factor finite and infinite sorted branch payload coding.
   - Owner: `BijForm.Examples.Sorted`, backed by `CodeAlgebra` payload lemmas.

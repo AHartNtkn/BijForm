@@ -129,36 +129,37 @@ theorem layer_child_rank_lt (Sig : Signature) :
 /-- Presentation of typed rooted open diagram syntax as generated code data. -/
 def syntaxPresentation (Sig : Signature) :
     SyntaxPresentation (poly Sig) (inversion Sig) (Diag Sig) :=
-  SyntaxPresentation.ofLayerMaps
-    (layerToSyntax Sig)
-    (syntaxToLayer Sig)
-    (by
-      intro boundary layer
-      cases layer with
-      | mk code child =>
-        cases code with
-        | mk ctor param out_eq =>
-          cases ctor with
-          | finish =>
-              cases param
-              cases out_eq
-              child_eta_rfl child
-          | connect =>
-              cases param with
-              | mk active frontier mate ok =>
-                cases out_eq
-                child_eta_rfl child
-          | bud =>
-              cases param with
-              | mk active frontier node entry ok =>
-                cases out_eq
-                child_eta_rfl child)
-    (by
-      intro boundary t
-      cases t with
-      | finish => rfl
-      | connect mate ok child => rfl
-      | bud node entry ok child => rfl)
+  SyntaxPresentation.ofLayerIso
+    (fun boundary =>
+      { toFun := layerToSyntax Sig boundary
+        invFun := syntaxToLayer Sig boundary
+        left_inv := by
+          intro layer
+          cases layer with
+          | mk code child =>
+            cases code with
+            | mk ctor param out_eq =>
+              cases ctor with
+              | finish =>
+                  cases param
+                  cases out_eq
+                  child_eta_rfl child
+              | connect =>
+                  cases param with
+                  | mk active frontier mate ok =>
+                    cases out_eq
+                    child_eta_rfl child
+              | bud =>
+                  cases param with
+                  | mk active frontier node entry ok =>
+                    cases out_eq
+                    child_eta_rfl child
+        right_inv := by
+          intro t
+          cases t with
+          | finish => rfl
+          | connect mate ok child => rfl
+          | bud node entry ok child => rfl })
     (fun _ t => Diag.rank t)
     (layer_child_rank_lt Sig)
 

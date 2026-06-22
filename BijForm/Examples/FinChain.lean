@@ -89,29 +89,30 @@ theorem FinChain_layer_child_rank_lt :
 
 def FinChainSyntaxPresentation :
     SyntaxPresentation FinChainPoly FinChainInversion FinChainSyntax :=
-  SyntaxPresentation.ofLayerMaps
-    FinChainLayerToSyntax
-    FinChainSyntaxToLayer
-    (by
-      intro i layer
-      cases layer with
-      | mk code child =>
-        cases code with
-        | mk ctor param out_eq =>
-          cases ctor with
-          | done =>
-              cases out_eq
-              child_eta_rfl child
-          | step =>
-              cases param with
-              | mk n tag =>
-                cases out_eq
-                child_eta_rfl child)
-    (by
-      intro i t
-      cases t with
-      | done => rfl
-      | step tag child => rfl)
+  SyntaxPresentation.ofLayerIso
+    (fun i =>
+      { toFun := FinChainLayerToSyntax i
+        invFun := FinChainSyntaxToLayer i
+        left_inv := by
+          intro layer
+          cases layer with
+          | mk code child =>
+            cases code with
+            | mk ctor param out_eq =>
+              cases ctor with
+              | done =>
+                  cases out_eq
+                  child_eta_rfl child
+              | step =>
+                  cases param with
+                  | mk n tag =>
+                    cases out_eq
+                    child_eta_rfl child
+        right_inv := by
+          intro t
+          cases t with
+          | done => rfl
+          | step tag child => rfl })
     (fun _ t => FinChainSyntax.rank t)
     FinChain_layer_child_rank_lt
 
