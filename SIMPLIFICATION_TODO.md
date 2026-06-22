@@ -489,6 +489,9 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     a full-index relation over paired append traces, and
     `GraphRenderRelated.connectChild_edgeLabel` consumes it instead of owning a
     local old/new edge split.
+  - Partial: `GraphRenderRelated.budChild_edgeLabel` now consumes
+    `AppendTraceRelation` as well, so connect and bud edge-label preservation
+    share the same generic append-relation proof path.
 
 - [ ] Introduce declarative render deltas for connect and bud.
   - Owner: `BijForm.StringDiagram.Renderer.Steps`
