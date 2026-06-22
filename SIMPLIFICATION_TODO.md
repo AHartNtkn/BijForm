@@ -336,7 +336,7 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     `hparent`, `let tail`, direct `CodeAlgebra.finProdNatOrNat`/
     `CodeAlgebra.finTaggedProdNat` calls, or `omega`.
 
-- [ ] Add noncanonical typed-binding layer inverse helpers.
+- [x] Add noncanonical typed-binding layer inverse helpers.
   - Owner: `BijForm.TypedBinding`
   - Evidence: `SyntaxIso.layer_left_inv` and
     `LayerShape.layerShape_left_inv` still manually destruct noncanonical
@@ -345,6 +345,10 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     proofs so callers supply only variable/operator branch clauses.
   - Validation: typed-binding left-inverse proofs no longer contain local
     `cases layer`/`cases code` scaffolds.
+  - Completed: added `FiberCode.LayerChild` and
+    `FiberCode.codeLayer_left_inv_by_cases`; `SyntaxIso.layer_left_inv` and
+    `LayerShape.layerShape_left_inv` now supply only variable/operator branch
+    proofs.
 
 - [ ] Replace HBT child-swap normal-form boilerplate with quotient helpers.
   - Owner: `BijForm.QuotientPolynomial` and `BijForm.CodeAlgebra`
