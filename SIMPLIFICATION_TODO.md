@@ -9,14 +9,17 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
 
 ## Core Coding Foundation
 
-- [ ] Collapse generated-code specializations into one canonical construction.
+- [x] Collapse generated-code specializations into one canonical construction.
   - Owner: `BijForm.DependentPolynomial.GeneratedCode`
   - Evidence: `GeneratedCode`, `GeneratedShapeCode`, `GeneratedRankedNatCode`,
     and `GeneratedNatCode` in `BijForm/DependentPolynomial.lean`.
   - Action: make Nat, ranked-Nat, and finite/infinite shape codings views or
     constructors around `GeneratedCode` rather than parallel records.
-  - Validation: examples using `.toGeneratedCode`, `.toWellFoundedCode`, Nat,
-    ranked-Nat, and shape APIs still build.
+  - Validation: examples using canonical Nat, ranked-Nat, and shape APIs still
+    build; no specialized `.toGeneratedCode` conversions remain.
+  - Completed: Nat and ranked-Nat generated codes are canonical
+    `GeneratedCode` aliases, and shape codings store a canonical `code` field
+    instead of duplicating generated-code fields.
 
 - [ ] Unify layer-presentation records.
   - Owner: `BijForm.DependentPolynomial.LayerPresentation`

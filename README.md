@@ -548,15 +548,15 @@ CodeLayer P inversion Code i
 This is the reusable point where output-index inversion is exposed instead of
 hidden behind an opaque constructor isomorphism.
 
-`GeneratedNatCode` specializes the framework to the constant code family
-`fun _ => Nat`; its termination measure is the identity rank on `Nat`, so it
-requires recursive child codes to be numerically smaller than the parent code.
+`GeneratedNatCode` is the `Nat`-carrier view of `GeneratedCode`; its constructor
+uses the identity rank on `Nat`, so it requires recursive child codes to be
+numerically smaller than the parent code.
 
-`GeneratedRankedNatCode` specializes the framework to the same `Nat` carrier
-while allowing an index-sensitive rank `i -> Nat -> Nat`.
+`GeneratedRankedNatCode` is the same canonical `Nat`-carrier generated code
+with a caller-supplied index-sensitive rank `i -> Nat -> Nat`.
 
-`GeneratedShapeCode` specializes the same generic layer construction to
-carrier families whose fibers are explicitly shaped as either `Nat` or `Fin k`.
+`GeneratedShapeCode` records the visible `Nat`/`Fin k` carrier shape and stores
+the generated-code evidence in the canonical `GeneratedCode` record.
 
 ## Quotient-Polynomial Coding
 
@@ -630,7 +630,7 @@ Branch-swap quotient example:
 - `HBTChildSwap_innRaw_branch_sound`
 - `TupleAction.BinarySwap.concreteCode`
 - `HBTChildSwapNatCodeIso (i) : Iso (HBTChildSwap i) (HBTChildSwapNatCode i)`
-- `HBTChildSwapDescendedNatCode : QuotientPresentation.DescendedGeneratedCode HBTChildSwapQuotient HBTNatGeneratedCode.toGeneratedCode (fun _ => Nat)`
+- `HBTChildSwapDescendedNatCode : QuotientPresentation.DescendedGeneratedCode HBTChildSwapQuotient HBTNatGeneratedCode (fun _ => Nat)`
 - `HBTChildSwapNatIso (i) : Iso (HBTChildSwap i) Nat`
 - `HBTSyntaxChildSwapNatCodeIso (i) : Iso (HBTSyntaxChildSwap i) (HBTChildSwapNatCode i)`
 - `HBTSyntaxChildSwapNatIso (i) : Iso (HBTSyntaxChildSwap i) Nat`

@@ -563,21 +563,12 @@ end CodeShape
 
 /--
 Generated coding data for index-dependent finite/infinite carrier families.
-This is a thin specialization of `GeneratedCode` that makes the intended
-carrier shape explicit: each index may be coded either by `Fin k` or by `Nat`.
+This keeps the intended carrier shape explicit while storing generated-code
+evidence only in the canonical `GeneratedCode` record.
 -/
 structure GeneratedShapeCode (P : DepPoly ι) where
   shape : ι → CodeShape
-  inversion : OutputIndexInversion P
-  layer : ∀ i,
-    CodeLayer P inversion (fun j => (shape j).Carrier) i ≃ᵢ (shape i).Carrier
-  rank : ∀ i, (shape i).Carrier → Nat
-  child_rank_lt :
-    ∀ {i : ι} (z : (shape i).Carrier)
-      (q : P.Pos (inversion.decode i ((layer i).invFun z).1).ctor
-          (inversion.decode i ((layer i).invFun z).1).param),
-      rank (P.input (inversion.decode i ((layer i).invFun z).1).param q)
-          (((layer i).invFun z).2 q) < rank i z
+  code : GeneratedCode P (fun i => (shape i).Carrier)
 
 namespace GeneratedShapeCode
 
@@ -599,29 +590,11 @@ def ofLayerChildRank
           rank i ((layer i).toFun x)) :
     GeneratedShapeCode P where
   shape := shape
-  inversion := inversion
-  layer := layer
-  rank := rank
-  child_rank_lt := by
-    intro i z q
-    simpa using layer_child_rank_lt ((layer i).invFun z) q
-
-def toGeneratedCode (C : GeneratedShapeCode P) :
-    GeneratedCode P (fun i => (C.shape i).Carrier) where
-  inversion := C.inversion
-  layer := C.layer
-  rank := C.rank
-  child_rank_lt := by
-    intro i z q
-    exact C.child_rank_lt z q
-
-def toWellFoundedCode (C : GeneratedShapeCode P) :
-    WellFoundedCode P (fun i => (C.shape i).Carrier) :=
-  C.toGeneratedCode.toWellFoundedCode
+  code := GeneratedCode.ofLayerChildRank inversion layer rank layer_child_rank_lt
 
 def iso (C : GeneratedShapeCode P) (i : ι) :
     Mu P i ≃ᵢ (C.shape i).Carrier :=
-  C.toGeneratedCode.iso i
+  C.code.iso i
 
 def natIso (C : GeneratedShapeCode P) (i : ι)
     (h : C.shape i = .infinite) : Mu P i ≃ᵢ Nat :=
@@ -638,16 +611,8 @@ Generated Nat coding data with a caller-supplied well-founded rank. This covers
 Nat-carrier examples whose decoder decreases because the index changes, even
 when a recursive child has the same numeric code as its parent.
 -/
-structure GeneratedRankedNatCode (P : DepPoly ι) where
-  inversion : OutputIndexInversion P
-  layer : ∀ i, CodeLayer P inversion (fun _ => Nat) i ≃ᵢ Nat
-  rank : ι → Nat → Nat
-  child_rank_lt :
-    ∀ {i : ι} (n : Nat)
-      (q : P.Pos (inversion.decode i ((layer i).invFun n).1).ctor
-          (inversion.decode i ((layer i).invFun n).1).param),
-      rank (P.input (inversion.decode i ((layer i).invFun n).1).param q)
-          (((layer i).invFun n).2 q) < rank i n
+abbrev GeneratedRankedNatCode (P : DepPoly ι) :=
+  GeneratedCode P (fun _ => Nat)
 
 namespace GeneratedRankedNatCode
 
@@ -664,29 +629,8 @@ def ofLayerChildRank
             (inversion.decode i x.1).param),
         rank (P.input (inversion.decode i x.1).param q) (x.2 q) <
           rank i ((layer i).toFun x)) :
-    GeneratedRankedNatCode P where
-  inversion := inversion
-  layer := layer
-  rank := rank
-  child_rank_lt := by
-    intro i n q
-    simpa using layer_child_rank_lt ((layer i).invFun n) q
-
-def toGeneratedCode (C : GeneratedRankedNatCode P) :
-    GeneratedCode P (fun _ => Nat) where
-  inversion := C.inversion
-  layer := C.layer
-  rank := C.rank
-  child_rank_lt := by
-    intro i n q
-    exact C.child_rank_lt n q
-
-def toWellFoundedCode (C : GeneratedRankedNatCode P) :
-    WellFoundedCode P (fun _ => Nat) :=
-  C.toGeneratedCode.toWellFoundedCode
-
-def iso (C : GeneratedRankedNatCode P) (i : ι) : Mu P i ≃ᵢ Nat :=
-  C.toGeneratedCode.iso i
+    GeneratedRankedNatCode P :=
+  GeneratedCode.ofLayerChildRank inversion layer rank layer_child_rank_lt
 
 end GeneratedRankedNatCode
 
@@ -695,14 +639,8 @@ Generated Nat coding data.  A local Nat layer decoder must produce recursive
 child codes that are strictly smaller than the parent code, so the generic
 decoder is well-founded with the identity rank on `Nat`.
 -/
-structure GeneratedNatCode (P : DepPoly ι) where
-  inversion : OutputIndexInversion P
-  layer : ∀ i, CodeLayer P inversion (fun _ => Nat) i ≃ᵢ Nat
-  child_lt :
-    ∀ {i : ι} (n : Nat)
-      (q : P.Pos (inversion.decode i ((layer i).invFun n).1).ctor
-          (inversion.decode i ((layer i).invFun n).1).param),
-      (((layer i).invFun n).2 q) < n
+abbrev GeneratedNatCode (P : DepPoly ι) :=
+  GeneratedCode P (fun _ => Nat)
 
 namespace GeneratedNatCode
 
@@ -717,42 +655,27 @@ def ofLayerChildLt
         (q : P.Pos (inversion.decode i x.1).ctor
             (inversion.decode i x.1).param),
         x.2 q < (layer i).toFun x) :
-    GeneratedNatCode P where
-  inversion := inversion
-  layer := layer
-  child_lt := by
-    intro i n q
-    simpa using layer_child_lt ((layer i).invFun n) q
-
-def toGeneratedCode (C : GeneratedNatCode P) :
-    GeneratedCode P (fun _ => Nat) where
-  inversion := C.inversion
-  layer := C.layer
-  rank := fun _ n => n
-  child_rank_lt := by
-    intro i n q
-    exact C.child_lt n q
-
-def toWellFoundedCode (C : GeneratedNatCode P) :
-    WellFoundedCode P (fun _ => Nat) :=
-  C.toGeneratedCode.toWellFoundedCode
+    GeneratedNatCode P :=
+  GeneratedCode.ofLayerChildRank inversion layer (fun _ n => n) (by
+    intro i x q
+    exact layer_child_lt x q)
 
 def iso (C : GeneratedNatCode P) (i : ι) : Mu P i ≃ᵢ Nat :=
-  C.toGeneratedCode.iso i
+  GeneratedCode.iso C i
 
 def encode (C : GeneratedNatCode P) (i : ι) (x : Mu P i) : Nat :=
-  C.toGeneratedCode.encode i x
+  GeneratedCode.encode C i x
 
 def decode (C : GeneratedNatCode P) (i : ι) (n : Nat) : Mu P i :=
-  C.toGeneratedCode.decode i n
+  GeneratedCode.decode C i n
 
 theorem decode_encode (C : GeneratedNatCode P) (i : ι) (x : Mu P i) :
     C.decode i (C.encode i x) = x :=
-  C.toGeneratedCode.decode_encode i x
+  GeneratedCode.decode_encode C i x
 
 theorem encode_decode (C : GeneratedNatCode P) (i : ι) (n : Nat) :
     C.encode i (C.decode i n) = n :=
-  C.toGeneratedCode.encode_decode i n
+  GeneratedCode.encode_decode C i n
 
 theorem noSubsingletonFiber (C : GeneratedNatCode P) (i : ι)
     [Subsingleton (Mu P i)] : False := by
@@ -776,19 +699,19 @@ def codeIso {Source : ι → Type v} {Target : ι → Type w}
 def natCodeIso {Source : ι → Type v}
     (source : GeneratedCode P Source) (target : GeneratedNatCode P) (i : ι) :
     Source i ≃ᵢ Nat :=
-  codeIso source target.toGeneratedCode i
+  codeIso source target i
 
 /-- Compose a generated source coding with a generated ranked-Nat coding. -/
 def rankedNatCodeIso {Source : ι → Type v}
     (source : GeneratedCode P Source) (target : GeneratedRankedNatCode P) (i : ι) :
     Source i ≃ᵢ Nat :=
-  codeIso source target.toGeneratedCode i
+  codeIso source target i
 
 /-- Compose a generated source coding with a generated shape-coded carrier. -/
 def shapeCodeIso {Source : ι → Type v}
     (source : GeneratedCode P Source) (target : GeneratedShapeCode P) (i : ι) :
     Source i ≃ᵢ (target.shape i).Carrier :=
-  codeIso source target.toGeneratedCode i
+  codeIso source target.code i
 
 /-- Compose a generated source coding with an infinite generated shape case. -/
 def shapeNatIso {Source : ι → Type v}

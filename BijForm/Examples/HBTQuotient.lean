@@ -79,19 +79,19 @@ theorem HBTChildSwap_innRaw_branch_sound {m : Nat} (lhs rhs : Mu HBTPoly m) :
 /-- The Nat-code relation induced by the branch-swap quotient and the existing
 generated Nat coding for height-bounded trees. -/
 abbrev HBTChildSwapNatCodeRel (i : Nat) (a b : Nat) : Prop :=
-  HBTChildSwapQuotient.GeneratedCodeRel HBTNatGeneratedCode.toGeneratedCode i a b
+  HBTChildSwapQuotient.GeneratedCodeRel HBTNatGeneratedCode i a b
 
 /-- Canonical code carrier for branch-swap quotient trees: quotient the
 generated Nat code by the transported branch-swap relation. -/
 abbrev HBTChildSwapNatCode (i : Nat) : Type :=
-  HBTChildSwapQuotient.GeneratedCodeCarrier HBTNatGeneratedCode.toGeneratedCode i
+  HBTChildSwapQuotient.GeneratedCodeCarrier HBTNatGeneratedCode i
 
 /-- The generic quotient-polynomial theorem specializes to a coding of
 height-bounded branch-swap quotient trees by a quotient of the generated Nat
 code. -/
 def HBTChildSwapNatCodeIso (i : Nat) :
     HBTChildSwap i ≃ᵢ HBTChildSwapNatCode i :=
-  HBTChildSwapQuotient.generatedCodeIso HBTNatGeneratedCode.toGeneratedCode i
+  HBTChildSwapQuotient.generatedCodeIso HBTNatGeneratedCode i
 
 def HBTQuotLeaf (i label : Nat) : Mu HBTPoly i :=
   Mu.sup (P := HBTPoly) .leaf (i, label) rfl (fun q => nomatch q)
@@ -289,7 +289,7 @@ theorem HBTChildSwap_norm_respects :
 quotient relation. -/
 def HBTChildSwapDescendedNatCode :
     QuotientPresentation.DescendedGeneratedCode HBTChildSwapQuotient
-      HBTNatGeneratedCode.toGeneratedCode (fun _ => Nat) where
+      HBTNatGeneratedCode (fun _ => Nat) where
   encode i n :=
     HBTChildSwapNorm i
       (HBTNatGeneratedCode.decode i n)
