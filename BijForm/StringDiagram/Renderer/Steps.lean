@@ -222,6 +222,104 @@ def budStep {active : Sig.Port} {frontier : List Sig.Port}
           simp [hrest, Signature.nodePortsExcept, Signature.nodePorts,
             nodeEndpoints, eraseFin_length] }
 
+/-- Declarative append/frontier effect of a single renderer step. -/
+structure RenderDelta {source target : List Sig.Port}
+    (st : RenderState Sig source) (child : RenderState Sig target)
+    (endpointSuffix : List Sig.Port)
+    (edgeSuffix : List (RenderEdge Sig))
+    (nodeSuffix : List (RenderNode Sig))
+    (frontierIds : List Nat) : Prop where
+  endpoints : AppendStep st.endpoints child.endpoints endpointSuffix
+  edges : AppendStep st.edges child.edges edgeSuffix
+  nodes : AppendStep st.nodes child.nodes nodeSuffix
+  frontierIds_eq : child.frontierIds = frontierIds
+
+/-- `connectStep` exposes its append effects through `RenderDelta`. -/
+theorem connectStep_delta
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (st : RenderState Sig (active :: frontier))
+    {activeId : Nat} {restIds : List Nat}
+    (hids : st.frontierIds = activeId :: restIds) :
+    let idx : Fin restIds.length :=
+      listIndexCast restIds (by
+        exact (RenderState.frontierIds_cons_tail_length st hids).symm) mate
+    let edge : RenderEdge Sig :=
+      { label := Sig.portEdge active
+        leftLabel := active
+        rightLabel := frontier.get mate
+        left := activeId
+        right := restIds.get idx
+        left_label := rfl
+        right_label := (Sig.compatible_edge ok).symm
+        compatible := ok }
+    RenderDelta st (connectStep mate ok st) [] [edge] []
+      (eraseFin restIds idx) := by
+  unfold connectStep
+  split
+  · rename_i hidsNil
+    exact False.elim (RenderState.frontierIds_ne_nil st hidsNil)
+  · rename_i activeId' restIds' hids'
+    rw [hids] at hids'
+    injection hids' with hactive hrest
+    subst activeId'
+    subst restIds'
+    refine
+      { endpoints := ?_
+        edges := ?_
+        nodes := ?_
+        frontierIds_eq := ?_ }
+    · exact ⟨by simp⟩
+    · exact ⟨by simp [listIndexCast]⟩
+    · exact ⟨by simp⟩
+    · simp [listIndexCast]
+
+/-- `budStep` exposes its append effects through `RenderDelta`. -/
+theorem budStep_delta
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (st : RenderState Sig (active :: frontier))
+    {activeId : Nat} {restIds : List Nat}
+    (hids : st.frontierIds = activeId :: restIds) :
+    let nodeEndpoints := freshNodeEndpoints st.nextEndpoint (Sig.arity node)
+    let entryIdx : Fin nodeEndpoints.length :=
+      listIndexCast nodeEndpoints (by simp [nodeEndpoints]) entry
+    let edge : RenderEdge Sig :=
+      { label := Sig.portEdge active
+        leftLabel := active
+        rightLabel := Sig.port node entry
+        left := activeId
+        right := nodeEndpoints.get entryIdx
+        left_label := rfl
+        right_label := (Sig.compatible_edge ok).symm
+        compatible := ok }
+    let renderNode : RenderNode Sig :=
+      { label := node
+        incident := nodeEndpoints }
+    RenderDelta st (budStep node entry ok st) (Sig.nodePorts node) [edge]
+      [renderNode] (restIds ++ eraseFin nodeEndpoints entryIdx) := by
+  unfold budStep
+  split
+  · rename_i hidsNil
+    exact False.elim (RenderState.frontierIds_ne_nil st hidsNil)
+  · rename_i activeId' restIds' hids'
+    rw [hids] at hids'
+    injection hids' with hactive hrest
+    subst activeId'
+    subst restIds'
+    refine
+      { endpoints := ?_
+        edges := ?_
+        nodes := ?_
+        frontierIds_eq := ?_ }
+    · exact ⟨by simp⟩
+    · exact ⟨by simp [freshNodeEndpoints, listIndexCast]⟩
+    · exact ⟨by simp [freshNodeEndpoints]⟩
+    · simp [freshNodeEndpoints, listIndexCast]
+
 theorem connectStep_edge_mem_old
     {active : Sig.Port} {frontier : List Sig.Port}
     (mate : Fin frontier.length)
@@ -314,16 +412,20 @@ theorem connectStep_edges
            left_label := rfl
            right_label := (Sig.compatible_edge ok).symm
            compatible := ok }] := by
-  unfold connectStep
-  split
-  · rename_i hidsNil
-    exact False.elim (RenderState.frontierIds_ne_nil st hidsNil)
-  · rename_i activeId' restIds' hids'
-    rw [hids] at hids'
-    injection hids' with hactive hrest
-    subst activeId'
-    subst restIds'
-    rfl
+  let idx : Fin restIds.length :=
+    listIndexCast restIds (by
+      exact (RenderState.frontierIds_cons_tail_length st hids).symm) mate
+  let edge : RenderEdge Sig :=
+    { label := Sig.portEdge active
+      leftLabel := active
+      rightLabel := frontier.get mate
+      left := activeId
+      right := restIds.get idx
+      left_label := rfl
+      right_label := (Sig.compatible_edge ok).symm
+      compatible := ok }
+  have hdelta := connectStep_delta mate ok st hids
+  simpa [idx, edge] using hdelta.edges.eq_append
 
 theorem connectStep_edges_get_old
     {active : Sig.Port} {frontier : List Sig.Port}
@@ -359,31 +461,20 @@ theorem connectStep_edges_get_new
         left_label := rfl
         right_label := (Sig.compatible_edge ok).symm
         compatible := ok } := by
+  let idx : Fin restIds.length :=
+    listIndexCast restIds (by
+      exact (RenderState.frontierIds_cons_tail_length st hids).symm) mate
   let newEdge : RenderEdge Sig :=
     { label := Sig.portEdge active
       leftLabel := active
       rightLabel := frontier.get mate
       left := activeId
-      right :=
-        restIds.get (listIndexCast restIds (by
-          exact (RenderState.frontierIds_cons_tail_length st hids).symm) mate)
+      right := restIds.get idx
       left_label := rfl
       right_label := (Sig.compatible_edge ok).symm
       compatible := ok }
-  let i := edge.val
-  have hchildSome :
-      (connectStep mate ok st).edges[i]? =
-        some ((connectStep mate ok st).edges.get edge) :=
-    by simp [i]
-  have hnewSome :
-      (connectStep mate ok st).edges[i]? = some newEdge := by
-    rw [connectStep_edges mate ok st hids]
-    have hi : i = st.edges.length := by
-      simpa [i] using hnew
-    rw [hi]
-    simp [newEdge]
-  rw [hchildSome] at hnewSome
-  injection hnewSome with hget
+  have hdelta := connectStep_delta mate ok st hids
+  simpa [idx, newEdge] using hdelta.edges.get_single_at_length edge hnew
 
 theorem connectStep_frontierIds
     {active : Sig.Port} {frontier : List Sig.Port}
@@ -395,16 +486,11 @@ theorem connectStep_frontierIds
     (connectStep mate ok st).frontierIds =
       eraseFin restIds (listIndexCast restIds (by
         exact (RenderState.frontierIds_cons_tail_length st hids).symm) mate) := by
-  unfold connectStep
-  split
-  · rename_i hidsNil
-    exact False.elim (RenderState.frontierIds_ne_nil st hidsNil)
-  · rename_i activeId' restIds' hids'
-    rw [hids] at hids'
-    injection hids' with hactive hrest
-    subst activeId'
-    subst restIds'
-    simp
+  let idx : Fin restIds.length :=
+    listIndexCast restIds (by
+      exact (RenderState.frontierIds_cons_tail_length st hids).symm) mate
+  have hdelta := connectStep_delta mate ok st hids
+  simpa [idx] using hdelta.frontierIds_eq
 
 theorem connectStep_frontier_mem_old
     {active : Sig.Port} {frontier : List Sig.Port}
@@ -601,16 +687,497 @@ theorem budStep_frontierIds
         eraseFin (freshNodeEndpoints st.nextEndpoint (Sig.arity node))
           (listIndexCast (freshNodeEndpoints st.nextEndpoint (Sig.arity node))
             (by simp [freshNodeEndpoints]) entry) := by
-  unfold budStep
-  split
-  · rename_i hidsNil
-    exact False.elim (RenderState.frontierIds_ne_nil st hidsNil)
-  · rename_i activeId' restIds' hids'
-    rw [hids] at hids'
-    injection hids' with hactive hrest
-    subst activeId'
-    subst restIds'
-    simp [freshNodeEndpoints]
+  let nodeEndpoints := freshNodeEndpoints st.nextEndpoint (Sig.arity node)
+  let entryIdx : Fin nodeEndpoints.length :=
+    listIndexCast nodeEndpoints (by simp [nodeEndpoints]) entry
+  have hdelta := budStep_delta node entry ok st hids
+  simpa [nodeEndpoints, entryIdx] using hdelta.frontierIds_eq
+
+theorem connectStep_edgesPrefix
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (st : RenderState Sig (active :: frontier)) :
+    ∃ suffix : List (RenderEdge Sig),
+      (connectStep mate ok st).edges = st.edges ++ suffix := by
+  cases hids : st.frontierIds with
+  | nil =>
+      exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  | cons activeId restIds =>
+      let idx : Fin restIds.length :=
+        listIndexCast restIds (by
+          exact (RenderState.frontierIds_cons_tail_length st hids).symm) mate
+      let edge : RenderEdge Sig :=
+        { label := Sig.portEdge active
+          leftLabel := active
+          rightLabel := frontier.get mate
+          left := activeId
+          right := restIds.get idx
+          left_label := rfl
+          right_label := (Sig.compatible_edge ok).symm
+          compatible := ok }
+      refine ⟨[edge], ?_⟩
+      have hdelta := connectStep_delta mate ok st hids
+      simpa [idx, edge] using hdelta.edges.eq_append
+
+theorem budStep_edgesPrefix
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (st : RenderState Sig (active :: frontier)) :
+    ∃ suffix : List (RenderEdge Sig),
+      (budStep node entry ok st).edges = st.edges ++ suffix := by
+  cases hids : st.frontierIds with
+  | nil =>
+      exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  | cons activeId restIds =>
+      let nodeEndpoints := freshNodeEndpoints st.nextEndpoint (Sig.arity node)
+      let entryIdx : Fin nodeEndpoints.length :=
+        listIndexCast nodeEndpoints (by simp [nodeEndpoints]) entry
+      let edge : RenderEdge Sig :=
+        { label := Sig.portEdge active
+          leftLabel := active
+          rightLabel := Sig.port node entry
+          left := activeId
+          right := nodeEndpoints.get entryIdx
+          left_label := rfl
+          right_label := (Sig.compatible_edge ok).symm
+          compatible := ok }
+      refine ⟨[edge], ?_⟩
+      have hdelta := budStep_delta node entry ok st hids
+      simpa [nodeEndpoints, entryIdx, edge] using hdelta.edges.eq_append
+
+theorem connectStep_nodesPrefix
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (st : RenderState Sig (active :: frontier)) :
+    ∃ suffix : List (RenderNode Sig),
+      (connectStep mate ok st).nodes = st.nodes ++ suffix := by
+  cases hids : st.frontierIds with
+  | nil =>
+      exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  | cons _activeId _restIds =>
+      refine ⟨[], ?_⟩
+      have hdelta := connectStep_delta mate ok st hids
+      simpa using hdelta.nodes.eq_append
+
+theorem budStep_nodesPrefix
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (st : RenderState Sig (active :: frontier)) :
+    ∃ suffix : List (RenderNode Sig),
+      (budStep node entry ok st).nodes = st.nodes ++ suffix := by
+  cases hids : st.frontierIds with
+  | nil =>
+      exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  | cons activeId restIds =>
+      let nodeEndpoints := freshNodeEndpoints st.nextEndpoint (Sig.arity node)
+      let renderNode : RenderNode Sig :=
+        { label := node
+          incident := nodeEndpoints }
+      refine ⟨[renderNode], ?_⟩
+      have hdelta := budStep_delta node entry ok st hids
+      simpa [nodeEndpoints, renderNode] using hdelta.nodes.eq_append
+
+theorem budStep_edges
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (st : RenderState Sig (active :: frontier))
+    {activeId : Nat} {restIds : List Nat}
+    (hids : st.frontierIds = activeId :: restIds) :
+    (budStep node entry ok st).edges =
+      st.edges ++
+        [{ label := Sig.portEdge active
+           leftLabel := active
+           rightLabel := Sig.port node entry
+           left := activeId
+           right :=
+            (freshNodeEndpoints st.nextEndpoint (Sig.arity node)).get
+              (Fin.cast (by simp [freshNodeEndpoints]) entry)
+           left_label := rfl
+           right_label := (Sig.compatible_edge ok).symm
+           compatible := ok }] := by
+  let nodeEndpoints := freshNodeEndpoints st.nextEndpoint (Sig.arity node)
+  let entryIdx : Fin nodeEndpoints.length :=
+    listIndexCast nodeEndpoints (by simp [nodeEndpoints]) entry
+  let edge : RenderEdge Sig :=
+    { label := Sig.portEdge active
+      leftLabel := active
+      rightLabel := Sig.port node entry
+      left := activeId
+      right := nodeEndpoints.get entryIdx
+      left_label := rfl
+      right_label := (Sig.compatible_edge ok).symm
+      compatible := ok }
+  have hdelta := budStep_delta node entry ok st hids
+  simpa [nodeEndpoints, entryIdx, edge, listIndexCast] using
+    hdelta.edges.eq_append
+
+theorem budStep_nodes
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (st : RenderState Sig (active :: frontier)) :
+    (budStep node entry ok st).nodes =
+      st.nodes ++
+        [{ label := node
+           incident := freshNodeEndpoints st.nextEndpoint (Sig.arity node) }] := by
+  cases hids : st.frontierIds with
+  | nil =>
+      exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  | cons activeId restIds =>
+      let nodeEndpoints := freshNodeEndpoints st.nextEndpoint (Sig.arity node)
+      let renderNode : RenderNode Sig :=
+        { label := node
+          incident := nodeEndpoints }
+      have hdelta := budStep_delta node entry ok st hids
+      simpa [nodeEndpoints, renderNode] using hdelta.nodes.eq_append
+
+theorem connectStep_edges_length
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (st : RenderState Sig (active :: frontier)) :
+    (connectStep mate ok st).edges.length = st.edges.length + 1 := by
+  cases hids : st.frontierIds with
+  | nil =>
+      exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  | cons activeId restIds =>
+      let idx : Fin restIds.length :=
+        listIndexCast restIds (by
+          exact (RenderState.frontierIds_cons_tail_length st hids).symm) mate
+      let edge : RenderEdge Sig :=
+        { label := Sig.portEdge active
+          leftLabel := active
+          rightLabel := frontier.get mate
+          left := activeId
+          right := restIds.get idx
+          left_label := rfl
+          right_label := (Sig.compatible_edge ok).symm
+          compatible := ok }
+      have hdelta := connectStep_delta mate ok st hids
+      simpa [idx, edge] using hdelta.edges.length
+
+theorem connectStep_nodes
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (st : RenderState Sig (active :: frontier)) :
+    (connectStep mate ok st).nodes = st.nodes := by
+  cases hids : st.frontierIds with
+  | nil =>
+      exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  | cons _activeId _restIds =>
+      have hdelta := connectStep_delta mate ok st hids
+      simpa using hdelta.nodes.eq_append
+
+theorem connectStep_endpoints
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (st : RenderState Sig (active :: frontier)) :
+    (connectStep mate ok st).endpoints = st.endpoints := by
+  cases hids : st.frontierIds with
+  | nil =>
+      exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  | cons _activeId _restIds =>
+      have hdelta := connectStep_delta mate ok st hids
+      simpa using hdelta.endpoints.eq_append
+
+theorem connectStep_endpoints_get
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (st : RenderState Sig (active :: frontier))
+    (endpoint : Fin (connectStep mate ok st).endpoints.length) :
+    (connectStep mate ok st).endpoints.get endpoint =
+      st.endpoints.get
+        (Fin.cast
+          (congrArg List.length (connectStep_endpoints mate ok st))
+          endpoint) := by
+  let oldEndpoint :=
+    Fin.cast (congrArg List.length (connectStep_endpoints mate ok st))
+      endpoint
+  let i := endpoint.val
+  have hchildSome :
+      (connectStep mate ok st).endpoints[i]? =
+        some ((connectStep mate ok st).endpoints.get endpoint) :=
+    by simp [i]
+  have holdSome :
+      (connectStep mate ok st).endpoints[i]? =
+        some (st.endpoints.get oldEndpoint) := by
+    rw [connectStep_endpoints mate ok st]
+    exact List.getElem?_eq_getElem oldEndpoint.isLt
+  rw [hchildSome] at holdSome
+  injection holdSome with hget
+
+theorem connectStep_nodes_get
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (st : RenderState Sig (active :: frontier))
+    (node : Fin (connectStep mate ok st).nodes.length) :
+    (connectStep mate ok st).nodes.get node =
+      st.nodes.get
+        (Fin.cast
+          (congrArg List.length (connectStep_nodes mate ok st))
+          node) := by
+  let oldNode :=
+    Fin.cast (congrArg List.length (connectStep_nodes mate ok st))
+      node
+  let i := node.val
+  have hchildSome :
+      (connectStep mate ok st).nodes[i]? =
+        some ((connectStep mate ok st).nodes.get node) :=
+    by simp [i]
+  have holdSome :
+      (connectStep mate ok st).nodes[i]? =
+        some (st.nodes.get oldNode) := by
+    rw [connectStep_nodes mate ok st]
+    exact List.getElem?_eq_getElem oldNode.isLt
+  rw [hchildSome] at holdSome
+  injection holdSome with hget
+
+theorem budStep_endpoints
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (st : RenderState Sig (active :: frontier)) :
+    (budStep node entry ok st).endpoints =
+      st.endpoints ++ Sig.nodePorts node := by
+  cases hids : st.frontierIds with
+  | nil =>
+      exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  | cons activeId restIds =>
+      have hdelta := budStep_delta node entry ok st hids
+      simpa using hdelta.endpoints.eq_append
+
+def connectStep_endpointPrefix
+    {active : Sig.Port} {frontier boundary : List Sig.Port}
+    (mate : Fin frontier.length)
+    (ok : Sig.compatible active (frontier.get mate))
+    (st : RenderState Sig (active :: frontier))
+    (pref : st.EndpointPrefix boundary) :
+    (connectStep mate ok st).EndpointPrefix boundary where
+  suffix := pref.suffix
+  endpoints_eq := by
+    rw [connectStep_endpoints]
+    exact pref.endpoints_eq
+
+def budStep_endpointPrefix
+    {active : Sig.Port} {frontier boundary : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (st : RenderState Sig (active :: frontier))
+    (pref : st.EndpointPrefix boundary) :
+    (budStep node entry ok st).EndpointPrefix boundary where
+  suffix := pref.suffix ++ Sig.nodePorts node
+  endpoints_eq := by
+    rw [budStep_endpoints]
+    rw [pref.endpoints_eq, List.append_assoc]
+
+theorem budStep_edges_length
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (st : RenderState Sig (active :: frontier)) :
+    (budStep node entry ok st).edges.length = st.edges.length + 1 := by
+  cases hids : st.frontierIds with
+  | nil =>
+      exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  | cons activeId restIds =>
+      let nodeEndpoints := freshNodeEndpoints st.nextEndpoint (Sig.arity node)
+      let entryIdx : Fin nodeEndpoints.length :=
+        listIndexCast nodeEndpoints (by simp [nodeEndpoints]) entry
+      let edge : RenderEdge Sig :=
+        { label := Sig.portEdge active
+          leftLabel := active
+          rightLabel := Sig.port node entry
+          left := activeId
+          right := nodeEndpoints.get entryIdx
+          left_label := rfl
+          right_label := (Sig.compatible_edge ok).symm
+          compatible := ok }
+      have hdelta := budStep_delta node entry ok st hids
+      simpa [nodeEndpoints, entryIdx, edge] using hdelta.edges.length
+
+theorem budStep_nodes_length
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (st : RenderState Sig (active :: frontier)) :
+    (budStep node entry ok st).nodes.length = st.nodes.length + 1 := by
+  cases hids : st.frontierIds with
+  | nil =>
+      exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  | cons activeId restIds =>
+      let nodeEndpoints := freshNodeEndpoints st.nextEndpoint (Sig.arity node)
+      let renderNode : RenderNode Sig :=
+        { label := node
+          incident := nodeEndpoints }
+      have hdelta := budStep_delta node entry ok st hids
+      simpa [nodeEndpoints, renderNode] using hdelta.nodes.length
+
+theorem budStep_endpoints_length
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (st : RenderState Sig (active :: frontier)) :
+    (budStep node entry ok st).endpoints.length =
+      st.endpoints.length + Sig.arity node := by
+  cases hids : st.frontierIds with
+  | nil =>
+      exact False.elim (RenderState.frontierIds_ne_nil st hids)
+  | cons activeId restIds =>
+      have hdelta := budStep_delta node entry ok st hids
+      simpa [Signature.nodePorts] using hdelta.endpoints.length
+
+theorem budStep_edges_get_old
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (rst : RenderState Sig (active :: frontier))
+    {activeId : Nat} {restIds : List Nat}
+    (hids : rst.frontierIds = activeId :: restIds)
+    (edge : Fin (budStep node entry ok rst).edges.length)
+    (hold : edge.val < rst.edges.length) :
+    (budStep node entry ok rst).edges.get edge =
+      rst.edges.get ⟨edge.val, hold⟩ := by
+  exact list_get_of_eq_append_left
+    (budStep_edges node entry ok rst hids) edge hold
+
+theorem budStep_edges_get_new
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (rst : RenderState Sig (active :: frontier))
+    {activeId : Nat} {restIds : List Nat}
+    (hids : rst.frontierIds = activeId :: restIds)
+    (edge : Fin (budStep node entry ok rst).edges.length)
+    (hnew : edge.val = rst.edges.length) :
+    (budStep node entry ok rst).edges.get edge =
+      { label := Sig.portEdge active
+        leftLabel := active
+        rightLabel := Sig.port node entry
+        left := activeId
+        right :=
+          (freshNodeEndpoints rst.nextEndpoint (Sig.arity node)).get
+            (Fin.cast (by simp [freshNodeEndpoints]) entry)
+        left_label := rfl
+        right_label := (Sig.compatible_edge ok).symm
+        compatible := ok } := by
+  let nodeEndpoints := freshNodeEndpoints rst.nextEndpoint (Sig.arity node)
+  let entryIdx : Fin nodeEndpoints.length :=
+    listIndexCast nodeEndpoints (by simp [nodeEndpoints]) entry
+  let newEdge : RenderEdge Sig :=
+    { label := Sig.portEdge active
+      leftLabel := active
+      rightLabel := Sig.port node entry
+      left := activeId
+      right := nodeEndpoints.get entryIdx
+      left_label := rfl
+      right_label := (Sig.compatible_edge ok).symm
+      compatible := ok }
+  have hdelta := budStep_delta node entry ok rst hids
+  simpa [nodeEndpoints, entryIdx, newEdge, listIndexCast] using
+    hdelta.edges.get_single_at_length edge hnew
+
+theorem budStep_nodes_get_old
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (rst : RenderState Sig (active :: frontier))
+    (renderNode : Fin (budStep node entry ok rst).nodes.length)
+    (hold : renderNode.val < rst.nodes.length) :
+    (budStep node entry ok rst).nodes.get renderNode =
+      rst.nodes.get ⟨renderNode.val, hold⟩ := by
+  exact list_get_of_eq_append_left
+    (budStep_nodes node entry ok rst) renderNode hold
+
+theorem budStep_nodes_get_new
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (rst : RenderState Sig (active :: frontier))
+    (renderNode : Fin (budStep node entry ok rst).nodes.length)
+    (hnew : renderNode.val = rst.nodes.length) :
+    (budStep node entry ok rst).nodes.get renderNode =
+      { label := node
+        incident := freshNodeEndpoints rst.nextEndpoint (Sig.arity node) } := by
+  cases hids : rst.frontierIds with
+  | nil =>
+      exact False.elim (RenderState.frontierIds_ne_nil rst hids)
+  | cons activeId restIds =>
+      let nodeEndpoints := freshNodeEndpoints rst.nextEndpoint (Sig.arity node)
+      let newNode : RenderNode Sig :=
+        { label := node
+          incident := nodeEndpoints }
+      have hdelta := budStep_delta node entry ok rst hids
+      simpa [nodeEndpoints, newNode] using
+        hdelta.nodes.get_single_at_length renderNode hnew
+
+theorem budStep_endpoints_get_old
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (rst : RenderState Sig (active :: frontier))
+    (endpoint : Fin (budStep node entry ok rst).endpoints.length)
+    (hold : endpoint.val < rst.endpoints.length) :
+    (budStep node entry ok rst).endpoints.get endpoint =
+      rst.endpoints.get ⟨endpoint.val, hold⟩ := by
+  exact list_get_of_eq_append_left
+    (budStep_endpoints node entry ok rst) endpoint hold
+
+theorem budStep_endpoints_get_new
+    {active : Sig.Port} {frontier : List Sig.Port}
+    (node : Sig.Node)
+    (entry : Fin (Sig.arity node))
+    (ok : Sig.compatible active (Sig.port node entry))
+    (rst : RenderState Sig (active :: frontier))
+    (endpoint : Fin (budStep node entry ok rst).endpoints.length)
+    (hnew : rst.endpoints.length ≤ endpoint.val) :
+    (budStep node entry ok rst).endpoints.get endpoint =
+      (Sig.nodePorts node).get
+        ⟨endpoint.val - rst.endpoints.length, by
+          have hb :
+              endpoint.val < rst.endpoints.length + Sig.arity node := by
+            exact Nat.lt_of_lt_of_eq endpoint.isLt
+              (budStep_endpoints_length node entry ok rst)
+          simp [Signature.nodePorts]
+          omega⟩ := by
+  let i := endpoint.val
+  have hiBound : i < rst.endpoints.length + Sig.arity node := by
+    have hendpoint : i < (budStep node entry ok rst).endpoints.length := by
+      dsimp [i]
+      exact endpoint.isLt
+    exact Nat.lt_of_lt_of_eq hendpoint
+      (budStep_endpoints_length node entry ok rst)
+  have hslotBound : i - rst.endpoints.length < (Sig.nodePorts node).length := by
+    simpa [Signature.nodePorts] using
+      (by omega : i - rst.endpoints.length < Sig.arity node)
+  have hget :=
+    list_get_of_eq_append_right
+      (budStep_endpoints node entry ok rst)
+      endpoint
+      (by simpa [i] using hnew)
+  simpa [i, hslotBound] using hget
 
 theorem budStep_new_node_mem
     {active : Sig.Port} {frontier : List Sig.Port}

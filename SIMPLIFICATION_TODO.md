@@ -536,10 +536,11 @@ listed below. Documentation-only tracker edits should pass `git diff --check`.
     invariant preservation.
   - Validation: existing `connectStep_*` and `budStep_*` theorem consumers build
     through delta-derived facts.
-  - Partial: `connectStep_validIds` and `budStep_validIds` now compose
-    frontier-label preservation through `IndexedListRel.erase` and
-    `IndexedListRel.append`; the full `RenderDelta` owner for append effects,
-    old/new cases, and the remaining invariant families is still open.
+  - Partial: `Renderer.Steps.RenderDelta` now owns connect/bud endpoint, edge,
+    node, and frontier append facts; the public one-step get/length/prefix facts
+    are step-owned and `Renderer.Trace` no longer reconstructs them. The
+    invariant-preservation families and remaining membership cases still need
+    to be derived through the delta model before this item is complete.
 
 - [ ] Factor render trace prefix/index proofs.
   - Owner: `BijForm.StringDiagram.Renderer.Trace`
