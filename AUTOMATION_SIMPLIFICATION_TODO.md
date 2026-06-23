@@ -398,7 +398,7 @@ were explicitly requested to remain visible.
   rg -n 'BinarySwap|unorderedPair' BijForm/TupleAction.lean BijForm/Examples
   ```
 
-- [ ] Fix README/API drift for string-diagram finite coding rank names after
+- [x] Fix README/API drift for string-diagram finite coding rank names after
   the finite-coding rank schema is simplified.
   Evidence: README mentions `StringDiagram.singleSortedFiniteLayer_child_rank_lt`,
   while source currently has private `singleSortedFiniteLayer_shape_child_rank_lt`.

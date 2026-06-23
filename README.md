@@ -169,7 +169,6 @@ lake exe bijform
   - `StringDiagram.singleSortedFiniteLayerFromShape`
   - `StringDiagram.singleSortedFiniteLayerPresentation`
   - `StringDiagram.singleSortedFiniteCarrierLayer`
-  - `StringDiagram.singleSortedFiniteLayer_child_rank_lt`
   - `StringDiagram.singleSortedFiniteGeneratedShapeCode`
   - `StringDiagram.singleSortedFiniteSyntaxEmptyFinOneIso`
   - `StringDiagram.singleSortedFiniteSyntaxNonemptyNatIso`
