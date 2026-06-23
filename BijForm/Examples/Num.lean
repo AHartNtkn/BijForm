@@ -292,9 +292,9 @@ def NumNatLayerShapeLayerPresentation :
     exact hshape x)
 
 def NumNatLayerPresentation : NatLayerPresentation NumPoly NumInversion :=
-  LayerPresentation.ofLayerShapeChildRank
-    NumNatLayerShapeLayerPresentation
-    (fun k => CodeAlgebra.finPrefixNat (k + 2) CodeAlgebra.natOrProdOrProdNat)
+  LayerPresentation.ofLayerChildRank
+    (NumNatLayerShapeLayerPresentation.transCarrier
+      (fun k => CodeAlgebra.finPrefixNat (k + 2) CodeAlgebra.natOrProdOrProdNat))
     (fun _ n => n)
     (by
       intro k layer q

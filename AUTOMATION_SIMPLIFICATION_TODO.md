@@ -48,7 +48,7 @@ Every proof-debt item below must keep these fields visible:
   rg -n 'theorem .*_layer_child_rank_lt|\brank_descent\b' BijForm/Examples BijForm/StringDiagram/Polynomial.lean
   ```
 
-- [ ] Collapse thin `LayerPresentation` transport constructors into one
+- [x] Collapse thin `LayerPresentation` transport constructors into one
   canonical decoded-layer descent interface.
   Evidence: `LayerPresentation.ofLayer`, `ofLayerMaps`,
   `ofLayerChildRank`, `ofLayerShapeChildRank`, `ofShapeChildRank`, and

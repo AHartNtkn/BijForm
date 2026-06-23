@@ -551,47 +551,31 @@ theorem SortedInfiniteConstructorPayload_child_rank_lt (lower : Nat) :
 
 def SortedLayerPresentation :
     LayerPresentation SortedPoly SortedInversion SortedCarrier :=
-  LayerPresentation.ofCarrierLayerIso SortedCarrierLayerIso SortedCarrierRank (by
-    intro i z q
+  LayerPresentation.ofLayerChildRank
+    (CodeLayerPresentation.ofIso SortedCarrierLayerIso)
+    SortedCarrierRank
+    (by
+    intro i layer q
     cases i with
     | mk lower upper =>
       cases upper with
       | none =>
-          have hlt := SortedInfiniteConstructorPayload_child_rank_lt lower
-            ((SortedCarrierLayerIso (lower, none)).invFun z) q
-          have hparent :
-              SortedCarrierRank (lower, none)
-                ((SortedCarrierLayerIso (lower, none)).toFun
-                  ((SortedCarrierLayerIso (lower, none)).invFun z)) =
-              SortedCarrierRank (lower, none) z :=
-            congrArg (SortedCarrierRank (lower, none))
-              ((SortedCarrierLayerIso (lower, none)).right_inv z)
-          simpa [CodeLayerPresentation.iso, CodeLayerPresentation.transCarrier,
-            SortedLayerShape, Iso.refl, SortedCarrierRank, Bound.le] using
-            (lt_of_lt_of_eq hlt hparent)
+          exact SortedInfiniteConstructorPayload_child_rank_lt lower layer q
       | some upper =>
           by_cases h : lower ≤ upper
-          · revert q
-            intro q
-            have hlt := SortedFiniteConstructorPayload_child_rank_lt lower upper h
-              ((SortedCarrierLayerIso (lower, some upper)).invFun z) q
-            have hparent :
-                SortedCarrierRank (lower, some upper)
-                  ((SortedCarrierLayerIso (lower, some upper)).toFun
-                    ((SortedCarrierLayerIso (lower, some upper)).invFun z)) =
-                SortedCarrierRank (lower, some upper) z :=
-              congrArg (SortedCarrierRank (lower, some upper))
-                ((SortedCarrierLayerIso (lower, some upper)).right_inv z)
-            simpa [SortedLayerShape, Iso.refl, SortedCarrierRank, Bound.le, h] using
-              (lt_of_lt_of_eq hlt hparent)
-          · revert q
-            dsimp [CodeLayerPresentation.iso, CodeLayerPresentation.transCarrier,
-              SortedLayerShape, SortedCarrierRank, Bound.le, h]
-            intro q
-            dsimp [SortedCarrierLayerIso, Iso.refl] at q
-            rw [dif_neg h] at q
-            change SortedPoly.Pos SortedCtor.leaf (lower, some upper) at q
-            cases q)
+          · exact SortedFiniteConstructorPayload_child_rank_lt lower upper h layer q
+          · rcases layer with ⟨⟨ctor, param, out_eq⟩, child⟩
+            cases ctor with
+            | leaf =>
+                cases out_eq
+                cases q
+            | branch =>
+                cases param with
+                | mk j pivot =>
+                    cases out_eq
+                    have hp := BoundedPivot.bound_le pivot
+                    dsimp [Bound.le] at hp
+                    exact False.elim (h hp))
 
 def SortedShapeLayerPresentation :
     ShapeLayerPresentation SortedPoly SortedInversion :=

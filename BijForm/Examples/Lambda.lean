@@ -202,9 +202,9 @@ theorem LamNatLayer_zero_invFun_zero :
   rfl
 
 def LamNatLayerPresentation : RankedNatLayerPresentation LamPoly LamInversion :=
-  LayerPresentation.ofLayerShapeChildRank
-    LamNatLayerShapeLayerPresentation
-    (fun k => CodeAlgebra.finPrefixNat k CodeAlgebra.sumProdNat)
+  LayerPresentation.ofLayerChildRank
+    (LamNatLayerShapeLayerPresentation.transCarrier
+      (fun k => CodeAlgebra.finPrefixNat k CodeAlgebra.sumProdNat))
     LamNatRank
     (by
       intro k layer q

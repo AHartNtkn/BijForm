@@ -238,9 +238,9 @@ def PeanoNatLayerShapeLayerPresentation :
     exact hshape x)
 
 def PeanoNatLayerPresentation : NatLayerPresentation PeanoPoly PeanoInversion :=
-  LayerPresentation.ofLayerShapeChildRank
-    PeanoNatLayerShapeLayerPresentation
-    (fun _ => CodeAlgebra.prodOrNatOrProdOrNat)
+  LayerPresentation.ofLayerChildRank
+    (PeanoNatLayerShapeLayerPresentation.transCarrier
+      (fun _ => CodeAlgebra.prodOrNatOrProdOrNat))
     (fun _ n => n)
     (by
       intro k layer q

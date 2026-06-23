@@ -1275,14 +1275,18 @@ def singleSortedFiniteGeneratedShapeCode
   ShapeLayerPresentation.generatedCode
     { shape := openFrontierShape Sig
       presentation :=
-        LayerPresentation.ofShapeChildRank
-          (singleSortedFiniteLayerPresentation data)
-          (singleSortedFiniteLayerShapeCarrierIso data)
+        LayerPresentation.ofLayerChildRank
+          ((singleSortedFiniteLayerPresentation data).transCarrier
+            (singleSortedFiniteLayerShapeCarrierIso data))
           (singleSortedFiniteRank data)
-          (by
-            intro boundary shape q
-            exact singleSortedFiniteLayer_shape_child_rank_lt
-              (data := data) (boundary := boundary) shape q) }
+          (LayerPresentation.layerChildRankOfShapeChildRank
+            (singleSortedFiniteLayerPresentation data)
+            (singleSortedFiniteLayerShapeCarrierIso data)
+            (singleSortedFiniteRank data)
+            (by
+              intro boundary shape q
+              exact singleSortedFiniteLayer_shape_child_rank_lt
+                (data := data) (boundary := boundary) shape q)) }
 
 /-- Syntax for any open frontier is coded by the generated open-frontier shape. -/
 def singleSortedFiniteSyntaxShapeIso

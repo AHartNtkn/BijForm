@@ -214,25 +214,28 @@ def FinChainLayerShapeLayerPresentation :
 
 def FinChainLayerPresentation :
     LayerPresentation FinChainPoly FinChainInversion FinChainCarrier :=
-  LayerPresentation.ofShapeChildRank
-    FinChainLayerShapeLayerPresentation
-    FinChainLayerCarrierIso
+  LayerPresentation.ofLayerChildRank
+    (FinChainLayerShapeLayerPresentation.transCarrier FinChainLayerCarrierIso)
     (fun i _ => i)
-    (by
-      intro i shape q
-      cases i with
-      | zero =>
-          cases q
-      | succ n =>
-          cases shape with
-          | inl done =>
-              cases q
-          | inr pair =>
-              cases q
-              simp [FinChainLayerShapeLayerPresentation, FinChainLayerShape,
-                FinChainCarrier, FinChainShape, FinChainPos, FinChainInput,
-                FinChainPoly, FinChainOut, FinChainInversion,
-                OutputIndexInversion.canonical])
+    (LayerPresentation.layerChildRankOfShapeChildRank
+      FinChainLayerShapeLayerPresentation
+      FinChainLayerCarrierIso
+      (fun i _ => i)
+      (by
+        intro i shape q
+        cases i with
+        | zero =>
+            cases q
+        | succ n =>
+            cases shape with
+            | inl done =>
+                cases q
+            | inr pair =>
+                cases q
+                simp [FinChainLayerShapeLayerPresentation, FinChainLayerShape,
+                  FinChainCarrier, FinChainShape, FinChainPos, FinChainInput,
+                  FinChainPoly, FinChainOut, FinChainInversion,
+                  OutputIndexInversion.canonical]))
 
 def FinChainShapeLayerPresentation :
     ShapeLayerPresentation FinChainPoly FinChainInversion :=
