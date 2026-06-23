@@ -518,6 +518,25 @@ theorem get {α β : Type}
     rw [hleft, hright]
     exact h.suffix_rel leftIdx rightIdx rfl
 
+theorem get_of {α β : Type}
+    {leftPref leftFull leftSuffix : List α}
+    {rightPref rightFull rightSuffix : List β}
+    {trace : AppendTrace leftPref leftFull leftSuffix
+      rightPref rightFull rightSuffix}
+    {R : α → β → Prop}
+    (prefix_rel :
+      ∀ (left : Fin leftPref.length) (right : Fin rightPref.length),
+        left.val = right.val → R (leftPref.get left) (rightPref.get right))
+    (suffix_rel :
+      ∀ (left : Fin leftSuffix.length) (right : Fin rightSuffix.length),
+        left.val = right.val → R (leftSuffix.get left) (rightSuffix.get right))
+    (i : Fin leftFull.length) :
+    R (leftFull.get i) (rightFull.get (trace.rightIndex i)) :=
+  AppendTraceRelation.get
+    (trace := trace)
+    { prefix_rel := prefix_rel
+      suffix_rel := suffix_rel } i
+
 end AppendTraceRelation
 
 def listIndexCast {α : Type} (xs : List α) {n : Nat}
@@ -546,6 +565,26 @@ theorem get_listIndexCast {α β : Type}
       trace.rightIndex i = listIndexCast rightFull hlen i := by
     exact fin_eq_of_val_eq rfl
   simpa [hidx] using AppendTraceRelation.get h i
+
+theorem get_listIndexCast_of {α β : Type}
+    {leftPref leftFull leftSuffix : List α}
+    {rightPref rightFull rightSuffix : List β}
+    {trace : AppendTrace leftPref leftFull leftSuffix
+      rightPref rightFull rightSuffix}
+    {R : α → β → Prop}
+    (prefix_rel :
+      ∀ (left : Fin leftPref.length) (right : Fin rightPref.length),
+        left.val = right.val → R (leftPref.get left) (rightPref.get right))
+    (suffix_rel :
+      ∀ (left : Fin leftSuffix.length) (right : Fin rightSuffix.length),
+        left.val = right.val → R (leftSuffix.get left) (rightSuffix.get right))
+    (hlen : leftFull.length = rightFull.length)
+    (i : Fin leftFull.length) :
+    R (leftFull.get i) (rightFull.get (listIndexCast rightFull hlen i)) :=
+  AppendTraceRelation.get_listIndexCast
+    (trace := trace)
+    { prefix_rel := prefix_rel
+      suffix_rel := suffix_rel } hlen i
 
 end AppendTraceRelation
 

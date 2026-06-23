@@ -313,7 +313,7 @@ Every proof-debt item below must keep these fields visible:
   rg -n 'endpointOrder_firstPendingChild_step|edgeOrder_firstPendingChild_step|nodeOrder_firstPendingChild_step|firstPendingChild_orderTrace|ChildOrderTrace' BijForm/StringDiagram/Traversal/State.lean
   ```
 
-- [ ] Add generic append-trace field preservation for graph render relations.
+- [x] Add generic append-trace field preservation for graph render relations.
   Evidence: `endpointLabel_of_appendTrace`, `edgeLabel_of_appendTrace`,
   `nodeLabel_of_appendTrace`, `nodeIncidentFields_of_appendTrace`, and side
   variants build the same `AppendTraceRelation` prefix/suffix preservation.
