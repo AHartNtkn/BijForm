@@ -118,7 +118,7 @@ Every proof-debt item below must keep these fields visible:
   rg -n 'toNatSum3|toNatSum4|finPrefixNat_.*lt|finTaggedProdNat_.*_lt|ScaledPayloadBound|scaled_payload_child_lt' BijForm/CodeAlgebra.lean BijForm/Examples BijForm/StringDiagram
   ```
 
-- [ ] Replace Sorted carrier payload descent with a generic prefixed-tail
+- [x] Replace Sorted carrier payload descent with a generic prefixed-tail
   constructor payload schema.
   Evidence: `sortedConstructorPayload_child_rank_lt`,
   `SortedFiniteConstructorPayload_child_rank_lt`,
