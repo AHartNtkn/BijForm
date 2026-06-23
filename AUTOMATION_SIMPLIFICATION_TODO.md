@@ -299,7 +299,7 @@ Every proof-debt item below must keep these fields visible:
   rg -n 'renderTrace_.*Append|renderTrace_.*new_.*Index|renderTrace_.*new_.*get|firstSuffixIndex' BijForm/StringDiagram/Renderer/Trace.lean
   ```
 
-- [ ] Replace first-pending child order trace family with one delta/certificate
+- [x] Replace first-pending child order trace family with one delta/certificate
   record.
   Evidence: endpoint/edge/node suffix defs and append-step wrappers are
   triplicated; `ChildOrderTrace` and `firstPendingChild_orderTrace` rebuild
