@@ -424,6 +424,15 @@ theorem toChild_ofChild (Γ : List Ty) :
         (F := fun arg => Code (arg.binders ++ Γ, arg.sort))
         (xs := args) child
 
+@[simp]
+theorem toChild_ofChild_apply (Γ : List Ty) {args : List (Arg Ty)}
+    (child :
+      (q : Fin args.length) →
+        Code (((args.get q).binders ++ Γ), (args.get q).sort))
+    (q : Fin args.length) :
+    toChild Γ (ofChild Γ child) q = child q := by
+  exact congrFun (toChild_ofChild (S := S) (Code := Code) Γ child) q
+
 theorem ofChild_toChild (Γ : List Ty) :
     {args : List (Arg Ty)} →
       (tuple : ArgTuple S Code Γ args) →
@@ -443,55 +452,6 @@ def iso (Γ : List Ty) (args : List (Arg Ty)) :
   left_inv := toChild_ofChild Γ
   right_inv := ofChild_toChild Γ
 
-def singleIso (Γ : List Ty) (arg : Arg Ty) :
-    ArgTuple S Code Γ [arg] ≃ᵢ Code (arg.binders ++ Γ, arg.sort) where
-  toFun tuple := tuple.1
-  invFun z := (z, PUnit.unit)
-  left_inv := by
-    intro tuple
-    simpa [ofChild, toChild] using
-      (ofChild_toChild (S := S) (Code := Code) Γ
-        (args := [arg]) tuple)
-  right_inv := by
-    intro z
-    rfl
-
-@[simp]
-theorem singleIso_ofChild_toFun (Γ : List Ty) (arg : Arg Ty)
-    (child :
-      (q : Fin [arg].length) →
-        Code ((([arg].get q).binders ++ Γ), ([arg].get q).sort)) :
-    (singleIso (S := S) (Code := Code) Γ arg).toFun
-        (ofChild (S := S) (Code := Code) Γ child) =
-      child ⟨0, by simp⟩ := by
-  dsimp [singleIso, ofChild]
-
-def pairIso (Γ : List Ty) (left right : Arg Ty) :
-    ArgTuple S Code Γ [left, right] ≃ᵢ
-      (Code (left.binders ++ Γ, left.sort) ×
-        Code (right.binders ++ Γ, right.sort)) where
-  toFun tuple := (tuple.1, tuple.2.1)
-  invFun pair := (pair.1, (pair.2, PUnit.unit))
-  left_inv := by
-    intro tuple
-    simpa [ofChild, toChild] using
-      (ofChild_toChild (S := S) (Code := Code) Γ
-        (args := [left, right]) tuple)
-  right_inv := by
-    intro pair
-    cases pair
-    rfl
-
-@[simp]
-theorem pairIso_ofChild_toFun (Γ : List Ty) (left right : Arg Ty)
-    (child :
-      (q : Fin [left, right].length) →
-        Code ((([left, right].get q).binders ++ Γ), ([left, right].get q).sort)) :
-    (pairIso (S := S) (Code := Code) Γ left right).toFun
-        (ofChild (S := S) (Code := Code) Γ child) =
-      (child ⟨0, by simp⟩, child ⟨1, by simp⟩) := by
-  rfl
-
 end ArgTuple
 
 /-- Generic constructor-family carrier for a same-return typed-binding layer. -/
@@ -505,99 +465,79 @@ namespace CtorFamily
 
 variable {Ty : Type} {S : Signature Ty} {Code : Poly.Ix S → Type}
 
-def singleIso (Γ : List Ty) {t : Ty} {Carrier : Type}
-    (ctor : S.Ctor) (hret : S.ret ctor = t)
-    (only : ∀ c, S.ret c = t → c = ctor)
-    (argIso : ArgTuple S Code Γ (S.args ctor) ≃ᵢ Carrier) :
-    CtorFamily S Code Γ t ≃ᵢ Carrier where
-  toFun family := by
-    cases family with
-    | mk c h args =>
-        have hc : c = ctor := only c h
-        cases hc
-        exact argIso.toFun args
-  invFun z := ⟨ctor, hret, argIso.invFun z⟩
-  left_inv := by
-    intro family
-    cases family with
-    | mk c h args =>
-        have hc : c = ctor := only c h
-        cases hc
-        cases h
-        cases hret
-        dsimp
-        rw [argIso.left_inv args]
-  right_inv := by
-    intro z
-    dsimp
-    exact argIso.right_inv z
+theorem ext {Γ : List Ty} {t : Ty} {a b : CtorFamily S Code Γ t}
+    (hctor : a.ctor = b.ctor) (hargs : a.args ≍ b.args) : a = b := by
+  cases a with
+  | mk ctor ret_eq args =>
+    cases b with
+    | mk ctor' ret_eq' args' =>
+      dsimp at hctor hargs
+      cases hctor
+      cases hargs
+      cases ret_eq
+      cases ret_eq'
+      rfl
 
-def sumIso (Γ : List Ty) {t : Ty} {Left Right : Type}
-    (leftCtor rightCtor : S.Ctor)
-    (leftRet : S.ret leftCtor = t)
-    (rightRet : S.ret rightCtor = t)
-    (left_ne_right : leftCtor ≠ rightCtor)
-    (decide_left : (c : S.Ctor) → Decidable (c = leftCtor))
-    (right_of_not_left : ∀ c, S.ret c = t → c ≠ leftCtor → c = rightCtor)
-    (leftIso : ArgTuple S Code Γ (S.args leftCtor) ≃ᵢ Left)
-    (rightIso : ArgTuple S Code Γ (S.args rightCtor) ≃ᵢ Right) :
-    CtorFamily S Code Γ t ≃ᵢ (Left ⊕ Right) where
+structure Case (S : Signature Ty) (t : Ty) where
+  ctor : S.Ctor
+  ret_eq : S.ret ctor = t
+
+abbrev CaseCarrier (Γ : List Ty) {t : Ty} (cases : List (Case S t)) : Type :=
+  Σ q : Fin cases.length, ArgTuple S Code Γ (S.args ((cases.get q).ctor))
+
+def caseListIso (Γ : List Ty) {t : Ty} (cases : List (Case S t))
+    (indexOf : (c : S.Ctor) → S.ret c = t → Fin cases.length)
+    (indexOf_spec : ∀ c h, (cases.get (indexOf c h)).ctor = c)
+    (indexOf_get : ∀ q : Fin cases.length,
+      indexOf (cases.get q).ctor (cases.get q).ret_eq = q) :
+    CtorFamily S Code Γ t ≃ᵢ CaseCarrier (S := S) (Code := Code) Γ cases where
   toFun family := by
     cases family with
     | mk c h args =>
-        match decide_left c with
-        | isTrue hc =>
-          cases hc
-          exact Sum.inl (leftIso.toFun args)
-        | isFalse hc =>
-          have hr : c = rightCtor := right_of_not_left c h hc
-          cases hr
-          exact Sum.inr (rightIso.toFun args)
-  invFun
-    | Sum.inl left => ⟨leftCtor, leftRet, leftIso.invFun left⟩
-    | Sum.inr right => ⟨rightCtor, rightRet, rightIso.invFun right⟩
+        let q : Fin cases.length := indexOf c h
+        have hargs : ArgTuple S Code Γ (S.args c) =
+            ArgTuple S Code Γ (S.args ((cases.get q).ctor)) := by
+          exact congrArg (fun args => ArgTuple S Code Γ args)
+            (congrArg (fun ctor => S.args ctor) (indexOf_spec c h).symm)
+        exact ⟨q, cast hargs args⟩
+  invFun entry :=
+    ⟨(cases.get entry.1).ctor, (cases.get entry.1).ret_eq, entry.2⟩
   left_inv := by
     intro family
     cases family with
     | mk c h args =>
-        cases hdec : decide_left c with
-        | isTrue hc =>
-          cases hc
-          cases h
-          cases leftRet
-          dsimp
-          rw [hdec]
-          dsimp
-          rw [leftIso.left_inv args]
-        | isFalse hc =>
-          have hr : c = rightCtor := right_of_not_left c h hc
-          cases hr
-          cases h
-          cases rightRet
-          dsimp
-          rw [hdec]
-          dsimp
-          rw [rightIso.left_inv args]
+        dsimp
+        let q : Fin cases.length := indexOf c h
+        have hq : q = indexOf c h := rfl
+        have hc : (cases.get q).ctor = c := by
+          simpa [hq] using indexOf_spec c h
+        have hargs : ArgTuple S Code Γ (S.args c) =
+            ArgTuple S Code Γ (S.args ((cases.get q).ctor)) := by
+          exact congrArg (fun args => ArgTuple S Code Γ args)
+            (congrArg (fun ctor => S.args ctor) hc.symm)
+        apply ext
+        · exact hc
+        · exact cast_heq hargs args
   right_inv := by
-    intro z
-    cases z with
-    | inl left =>
+    intro entry
+    cases entry with
+    | mk q args =>
         dsimp
-        cases hdec : decide_left leftCtor with
-        | isTrue hc =>
-            cases hc
-            dsimp
-            exact congrArg Sum.inl (leftIso.right_inv left)
-        | isFalse hc =>
-            exact False.elim (hc rfl)
-    | inr right =>
-        dsimp
-        cases hdec : decide_left rightCtor with
-        | isTrue hc =>
-            exact False.elim (left_ne_right hc.symm)
-        | isFalse hc =>
-            dsimp
-            exact congrArg Sum.inr (rightIso.right_inv right)
+        let q' : Fin cases.length :=
+          indexOf (cases.get q).ctor (cases.get q).ret_eq
+        have hq' : q' =
+            indexOf (cases.get q).ctor (cases.get q).ret_eq := rfl
+        have hq : q' = q := by
+          simpa [hq'] using indexOf_get q
+        apply Sigma.ext hq
+        have hc :
+            (cases.get q').ctor = (cases.get q).ctor := by
+          simpa [hq'] using indexOf_spec (cases.get q).ctor (cases.get q).ret_eq
+        have hargs : ArgTuple S Code Γ (S.args ((cases.get q).ctor)) =
+            ArgTuple S Code Γ (S.args ((cases.get q').ctor)) := by
+          exact congrArg (fun args => ArgTuple S Code Γ args)
+            (congrArg (fun ctor => S.args ctor) hc.symm)
+        exact cast_heq hargs args
 
 end CtorFamily
 
@@ -866,7 +806,8 @@ theorem of_op
             cases paramCode with
             | up h =>
                 cases h
-                simpa [LayerShape.layerCoding_op_toFun, Poly.input, Poly.depPoly] using
+                simpa [LayerShape.layerCoding, LayerShape.iso, LayerShape.layerToShape,
+                  Poly.input, Poly.depPoly] using
                   hop Γ c child q
 
 end LayerShapeRankProof

@@ -6,6 +6,7 @@ namespace TypedBinding
 
 open DepPoly
 open BijForm.TypedBinding
+open BijForm.TypedBinding.LayerShape
 
 /-!
 ## Normal-form lambda expressions
@@ -121,50 +122,272 @@ abbrev NFNormalCtorCarrier (Γ : List NFSort) : Type :=
 abbrev NFAppCtorCarrier (Γ : List NFSort) : Type :=
   NFCode (Γ, .appTerm) × Nat
 
+def NFNormalCtorCases : List (CtorFamily.Case NFSignature .normalExp) :=
+  [⟨NFCtor.dum, rfl⟩, ⟨NFCtor.lam, rfl⟩]
+
+def NFAppCtorCases : List (CtorFamily.Case NFSignature .appTerm) :=
+  [⟨NFCtor.app, rfl⟩]
+
+def NFNormalCtorIndex (c : NFCtor) (h : NFRet c = .normalExp) :
+    Fin NFNormalCtorCases.length :=
+  match c with
+  | .dum => ⟨0, by decide⟩
+  | .lam => ⟨1, by decide⟩
+  | .app => by cases h
+
+theorem NFNormalCtorIndex_spec (c : NFCtor) (h : NFRet c = .normalExp) :
+    (NFNormalCtorCases.get (NFNormalCtorIndex c h)).ctor = c := by
+  cases c with
+  | dum => rfl
+  | lam => rfl
+  | app => cases h
+
+theorem NFNormalCtorIndex_get (q : Fin NFNormalCtorCases.length) :
+    NFNormalCtorIndex (NFNormalCtorCases.get q).ctor
+      (NFNormalCtorCases.get q).ret_eq = q := by
+  cases q using Fin.cases with
+  | zero => rfl
+  | succ q =>
+      cases q using Fin.cases with
+      | zero => rfl
+      | succ q => exact fin_zero_elim q
+
+def NFAppCtorIndex (c : NFCtor) (h : NFRet c = .appTerm) :
+    Fin NFAppCtorCases.length :=
+  match c with
+  | .dum => by cases h
+  | .lam => by cases h
+  | .app => ⟨0, by decide⟩
+
+theorem NFAppCtorIndex_spec (c : NFCtor) (h : NFRet c = .appTerm) :
+    (NFAppCtorCases.get (NFAppCtorIndex c h)).ctor = c := by
+  cases c with
+  | dum => cases h
+  | lam => cases h
+  | app => rfl
+
+theorem NFAppCtorIndex_get (q : Fin NFAppCtorCases.length) :
+    NFAppCtorIndex (NFAppCtorCases.get q).ctor
+      (NFAppCtorCases.get q).ret_eq = q := by
+  cases q using Fin.cases with
+  | zero => rfl
+  | succ q => exact fin_zero_elim q
+
 def NFNormalDumArgsIso (Γ : List NFSort) :
     ArgTuple NFSignature NFCode Γ (NFArgs NFCtor.dum) ≃ᵢ
       NFCode (Γ, .appTerm) :=
-  ArgTuple.singleIso (S := NFSignature) (Code := NFCode) Γ
-    { binders := [], sort := .appTerm }
+  { toFun := fun args =>
+      ArgTuple.toChild (S := NFSignature) (Code := NFCode) Γ
+        (args := NFArgs NFCtor.dum) args ⟨0, by decide⟩
+    invFun := fun z =>
+      ArgTuple.ofChild (S := NFSignature) (Code := NFCode) Γ
+        (args := NFArgs NFCtor.dum) (fun
+          | ⟨0, _⟩ => z
+          | ⟨n + 1, h⟩ => by
+              simp [NFArgs] at h)
+    left_inv := by
+      intro args
+      simpa [NFArgs] using
+        (ArgTuple.ofChild_toChild (S := NFSignature) (Code := NFCode) Γ
+          (args := NFArgs NFCtor.dum) args)
+    right_inv := by
+      intro z
+      rfl }
 
 def NFNormalLamArgsIso (Γ : List NFSort) :
     ArgTuple NFSignature NFCode Γ (NFArgs NFCtor.lam) ≃ᵢ Nat :=
-  ArgTuple.singleIso (S := NFSignature) (Code := NFCode) Γ
-    { binders := [.appTerm], sort := .normalExp }
+  { toFun := fun args =>
+      ArgTuple.toChild (S := NFSignature) (Code := NFCode) Γ
+        (args := NFArgs NFCtor.lam) args ⟨0, by decide⟩
+    invFun := fun z =>
+      ArgTuple.ofChild (S := NFSignature) (Code := NFCode) Γ
+        (args := NFArgs NFCtor.lam) (fun
+          | ⟨0, _⟩ => z
+          | ⟨n + 1, h⟩ => by
+              simp [NFArgs] at h)
+    left_inv := by
+      intro args
+      simpa [NFArgs] using
+        (ArgTuple.ofChild_toChild (S := NFSignature) (Code := NFCode) Γ
+          (args := NFArgs NFCtor.lam) args)
+    right_inv := by
+      intro z
+      rfl }
+
+def NFNormalCaseCarrierIso (Γ : List NFSort) :
+    CtorFamily.CaseCarrier (S := NFSignature) (Code := NFCode)
+      Γ NFNormalCtorCases ≃ᵢ NFNormalCtorCarrier Γ where
+  toFun
+    | ⟨⟨0, _⟩, args⟩ => Sum.inl ((NFNormalDumArgsIso Γ).toFun args)
+    | ⟨⟨1, _⟩, args⟩ => Sum.inr ((NFNormalLamArgsIso Γ).toFun args)
+    | ⟨⟨n + 2, hn⟩, _args⟩ => False.elim (by
+        simp [NFNormalCtorCases] at hn
+        omega)
+  invFun
+    | Sum.inl z => ⟨⟨0, by decide⟩, (NFNormalDumArgsIso Γ).invFun z⟩
+    | Sum.inr z => ⟨⟨1, by decide⟩, (NFNormalLamArgsIso Γ).invFun z⟩
+  left_inv := by
+    intro entry
+    cases entry with
+    | mk q args =>
+        cases q using Fin.cases with
+        | zero =>
+            exact Sigma.ext rfl (heq_of_eq ((NFNormalDumArgsIso Γ).left_inv args))
+        | succ q =>
+            cases q using Fin.cases with
+            | zero =>
+                exact Sigma.ext rfl (heq_of_eq ((NFNormalLamArgsIso Γ).left_inv args))
+            | succ q => exact fin_zero_elim q
+  right_inv := by
+    intro z
+    cases z with
+    | inl z => exact congrArg Sum.inl ((NFNormalDumArgsIso Γ).right_inv z)
+    | inr z => exact congrArg Sum.inr ((NFNormalLamArgsIso Γ).right_inv z)
 
 def NFNormalFamilyCarrierIso (Γ : List NFSort) :
-    CtorFamily NFSignature NFCode Γ .normalExp ≃ᵢ NFNormalCtorCarrier Γ :=
-  CtorFamily.sumIso (S := NFSignature) (Code := NFCode) Γ
-    NFCtor.dum NFCtor.lam rfl rfl
-    (by intro h; cases h)
-    (fun
-      | NFCtor.dum => isTrue rfl
-      | NFCtor.lam => isFalse (by intro h; cases h)
-      | NFCtor.app => isFalse (by intro h; cases h))
-    (by
-      intro c h hne
-      cases c with
-      | dum => exact False.elim (hne rfl)
-      | lam => rfl
-      | app => cases h)
-    (NFNormalDumArgsIso Γ)
-    (NFNormalLamArgsIso Γ)
+    CtorFamily NFSignature NFCode Γ .normalExp ≃ᵢ NFNormalCtorCarrier Γ where
+  toFun family := by
+    cases family with
+    | mk c h args =>
+        cases c with
+        | dum => exact Sum.inl ((NFNormalDumArgsIso Γ).toFun args)
+        | lam => exact Sum.inr ((NFNormalLamArgsIso Γ).toFun args)
+        | app => cases h
+  invFun
+    | Sum.inl z => ⟨NFCtor.dum, rfl, (NFNormalDumArgsIso Γ).invFun z⟩
+    | Sum.inr z => ⟨NFCtor.lam, rfl, (NFNormalLamArgsIso Γ).invFun z⟩
+  left_inv := by
+    intro family
+    cases family with
+    | mk c h args =>
+        cases c with
+        | dum =>
+            cases h
+            dsimp
+            rw [(NFNormalDumArgsIso Γ).left_inv args]
+        | lam =>
+            cases h
+            dsimp
+            rw [(NFNormalLamArgsIso Γ).left_inv args]
+        | app => cases h
+  right_inv := by
+    intro z
+    cases z with
+    | inl z =>
+        dsimp
+        exact congrArg Sum.inl ((NFNormalDumArgsIso Γ).right_inv z)
+    | inr z =>
+        dsimp
+        exact congrArg Sum.inr ((NFNormalLamArgsIso Γ).right_inv z)
 
 def NFAppArgsIso (Γ : List NFSort) :
     ArgTuple NFSignature NFCode Γ (NFArgs NFCtor.app) ≃ᵢ NFAppCtorCarrier Γ :=
-  ArgTuple.pairIso (S := NFSignature) (Code := NFCode) Γ
-    { binders := [], sort := .appTerm }
-    { binders := [], sort := .normalExp }
+  { toFun := fun args =>
+      (ArgTuple.toChild (S := NFSignature) (Code := NFCode) Γ
+        (args := NFArgs NFCtor.app) args ⟨0, by decide⟩,
+       ArgTuple.toChild (S := NFSignature) (Code := NFCode) Γ
+        (args := NFArgs NFCtor.app) args ⟨1, by decide⟩)
+    invFun := fun pair =>
+      ArgTuple.ofChild (S := NFSignature) (Code := NFCode) Γ
+        (args := NFArgs NFCtor.app) (fun
+          | ⟨0, _⟩ => pair.1
+          | ⟨1, _⟩ => pair.2
+          | ⟨n + 2, h⟩ => by
+              simp [NFArgs] at h
+              omega)
+    left_inv := by
+      intro args
+      simpa [NFArgs] using
+        (ArgTuple.ofChild_toChild (S := NFSignature) (Code := NFCode) Γ
+          (args := NFArgs NFCtor.app) args)
+    right_inv := by
+      intro pair
+      cases pair
+      rfl }
+
+def NFAppCaseCarrierIso (Γ : List NFSort) :
+    CtorFamily.CaseCarrier (S := NFSignature) (Code := NFCode)
+      Γ NFAppCtorCases ≃ᵢ NFAppCtorCarrier Γ where
+  toFun
+    | ⟨⟨0, _⟩, args⟩ => (NFAppArgsIso Γ).toFun args
+    | ⟨⟨n + 1, hn⟩, _args⟩ => False.elim (by
+        simp [NFAppCtorCases] at hn)
+  invFun z := ⟨⟨0, by decide⟩, (NFAppArgsIso Γ).invFun z⟩
+  left_inv := by
+    intro entry
+    cases entry with
+    | mk q args =>
+        cases q using Fin.cases with
+        | zero =>
+            exact Sigma.ext rfl (heq_of_eq ((NFAppArgsIso Γ).left_inv args))
+        | succ q => exact fin_zero_elim q
+  right_inv := by
+    intro z
+    exact (NFAppArgsIso Γ).right_inv z
 
 def NFAppFamilyCarrierIso (Γ : List NFSort) :
-    CtorFamily NFSignature NFCode Γ .appTerm ≃ᵢ NFAppCtorCarrier Γ :=
-  CtorFamily.singleIso (S := NFSignature) (Code := NFCode) Γ
-    NFCtor.app rfl
-    (by
-      intro c h
-      cases c <;> cases h
-      rfl)
-    (NFAppArgsIso Γ)
+    CtorFamily NFSignature NFCode Γ .appTerm ≃ᵢ NFAppCtorCarrier Γ where
+  toFun family := by
+    cases family with
+    | mk c h args =>
+        cases c with
+        | dum => cases h
+        | lam => cases h
+        | app => exact (NFAppArgsIso Γ).toFun args
+  invFun z := ⟨NFCtor.app, rfl, (NFAppArgsIso Γ).invFun z⟩
+  left_inv := by
+    intro family
+    cases family with
+    | mk c h args =>
+        cases c with
+        | dum => cases h
+        | lam => cases h
+        | app =>
+            cases h
+            dsimp
+            rw [(NFAppArgsIso Γ).left_inv args]
+  right_inv := by
+    intro z
+    exact (NFAppArgsIso Γ).right_inv z
+
+@[simp]
+theorem NFNormalFamilyCarrierIso_dum_toFun (Γ : List NFSort)
+    (child :
+      (q : NFSignature.ArgPos NFCtor.dum) →
+        NFCode ((NFSignature.arg NFCtor.dum q).binders ++ Γ,
+          (NFSignature.arg NFCtor.dum q).sort)) :
+    (NFNormalFamilyCarrierIso Γ).toFun
+        ⟨NFCtor.dum, rfl,
+          ArgTuple.ofChild (S := NFSignature) (Code := NFCode) Γ
+            (args := NFArgs NFCtor.dum) child⟩ =
+      Sum.inl (child ⟨0, by decide⟩) := by
+  simp [NFNormalFamilyCarrierIso, NFNormalDumArgsIso]
+
+@[simp]
+theorem NFNormalFamilyCarrierIso_lam_toFun (Γ : List NFSort)
+    (child :
+      (q : NFSignature.ArgPos NFCtor.lam) →
+        NFCode ((NFSignature.arg NFCtor.lam q).binders ++ Γ,
+          (NFSignature.arg NFCtor.lam q).sort)) :
+    (NFNormalFamilyCarrierIso Γ).toFun
+        ⟨NFCtor.lam, rfl,
+          ArgTuple.ofChild (S := NFSignature) (Code := NFCode) Γ
+            (args := NFArgs NFCtor.lam) child⟩ =
+      Sum.inr (child ⟨0, by decide⟩) := by
+  simp [NFNormalFamilyCarrierIso, NFNormalLamArgsIso]
+
+@[simp]
+theorem NFAppFamilyCarrierIso_app_toFun (Γ : List NFSort)
+    (child :
+      (q : NFSignature.ArgPos NFCtor.app) →
+        NFCode ((NFSignature.arg NFCtor.app q).binders ++ Γ,
+          (NFSignature.arg NFCtor.app q).sort)) :
+    (NFAppFamilyCarrierIso Γ).toFun
+        ⟨NFCtor.app, rfl,
+          ArgTuple.ofChild (S := NFSignature) (Code := NFCode) Γ
+            (args := NFArgs NFCtor.app) child⟩ =
+      (child ⟨0, by decide⟩, child ⟨1, by decide⟩) := by
+  simp [NFAppFamilyCarrierIso, NFAppArgsIso]
 
 def NFNormalGeneratedShapeIso (Γ : List NFSort) :
     LayerShape NFSignature NFCode Γ .normalExp ≃ᵢ NFCode (Γ, .normalExp) :=
@@ -235,7 +458,7 @@ theorem NFGeneratedLayerIso_dum_toFun (Γ : List NFSort)
         (CodeAlgebra.finPlusNat (normalExpCount Γ)))).toFun
         ⟨FiberCode.op NFCtor.dum rfl, child⟩ = _ by
       simpa [NFSignature, NFRet] using
-        (LayerShape.trans_layerCarrierCoding_op_toFun
+        (trans_layerCarrierCoding_op_toFun
           (S := NFSignature) (Code := NFCode) (Γ := Γ)
           (c := NFCtor.dum)
           (varIso := Var.finIso Γ NFSort.normalExp)
@@ -246,9 +469,7 @@ theorem NFGeneratedLayerIso_dum_toFun (Γ : List NFSort)
                 (CodeAlgebra.finProdNatOrNat (appTermCount Γ)))
               (CodeAlgebra.finPlusNat (normalExpCount Γ)))
           (child := child))]
-  simp [NFNormalFamilyCarrierIso, NFNormalDumArgsIso, NFNormalLamArgsIso,
-    CtorFamily.sumIso, Iso.trans, Iso.sum, CodeAlgebra.finPlusNat,
-    CodeAlgebra.finProdNatOrNat]
+  simp [Iso.trans, Iso.sum, CodeAlgebra.finPlusNat, CodeAlgebra.finProdNatOrNat]
 
 theorem NFGeneratedLayerIso_lam_toFun (Γ : List NFSort)
     (child :
@@ -273,7 +494,7 @@ theorem NFGeneratedLayerIso_lam_toFun (Γ : List NFSort)
         (CodeAlgebra.finPlusNat (normalExpCount Γ)))).toFun
         ⟨FiberCode.op NFCtor.lam rfl, child⟩ = _ by
       simpa [NFSignature, NFRet] using
-        (LayerShape.trans_layerCarrierCoding_op_toFun
+        (trans_layerCarrierCoding_op_toFun
           (S := NFSignature) (Code := NFCode) (Γ := Γ)
           (c := NFCtor.lam)
           (varIso := Var.finIso Γ NFSort.normalExp)
@@ -285,13 +506,11 @@ theorem NFGeneratedLayerIso_lam_toFun (Γ : List NFSort)
               (CodeAlgebra.finPlusNat (normalExpCount Γ)))
           (child := child))]
   by_cases hcount : appTermCount Γ = 0
-  · simp [hcount, NFNormalFamilyCarrierIso, NFNormalDumArgsIso,
-      NFNormalLamArgsIso, CtorFamily.sumIso, Iso.trans, Iso.sum,
-      CodeAlgebra.finPlusNat, CodeAlgebra.finProdNatOrNat]
+  · simp [hcount, Iso.trans, Iso.sum, CodeAlgebra.finPlusNat,
+      CodeAlgebra.finProdNatOrNat]
   · have hpos : 0 < appTermCount Γ := Nat.pos_of_ne_zero hcount
-    simp [hpos, NFNormalFamilyCarrierIso, NFNormalDumArgsIso,
-      NFNormalLamArgsIso, CtorFamily.sumIso, Iso.trans, Iso.sum,
-      CodeAlgebra.finPlusNat, CodeAlgebra.finProdNatOrNat]
+    simp [hpos, Iso.trans, Iso.sum, CodeAlgebra.finPlusNat,
+      CodeAlgebra.finProdNatOrNat]
 
 theorem NFGeneratedLayerIso_app_toFun (Γ : List NFSort)
     (child :
@@ -312,14 +531,13 @@ theorem NFGeneratedLayerIso_app_toFun (Γ : List NFSort)
       (CodeAlgebra.finTaggedProdNat (appTermCount Γ))).toFun
         ⟨FiberCode.op NFCtor.app rfl, child⟩ = _ by
       simpa [NFSignature, NFRet] using
-        (LayerShape.trans_layerCarrierCoding_op_toFun
+        (trans_layerCarrierCoding_op_toFun
           (S := NFSignature) (Code := NFCode) (Γ := Γ)
           (c := NFCtor.app)
           (varIso := Var.finIso Γ NFSort.appTerm)
           (ctorIso := NFAppFamilyCarrierIso Γ)
           (post := CodeAlgebra.finTaggedProdNat (appTermCount Γ))
           (child := child))]
-  simp [NFAppFamilyCarrierIso, NFAppArgsIso, CtorFamily.singleIso]
 
 theorem NFGeneratedLayer_dum_child_rank_lt (Γ : List NFSort)
     (child :

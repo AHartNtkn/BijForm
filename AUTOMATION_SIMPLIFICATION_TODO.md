@@ -136,7 +136,7 @@ Every proof-debt item below must keep these fields visible:
 
 ## Typed Binding
 
-- [ ] Replace one/two-argument and one/two-constructor typed-binding carrier
+- [x] Replace one/two-argument and one/two-constructor typed-binding carrier
   helpers with finite-list constructor-family schemas.
   Evidence: `ArgTuple.singleIso`, `ArgTuple.pairIso`,
   `CtorFamily.singleIso`, `CtorFamily.sumIso`, and `LayerShape.*_op_toFun`
