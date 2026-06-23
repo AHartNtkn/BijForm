@@ -810,7 +810,8 @@ private theorem singleSortedFiniteLayer_left_inv
               cases ctor with
               | finish =>
                   cases param
-                  finish_code_layer_left_inv out_eq child
+                  cases out_eq
+                  exact CodeLayer.ext_layer rfl (heq_of_eq (by funext q; cases q))
               | connect =>
                   cases param with
                   | mk active frontier mate ok =>
@@ -874,7 +875,9 @@ private theorem singleSortedFiniteLayer_left_inv
                       simp [singleSortedFiniteLayerToShape,
                         singleSortedFiniteLayerFromShape]
                       exact singleSortedFiniteLayer_ext_bud_ok (by
-                        child_eta_cases))
+                        funext q
+                        cases q
+                        rfl))
     (fun active first second rest => by
       intro layer
       cases layer with
@@ -895,7 +898,9 @@ private theorem singleSortedFiniteLayer_left_inv
                       simp [singleSortedFiniteLayerToShape,
                         singleSortedFiniteLayerFromShape]
                       exact singleSortedFiniteLayer_ext_connect_ok (by
-                        child_eta_cases)
+                        funext q
+                        cases q
+                        rfl)
               | bud =>
                   cases param with
                   | mk active' frontier node entry ok =>
@@ -903,7 +908,9 @@ private theorem singleSortedFiniteLayer_left_inv
                       simp [singleSortedFiniteLayerToShape,
                         singleSortedFiniteLayerFromShape]
                       exact singleSortedFiniteLayer_ext_bud_ok (by
-                        child_eta_cases))
+                        funext q
+                        cases q
+                        rfl))
 
 private theorem singleSortedFiniteLayer_right_inv
     {Sig : Signature} (data : SingleSortedFiniteCodingData Sig) :

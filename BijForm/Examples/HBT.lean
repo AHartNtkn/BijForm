@@ -97,24 +97,36 @@ produced by the generated-code construction.
 -/
 def HBTSyntaxPresentation : LayerPresentation HBTPoly HBTInversion HBTSyntax :=
   LayerPresentation.ofLayerChildRank
-    (CodeLayerPresentation.ofIso (fun i =>
-      { toFun := HBTLayerToSyntax i
-        invFun := HBTSyntaxToLayer i
-        left_inv :=
-          CodeLayer.canonical_left_inv_by_fiber
-            (toCarrier := HBTLayerToSyntax)
-            (fromCarrier := HBTSyntaxToLayer) (by
-              intro i ctor param out_eq child
-              cases ctor with
-              | leaf =>
-                  cases param with
-                  | mk height label =>
-                    finish_code_layer_left_inv out_eq child
-              | branch =>
-                  finish_code_layer_left_inv out_eq child) i
-        right_inv := by
-          intro t
-          cases t <;> simp [HBTLayerToSyntax, HBTSyntaxToLayer] }))
+    (CodeLayerPresentation.ofMapsExt
+      HBTLayerToSyntax
+      HBTSyntaxToLayer
+      (by
+        intro i layer
+        rcases layer with ⟨⟨ctor, param, out_eq⟩, child⟩
+        cases ctor with
+        | leaf =>
+            cases param with
+            | mk height label =>
+                cases out_eq
+                rfl
+        | branch =>
+            cases out_eq
+            rfl)
+      (by
+        intro i layer
+        rcases layer with ⟨⟨ctor, param, out_eq⟩, child⟩
+        cases ctor with
+        | leaf =>
+            cases param with
+            | mk height label =>
+                cases out_eq
+                exact heq_of_eq (by funext q; cases q)
+        | branch =>
+            cases out_eq
+            exact heq_of_eq (by funext q; cases q <;> rfl))
+      (by
+        intro i t
+        cases t <;> simp [HBTLayerToSyntax, HBTSyntaxToLayer]))
     (fun _ t => HBTSyntax.rank t)
     (by
       intro i layer q
@@ -128,7 +140,7 @@ def HBTSyntaxPresentation : LayerPresentation HBTPoly HBTInversion HBTSyntax :=
       | branch =>
           cases out_eq
           cases q <;>
-            simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofIso,
+            simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofMapsExt,
               HBTLayerToSyntax])
 
 def HBTGeneratedCode : GeneratedCode HBTPoly HBTSyntax :=
@@ -149,7 +161,7 @@ def HBTNatLayerCarrierIso : ∀ i, HBTNatLayerShape i ≃ᵢ Nat
 
 def HBTNatLayerShapeLayerPresentation :
     CodeLayerPresentation HBTPoly HBTInversion (fun _ => Nat) HBTNatLayerShape :=
-  CodeLayerPresentation.ofMaps
+  CodeLayerPresentation.ofMapsExt
     (fun
       | 0, ⟨⟨.leaf, p, h⟩, _child⟩ => by
           cases p with
@@ -175,24 +187,52 @@ def HBTNatLayerShapeLayerPresentation :
           | Sum.inr p => ⟨⟨HBTCtor.branch, (m : Nat), rfl⟩, fun
               | false => p.1
               | true => p.2⟩)
-    (CodeLayer.canonical_left_inv_by_fiber (by
-      intro i ctor param out_eq child
+    (by
+      intro i layer
+      rcases layer with ⟨⟨ctor, param, out_eq⟩, child⟩
       cases i with
       | zero =>
           cases ctor with
           | leaf =>
               cases param with
               | mk height label =>
-                finish_code_layer_left_inv out_eq child
-          | branch => cases out_eq
+                  cases out_eq
+                  rfl
+          | branch =>
+              cases out_eq
       | succ m =>
           cases ctor with
           | leaf =>
               cases param with
               | mk height label =>
-                finish_code_layer_left_inv out_eq child
+                  cases out_eq
+                  rfl
           | branch =>
-              finish_code_layer_left_inv out_eq child))
+              cases out_eq
+              rfl)
+    (by
+      intro i layer
+      rcases layer with ⟨⟨ctor, param, out_eq⟩, child⟩
+      cases i with
+      | zero =>
+          cases ctor with
+          | leaf =>
+              cases param with
+              | mk height label =>
+                  cases out_eq
+                  exact heq_of_eq (by funext q; cases q)
+          | branch =>
+              cases out_eq
+      | succ m =>
+          cases ctor with
+          | leaf =>
+              cases param with
+              | mk height label =>
+                  cases out_eq
+                  exact heq_of_eq (by funext q; cases q)
+          | branch =>
+              cases out_eq
+              exact heq_of_eq (by funext q; cases q <;> rfl))
     (by
       intro i shape
       cases i with

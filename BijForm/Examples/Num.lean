@@ -117,30 +117,64 @@ def NumSyntaxToLayer (k : Nat) :
 
 def NumSyntaxPresentation : LayerPresentation NumPoly NumInversion NumSyntax :=
   LayerPresentation.ofLayerChildRank
-    (CodeLayerPresentation.ofIso (fun k =>
-      { toFun := NumLayerToSyntax k
-        invFun := NumSyntaxToLayer k
-        left_inv :=
-          CodeLayer.canonical_left_inv_by_fiber
-            (toCarrier := NumLayerToSyntax)
-            (fromCarrier := NumSyntaxToLayer) (by
-              intro k ctor param out_eq child
-              cases ctor with
-              | var =>
-                  cases param with
-                  | mk k' v =>
-                    finish_code_layer_left_inv out_eq child
-              | zero =>
-                  finish_code_layer_left_inv out_eq child
-              | succ =>
-                  finish_code_layer_left_inv out_eq child
-              | plus =>
-                  finish_code_layer_left_inv out_eq child
-              | times =>
-                  finish_code_layer_left_inv out_eq child) k
-        right_inv := by
-          intro e
-          cases e <;> simp [NumLayerToSyntax, NumSyntaxToLayer] }))
+    (CodeLayerPresentation.ofMapsExt
+      NumLayerToSyntax
+      NumSyntaxToLayer
+      (by
+        intro k layer
+        rcases layer with ⟨⟨ctor, param, out_eq⟩, child⟩
+        cases ctor with
+        | var =>
+            cases param with
+            | mk k' v =>
+                dsimp [NumPoly, NumOut] at out_eq
+                cases out_eq
+                rfl
+        | zero =>
+            dsimp [NumPoly, NumOut] at out_eq
+            cases out_eq
+            rfl
+        | succ =>
+            dsimp [NumPoly, NumOut] at out_eq
+            cases out_eq
+            rfl
+        | plus =>
+            dsimp [NumPoly, NumOut] at out_eq
+            cases out_eq
+            rfl
+        | times =>
+            dsimp [NumPoly, NumOut] at out_eq
+            cases out_eq
+            rfl)
+      (by
+        intro k layer
+        rcases layer with ⟨⟨ctor, param, out_eq⟩, child⟩
+        cases ctor with
+        | var =>
+            cases param with
+            | mk k' v =>
+                dsimp [NumPoly, NumOut] at out_eq
+                cases out_eq
+                exact heq_of_eq (by funext q; cases q)
+        | zero =>
+            dsimp [NumPoly, NumOut] at out_eq
+            cases out_eq
+            exact heq_of_eq (by funext q; cases q)
+        | succ =>
+            dsimp [NumPoly, NumOut] at out_eq
+            cases out_eq
+            exact heq_of_eq (by funext q; cases q; rfl)
+        | plus =>
+            dsimp [NumPoly, NumOut] at out_eq
+            cases out_eq
+            exact heq_of_eq (by funext q; cases q <;> rfl)
+        | times =>
+            dsimp [NumPoly, NumOut] at out_eq
+            cases out_eq
+            exact heq_of_eq (by funext q; cases q <;> rfl))
+      (by
+        intro k e
+        cases e <;> simp [NumLayerToSyntax, NumSyntaxToLayer]))
     (fun _ e => NumSyntax.rank e)
     (by
       intro k layer q
@@ -160,19 +194,19 @@ def NumSyntaxPresentation : LayerPresentation NumPoly NumInversion NumSyntax :=
           dsimp [NumPoly, NumOut] at out_eq
           cases out_eq
           cases q
-          simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofIso,
+          simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofMapsExt,
             NumLayerToSyntax]
       | plus =>
           dsimp [NumPoly, NumOut] at out_eq
           cases out_eq
           cases q <;>
-            simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofIso,
+            simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofMapsExt,
               NumLayerToSyntax]
       | times =>
           dsimp [NumPoly, NumOut] at out_eq
           cases out_eq
           cases q <;>
-            simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofIso,
+            simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofMapsExt,
               NumLayerToSyntax])
 
 def NumGeneratedCode : GeneratedCode NumPoly NumSyntax :=
@@ -228,54 +262,73 @@ def NumNatLayerShapeInv (k : Nat) :
 
 def NumNatLayerShapeLayerPresentation :
     CodeLayerPresentation NumPoly NumInversion (fun _ => Nat) NumNatLayerShape :=
-  CodeLayerPresentation.ofMaps
+  CodeLayerPresentation.ofMapsExt
     NumNatLayerShapeTo
     NumNatLayerShapeInv
-    (CodeLayer.canonical_left_inv_by_fiber (by
-      intro k ctor param out_eq child
+    (by
+      intro k layer
+      rcases layer with ⟨⟨ctor, param, out_eq⟩, child⟩
       cases ctor with
       | var =>
-        cases param with
-        | mk k' v =>
+          cases param with
+          | mk k' v =>
+              simp [NumPoly, NumOut] at out_eq
+              cases out_eq
+              cases v with
+              | mk val isLt =>
+                  dsimp [NumNatLayerShapeTo, NumNatLayerShapeInv]
+                  rw [dif_pos isLt]
+      | zero =>
           simp [NumPoly, NumOut] at out_eq
           cases out_eq
-          cases v with
-          | mk val isLt =>
-            dsimp [NumNatLayerShapeTo, NumNatLayerShapeInv]
-            rw [dif_pos isLt]
-            exact CodeLayer.ext_rfl
-              (P := NumPoly) (H := NumInversion) (Code := fun _ => Nat) (i := k)
-              (by child_eta_cases)
-      | zero =>
-        simp [NumPoly, NumOut] at out_eq
-        cases out_eq
-        dsimp [NumNatLayerShapeTo, NumNatLayerShapeInv]
-        have hnot : ¬k + 1 < k + 1 := by omega
-        rw [dif_neg hnot]
-        exact CodeLayer.ext_rfl
-          (P := NumPoly) (H := NumInversion) (Code := fun _ => Nat) (i := k)
-          (by child_eta_cases)
+          dsimp [NumNatLayerShapeTo, NumNatLayerShapeInv]
+          have hnot : ¬k + 1 < k + 1 := by omega
+          rw [dif_neg hnot]
       | succ =>
-        simp [NumPoly, NumOut] at out_eq
-        cases out_eq
-        dsimp [NumNatLayerShapeTo, NumNatLayerShapeInv]
-        exact CodeLayer.ext_rfl
-          (P := NumPoly) (H := NumInversion) (Code := fun _ => Nat) (i := k)
-          (by child_eta_cases)
+          simp [NumPoly, NumOut] at out_eq
+          cases out_eq
+          rfl
       | plus =>
-        simp [NumPoly, NumOut] at out_eq
-        cases out_eq
-        dsimp [NumNatLayerShapeTo, NumNatLayerShapeInv]
-        exact CodeLayer.ext_rfl
-          (P := NumPoly) (H := NumInversion) (Code := fun _ => Nat) (i := k)
-          (by child_eta_cases)
+          simp [NumPoly, NumOut] at out_eq
+          cases out_eq
+          rfl
       | times =>
-        simp [NumPoly, NumOut] at out_eq
-        cases out_eq
-        dsimp [NumNatLayerShapeTo, NumNatLayerShapeInv]
-        exact CodeLayer.ext_rfl
-          (P := NumPoly) (H := NumInversion) (Code := fun _ => Nat) (i := k)
-          (by child_eta_cases)))
+          simp [NumPoly, NumOut] at out_eq
+          cases out_eq
+          rfl)
+    (by
+      intro k layer
+      rcases layer with ⟨⟨ctor, param, out_eq⟩, child⟩
+      cases ctor with
+      | var =>
+          cases param with
+          | mk k' v =>
+              simp [NumPoly, NumOut] at out_eq
+              cases out_eq
+              cases v with
+              | mk val isLt =>
+                  dsimp [NumNatLayerShapeTo, NumNatLayerShapeInv]
+                  rw [dif_pos isLt]
+                  exact heq_of_eq (by funext q; cases q)
+      | zero =>
+          simp [NumPoly, NumOut] at out_eq
+          cases out_eq
+          dsimp [NumNatLayerShapeTo, NumNatLayerShapeInv]
+          have hnot : ¬k + 1 < k + 1 := by omega
+          rw [dif_neg hnot]
+          exact heq_of_eq (by funext q; cases q)
+      | succ =>
+          simp [NumPoly, NumOut] at out_eq
+          cases out_eq
+          exact heq_of_eq (by funext q; cases q; rfl)
+      | plus =>
+          simp [NumPoly, NumOut] at out_eq
+          cases out_eq
+          exact heq_of_eq (by funext q; cases q <;> rfl)
+      | times =>
+          simp [NumPoly, NumOut] at out_eq
+          cases out_eq
+          exact heq_of_eq (by funext q; cases q <;> rfl))
     (by
     intro k x
     have hshape :

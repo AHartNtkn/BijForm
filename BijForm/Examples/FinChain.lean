@@ -74,26 +74,38 @@ def FinChainSyntaxToLayer (i : Nat) :
 def FinChainSyntaxPresentation :
     LayerPresentation FinChainPoly FinChainInversion FinChainSyntax :=
   LayerPresentation.ofLayerChildRank
-    (CodeLayerPresentation.ofIso (fun i =>
-      { toFun := FinChainLayerToSyntax i
-        invFun := FinChainSyntaxToLayer i
-        left_inv :=
-          CodeLayer.canonical_left_inv_by_fiber
-            (toCarrier := FinChainLayerToSyntax)
-            (fromCarrier := FinChainSyntaxToLayer) (by
-              intro i ctor param out_eq child
-              cases ctor with
-              | done =>
-                  finish_code_layer_left_inv out_eq child
-              | step =>
-                  cases param with
-                  | mk n tag =>
-                    finish_code_layer_left_inv out_eq child) i
-        right_inv := by
-          intro t
-          cases t with
-          | done => rfl
-          | step tag child => rfl }))
+    (CodeLayerPresentation.ofMapsExt
+      FinChainLayerToSyntax
+      FinChainSyntaxToLayer
+      (by
+        intro i layer
+        rcases layer with ⟨⟨ctor, param, out_eq⟩, child⟩
+        cases ctor with
+        | done =>
+            cases out_eq
+            rfl
+        | step =>
+            cases param with
+            | mk n tag =>
+                cases out_eq
+                rfl)
+      (by
+        intro i layer
+        rcases layer with ⟨⟨ctor, param, out_eq⟩, child⟩
+        cases ctor with
+        | done =>
+            cases out_eq
+            exact heq_of_eq (by funext q; cases q)
+        | step =>
+            cases param with
+            | mk n tag =>
+                cases out_eq
+                exact heq_of_eq (by funext q; cases q; rfl))
+      (by
+        intro i t
+        cases t with
+        | done => rfl
+        | step tag child => rfl))
     (fun _ t => FinChainSyntax.rank t)
     (by
       intro i layer q
@@ -107,7 +119,7 @@ def FinChainSyntaxPresentation :
           | mk n tag =>
               cases out_eq
               cases q
-              simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofIso,
+              simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofMapsExt,
                 FinChainLayerToSyntax])
 
 def FinChainGeneratedCode : GeneratedCode FinChainPoly FinChainSyntax :=
@@ -148,7 +160,7 @@ def FinChainLayerCarrierIso : ∀ i, FinChainLayerShape i ≃ᵢ FinChainCarrier
 
 def FinChainLayerShapeLayerPresentation :
     CodeLayerPresentation FinChainPoly FinChainInversion FinChainCarrier FinChainLayerShape :=
-  CodeLayerPresentation.ofMaps
+  CodeLayerPresentation.ofMapsExt
     (fun
       | 0, ⟨⟨.done, _n, h⟩, _child⟩ => by
           cases h
@@ -172,26 +184,52 @@ def FinChainLayerShapeLayerPresentation :
           | Sum.inl _ => ⟨⟨FinChainCtor.done, (n + 1 : Nat), rfl⟩, fun q => nomatch q⟩
           | Sum.inr pair =>
               ⟨⟨FinChainCtor.step, ⟨n, pair.1⟩, rfl⟩, fun _ => pair.2⟩)
-    (CodeLayer.canonical_left_inv_by_fiber (by
-      intro i ctor param out_eq child
+    (by
+      intro i layer
+      rcases layer with ⟨⟨ctor, param, out_eq⟩, child⟩
       cases i with
       | zero =>
           cases ctor with
           | done =>
-              finish_code_layer_left_inv out_eq child
+              cases out_eq
+              rfl
           | step =>
               cases param with
               | mk _m _tag => cases out_eq
       | succ n =>
           cases ctor with
           | done =>
-              finish_code_layer_left_inv out_eq child
+              cases out_eq
+              rfl
           | step =>
               cases param with
               | mk m tag =>
                   have hmn : m = n := Nat.succ.inj out_eq
                   cases hmn
-                  finish_code_layer_left_inv out_eq child))
+                  rfl)
+    (by
+      intro i layer
+      rcases layer with ⟨⟨ctor, param, out_eq⟩, child⟩
+      cases i with
+      | zero =>
+          cases ctor with
+          | done =>
+              cases out_eq
+              exact heq_of_eq (by funext q; cases q)
+          | step =>
+              cases param with
+              | mk _m _tag => cases out_eq
+      | succ n =>
+          cases ctor with
+          | done =>
+              cases out_eq
+              exact heq_of_eq (by funext q; cases q)
+          | step =>
+              cases param with
+              | mk m tag =>
+                  have hmn : m = n := Nat.succ.inj out_eq
+                  cases hmn
+                  exact heq_of_eq (by funext q; cases q; rfl))
     (by
       intro i shape
       cases i with

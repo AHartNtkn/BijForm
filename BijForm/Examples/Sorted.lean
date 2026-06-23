@@ -164,26 +164,38 @@ def SortedSyntaxToLayer (i : SortedIx) :
 
 def SortedSyntaxPresentation : LayerPresentation SortedPoly SortedInversion SortedSyntax :=
   LayerPresentation.ofLayerChildRank
-    (CodeLayerPresentation.ofIso (fun i =>
-      { toFun := SortedLayerToSyntax i
-        invFun := SortedSyntaxToLayer i
-        left_inv :=
-          CodeLayer.canonical_left_inv_by_fiber
-            (toCarrier := SortedLayerToSyntax)
-            (fromCarrier := SortedSyntaxToLayer) (by
-              intro i ctor param out_eq child
-              cases ctor with
-              | leaf =>
-                  finish_code_layer_left_inv out_eq child
-              | branch =>
-                  cases param with
-                  | mk _i pivot =>
-                    finish_code_layer_left_inv out_eq child) i
-        right_inv := by
-          intro t
-          cases t with
-          | leaf => rfl
-          | branch pivot lhs rhs => rfl }))
+    (CodeLayerPresentation.ofMapsExt
+      SortedLayerToSyntax
+      SortedSyntaxToLayer
+      (by
+        intro i layer
+        rcases layer with ⟨⟨ctor, param, out_eq⟩, child⟩
+        cases ctor with
+        | leaf =>
+            cases out_eq
+            rfl
+        | branch =>
+            cases param with
+            | mk j pivot =>
+                cases out_eq
+                rfl)
+      (by
+        intro i layer
+        rcases layer with ⟨⟨ctor, param, out_eq⟩, child⟩
+        cases ctor with
+        | leaf =>
+            cases out_eq
+            exact heq_of_eq (by funext q; cases q)
+        | branch =>
+            cases param with
+            | mk j pivot =>
+                cases out_eq
+                exact heq_of_eq (by funext q <;> cases q <;> rfl))
+      (by
+        intro i t
+        cases t with
+        | leaf => rfl
+        | branch pivot lhs rhs => rfl))
     (fun _ t => SortedSyntax.rank t)
     (by
       intro i layer q
@@ -197,7 +209,7 @@ def SortedSyntaxPresentation : LayerPresentation SortedPoly SortedInversion Sort
           | mk j pivot =>
               cases out_eq
               cases q <;>
-                simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofIso,
+                simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofMapsExt,
                   SortedLayerToSyntax])
 
 def SortedGeneratedCode : GeneratedCode SortedPoly SortedSyntax :=
@@ -295,37 +307,26 @@ private def sortedConstructorPayloadIso (lower : Nat) (upper : Bound)
               payload.2.1
           | true => SortedCarrier.ofNat (i := (pivot.1, upper)) pivot.property.2
               payload.2.2⟩
-  left_inv := CodeLayer.canonical_left_inv_at_by_fiber (by
-    intro ctor param out_eq child
+  left_inv := by
+    intro layer
+    rcases layer with ⟨⟨ctor, param, out_eq⟩, child⟩
     cases ctor with
     | leaf =>
-        finish_code_layer_left_inv out_eq child
+        cases out_eq
+        exact CodeLayer.ext_layer rfl (heq_of_eq (by funext q; cases q))
     | branch =>
         cases param with
         | mk _i pivot =>
             cases out_eq
             dsimp [sortedBranchFiber]
             rw [pivotIso.left_inv pivot]
-            have hchild :
-                child =
-                (fun
-                  | false => SortedCarrier.ofNat (i := (lower, some pivot.1))
-                      pivot.property.1
-                      (SortedCarrier.toNat (i := (lower, some pivot.1))
-                        pivot.property.1 (child false))
-                  | true => SortedCarrier.ofNat (i := (pivot.1, upper))
-                      pivot.property.2
-                      (SortedCarrier.toNat (i := (pivot.1, upper))
-                        pivot.property.2 (child true))) := by
+            exact CodeLayer.ext_layer rfl (heq_of_eq (by
               funext q
               cases q
-              · exact (SortedCarrier.ofNat_toNat (i := (lower, some pivot.1))
-                  pivot.property.1 (child false)).symm
-              · exact (SortedCarrier.ofNat_toNat (i := (pivot.1, upper))
-                  pivot.property.2 (child true)).symm
-            exact CodeLayer.ext_rfl
-              (P := SortedPoly) (H := SortedInversion) (Code := SortedCarrier)
-              (i := (lower, upper)) hchild.symm)
+              · exact SortedCarrier.ofNat_toNat (i := (lower, some pivot.1))
+                  pivot.property.1 (child false)
+              · exact SortedCarrier.ofNat_toNat (i := (pivot.1, upper))
+                  pivot.property.2 (child true)))
   right_inv := by
     intro shape
     cases shape with
@@ -406,17 +407,18 @@ private def SortedCarrierLayerIso (i : SortedIx) :
           by_cases h : lower ≤ upper
           · intro layer
             simp [h, SortedCarrier.toNat_ofNat]
-          · exact CodeLayer.canonical_left_inv_at_by_fiber (by
-              intro ctor param out_eq child
-              cases ctor with
-              | leaf =>
-                  simp [h]
-                  finish_code_layer_left_inv out_eq child
-              | branch =>
-                  cases param with
-                  | mk _i pivot =>
-                      cases out_eq
-                      exact False.elim (h pivot.bound_le))
+          · intro layer
+            rcases layer with ⟨⟨ctor, param, out_eq⟩, child⟩
+            cases ctor with
+            | leaf =>
+                simp [h]
+                cases out_eq
+                exact CodeLayer.ext_layer rfl (heq_of_eq (by funext q; cases q))
+            | branch =>
+                cases param with
+                | mk _i pivot =>
+                    cases out_eq
+                    exact False.elim (h pivot.bound_le)
   right_inv := by
     cases i with
     | mk lower upper =>
@@ -554,7 +556,15 @@ theorem SortedInfiniteConstructorPayload_child_rank_lt (lower : Nat) :
 def SortedLayerPresentation :
     LayerPresentation SortedPoly SortedInversion SortedCarrier :=
   LayerPresentation.ofLayerChildRank
-    (CodeLayerPresentation.ofIso SortedCarrierLayerIso)
+    (CodeLayerPresentation.ofMaps
+      (fun i => (SortedCarrierLayerIso i).toFun)
+      (fun i => (SortedCarrierLayerIso i).invFun)
+      (by
+        intro i layer
+        exact (SortedCarrierLayerIso i).left_inv layer)
+      (by
+        intro i z
+        exact (SortedCarrierLayerIso i).right_inv z))
     SortedCarrierRank
     (by
     intro i layer q

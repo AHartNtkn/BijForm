@@ -120,15 +120,6 @@ theorem ext {P : DepPoly ι} {H : OutputIndexInversion P}
   cases hchild
   rfl
 
-theorem ext_rfl {P : DepPoly ι} {H : OutputIndexInversion P}
-    {Code : ι → Type v} {i : ι} {c : H.Code i}
-    {child child' :
-      (q : P.Pos (H.decode i c).ctor (H.decode i c).param) →
-        Code (P.input (H.decode i c).param q)}
-    (hchild : child = child') :
-    (⟨c, child⟩ : CodeLayer P H Code i) = ⟨c, child'⟩ :=
-  ext rfl (heq_of_eq hchild)
-
 theorem ext_layer {P : DepPoly ι} {H : OutputIndexInversion P}
     {Code : ι → Type v} {i : ι} {x y : CodeLayer P H Code i}
     (hcode : x.1 = y.1) (hchild : x.2 ≍ y.2) : x = y := by
@@ -138,95 +129,7 @@ theorem ext_layer {P : DepPoly ι} {H : OutputIndexInversion P}
     | mk c' child' =>
       exact ext hcode hchild
 
-/--
-Prove a fixed canonical same-fiber layer left inverse by constructor/fiber
-cases. Callers supply only the domain-specific constructor clauses; this helper
-owns the generic `CodeLayer` and `Fiber` unpacking.
--/
-theorem canonical_left_inv_at_by_fiber {P : DepPoly ι} {Code : ι → Type v}
-    {i : ι} {Carrier : Type w}
-    {toCarrier : CodeLayer P (OutputIndexInversion.canonical P) Code i → Carrier}
-    {fromCarrier : Carrier → CodeLayer P (OutputIndexInversion.canonical P) Code i}
-    (h : ∀ (ctor : P.Ctor) (param : P.Param ctor)
-      (out_eq : P.out ctor param = i)
-      (child : (q : P.Pos ctor param) → Code (P.input param q)),
-      fromCarrier (toCarrier ⟨⟨ctor, param, out_eq⟩, child⟩) =
-        ⟨⟨ctor, param, out_eq⟩, child⟩) :
-    Function.LeftInverse fromCarrier toCarrier := by
-  intro layer
-  cases layer with
-  | mk code child =>
-    cases code with
-    | mk ctor param out_eq =>
-      exact h ctor param out_eq child
-
-/--
-Prove an indexed canonical same-fiber layer left inverse by constructor/fiber
-cases.
--/
-theorem canonical_left_inv_by_fiber {P : DepPoly ι} {Code : ι → Type v}
-    {Carrier : ι → Type w}
-    {toCarrier :
-      ∀ i, CodeLayer P (OutputIndexInversion.canonical P) Code i → Carrier i}
-    {fromCarrier :
-      ∀ i, Carrier i → CodeLayer P (OutputIndexInversion.canonical P) Code i}
-    (h : ∀ {i : ι} (ctor : P.Ctor) (param : P.Param ctor)
-      (out_eq : P.out ctor param = i)
-      (child : (q : P.Pos ctor param) → Code (P.input param q)),
-      fromCarrier i (toCarrier i ⟨⟨ctor, param, out_eq⟩, child⟩) =
-        ⟨⟨ctor, param, out_eq⟩, child⟩) :
-    ∀ i, Function.LeftInverse (fromCarrier i) (toCarrier i) := by
-  intro i
-  exact canonical_left_inv_at_by_fiber (i := i) (h := h)
-
 end CodeLayer
-
-/-- Prove child-function eta facts by splitting the child-position type. -/
-syntax "child_eta_cases" : tactic
-macro_rules
-  | `(tactic| child_eta_cases) =>
-      `(tactic|
-        first
-        | (funext q; cases q <;> rfl)
-        | (symm; funext q; cases q <;> rfl))
-
-/-- Close goals that become `rfl` after eta-expanding a child function. -/
-syntax "child_eta_rfl " ident : tactic
-macro_rules
-  | `(tactic| child_eta_rfl $child:ident) =>
-      `(tactic|
-        first
-        | (have hchild_eta : (fun q => nomatch q) = $child := by child_eta_cases;
-           cases hchild_eta;
-           rfl)
-        | (have hchild_eta : (fun _ => $child ()) = $child := by child_eta_cases;
-           cases hchild_eta;
-           rfl)
-        | (have hchild_eta : $child = (fun
-              | false => $child false
-              | true => $child true) := by child_eta_cases;
-           rw [hchild_eta];
-           rfl))
-
-/--
-Close a canonical constructor-layer inverse branch after constructor-specific
-parameter decomposition.
--/
-syntax "finish_code_layer_left_inv " ident ident : tactic
-macro_rules
-  | `(tactic| finish_code_layer_left_inv $outEq:ident $child:ident) =>
-      `(tactic|
-        first
-        | (simp at $outEq:ident;
-           cases ($outEq:ident).symm;
-           cases $outEq:ident;
-           child_eta_rfl $child)
-        | (cases ($outEq:ident).symm;
-           cases $outEq:ident;
-           child_eta_rfl $child)
-        | (cases $outEq:ident;
-           child_eta_rfl $child)
-        | child_eta_rfl $child)
 
 @[simp]
 theorem nat_lt_max_succ_left (a b : Nat) : a < Nat.max a b + 1 :=
@@ -657,6 +560,56 @@ def ofMaps
   fromCarrier := fromCarrier
   left_inv := left_inv
   right_inv := right_inv
+
+def ofMapsExt
+    (toCarrier : ∀ i, CodeLayer P H Code i → Carrier i)
+    (fromCarrier : ∀ i, Carrier i → CodeLayer P H Code i)
+    (left_code :
+      ∀ i (x : CodeLayer P H Code i),
+        (fromCarrier i (toCarrier i x)).1 = x.1)
+    (left_child :
+      ∀ i (x : CodeLayer P H Code i),
+        (fromCarrier i (toCarrier i x)).2 ≍ x.2)
+    (right_inv : ∀ i, Function.RightInverse (fromCarrier i) (toCarrier i)) :
+    CodeLayerPresentation P H Code Carrier where
+  toCarrier := toCarrier
+  fromCarrier := fromCarrier
+  left_inv := by
+    intro i x
+    exact CodeLayer.ext_layer (left_code i x) (left_child i x)
+  right_inv := right_inv
+
+@[simp]
+theorem ofMapsExt_toCarrier
+    (toCarrier : ∀ i, CodeLayer P H Code i → Carrier i)
+    (fromCarrier : ∀ i, Carrier i → CodeLayer P H Code i)
+    (left_code :
+      ∀ i (x : CodeLayer P H Code i),
+        (fromCarrier i (toCarrier i x)).1 = x.1)
+    (left_child :
+      ∀ i (x : CodeLayer P H Code i),
+        (fromCarrier i (toCarrier i x)).2 ≍ x.2)
+    (right_inv : ∀ i, Function.RightInverse (fromCarrier i) (toCarrier i))
+    (i : ι) (x : CodeLayer P H Code i) :
+    (ofMapsExt toCarrier fromCarrier left_code left_child right_inv).toCarrier i x =
+      toCarrier i x :=
+  rfl
+
+@[simp]
+theorem ofMapsExt_fromCarrier
+    (toCarrier : ∀ i, CodeLayer P H Code i → Carrier i)
+    (fromCarrier : ∀ i, Carrier i → CodeLayer P H Code i)
+    (left_code :
+      ∀ i (x : CodeLayer P H Code i),
+        (fromCarrier i (toCarrier i x)).1 = x.1)
+    (left_child :
+      ∀ i (x : CodeLayer P H Code i),
+        (fromCarrier i (toCarrier i x)).2 ≍ x.2)
+    (right_inv : ∀ i, Function.RightInverse (fromCarrier i) (toCarrier i))
+    (i : ι) (z : Carrier i) :
+    (ofMapsExt toCarrier fromCarrier left_code left_child right_inv).fromCarrier i z =
+      fromCarrier i z :=
+  rfl
 
 @[simp]
 theorem ofMaps_toCarrier

@@ -109,32 +109,51 @@ def syntaxToLayer (Sig : Signature) (boundary : List Sig.Port) :
 def syntaxPresentation (Sig : Signature) :
     LayerPresentation (poly Sig) (inversion Sig) (Diag Sig) :=
   LayerPresentation.ofLayerChildRank
-    (CodeLayerPresentation.ofIso (fun boundary =>
-      { toFun := layerToSyntax Sig boundary
-        invFun := syntaxToLayer Sig boundary
-        left_inv :=
-          CodeLayer.canonical_left_inv_by_fiber
-            (toCarrier := layerToSyntax Sig)
-            (fromCarrier := syntaxToLayer Sig) (by
-              intro boundary ctor param out_eq child
-              cases ctor with
-              | finish =>
-                  cases param
-                  finish_code_layer_left_inv out_eq child
-              | connect =>
-                  cases param with
-                  | mk active frontier mate ok =>
-                    finish_code_layer_left_inv out_eq child
-              | bud =>
-                  cases param with
-                  | mk active frontier node entry ok =>
-                    finish_code_layer_left_inv out_eq child) boundary
-        right_inv := by
-          intro t
-          cases t with
-          | finish => rfl
-          | connect mate ok child => rfl
-          | bud node entry ok child => rfl }))
+    (CodeLayerPresentation.ofMapsExt
+      (layerToSyntax Sig)
+      (syntaxToLayer Sig)
+      (by
+        intro boundary layer
+        rcases layer with ⟨⟨ctor, param, out_eq⟩, child⟩
+        cases ctor with
+        | finish =>
+            cases param
+            cases out_eq
+            rfl
+        | connect =>
+            cases param with
+            | mk active frontier mate ok =>
+                cases out_eq
+                rfl
+        | bud =>
+            cases param with
+            | mk active frontier node entry ok =>
+                cases out_eq
+                rfl)
+      (by
+        intro boundary layer
+        rcases layer with ⟨⟨ctor, param, out_eq⟩, child⟩
+        cases ctor with
+        | finish =>
+            cases param
+            cases out_eq
+            exact heq_of_eq (by funext q; cases q)
+        | connect =>
+            cases param with
+            | mk active frontier mate ok =>
+                cases out_eq
+                exact heq_of_eq (by funext q; cases q; rfl)
+        | bud =>
+            cases param with
+            | mk active frontier node entry ok =>
+                cases out_eq
+                exact heq_of_eq (by funext q; cases q; rfl))
+      (by
+        intro boundary t
+        cases t with
+        | finish => rfl
+        | connect mate ok child => rfl
+        | bud node entry ok child => rfl))
     (fun _ t => Diag.rank t)
     (by
       intro boundary layer q
@@ -149,14 +168,14 @@ def syntaxPresentation (Sig : Signature) :
           | mk active frontier mate ok =>
               cases out_eq
               cases q
-              simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofIso,
+              simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofMapsExt,
                 layerToSyntax]
       | bud =>
           cases param with
           | mk active frontier node entry ok =>
               cases out_eq
               cases q
-              simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofIso,
+              simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofMapsExt,
                 layerToSyntax])
 
 /-- Generated coding data for typed rooted open diagram syntax. -/

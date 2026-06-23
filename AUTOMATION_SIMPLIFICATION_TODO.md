@@ -77,7 +77,7 @@ Every proof-debt item below must keep these fields visible:
   rg -n '\bSyntaxPresentation\b|\bNatLayerPresentation\b|\bRankedNatLayerPresentation\b|SyntaxPresentation\.of|NatLayerPresentation\.of|RankedNatLayerPresentation\.of' BijForm
   ```
 
-- [ ] Replace CodeLayer inverse proof tactics and eta helper stacks with a
+- [x] Replace CodeLayer inverse proof tactics and eta helper stacks with a
   generated layer-presentation constructor.
   Evidence: `canonical_left_inv_at_by_fiber`,
   `canonical_left_inv_by_fiber`, `child_eta_cases`, `child_eta_rfl`, and
@@ -87,7 +87,7 @@ Every proof-debt item below must keep these fields visible:
   Delete or replace: eta tactics and per-example left-inverse branch scripts.
   Validation:
   ```bash
-  rg -n 'canonical_left_inv|child_eta|finish_code_layer_left_inv|layer_left_inv' BijForm/Examples BijForm/TypedBinding.lean
+  rg -n 'canonical_left_inv|child_eta|finish_code_layer_left_inv|layer_left_inv|codeLayer_left_inv|codeLayer_eta|CodeLayer\.ext_rfl|\bext_rfl\b' BijForm
   ```
 
 - [ ] Add reusable output-index inversion constructors instead of manual

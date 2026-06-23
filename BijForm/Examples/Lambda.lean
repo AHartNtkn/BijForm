@@ -86,26 +86,42 @@ def LamSyntaxToLayer (k : Nat) :
 
 def LamSyntaxPresentation : LayerPresentation LamPoly LamInversion LamSyntax :=
   LayerPresentation.ofLayerChildRank
-    (CodeLayerPresentation.ofIso (fun k =>
-      { toFun := LamLayerToSyntax k
-        invFun := LamSyntaxToLayer k
-        left_inv :=
-          CodeLayer.canonical_left_inv_by_fiber
-            (toCarrier := LamLayerToSyntax)
-            (fromCarrier := LamSyntaxToLayer) (by
-              intro k ctor param out_eq child
-              cases ctor with
-              | var =>
-                cases param with
-                | mk k' v =>
-                  finish_code_layer_left_inv out_eq child
-              | lam =>
-                finish_code_layer_left_inv out_eq child
-              | app =>
-                finish_code_layer_left_inv out_eq child) k
-        right_inv := by
-          intro t
-          cases t <;> simp [LamLayerToSyntax, LamSyntaxToLayer] }))
+    (CodeLayerPresentation.ofMapsExt
+      LamLayerToSyntax
+      LamSyntaxToLayer
+      (by
+        intro k layer
+        rcases layer with ⟨⟨ctor, param, out_eq⟩, child⟩
+        cases ctor with
+        | var =>
+            cases param with
+            | mk k' v =>
+                cases out_eq
+                rfl
+        | lam =>
+            cases out_eq
+            rfl
+        | app =>
+            cases out_eq
+            rfl)
+      (by
+        intro k layer
+        rcases layer with ⟨⟨ctor, param, out_eq⟩, child⟩
+        cases ctor with
+        | var =>
+            cases param with
+            | mk k' v =>
+                cases out_eq
+                exact heq_of_eq (by funext q; cases q)
+        | lam =>
+            cases out_eq
+            exact heq_of_eq (by funext q; cases q; rfl)
+        | app =>
+            cases out_eq
+            exact heq_of_eq (by funext q; cases q <;> rfl))
+      (by
+        intro k t
+        cases t <;> simp [LamLayerToSyntax, LamSyntaxToLayer]))
     (fun _ t => LamSyntax.rank t)
     (by
       intro k layer q
@@ -119,12 +135,12 @@ def LamSyntaxPresentation : LayerPresentation LamPoly LamInversion LamSyntax :=
       | lam =>
           cases out_eq
           cases q
-          simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofIso,
+          simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofMapsExt,
             LamLayerToSyntax]
       | app =>
           cases out_eq
           cases q <;>
-            simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofIso,
+            simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofMapsExt,
               LamLayerToSyntax])
 
 def LamGeneratedCode : GeneratedCode LamPoly LamSyntax :=
@@ -162,20 +178,39 @@ def LamNatLayerShapeInv (k : Nat) :
 
 def LamNatLayerShapeLayerPresentation :
     CodeLayerPresentation LamPoly LamInversion (fun _ => Nat) LamNatLayerShape :=
-  CodeLayerPresentation.ofMaps
+  CodeLayerPresentation.ofMapsExt
     LamNatLayerShapeTo
     LamNatLayerShapeInv
-    (CodeLayer.canonical_left_inv_by_fiber (by
-      intro k ctor param out_eq child
+    (by
+      intro k layer
+      rcases layer with ⟨⟨ctor, param, out_eq⟩, child⟩
       cases ctor with
       | var =>
-        cases param with
-        | mk k' v =>
-          finish_code_layer_left_inv out_eq child
+          cases param with
+          | mk k' v =>
+              cases out_eq
+              rfl
       | lam =>
-        finish_code_layer_left_inv out_eq child
+          cases out_eq
+          rfl
       | app =>
-        finish_code_layer_left_inv out_eq child))
+          cases out_eq
+          rfl)
+    (by
+      intro k layer
+      rcases layer with ⟨⟨ctor, param, out_eq⟩, child⟩
+      cases ctor with
+      | var =>
+          cases param with
+          | mk k' v =>
+              cases out_eq
+              exact heq_of_eq (by funext q; cases q)
+      | lam =>
+          cases out_eq
+          exact heq_of_eq (by funext q; cases q; rfl)
+      | app =>
+          cases out_eq
+          exact heq_of_eq (by funext q; cases q <;> rfl))
     (by
       intro k shape
       cases shape with
@@ -223,8 +258,9 @@ def LamNatLayerPresentation :
           cases out_eq
           cases q
           simp [CodeLayerPresentation.iso, CodeLayerPresentation.transCarrier,
-            LamNatLayerShapeLayerPresentation, LamNatLayerShapeTo, LamNatRank,
-            LamPoly, LamOut, LamInput, LamInversion, OutputIndexInversion.canonical]
+            LamNatLayerShapeLayerPresentation, CodeLayerPresentation.ofMapsExt,
+            LamNatLayerShapeTo, LamNatRank, LamPoly, LamOut, LamInput, LamInversion,
+            OutputIndexInversion.canonical]
       | app =>
           cases out_eq
           cases q
@@ -232,15 +268,15 @@ def LamNatLayerPresentation :
               CodeAlgebra.finPrefixNat_sumProdNat_toFun_inr_inr_fst_pair_lt
                 param (child false) (child true)
             simp [CodeLayerPresentation.iso, CodeLayerPresentation.transCarrier,
-              LamNatLayerShapeLayerPresentation, LamNatLayerShapeTo, LamNatRank,
-              LamPoly, LamOut, LamInput, LamInversion,
+              LamNatLayerShapeLayerPresentation, CodeLayerPresentation.ofMapsExt,
+              LamNatLayerShapeTo, LamNatRank, LamPoly, LamOut, LamInput, LamInversion,
               OutputIndexInversion.canonical] at h ⊢
           · have h :=
               CodeAlgebra.finPrefixNat_sumProdNat_toFun_inr_inr_snd_pair_lt
                 param (child false) (child true)
             simp [CodeLayerPresentation.iso, CodeLayerPresentation.transCarrier,
-              LamNatLayerShapeLayerPresentation, LamNatLayerShapeTo, LamNatRank,
-              LamPoly, LamOut, LamInput, LamInversion,
+              LamNatLayerShapeLayerPresentation, CodeLayerPresentation.ofMapsExt,
+              LamNatLayerShapeTo, LamNatRank, LamPoly, LamOut, LamInput, LamInversion,
               OutputIndexInversion.canonical] at h ⊢)
 
 def LamNatGeneratedCode : GeneratedNatCode LamPoly :=

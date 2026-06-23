@@ -101,30 +101,54 @@ def PeanoSyntaxToLayer (k : Nat) :
 
 def PeanoSyntaxPresentation : LayerPresentation PeanoPoly PeanoInversion PeanoSyntax :=
   LayerPresentation.ofLayerChildRank
-    (CodeLayerPresentation.ofIso (fun k =>
-      { toFun := PeanoLayerToSyntax k
-        invFun := PeanoSyntaxToLayer k
-        left_inv :=
-          CodeLayer.canonical_left_inv_by_fiber
-            (toCarrier := PeanoLayerToSyntax)
-            (fromCarrier := PeanoSyntaxToLayer) (by
-              intro k ctor param out_eq child
-              cases ctor with
-              | eq =>
-                cases param with
-                | mk k' pair =>
-                  cases pair with
-                  | mk lhs rhs =>
-                    finish_code_layer_left_inv out_eq child
-              | not =>
-                finish_code_layer_left_inv out_eq child
-              | implies =>
-                finish_code_layer_left_inv out_eq child
-              | forallE =>
-                finish_code_layer_left_inv out_eq child) k
-        right_inv := by
-          intro e
-          cases e <;> simp [PeanoLayerToSyntax, PeanoSyntaxToLayer] }))
+    (CodeLayerPresentation.ofMapsExt
+      PeanoLayerToSyntax
+      PeanoSyntaxToLayer
+      (by
+        intro k layer
+        rcases layer with ⟨⟨ctor, param, out_eq⟩, child⟩
+        cases ctor with
+        | eq =>
+            cases param with
+            | mk k' pair =>
+                cases pair with
+                | mk lhs rhs =>
+                    dsimp [PeanoPoly, PeanoOut] at out_eq
+                    cases out_eq
+                    rfl
+        | not =>
+            cases out_eq
+            rfl
+        | implies =>
+            cases out_eq
+            rfl
+        | forallE =>
+            cases out_eq
+            rfl)
+      (by
+        intro k layer
+        rcases layer with ⟨⟨ctor, param, out_eq⟩, child⟩
+        cases ctor with
+        | eq =>
+            cases param with
+            | mk k' pair =>
+                cases pair with
+                | mk lhs rhs =>
+                    dsimp [PeanoPoly, PeanoOut] at out_eq
+                    cases out_eq
+                    exact heq_of_eq (by funext q; cases q)
+        | not =>
+            cases out_eq
+            exact heq_of_eq (by funext q; cases q; rfl)
+        | implies =>
+            cases out_eq
+            exact heq_of_eq (by funext q <;> cases q <;> rfl)
+        | forallE =>
+            cases out_eq
+            exact heq_of_eq (by funext q; cases q; rfl))
+      (by
+        intro k e
+        cases e <;> simp [PeanoLayerToSyntax, PeanoSyntaxToLayer]))
     (fun _ e => PeanoSyntax.rank e)
     (by
       intro k layer q
@@ -141,17 +165,17 @@ def PeanoSyntaxPresentation : LayerPresentation PeanoPoly PeanoInversion PeanoSy
       | not =>
           cases out_eq
           cases q
-          simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofIso,
+          simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofMapsExt,
             PeanoLayerToSyntax]
       | implies =>
           cases out_eq
           cases q <;>
-            simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofIso,
+            simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofMapsExt,
               PeanoLayerToSyntax]
       | forallE =>
           cases out_eq
           cases q
-          simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofIso,
+          simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofMapsExt,
             PeanoLayerToSyntax])
 
 def PeanoGeneratedCode : GeneratedCode PeanoPoly PeanoSyntax :=
@@ -201,31 +225,54 @@ def PeanoNatLayerShapeInv (k : Nat) :
 def PeanoNatLayerShapeLayerPresentation :
     CodeLayerPresentation PeanoPoly PeanoInversion (fun _ => Nat)
       (fun _ => PeanoNatLayerShape) :=
-  CodeLayerPresentation.ofMaps
+  CodeLayerPresentation.ofMapsExt
     PeanoNatLayerShapeTo
     PeanoNatLayerShapeInv
-    (CodeLayer.canonical_left_inv_by_fiber (by
-      intro k ctor param out_eq child
+    (by
+      intro k layer
+      rcases layer with ⟨⟨ctor, param, out_eq⟩, child⟩
       cases ctor with
       | eq =>
-        cases param with
-        | mk k' pair =>
-          cases pair with
-          | mk lhs rhs =>
-            simp [PeanoPoly, PeanoOut] at out_eq
-            cases out_eq
-            dsimp [PeanoNatLayerShapeTo, PeanoNatLayerShapeInv]
-            rw [(NumNatIso k).left_inv lhs, (NumNatIso k).left_inv rhs]
-            exact CodeLayer.ext_rfl
-              (P := PeanoPoly) (H := PeanoInversion) (Code := fun _ => Nat)
-              (i := k)
-              (by child_eta_cases)
+          cases param with
+          | mk k' pair =>
+              cases pair with
+              | mk lhs rhs =>
+                  simp [PeanoPoly, PeanoOut] at out_eq
+                  cases out_eq
+                  dsimp [PeanoNatLayerShapeTo, PeanoNatLayerShapeInv]
+                  rw [(NumNatIso k).left_inv lhs, (NumNatIso k).left_inv rhs]
       | not =>
-          finish_code_layer_left_inv out_eq child
+          cases out_eq
+          rfl
       | implies =>
-          finish_code_layer_left_inv out_eq child
+          cases out_eq
+          rfl
       | forallE =>
-          finish_code_layer_left_inv out_eq child))
+          cases out_eq
+          rfl)
+    (by
+      intro k layer
+      rcases layer with ⟨⟨ctor, param, out_eq⟩, child⟩
+      cases ctor with
+      | eq =>
+          cases param with
+          | mk k' pair =>
+              cases pair with
+              | mk lhs rhs =>
+                  simp [PeanoPoly, PeanoOut] at out_eq
+                  cases out_eq
+                  dsimp [PeanoNatLayerShapeTo, PeanoNatLayerShapeInv]
+                  rw [(NumNatIso k).left_inv lhs, (NumNatIso k).left_inv rhs]
+                  exact heq_of_eq (by funext q; cases q)
+      | not =>
+          cases out_eq
+          exact heq_of_eq (by funext q; cases q; rfl)
+      | implies =>
+          cases out_eq
+          exact heq_of_eq (by funext q <;> cases q <;> rfl)
+      | forallE =>
+          cases out_eq
+          exact heq_of_eq (by funext q; cases q; rfl))
     (by
     intro k x
     have hshape :

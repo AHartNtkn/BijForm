@@ -249,64 +249,6 @@ def inversion {Ty : Type} (S : Signature Ty) :
   decode_encode := FiberCode.decode_encode
   encode_decode := FiberCode.encode_decode
 
-namespace FiberCode
-
-variable {Ty : Type} {S : Signature Ty}
-
-abbrev LayerChild (Code : Poly.Ix S → Type v) {i : Poly.Ix S}
-    (code : FiberCode S i) : Type _ :=
-  (q : (PolyOf S).Pos ((inversion S).decode i code).ctor
-      ((inversion S).decode i code).param) →
-    Code ((PolyOf S).input ((inversion S).decode i code).param q)
-
-theorem var_codeLayer_eta {Code : Poly.Ix S → Type v}
-    {Γ : List Ty} {t : Ty} (v : Var Γ t)
-    (child : LayerChild (S := S) Code (.var v)) :
-    (⟨.var v, fun q => nomatch q⟩ :
-      CodeLayer (PolyOf S) (inversion S) Code (Γ, t)) =
-      ⟨.var v, child⟩ := by
-  refine CodeLayer.ext_rfl
-    (P := PolyOf S) (H := inversion S) (Code := Code)
-    (i := (Γ, t)) (c := .var v) ?_
-  funext q
-  cases q
-
-theorem op_codeLayer_eta {Code : Poly.Ix S → Type v}
-    {Γ : List Ty} {t : Ty} (ctor : S.Ctor) (h : S.ret ctor = t)
-    (child : LayerChild (S := S) Code (.op (Γ := Γ) ctor h)) :
-    (⟨.op ctor h, fun q => child q⟩ :
-      CodeLayer (PolyOf S) (inversion S) Code (Γ, t)) =
-      ⟨.op ctor h, child⟩ := by
-  exact CodeLayer.ext_rfl
-    (P := PolyOf S) (H := inversion S) (Code := Code)
-    (i := (Γ, t)) (c := .op (Γ := Γ) ctor h) rfl
-
-theorem codeLayer_left_inv_by_cases {Code : Poly.Ix S → Type v}
-    {Carrier : Poly.Ix S → Type w}
-    {toCarrier : ∀ i, CodeLayer (PolyOf S) (inversion S) Code i → Carrier i}
-    {fromCarrier : ∀ i, Carrier i → CodeLayer (PolyOf S) (inversion S) Code i}
-    (hvar : ∀ {Γ : List Ty} {t : Ty} (v : Var Γ t)
-      (child : LayerChild (S := S) Code (.var v)),
-      fromCarrier (Γ, t) (toCarrier (Γ, t) ⟨.var v, child⟩) =
-        ⟨.var v, child⟩)
-    (hop : ∀ {Γ : List Ty} {t : Ty} (c : S.Ctor) (h : S.ret c = t)
-      (child : LayerChild (S := S) Code (.op (Γ := Γ) c h)),
-      fromCarrier (Γ, t) (toCarrier (Γ, t) ⟨.op c h, child⟩) =
-        ⟨.op c h, child⟩) :
-    ∀ i, Function.LeftInverse (fromCarrier i) (toCarrier i) := by
-  intro i layer
-  cases i with
-  | mk Γ t =>
-    cases layer with
-    | mk code child =>
-      cases code with
-      | var v =>
-          exact hvar v child
-      | op c h =>
-          exact hop c h child
-
-end FiberCode
-
 namespace SyntaxIso
 
 variable {Ty : Type} {S : Signature Ty}
@@ -332,24 +274,6 @@ def termToLayer : {Γ : List Ty} → {t : Ty} →
       intro q
       exact child q
 
-theorem layer_left_inv (i : Poly.Ix S) :
-    Function.LeftInverse
-      (fun t : Term S i.1 i.2 => termToLayer t)
-      (layerToTerm (S := S) i) := by
-  exact FiberCode.codeLayer_left_inv_by_cases
-    (toCarrier := layerToTerm (S := S))
-    (fromCarrier := fun i t => termToLayer t)
-    (by
-      intro Γ t v child
-      exact FiberCode.var_codeLayer_eta (S := S)
-        (Code := fun i => Term S i.1 i.2) v child)
-    (by
-      intro Γ t c h child
-      cases h
-      exact FiberCode.op_codeLayer_eta (S := S)
-        (Code := fun i => Term S i.1 i.2) c rfl child)
-    i
-
 theorem layer_right_inv (i : Poly.Ix S) :
     Function.RightInverse
       (fun t : Term S i.1 i.2 => termToLayer t)
@@ -367,7 +291,17 @@ def layerIso (i : Poly.Ix S) :
       Term S i.1 i.2 where
   toFun := layerToTerm (S := S) i
   invFun := fun t => termToLayer t
-  left_inv := layer_left_inv (S := S) i
+  left_inv := by
+    intro layer
+    cases i with
+    | mk Γ t =>
+      rcases layer with ⟨code, child⟩
+      cases code with
+      | var v =>
+          exact CodeLayer.ext_layer rfl (heq_of_eq (by funext q; cases q))
+      | op c h =>
+          cases h
+          exact CodeLayer.ext_layer rfl (heq_of_eq rfl)
   right_inv := layer_right_inv (S := S) i
 
 theorem layer_child_rank_lt :
@@ -706,19 +640,14 @@ def shapeToLayer (Γ : List Ty) (t : Ty) :
 theorem layerShape_left_inv (Γ : List Ty) (t : Ty) :
     Function.LeftInverse (shapeToLayer (S := S) (Code := Code) Γ t)
       (layerToShape (S := S) (Code := Code) Γ t) := by
-  exact FiberCode.codeLayer_left_inv_by_cases
-    (toCarrier := fun i =>
-      layerToShape (S := S) (Code := Code) i.1 i.2)
-    (fromCarrier := fun i =>
-      shapeToLayer (S := S) (Code := Code) i.1 i.2)
-    (by
-      intro Γ t v child
-      exact FiberCode.var_codeLayer_eta (S := S) (Code := Code) v child)
-    (by
-      intro Γ t c h child
+  intro layer
+  rcases layer with ⟨code, child⟩
+  cases code with
+  | var v =>
+      exact CodeLayer.ext_layer rfl (heq_of_eq (by funext q; cases q))
+  | op c h =>
       cases h
-      exact FiberCode.op_codeLayer_eta (S := S) (Code := Code) c rfl child)
-    (Γ, t)
+      exact CodeLayer.ext_layer rfl (heq_of_eq rfl)
 
 theorem layerShape_right_inv (Γ : List Ty) (t : Ty) :
     Function.RightInverse (shapeToLayer (S := S) (Code := Code) Γ t)
