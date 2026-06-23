@@ -1012,15 +1012,12 @@ private theorem singleSortedFiniteRank_nonempty_child_lt_of_payload_le_gap
 private theorem singleSortedFiniteLayer_one_unary_child_rank_lt
     {Sig : Signature} (data : SingleSortedFiniteCodingData Sig)
     {active : Sig.Port} (unary : Sig.UnaryEntry) :
-    singleSortedFiniteRank data
-        (Sig.nodePortsExcept unary.val.1 unary.val.2)
-        (openFrontierEmptyCarrier (Sig := Sig)
-          (Signature.nodePortsExcept_eq_nil_of_arity_one unary.property)) <
+    singleSortedFiniteRank data [] ⟨0, by decide⟩ <
       singleSortedFiniteRank data [active]
         ((singleSortedFiniteLayerShapeCarrierIso data [active]).toFun
           (Sum.inl unary)) := by
   simp [singleSortedFiniteLayerShapeCarrierIso]
-  omega
+  exact Nat.add_pos_left (by decide : 0 < 1) _
 
 private theorem singleSortedFiniteLayer_one_nonunary_child_rank_lt
     {Sig : Signature} (data : SingleSortedFiniteCodingData Sig)
@@ -1064,7 +1061,7 @@ private theorem singleSortedFiniteLayer_two_connect_child_rank_lt
         ((singleSortedFiniteLayerShapeCarrierIso data [active, first]).toFun
           (Sum.inl connect)) := by
   simp [singleSortedFiniteLayerShapeCarrierIso]
-  omega
+  exact Nat.add_pos_left (by decide : 0 < 2) _
 
 private theorem singleSortedFiniteLayer_two_bud_child_rank_lt
     {Sig : Signature} (data : SingleSortedFiniteCodingData Sig)
