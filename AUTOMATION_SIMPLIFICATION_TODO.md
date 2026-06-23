@@ -165,7 +165,7 @@ Every proof-debt item below must keep these fields visible:
   rg -n 'typed_binding_rank_descent|LayerShapeRankProof\.of_op|NFGeneratedLayer_child_rank_lt|cases q using Fin\.cases' BijForm/TypedBinding.lean BijForm/Examples/TypedBinding
   ```
 
-- [ ] Delete NF-specific generated-layer `toFun` exposure facts by making
+- [x] Delete NF-specific generated-layer `toFun` exposure facts by making
   constructor-family carrier codings simplify generically.
   Evidence: `NFGeneratedLayerIso_dum_toFun`,
   `NFGeneratedLayerIso_lam_toFun`, and `NFGeneratedLayerIso_app_toFun` only

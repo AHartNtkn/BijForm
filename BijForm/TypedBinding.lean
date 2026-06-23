@@ -710,7 +710,7 @@ theorem layerCarrierCoding_op_toFun (Γ : List Ty)
   rfl
 
 @[simp]
-theorem trans_layerCarrierCoding_op_toFun (Γ : List Ty)
+theorem transLayerCarrierCodingOp (Γ : List Ty)
     {VarCode CtorCode Carrier : Type}
     (c : S.Ctor)
     (varIso : Var Γ (S.ret c) ≃ᵢ VarCode)
