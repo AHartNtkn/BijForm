@@ -79,9 +79,12 @@ lake exe bijform
   - `TupleAction.FixedTuple.ResidualImageData`
   - `TupleAction.FixedTuple.OrbitCodingData`
   - `TupleAction.FixedTuple.orbitCodingData_toConcreteActionCode`
-  - `TupleAction.BinarySwap.concreteCode`
-  - `TupleAction.BinarySwap.encode`
-  - `TupleAction.BinarySwap.decode`
+
+- `BijForm.Examples.BinarySwap`
+  Gives a concrete unordered-pair example via a two-element swap action:
+  - `Examples.BinarySwap.concreteCode`
+  - `Examples.BinarySwap.encode`
+  - `Examples.BinarySwap.decode`
 
 - `BijForm.DependentPolynomial`
   Defines dependent polynomial signatures, their initial algebras, and the
@@ -622,7 +625,7 @@ Branch-swap quotient example:
 
 - `HBTChildSwapQuotient : QuotientPresentation HBTPoly`
 - `HBTChildSwap_inn_branch_sound`
-- `TupleAction.BinarySwap.concreteCode`
+- `Examples.BinarySwap.concreteCode`
 - `HBTChildSwapNatCodeIso (i) : Iso (HBTChildSwap i) (HBTChildSwapNatCode i)`
 - `HBTChildSwapDescendedNatCode : QuotientPresentation.DescendedCode HBTChildSwapQuotient HBTNatGeneratedCode.toWellFoundedCode (fun _ => Nat)`
 - `HBTChildSwapNatIso (i) : Iso (HBTChildSwap i) Nat`

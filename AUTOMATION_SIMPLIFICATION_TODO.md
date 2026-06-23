@@ -385,7 +385,7 @@ These items are intentionally separate from the proof-debt list above. They are
 tracked here because they were found during the same simplification survey and
 were explicitly requested to remain visible.
 
-- [ ] Move concrete unordered-pair/BinarySwap example material out of shared
+- [x] Move concrete unordered-pair/BinarySwap example material out of shared
   tuple-action infrastructure or generalize it.
   Evidence: `TupleAction.lean` contains `BinarySwap`, while shared tuple-action
   support should expose `ConcreteQuotientCode`, `FiniteAction`, and orbit
