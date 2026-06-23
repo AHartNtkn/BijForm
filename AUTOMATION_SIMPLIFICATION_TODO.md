@@ -214,7 +214,7 @@ Every proof-debt item below must keep these fields visible:
   rg -n 'quotient_rank_descent|HBTChildSwapLayerDecode_child_rank_lt|cases hsum|match hsum|sumNat\.invFun' BijForm/QuotientPolynomial.lean BijForm/Examples/HBTQuotient.lean
   ```
 
-- [ ] Generalize unordered-pair quotient repair or move it out of shared
+- [x] Generalize unordered-pair quotient repair or move it out of shared
   quotient support.
   Evidence: `Rel.unorderedPair_decode_encode_repair` and
   `Rel.unorderedPair_code_decode_encode_repair` live in

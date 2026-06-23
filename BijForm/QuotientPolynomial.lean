@@ -102,41 +102,7 @@ theorem respects_of_layer_congr
   | symm _ ih => exact ih.symm
   | trans _ _ ihxy ihyz => exact ihxy.trans ihyz
 
-theorem unorderedPair_decode_encode_repair
-    (Q : QuotientPresentation P)
-    {childIndex outIndex : ι}
-    (normalize : Mu P childIndex → Nat)
-    (denormalize : Nat → Mu P childIndex)
-    (mk : Mu P childIndex → Mu P childIndex → Mu P outIndex)
-    (lhs rhs : Mu P childIndex)
-    {target : Mu P outIndex}
-    (hleft : Rel Q childIndex (denormalize (normalize lhs)) lhs)
-    (hright : Rel Q childIndex (denormalize (normalize rhs)) rhs)
-    (branch_congr :
-      ∀ {a a' b b' : Mu P childIndex},
-        Rel Q childIndex a a' →
-        Rel Q childIndex b b' →
-          Rel Q outIndex (mk a b) (mk a' b'))
-    (branch_swap :
-      ∀ a b : Mu P childIndex, Rel Q outIndex (mk a b) (mk b a))
-    (branch_eta : Rel Q outIndex (mk lhs rhs) target) :
-    Rel Q outIndex
-      (mk
-        (denormalize
-          (CodeAlgebra.unorderedPairNat.invFun
-            (CodeAlgebra.unorderedPairCode (normalize lhs) (normalize rhs))).val.1)
-        (denormalize
-          (CodeAlgebra.unorderedPairNat.invFun
-            (CodeAlgebra.unorderedPairCode (normalize lhs) (normalize rhs))).val.2))
-      target := by
-  by_cases hle : normalize lhs ≤ normalize rhs
-  · rw [CodeAlgebra.unorderedPairNat_inv_unorderedPairCode_of_le hle]
-    exact Rel.trans (branch_congr hleft hright) branch_eta
-  · rw [CodeAlgebra.unorderedPairNat_inv_unorderedPairCode_of_not_le hle]
-    exact Rel.trans (branch_congr hright hleft)
-      (Rel.trans (branch_swap rhs lhs) branch_eta)
-
-theorem unorderedPair_code_decode_encode_repair
+theorem commutativePair_code_decode_encode_repair
     (Q : QuotientPresentation P)
     {outIndex : ι}
     (mk : Nat → Nat → Mu P outIndex)
@@ -145,15 +111,15 @@ theorem unorderedPair_code_decode_encode_repair
       ∀ a b : Nat, Rel Q outIndex (mk a b) (mk b a)) :
     Rel Q outIndex
       (mk
-        (CodeAlgebra.unorderedPairNat.invFun
-          (CodeAlgebra.unorderedPairCode lhs rhs)).val.1
-        (CodeAlgebra.unorderedPairNat.invFun
-          (CodeAlgebra.unorderedPairCode lhs rhs)).val.2)
+        (CodeAlgebra.commutativePairNat.invFun
+          (CodeAlgebra.commutativePairCode lhs rhs)).val.1
+        (CodeAlgebra.commutativePairNat.invFun
+          (CodeAlgebra.commutativePairCode lhs rhs)).val.2)
       (mk lhs rhs) := by
   by_cases hle : lhs ≤ rhs
-  · rw [CodeAlgebra.unorderedPairNat_inv_unorderedPairCode_of_le hle]
+  · rw [CodeAlgebra.commutativePairNat_inv_commutativePairCode_of_le hle]
     exact Rel.refl _
-  · rw [CodeAlgebra.unorderedPairNat_inv_unorderedPairCode_of_not_le hle]
+  · rw [CodeAlgebra.commutativePairNat_inv_commutativePairCode_of_not_le hle]
     exact branch_swap rhs lhs
 
 end Rel

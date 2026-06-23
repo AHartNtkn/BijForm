@@ -790,5 +790,45 @@ theorem unorderedPairNat_inv_unorderedPairCode_of_not_le {a b : Nat}
   rw [unorderedPairCode_comm]
   exact unorderedPairNat_inv_unorderedPairCode_of_le (Nat.le_of_not_ge h)
 
+/-- Commutative binary Nat-pair coding, implemented by sorted unordered pairs. -/
+def commutativePairNat : {p : Nat × Nat // p.1 ≤ p.2} ≃ᵢ Nat :=
+  unorderedPairNat
+
+def commutativePairCode (a b : Nat) : Nat :=
+  unorderedPairCode a b
+
+theorem commutativePairCode_comm (a b : Nat) :
+    commutativePairCode a b = commutativePairCode b a :=
+  unorderedPairCode_comm a b
+
+theorem sumNat_commutativePairCode_swap (a b : Nat) :
+    sumNat.toFun (Sum.inr (commutativePairCode a b)) =
+      sumNat.toFun (Sum.inr (commutativePairCode b a)) := by
+  rw [commutativePairCode_comm]
+
+theorem commutativePairCode_invFun (n : Nat) :
+    commutativePairCode (commutativePairNat.invFun n).val.1
+      (commutativePairNat.invFun n).val.2 = n :=
+  unorderedPairCode_invFun n
+
+theorem commutativePairNat_invFun_fst_lt_sumNat_inr (n : Nat) :
+    (commutativePairNat.invFun n).val.1 < sumNat.toFun (Sum.inr n) :=
+  unorderedPairNat_invFun_fst_lt_sumNat_inr n
+
+theorem commutativePairNat_invFun_snd_lt_sumNat_inr (n : Nat) :
+    (commutativePairNat.invFun n).val.2 < sumNat.toFun (Sum.inr n) :=
+  unorderedPairNat_invFun_snd_lt_sumNat_inr n
+
+theorem commutativePairNat_inv_commutativePairCode_of_le {a b : Nat}
+    (h : a ≤ b) :
+    commutativePairNat.invFun (commutativePairCode a b) = ⟨(a, b), h⟩ :=
+  unorderedPairNat_inv_unorderedPairCode_of_le h
+
+theorem commutativePairNat_inv_commutativePairCode_of_not_le {a b : Nat}
+    (h : ¬a ≤ b) :
+    commutativePairNat.invFun (commutativePairCode a b) =
+      ⟨(b, a), Nat.le_of_not_ge h⟩ :=
+  unorderedPairNat_inv_unorderedPairCode_of_not_le h
+
 end CodeAlgebra
 end BijForm

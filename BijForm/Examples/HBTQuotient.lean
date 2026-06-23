@@ -111,7 +111,7 @@ def HBTChildSwapLayerEncode :
   | _m + 1, ⟨.branch, _k, _h, child⟩ =>
       CodeAlgebra.sumNat.toFun
         (Sum.inr
-          (CodeAlgebra.unorderedPairCode (child false) (child true)))
+          (CodeAlgebra.commutativePairCode (child false) (child true)))
 
 def HBTChildSwapLayerDecodeSucc (m n : Nat) :
     Obj HBTPoly (fun _ => Nat) (m + 1) :=
@@ -120,7 +120,7 @@ def HBTChildSwapLayerDecodeSucc (m n : Nat) :
       ⟨HBTCtor.leaf, ((m + 1, label) : Nat × Nat), rfl,
         fun q => nomatch q⟩
   | Sum.inr pairCode =>
-      let pair := (CodeAlgebra.unorderedPairNat.invFun pairCode).val
+      let pair := (CodeAlgebra.commutativePairNat.invFun pairCode).val
       ⟨HBTCtor.branch, (m : Nat), rfl, fun
         | false => pair.1
         | true => pair.2⟩
@@ -156,10 +156,10 @@ theorem HBTChildSwapDecodedChildRank :
             rw [hdecode] at hz
             cases q
             · exact Nat.lt_of_lt_of_eq
-                (CodeAlgebra.unorderedPairNat_invFun_fst_lt_sumNat_inr pairCode)
+                (CodeAlgebra.commutativePairNat_invFun_fst_lt_sumNat_inr pairCode)
                 hz
             · exact Nat.lt_of_lt_of_eq
-                (CodeAlgebra.unorderedPairNat_invFun_snd_lt_sumNat_inr pairCode)
+                (CodeAlgebra.commutativePairNat_invFun_snd_lt_sumNat_inr pairCode)
                 hz
 
 /-- Layer-local data from which the quotient framework derives the recursive
@@ -187,14 +187,14 @@ def HBTChildSwapLayerNormalForm :
         | inl label =>
             simpa [HBTChildSwapLayerEncode] using hright
         | inr pairCode =>
-            have hpair := CodeAlgebra.unorderedPairCode_invFun pairCode
+            have hpair := CodeAlgebra.commutativePairCode_invFun pairCode
             simpa [HBTChildSwapLayerEncode, hpair] using hright
   layer_rel_respects := by
     intro i x y encodeChild h
     cases h with
     | branch lhs rhs =>
         simpa [HBTChildSwapLayerEncode, Obj.map, HBTPoly, HBTInput] using
-          CodeAlgebra.sumNat_unorderedPairCode_swap
+          CodeAlgebra.sumNat_commutativePairCode_swap
             (encodeChild _ lhs) (encodeChild _ rhs)
   decode_encode_layer_rel := by
     intro i realize layer
@@ -239,14 +239,14 @@ def HBTChildSwapLayerNormalForm :
                 CodeAlgebra.sumNatDecode
                   (CodeAlgebra.sumNat.toFun
                     (Sum.inr
-                      (CodeAlgebra.unorderedPairCode
+                      (CodeAlgebra.commutativePairCode
                         (child false) (child true)))) =
                     Sum.inr
-                      (CodeAlgebra.unorderedPairCode
+                      (CodeAlgebra.commutativePairCode
                         (child false) (child true)) by
                 exact CodeAlgebra.sumNatDecode_encode
                   (Sum.inr
-                    (CodeAlgebra.unorderedPairCode
+                    (CodeAlgebra.commutativePairCode
                       (child false) (child true)))]
               simp
               have hrepair :
@@ -254,18 +254,18 @@ def HBTChildSwapLayerNormalForm :
                     (Mu.sup (P := HBTPoly) .branch m rfl
                       (fun q => realize m (match q with
                         | false =>
-                            (CodeAlgebra.unorderedPairNat.invFun
-                              (CodeAlgebra.unorderedPairCode
+                            (CodeAlgebra.commutativePairNat.invFun
+                              (CodeAlgebra.commutativePairCode
                                 (child false) (child true))).val.1
                         | true =>
-                            (CodeAlgebra.unorderedPairNat.invFun
-                              (CodeAlgebra.unorderedPairCode
+                            (CodeAlgebra.commutativePairNat.invFun
+                              (CodeAlgebra.commutativePairCode
                                 (child false) (child true))).val.2)))
                     (Mu.sup (P := HBTPoly) .branch m rfl
                       (fun q => realize m (match q with
                         | false => child false
                         | true => child true))) :=
-                QuotientPresentation.Rel.unorderedPair_code_decode_encode_repair
+                QuotientPresentation.Rel.commutativePair_code_decode_encode_repair
                   HBTChildSwapQuotient
                   (fun lhs rhs =>
                     Mu.sup (P := HBTPoly) .branch m rfl
