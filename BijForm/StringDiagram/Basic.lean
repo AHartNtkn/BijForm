@@ -1425,10 +1425,14 @@ def rank : ∀ {boundary : List Sig.Port}, Diag Sig boundary → Nat
   | _, connect _ _ child => rank child + 1
   | _, bud _ _ _ child => rank child + 1
 
+end Diag
+
+namespace FrontierCast
+
 /-- Transport a `bud` constructor across equal constructor labels and equal
 entry positions, with the child transported along the induced frontier
 equality. -/
-theorem bud_transport
+theorem diagBud
     {activeLabel : Sig.Port} {frontier : List Sig.Port}
     {nodeA nodeB : Sig.Node}
     {entryA : Fin (Sig.arity nodeA)} {entryB : Fin (Sig.arity nodeB)}
@@ -1452,7 +1456,7 @@ theorem bud_transport
   cases hok
   exact congrArg (fun child => Diag.bud nodeA entryA okA child) hchild
 
-end Diag
+end FrontierCast
 
 end StringDiagram
 end BijForm

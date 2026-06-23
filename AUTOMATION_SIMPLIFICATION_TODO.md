@@ -350,7 +350,7 @@ Every proof-debt item below must keep these fields visible:
   rg -n 'connectStep_validIds|budStep_validIds|connectStep_endpointPartition|budStep_endpointPartition|RenderDelta' BijForm/StringDiagram/Renderer/Steps.lean
   ```
 
-- [ ] Unify index/frontier transport instead of keeping local cast helpers.
+- [x] Unify index/frontier transport instead of keeping local cast helpers.
   Evidence: `listIndexCast` is heavily used, while separate helpers exist for
   renderer state, search state, frontier completeness, render prefix related
   states, `toDiag_cast`, and `Diag.bud_transport`.

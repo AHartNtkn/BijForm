@@ -78,28 +78,32 @@ structure SearchState (G : OpenPortHypergraph Sig boundary)
         ∀ slot : Fin (G.raw.incident node).length,
           G.raw.endpointEdge ((G.raw.incident node).get slot) ∉ processedEdges
 
-namespace SearchState
+namespace FrontierCast
 
-private theorem cast_pending {G : OpenPortHypergraph Sig boundary}
+theorem searchPending {G : OpenPortHypergraph Sig boundary}
     {frontier frontier' : List Sig.Port}
     (h : frontier = frontier') (st : SearchState G frontier) :
     (h ▸ st).pending = st.pending := by
   cases h
   rfl
 
-private theorem cast_seenNodes {G : OpenPortHypergraph Sig boundary}
+theorem searchSeenNodes {G : OpenPortHypergraph Sig boundary}
     {frontier frontier' : List Sig.Port}
     (h : frontier = frontier') (st : SearchState G frontier) :
     (h ▸ st).seenNodes = st.seenNodes := by
   cases h
   rfl
 
-private theorem cast_processedEdges {G : OpenPortHypergraph Sig boundary}
+theorem searchProcessedEdges {G : OpenPortHypergraph Sig boundary}
     {frontier frontier' : List Sig.Port}
     (h : frontier = frontier') (st : SearchState G frontier) :
     (h ▸ st).processedEdges = st.processedEdges := by
   cases h
   rfl
+
+end FrontierCast
+
+namespace SearchState
 
 def seenNode {G : OpenPortHypergraph Sig boundary}
     {frontier : List Sig.Port} (st : SearchState G frontier)
@@ -1857,7 +1861,7 @@ theorem IsoRelated.firstPendingChild
                 rightUnseenMem) := by
         dsimp [rightPending, rightNode, rightSlot, hfrontier]
         constructor
-        · rw [cast_pending]
+        · rw [FrontierCast.searchPending]
           calc
             rest.map e.endpointEquiv.toFun ++
                 eraseFin (H.raw.incident (e.nodeEquiv.toFun node))
@@ -1888,12 +1892,12 @@ theorem IsoRelated.firstPendingChild
                 (rest ++ eraseFin (G.raw.incident node) slot).map
                   e.endpointEquiv.toFun := by
                 rw [List.map_append]
-        · rw [cast_seenNodes]
+        · rw [FrontierCast.searchSeenNodes]
           change e.nodeEquiv.toFun node :: right.seenNodes =
             (node :: left.seenNodes).map e.nodeEquiv.toFun
           rw [hr.seenNodes_eq]
           rfl
-        · rw [cast_processedEdges]
+        · rw [FrontierCast.searchProcessedEdges]
           change H.raw.endpointEdge (e.endpointEquiv.toFun active) ::
               right.processedEdges =
             (G.raw.endpointEdge active :: left.processedEdges).map

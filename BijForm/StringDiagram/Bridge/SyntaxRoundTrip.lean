@@ -918,13 +918,13 @@ theorem toDiag_of_renderPrefixRelated :
                   searchChildA.toDiag hchildCompleteA =
                     hfrontier ▸ searchChildB.toDiag hchildCompleteB := by
                 dsimp [searchChildA, hchildCompleteA]
-                exact OpenPortHypergraph.SearchState.toDiag_cast
+                exact OpenPortHypergraph.FrontierCast.searchToDiag
                   hfrontier searchChildB hchildCompleteB
               have hchildForTransport :
                   child =
                     hfrontier ▸ searchChildB.toDiag hchildCompleteB :=
                 hchildA.symm.trans hdiagCast
-              exact (Diag.bud_transport
+              exact (FrontierCast.diagBud
                 (hnode := hnodeLabel)
                 (hentryVal := hentryVal)
                 (okA := ok)

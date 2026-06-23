@@ -674,15 +674,23 @@ theorem toDiag_frontierComplete_irrel {G : OpenPortHypergraph Sig boundary}
   cases hproof
   rfl
 
+end SearchState
+
+namespace FrontierCast
+
 /-- Traversal commutes with casting the frontier index of a search state. -/
-theorem toDiag_cast {G : OpenPortHypergraph Sig boundary}
+theorem searchToDiag {G : OpenPortHypergraph Sig boundary}
     {frontier frontier' : List Sig.Port}
     (h : frontier = frontier') (st : SearchState G frontier)
     (hc : st.FrontierComplete) :
-    (h ▸ st).toDiag (frontierComplete_cast h st hc) =
+    (h ▸ st).toDiag (SearchState.frontierComplete_cast h st hc) =
       h ▸ st.toDiag hc := by
   cases h
   rfl
+
+end FrontierCast
+
+namespace SearchState
 
 /-- Empty-frontier traversal computes to `finish`. -/
 theorem toDiag_empty {G : OpenPortHypergraph Sig boundary}
@@ -867,7 +875,7 @@ theorem toDiag_isoRelated
               (right.budChild hrightPending rightNode rightSlot rightMateEdge
                 rightUnseenMem).toDiag hrightChildCompleteUncast := by
         dsimp [rightChild, hrightChildComplete]
-        exact toDiag_cast hfrontier
+        exact FrontierCast.searchToDiag hfrontier
           (right.budChild hrightPending rightNode rightSlot rightMateEdge
             rightUnseenMem)
           hrightChildCompleteUncast
@@ -882,7 +890,7 @@ theorem toDiag_isoRelated
               (right.budChild hrightPending rightNode rightSlot rightMateEdge
                 rightUnseenMem).toDiag hrightChildCompleteUncast := by
         exact hchild.trans hrightChildDiagCast
-      exact Diag.bud_transport
+      exact FrontierCast.diagBud
         (hnode := (e.node_label_preserved node).symm)
         (hentryVal := budEntry_val_preserved e node slot)
         (okA := st.bud_compatible hpending node slot hmate)
