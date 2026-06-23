@@ -365,7 +365,7 @@ Every proof-debt item below must keep these fields visible:
   rg -n 'cast_pending|cast_seenNodes|cast_processedEdges|listIndexCast|toDiag_cast|bud_transport|cast-length' BijForm/StringDiagram
   ```
 
-- [ ] Delete branch wrapper remnants once selected-step certificates carry
+- [x] Delete branch wrapper remnants once selected-step certificates carry
   generic deltas.
   Evidence: `EdgeMateData` is a one-field wrapper around `EdgeMate`;
   `FirstPendingStepSearchView` and `RenderPrefixChildStep` carry
