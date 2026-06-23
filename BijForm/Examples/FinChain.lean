@@ -72,9 +72,9 @@ def FinChainSyntaxToLayer (i : Nat) :
       ⟨⟨FinChainCtor.step, ⟨n, tag⟩, rfl⟩, fun _ => child⟩
 
 def FinChainSyntaxPresentation :
-    SyntaxPresentation FinChainPoly FinChainInversion FinChainSyntax :=
-  SyntaxPresentation.ofLayerIsoChildRank
-    (fun i =>
+    LayerPresentation FinChainPoly FinChainInversion FinChainSyntax :=
+  LayerPresentation.ofLayerChildRank
+    (CodeLayerPresentation.ofIso (fun i =>
       { toFun := FinChainLayerToSyntax i
         invFun := FinChainSyntaxToLayer i
         left_inv :=
@@ -93,7 +93,7 @@ def FinChainSyntaxPresentation :
           intro t
           cases t with
           | done => rfl
-          | step tag child => rfl })
+          | step tag child => rfl }))
     (fun _ t => FinChainSyntax.rank t)
     (by
       intro i layer q
@@ -107,7 +107,8 @@ def FinChainSyntaxPresentation :
           | mk n tag =>
               cases out_eq
               cases q
-              simp [FinChainLayerToSyntax])
+              simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofIso,
+                FinChainLayerToSyntax])
 
 def FinChainGeneratedCode : GeneratedCode FinChainPoly FinChainSyntax :=
   FinChainSyntaxPresentation.generatedCode

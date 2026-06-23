@@ -84,9 +84,9 @@ def LamSyntaxToLayer (k : Nat) :
       | false => fn
       | true => arg⟩
 
-def LamSyntaxPresentation : SyntaxPresentation LamPoly LamInversion LamSyntax :=
-  SyntaxPresentation.ofLayerIsoChildRank
-    (fun k =>
+def LamSyntaxPresentation : LayerPresentation LamPoly LamInversion LamSyntax :=
+  LayerPresentation.ofLayerChildRank
+    (CodeLayerPresentation.ofIso (fun k =>
       { toFun := LamLayerToSyntax k
         invFun := LamSyntaxToLayer k
         left_inv :=
@@ -105,7 +105,7 @@ def LamSyntaxPresentation : SyntaxPresentation LamPoly LamInversion LamSyntax :=
                 finish_code_layer_left_inv out_eq child) k
         right_inv := by
           intro t
-          cases t <;> simp [LamLayerToSyntax, LamSyntaxToLayer] })
+          cases t <;> simp [LamLayerToSyntax, LamSyntaxToLayer] }))
     (fun _ t => LamSyntax.rank t)
     (by
       intro k layer q
@@ -119,10 +119,13 @@ def LamSyntaxPresentation : SyntaxPresentation LamPoly LamInversion LamSyntax :=
       | lam =>
           cases out_eq
           cases q
-          simp [LamLayerToSyntax]
+          simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofIso,
+            LamLayerToSyntax]
       | app =>
           cases out_eq
-          cases q <;> simp [LamLayerToSyntax])
+          cases q <;>
+            simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofIso,
+              LamLayerToSyntax])
 
 def LamGeneratedCode : GeneratedCode LamPoly LamSyntax :=
   LamSyntaxPresentation.generatedCode
@@ -201,7 +204,8 @@ theorem LamNatLayer_zero_invFun_zero :
       ⟨⟨LamCtor.lam, (0 : Nat), rfl⟩, fun _ => 0⟩ := by
   rfl
 
-def LamNatLayerPresentation : RankedNatLayerPresentation LamPoly LamInversion :=
+def LamNatLayerPresentation :
+    LayerPresentation LamPoly LamInversion (fun _ => Nat) :=
   LayerPresentation.ofLayerChildRank
     (LamNatLayerShapeLayerPresentation.transCarrier
       (fun k => CodeAlgebra.finPrefixNat k CodeAlgebra.sumProdNat))

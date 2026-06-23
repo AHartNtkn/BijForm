@@ -162,9 +162,9 @@ def SortedSyntaxToLayer (i : SortedIx) :
         | false => lhs
         | true => rhs⟩
 
-def SortedSyntaxPresentation : SyntaxPresentation SortedPoly SortedInversion SortedSyntax :=
-  SyntaxPresentation.ofLayerIsoChildRank
-    (fun i =>
+def SortedSyntaxPresentation : LayerPresentation SortedPoly SortedInversion SortedSyntax :=
+  LayerPresentation.ofLayerChildRank
+    (CodeLayerPresentation.ofIso (fun i =>
       { toFun := SortedLayerToSyntax i
         invFun := SortedSyntaxToLayer i
         left_inv :=
@@ -183,7 +183,7 @@ def SortedSyntaxPresentation : SyntaxPresentation SortedPoly SortedInversion Sor
           intro t
           cases t with
           | leaf => rfl
-          | branch pivot lhs rhs => rfl })
+          | branch pivot lhs rhs => rfl }))
     (fun _ t => SortedSyntax.rank t)
     (by
       intro i layer q
@@ -196,7 +196,9 @@ def SortedSyntaxPresentation : SyntaxPresentation SortedPoly SortedInversion Sor
           cases param with
           | mk j pivot =>
               cases out_eq
-              cases q <;> simp [SortedLayerToSyntax])
+              cases q <;>
+                simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofIso,
+                  SortedLayerToSyntax])
 
 def SortedGeneratedCode : GeneratedCode SortedPoly SortedSyntax :=
   SortedSyntaxPresentation.generatedCode

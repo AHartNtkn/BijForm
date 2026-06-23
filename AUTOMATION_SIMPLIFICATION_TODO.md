@@ -62,7 +62,7 @@ Every proof-debt item below must keep these fields visible:
   rg -n 'LayerPresentation\.ofLayerMaps|LayerPresentation\.ofCarrierLayerIso|LayerPresentation\.ofLayerShapeChildRank|LayerPresentation\.ofShapeChildRank' BijForm
   ```
 
-- [ ] Remove syntax/Nat presentation aliases that only restate
+- [x] Remove syntax/Nat presentation aliases that only restate
   `LayerPresentation`.
   Evidence: `SyntaxPresentation`, `NatLayerPresentation`, and
   `RankedNatLayerPresentation` forward to the same layer-presentation data.
@@ -74,7 +74,7 @@ Every proof-debt item below must keep these fields visible:
   `RankedNatLayerPresentation.ofLayerChildRank`.
   Validation:
   ```bash
-  rg -n 'SyntaxPresentation\.of|NatLayerPresentation\.of|RankedNatLayerPresentation\.of' BijForm
+  rg -n '\bSyntaxPresentation\b|\bNatLayerPresentation\b|\bRankedNatLayerPresentation\b|SyntaxPresentation\.of|NatLayerPresentation\.of|RankedNatLayerPresentation\.of' BijForm
   ```
 
 - [ ] Replace CodeLayer inverse proof tactics and eta helper stacks with a

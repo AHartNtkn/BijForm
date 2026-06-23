@@ -107,9 +107,9 @@ def syntaxToLayer (Sig : Signature) (boundary : List Sig.Port) :
 
 /-- Presentation of typed rooted open diagram syntax as generated code data. -/
 def syntaxPresentation (Sig : Signature) :
-    SyntaxPresentation (poly Sig) (inversion Sig) (Diag Sig) :=
-  SyntaxPresentation.ofLayerIsoChildRank
-    (fun boundary =>
+    LayerPresentation (poly Sig) (inversion Sig) (Diag Sig) :=
+  LayerPresentation.ofLayerChildRank
+    (CodeLayerPresentation.ofIso (fun boundary =>
       { toFun := layerToSyntax Sig boundary
         invFun := syntaxToLayer Sig boundary
         left_inv :=
@@ -134,7 +134,7 @@ def syntaxPresentation (Sig : Signature) :
           cases t with
           | finish => rfl
           | connect mate ok child => rfl
-          | bud node entry ok child => rfl })
+          | bud node entry ok child => rfl }))
     (fun _ t => Diag.rank t)
     (by
       intro boundary layer q
@@ -149,13 +149,15 @@ def syntaxPresentation (Sig : Signature) :
           | mk active frontier mate ok =>
               cases out_eq
               cases q
-              simp [layerToSyntax]
+              simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofIso,
+                layerToSyntax]
       | bud =>
           cases param with
           | mk active frontier node entry ok =>
               cases out_eq
               cases q
-              simp [layerToSyntax])
+              simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofIso,
+                layerToSyntax])
 
 /-- Generated coding data for typed rooted open diagram syntax. -/
 def generatedCode (Sig : Signature) : GeneratedCode (poly Sig) (Diag Sig) :=

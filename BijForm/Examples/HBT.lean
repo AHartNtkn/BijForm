@@ -95,9 +95,9 @@ Generated coding data for height-bounded trees. The example supplies only
 the local layer coding over `HBTInversion`; the full object-layer step is
 produced by the generated-code construction.
 -/
-def HBTSyntaxPresentation : SyntaxPresentation HBTPoly HBTInversion HBTSyntax :=
-  SyntaxPresentation.ofLayerIsoChildRank
-    (fun i =>
+def HBTSyntaxPresentation : LayerPresentation HBTPoly HBTInversion HBTSyntax :=
+  LayerPresentation.ofLayerChildRank
+    (CodeLayerPresentation.ofIso (fun i =>
       { toFun := HBTLayerToSyntax i
         invFun := HBTSyntaxToLayer i
         left_inv :=
@@ -114,7 +114,7 @@ def HBTSyntaxPresentation : SyntaxPresentation HBTPoly HBTInversion HBTSyntax :=
                   finish_code_layer_left_inv out_eq child) i
         right_inv := by
           intro t
-          cases t <;> simp [HBTLayerToSyntax, HBTSyntaxToLayer] })
+          cases t <;> simp [HBTLayerToSyntax, HBTSyntaxToLayer] }))
     (fun _ t => HBTSyntax.rank t)
     (by
       intro i layer q
@@ -127,7 +127,9 @@ def HBTSyntaxPresentation : SyntaxPresentation HBTPoly HBTInversion HBTSyntax :=
               cases q
       | branch =>
           cases out_eq
-          cases q <;> simp [HBTLayerToSyntax])
+          cases q <;>
+            simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofIso,
+              HBTLayerToSyntax])
 
 def HBTGeneratedCode : GeneratedCode HBTPoly HBTSyntax :=
   HBTSyntaxPresentation.generatedCode
@@ -203,7 +205,8 @@ def HBTNatLayerShapeLayerPresentation :
               cases p
               rfl)
 
-def HBTNatLayerPresentation : NatLayerPresentation HBTPoly HBTInversion :=
+def HBTNatLayerPresentation :
+    LayerPresentation HBTPoly HBTInversion (fun _ => Nat) :=
   LayerPresentation.ofLayerChildRank
     (HBTNatLayerShapeLayerPresentation.transCarrier HBTNatLayerCarrierIso)
     (fun _ n => n)

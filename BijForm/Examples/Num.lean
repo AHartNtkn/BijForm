@@ -115,9 +115,9 @@ def NumSyntaxToLayer (k : Nat) :
       | false => lhs
       | true => rhs⟩
 
-def NumSyntaxPresentation : SyntaxPresentation NumPoly NumInversion NumSyntax :=
-  SyntaxPresentation.ofLayerIsoChildRank
-    (fun k =>
+def NumSyntaxPresentation : LayerPresentation NumPoly NumInversion NumSyntax :=
+  LayerPresentation.ofLayerChildRank
+    (CodeLayerPresentation.ofIso (fun k =>
       { toFun := NumLayerToSyntax k
         invFun := NumSyntaxToLayer k
         left_inv :=
@@ -140,7 +140,7 @@ def NumSyntaxPresentation : SyntaxPresentation NumPoly NumInversion NumSyntax :=
                   finish_code_layer_left_inv out_eq child) k
         right_inv := by
           intro e
-          cases e <;> simp [NumLayerToSyntax, NumSyntaxToLayer] })
+          cases e <;> simp [NumLayerToSyntax, NumSyntaxToLayer] }))
     (fun _ e => NumSyntax.rank e)
     (by
       intro k layer q
@@ -160,15 +160,20 @@ def NumSyntaxPresentation : SyntaxPresentation NumPoly NumInversion NumSyntax :=
           dsimp [NumPoly, NumOut] at out_eq
           cases out_eq
           cases q
-          simp [NumLayerToSyntax]
+          simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofIso,
+            NumLayerToSyntax]
       | plus =>
           dsimp [NumPoly, NumOut] at out_eq
           cases out_eq
-          cases q <;> simp [NumLayerToSyntax]
+          cases q <;>
+            simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofIso,
+              NumLayerToSyntax]
       | times =>
           dsimp [NumPoly, NumOut] at out_eq
           cases out_eq
-          cases q <;> simp [NumLayerToSyntax])
+          cases q <;>
+            simp [CodeLayerPresentation.iso, CodeLayerPresentation.ofIso,
+              NumLayerToSyntax])
 
 def NumGeneratedCode : GeneratedCode NumPoly NumSyntax :=
   NumSyntaxPresentation.generatedCode
@@ -291,7 +296,8 @@ def NumNatLayerShapeLayerPresentation :
             rfl
     exact hshape x)
 
-def NumNatLayerPresentation : NatLayerPresentation NumPoly NumInversion :=
+def NumNatLayerPresentation :
+    LayerPresentation NumPoly NumInversion (fun _ => Nat) :=
   LayerPresentation.ofLayerChildRank
     (NumNatLayerShapeLayerPresentation.transCarrier
       (fun k => CodeAlgebra.finPrefixNat (k + 2) CodeAlgebra.natOrProdOrProdNat))
