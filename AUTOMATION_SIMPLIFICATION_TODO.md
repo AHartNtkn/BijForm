@@ -148,7 +148,7 @@ Every proof-debt item below must keep these fields visible:
   carrier-coding simp facts.
   Validation:
   ```bash
-  rg -n 'ArgTuple\.(singleIso|pairIso)|CtorFamily\.(singleIso|sumIso)|LayerShape\..*_op_toFun' BijForm/TypedBinding.lean BijForm/Examples/TypedBinding
+  rg -n 'ArgTuple\.(singleIso|pairIso)|CtorFamily\.(singleIso|sumIso)|_op_toFun' BijForm/TypedBinding.lean BijForm/Examples/TypedBinding
   ```
 
 - [x] Replace typed-binding rank dispatch with table-driven argument descent.
@@ -266,7 +266,7 @@ Every proof-debt item below must keep these fields visible:
   Delete or replace: the boundary-case proof body.
   Validation:
   ```bash
-  rg -n 'singleSortedFiniteLayer_shape_child_rank_lt|openBoundaryCases|singleSortedFiniteLayer_.*child_rank_lt' BijForm/StringDiagram/FiniteCoding/Syntax.lean
+  rg -n 'singleSortedFiniteLayer_shape_child_rank_lt|singleSortedFiniteLayer_.*child_rank_lt' BijForm/StringDiagram/FiniteCoding/Syntax.lean
   ```
 
 ## String Diagram Render, Traversal, And Bridge Proofs
@@ -282,7 +282,8 @@ Every proof-debt item below must keep these fields visible:
   Delete or replace: branch-specific `*_Append` witness definitions.
   Validation:
   ```bash
-  rg -n 'connectStep_.*Append|budStep_.*Append|RenderDelta' BijForm/StringDiagram/Renderer/Steps.lean
+  rg -n 'connectStep_.*Append|budStep_.*Append' BijForm/StringDiagram/Renderer/Steps.lean
+  rg -n 'RenderDelta|endpointsWitness|edgesWitness|nodesWitness' BijForm/StringDiagram/Renderer/Steps.lean
   ```
 
 - [x] Replace trace append recursion and first-new index/get proofs with
@@ -334,7 +335,8 @@ Every proof-debt item below must keep these fields visible:
   Delete or replace: both branch-specific frontier-pending theorems.
   Validation:
   ```bash
-  rg -n 'connectChild_frontierPending|budChild_frontierPending|pending_cons_values|FrontierPendingFields' BijForm/StringDiagram/Bridge/GraphRenderRelation.lean
+  rg -n 'connectChild_frontierPending|budChild_frontierPending|pending_cons_values' BijForm/StringDiagram/Bridge/GraphRenderRelation.lean
+  rg -n 'FrontierPendingFields|FrontierPendingFields\.ofChildTrace' BijForm/StringDiagram/Bridge/GraphRenderRelation.lean
   ```
 
 - [x] Replace renderer invariant preservation branch proofs with delta
@@ -362,7 +364,8 @@ Every proof-debt item below must keep these fields visible:
   transport corollary.
   Validation:
   ```bash
-  rg -n 'cast_pending|cast_seenNodes|cast_processedEdges|listIndexCast|toDiag_cast|bud_transport|cast-length' BijForm/StringDiagram
+  rg -n 'cast_pending|cast_seenNodes|cast_processedEdges|toDiag_cast|bud_transport|cast-length' BijForm/StringDiagram
+  rg -n 'namespace FrontierCast|FrontierCast\.' BijForm/StringDiagram
   ```
 
 - [x] Delete branch wrapper remnants once selected-step certificates carry

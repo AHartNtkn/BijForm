@@ -670,7 +670,7 @@ def layerCoding {Carrier : Poly.Ix S → Type}
     CodeLayer (PolyOf S) (inversion S) Code (Γ, t) ≃ᵢ Carrier (Γ, t) :=
   Iso.trans (iso (S := S) (Code := Code) Γ t) (layerShape Γ t)
 
-theorem layerCoding_op_toFun {Carrier : Poly.Ix S → Type}
+theorem layerCodingCtor {Carrier : Poly.Ix S → Type}
     (layerShape : ∀ Γ t, LayerShape S Code Γ t ≃ᵢ Carrier (Γ, t))
     (Γ : List Ty) (c : S.Ctor)
     (child :
@@ -691,7 +691,7 @@ def layerCarrierCoding (Γ : List Ty) (t : Ty)
   Iso.trans (iso (S := S) (Code := Code) Γ t)
     (carrierCoding (S := S) (Code := Code) Γ t varIso ctorIso)
 
-theorem layerCarrierCoding_op_toFun (Γ : List Ty)
+theorem layerCarrierCodingCtor (Γ : List Ty)
     {VarCode CtorCode : Type}
     (c : S.Ctor)
     (varIso : Var Γ (S.ret c) ≃ᵢ VarCode)
@@ -733,7 +733,7 @@ theorem transLayerCarrierCodingOp (Γ : List Ty)
                 (args := S.args c) child⟩)) :=
   rfl
 
-theorem carrierCoding_op_toFun (Γ : List Ty)
+theorem carrierCodingCtor (Γ : List Ty)
     {VarCode CtorCode : Type}
     (c : S.Ctor)
     (varIso : Var Γ (S.ret c) ≃ᵢ VarCode)
@@ -821,7 +821,7 @@ theorem ofCtorFamilyRankBound (h : CtorFamilyRankBound
                       (⟨FiberCode.op c rfl, child⟩ :
                         CodeLayer (PolyOf S) (inversion S) Code
                           (Γ, S.ret c)))
-              rw [LayerShape.layerCoding_op_toFun]
+              rw [LayerShape.layerCodingCtor]
               simpa [CtorLayer.ofFamily, ArgTuple.toChild_ofChild] using hbound
 
 end LayerShapeRankProof
