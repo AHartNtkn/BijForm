@@ -302,23 +302,33 @@ def renderTrace_endpointsAppend :
   | [], finish, st => by
       exact { suffix := [], step := ⟨by simp [renderTrace]⟩ }
   | _active :: _frontier, connect mate ok child, st => by
-      let stepAppend := connectStep_endpointsAppend mate ok st
-      let traceAppend :=
-        renderTrace_endpointsAppend child (connectStep mate ok st)
-      let fullAppend := stepAppend.trans traceAppend
-      exact
-        { suffix := fullAppend.suffix
-          step := by
-            simpa [renderTrace_connect] using fullAppend.step }
+      cases hids : st.frontierIds with
+      | nil =>
+          exact False.elim (RenderState.frontierIds_ne_nil st hids)
+      | cons activeId restIds =>
+          let stepAppend :=
+            (connectStep_delta mate ok st hids).endpointsWitness
+          let traceAppend :=
+            renderTrace_endpointsAppend child (connectStep mate ok st)
+          let fullAppend := stepAppend.trans traceAppend
+          exact
+            { suffix := fullAppend.suffix
+              step := by
+                simpa [renderTrace_connect] using fullAppend.step }
   | _active :: _frontier, bud node entry ok child, st => by
-      let stepAppend := budStep_endpointsAppend node entry ok st
-      let traceAppend :=
-        renderTrace_endpointsAppend child (budStep node entry ok st)
-      let fullAppend := stepAppend.trans traceAppend
-      exact
-        { suffix := fullAppend.suffix
-          step := by
-            simpa [renderTrace_bud] using fullAppend.step }
+      cases hids : st.frontierIds with
+      | nil =>
+          exact False.elim (RenderState.frontierIds_ne_nil st hids)
+      | cons activeId restIds =>
+          let stepAppend :=
+            (budStep_delta node entry ok st hids).endpointsWitness
+          let traceAppend :=
+            renderTrace_endpointsAppend child (budStep node entry ok st)
+          let fullAppend := stepAppend.trans traceAppend
+          exact
+            { suffix := fullAppend.suffix
+              step := by
+                simpa [renderTrace_bud] using fullAppend.step }
 
 /--
 Edges already in a render state remain an ordered prefix of the completed
@@ -332,23 +342,33 @@ def renderTrace_edgesAppend :
   | [], finish, st => by
       exact { suffix := [], step := ⟨by simp [renderTrace]⟩ }
   | _active :: _frontier, connect mate ok child, st => by
-      let stepAppend := connectStep_edgesAppend mate ok st
-      let traceAppend :=
-        renderTrace_edgesAppend child (connectStep mate ok st)
-      let fullAppend := stepAppend.trans traceAppend
-      exact
-        { suffix := fullAppend.suffix
-          step := by
-            simpa [renderTrace_connect] using fullAppend.step }
+      cases hids : st.frontierIds with
+      | nil =>
+          exact False.elim (RenderState.frontierIds_ne_nil st hids)
+      | cons activeId restIds =>
+          let stepAppend :=
+            (connectStep_delta mate ok st hids).edgesWitness
+          let traceAppend :=
+            renderTrace_edgesAppend child (connectStep mate ok st)
+          let fullAppend := stepAppend.trans traceAppend
+          exact
+            { suffix := fullAppend.suffix
+              step := by
+                simpa [renderTrace_connect] using fullAppend.step }
   | _active :: _frontier, bud node entry ok child, st => by
-      let stepAppend := budStep_edgesAppend node entry ok st
-      let traceAppend :=
-        renderTrace_edgesAppend child (budStep node entry ok st)
-      let fullAppend := stepAppend.trans traceAppend
-      exact
-        { suffix := fullAppend.suffix
-          step := by
-            simpa [renderTrace_bud] using fullAppend.step }
+      cases hids : st.frontierIds with
+      | nil =>
+          exact False.elim (RenderState.frontierIds_ne_nil st hids)
+      | cons activeId restIds =>
+          let stepAppend :=
+            (budStep_delta node entry ok st hids).edgesWitness
+          let traceAppend :=
+            renderTrace_edgesAppend child (budStep node entry ok st)
+          let fullAppend := stepAppend.trans traceAppend
+          exact
+            { suffix := fullAppend.suffix
+              step := by
+                simpa [renderTrace_bud] using fullAppend.step }
 
 /-- The first edge index allocated by a top-level rendered `connect`. -/
 def renderTrace_connect_new_edgeIndex
@@ -512,23 +532,33 @@ def renderTrace_nodesAppend :
   | [], finish, st => by
       exact { suffix := [], step := ⟨by simp [renderTrace]⟩ }
   | _active :: _frontier, connect mate ok child, st => by
-      let stepAppend := connectStep_nodesAppend mate ok st
-      let traceAppend :=
-        renderTrace_nodesAppend child (connectStep mate ok st)
-      let fullAppend := stepAppend.trans traceAppend
-      exact
-        { suffix := fullAppend.suffix
-          step := by
-            simpa [renderTrace_connect] using fullAppend.step }
+      cases hids : st.frontierIds with
+      | nil =>
+          exact False.elim (RenderState.frontierIds_ne_nil st hids)
+      | cons activeId restIds =>
+          let stepAppend :=
+            (connectStep_delta mate ok st hids).nodesWitness
+          let traceAppend :=
+            renderTrace_nodesAppend child (connectStep mate ok st)
+          let fullAppend := stepAppend.trans traceAppend
+          exact
+            { suffix := fullAppend.suffix
+              step := by
+                simpa [renderTrace_connect] using fullAppend.step }
   | _active :: _frontier, bud node entry ok child, st => by
-      let stepAppend := budStep_nodesAppend node entry ok st
-      let traceAppend :=
-        renderTrace_nodesAppend child (budStep node entry ok st)
-      let fullAppend := stepAppend.trans traceAppend
-      exact
-        { suffix := fullAppend.suffix
-          step := by
-            simpa [renderTrace_bud] using fullAppend.step }
+      cases hids : st.frontierIds with
+      | nil =>
+          exact False.elim (RenderState.frontierIds_ne_nil st hids)
+      | cons activeId restIds =>
+          let stepAppend :=
+            (budStep_delta node entry ok st hids).nodesWitness
+          let traceAppend :=
+            renderTrace_nodesAppend child (budStep node entry ok st)
+          let fullAppend := stepAppend.trans traceAppend
+          exact
+            { suffix := fullAppend.suffix
+              step := by
+                simpa [renderTrace_bud] using fullAppend.step }
 
 /-- The first node index allocated by a top-level rendered `bud`. -/
 def renderTrace_bud_new_nodeIndex

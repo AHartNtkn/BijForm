@@ -271,7 +271,7 @@ Every proof-debt item below must keep these fields visible:
 
 ## String Diagram Render, Traversal, And Bridge Proofs
 
-- [ ] Replace branch-specific render append witnesses with `RenderDelta`
+- [x] Replace branch-specific render append witnesses with `RenderDelta`
   projections.
   Evidence: `RenderDelta` already records endpoint/edge/node append facts, but
   `connectStep_edgesAppend`, `budStep_edgesAppend`,
