@@ -132,6 +132,37 @@ def HBTChildSwapLayerDecode :
       ⟨HBTCtor.leaf, ((0, n) : Nat × Nat), rfl, fun q => nomatch q⟩
   | m + 1, n => HBTChildSwapLayerDecodeSucc m n
 
+theorem HBTChildSwapLayerDecode_child_rank_lt
+    {i z : Nat} {c : HBTPoly.Ctor} {p : HBTPoly.Param c}
+    {h : HBTPoly.out c p = i}
+    {child : HBTPoly.Pos c p → Nat}
+    (hdecode : HBTChildSwapLayerDecode i z = ⟨c, p, h, child⟩)
+    (q : HBTPoly.Pos c p) :
+    child q < z := by
+  cases i with
+  | zero =>
+      dsimp [HBTChildSwapLayerDecode] at hdecode
+      cases hdecode
+      cases q
+  | succ m =>
+      dsimp [HBTChildSwapLayerDecode, HBTChildSwapLayerDecodeSucc] at hdecode
+      match hsum : CodeAlgebra.sumNat.invFun z with
+      | Sum.inl label =>
+          rw [hsum] at hdecode
+          cases hdecode
+          cases q
+      | Sum.inr pairCode =>
+          rw [hsum] at hdecode
+          cases hdecode
+          have hz := Iso.toFun_eq_of_invFun_eq CodeAlgebra.sumNat hsum
+          cases q
+          · exact Nat.lt_of_lt_of_eq
+              (CodeAlgebra.unorderedPairNat_invFun_fst_lt_sumNat_inr pairCode)
+              hz
+          · exact Nat.lt_of_lt_of_eq
+              (CodeAlgebra.unorderedPairNat_invFun_snd_lt_sumNat_inr pairCode)
+              hz
+
 /-- Layer-local data from which the quotient framework derives the recursive
 normalizer, denormalizer, and descended concrete Nat coding. -/
 def HBTChildSwapLayerNormalForm :
@@ -140,30 +171,7 @@ def HBTChildSwapLayerNormalForm :
   decodeLayer := HBTChildSwapLayerDecode
   rank := fun _ n => n
   child_rank_lt := by
-    intro i z c p h child hdecode q
-    cases i with
-    | zero =>
-        dsimp [HBTChildSwapLayerDecode] at hdecode
-        cases hdecode
-        cases q
-    | succ m =>
-        dsimp [HBTChildSwapLayerDecode, HBTChildSwapLayerDecodeSucc] at hdecode
-        cases hsum : CodeAlgebra.sumNat.invFun z with
-        | inl label =>
-            rw [hsum] at hdecode
-            cases hdecode
-            cases q
-        | inr pairCode =>
-            rw [hsum] at hdecode
-            cases hdecode
-            have hz := Iso.toFun_eq_of_invFun_eq CodeAlgebra.sumNat hsum
-            cases q
-            · exact Nat.lt_of_lt_of_eq
-                (CodeAlgebra.unorderedPairNat_invFun_fst_lt_sumNat_inr pairCode)
-                hz
-            · exact Nat.lt_of_lt_of_eq
-                (CodeAlgebra.unorderedPairNat_invFun_snd_lt_sumNat_inr pairCode)
-                hz
+    quotient_rank_descent using HBTChildSwapLayerDecode_child_rank_lt
   encode_decode_layer := by
     intro i z
     cases i with

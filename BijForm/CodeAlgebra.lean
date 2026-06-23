@@ -795,6 +795,24 @@ theorem rank_scaled_payload_le_with_gap
     Nat.mul_le_mul_left scale hz
   omega
 
+theorem scaled_payload_child_lt_of_payload_lt
+    {scale childBase parentBase payload code : Nat}
+    (hbase : childBase < parentBase + scale)
+    (hpayload : payload < code) :
+    childBase + scale * payload < parentBase + scale * code :=
+  rank_scaled_payload_lt
+    (scale := scale) (childBase := childBase) (parentBase := parentBase)
+    (payload := payload) (code := code) hbase hpayload
+
+theorem scaled_payload_child_lt_of_payload_le_gap
+    {scale childBase parentBase payload code : Nat}
+    (hbase : childBase < parentBase)
+    (hpayload : payload ≤ code) :
+    childBase + scale * payload < parentBase + scale * code :=
+  rank_scaled_payload_le_with_gap
+    (scale := scale) (childBase := childBase) (parentBase := parentBase)
+    (payload := payload) (code := code) hbase hpayload
+
 /-- Recursive payloads are bounded by their finite-recursive branch code. -/
 theorem finiteRecursiveNat_payload_le
     (finite recursive : Nat) (hrec : 0 < recursive)

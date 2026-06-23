@@ -978,7 +978,7 @@ private theorem singleSortedFiniteRank_nonempty_child_lt_of_payload_lt
   cases childBoundary with
   | nil => exact False.elim (hchild rfl)
   | cons _ childFrontier =>
-      exact CodeAlgebra.rank_scaled_payload_lt
+      exact CodeAlgebra.scaled_payload_child_lt_of_payload_lt
         (scale := data.rankScale)
         (childBase := childFrontier.length + 1)
         (parentBase := frontier.length + 1)
@@ -1000,7 +1000,7 @@ private theorem singleSortedFiniteRank_nonempty_child_lt_of_payload_le_gap
   cases childBoundary with
   | nil => exact False.elim (hchild rfl)
   | cons _ childFrontier =>
-      exact CodeAlgebra.rank_scaled_payload_le_with_gap
+      exact CodeAlgebra.scaled_payload_child_lt_of_payload_le_gap
         (scale := data.rankScale)
         (childBase := childFrontier.length + 1)
         (parentBase := frontier.length + 1)
