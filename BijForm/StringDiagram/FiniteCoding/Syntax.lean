@@ -965,49 +965,45 @@ def singleSortedFiniteLayerPresentation
     (singleSortedFiniteLayer_left_inv data)
     (singleSortedFiniteLayer_right_inv data)
 
-private theorem singleSortedFiniteRank_nonempty_child_lt_of_payload_lt
+private inductive SingleSortedFinitePayloadBound
     {Sig : Signature} (data : SingleSortedFiniteCodingData Sig)
-    {active : Sig.Port} {frontier childBoundary : List Sig.Port}
-    (hchild : childBoundary ≠ []) {payload : Nat}
-    {parentCode : (openFrontierShape Sig (active :: frontier)).Carrier}
-    (hbase : childBoundary.length < frontier.length + 1 + data.rankScale)
-    (hpayload : payload < (show Nat from parentCode)) :
-    singleSortedFiniteRank data childBoundary
-        ((openFrontierNonemptyIso (Sig := Sig) hchild).invFun payload) <
-      singleSortedFiniteRank data (active :: frontier) parentCode := by
-  cases childBoundary with
-  | nil => exact False.elim (hchild rfl)
-  | cons _ childFrontier =>
-      exact CodeAlgebra.scaled_payload_child_lt_of_payload_lt
-        (scale := data.rankScale)
-        (childBase := childFrontier.length + 1)
-        (parentBase := frontier.length + 1)
-        (payload := payload)
-        (code := (show Nat from parentCode))
-        (by simpa using hbase)
-        hpayload
+    (frontier childBoundary : List Sig.Port)
+    (payload parentCode : Nat) : Prop
+  | strict :
+      childBoundary.length < frontier.length + 1 + data.rankScale →
+      payload < parentCode →
+      SingleSortedFinitePayloadBound data frontier childBoundary payload parentCode
+  | gap :
+      childBoundary.length < frontier.length + 1 →
+      payload ≤ parentCode →
+      SingleSortedFinitePayloadBound data frontier childBoundary payload parentCode
 
-private theorem singleSortedFiniteRank_nonempty_child_lt_of_payload_le_gap
+private theorem singleSortedFiniteRank_nonempty_child_lt_of_payload_bound
     {Sig : Signature} (data : SingleSortedFiniteCodingData Sig)
     {active : Sig.Port} {frontier childBoundary : List Sig.Port}
     (hchild : childBoundary ≠ []) {payload : Nat}
     {parentCode : (openFrontierShape Sig (active :: frontier)).Carrier}
-    (hbase : childBoundary.length < frontier.length + 1)
-    (hpayload : payload ≤ (show Nat from parentCode)) :
+    (hbound : SingleSortedFinitePayloadBound data frontier childBoundary
+      payload (show Nat from parentCode)) :
     singleSortedFiniteRank data childBoundary
         ((openFrontierNonemptyIso (Sig := Sig) hchild).invFun payload) <
       singleSortedFiniteRank data (active :: frontier) parentCode := by
   cases childBoundary with
   | nil => exact False.elim (hchild rfl)
   | cons _ childFrontier =>
-      exact CodeAlgebra.scaled_payload_child_lt_of_payload_le_gap
+      apply CodeAlgebra.scaled_payload_child_lt
         (scale := data.rankScale)
         (childBase := childFrontier.length + 1)
         (parentBase := frontier.length + 1)
         (payload := payload)
         (code := (show Nat from parentCode))
-        (by simpa using hbase)
-        hpayload
+      cases hbound with
+      | strict hbase hpayload =>
+          exact CodeAlgebra.ScaledPayloadBound.strict (by simpa using hbase)
+            hpayload
+      | gap hbase hpayload =>
+          exact CodeAlgebra.ScaledPayloadBound.gap (by simpa using hbase)
+            hpayload
 
 private theorem singleSortedFiniteLayer_one_unary_child_rank_lt
     {Sig : Signature} (data : SingleSortedFiniteCodingData Sig)
@@ -1041,17 +1037,19 @@ private theorem singleSortedFiniteLayer_one_nonunary_child_rank_lt
       data.unaryCount data.nonUnaryCount data.nonUnaryCount_pos
       (data.nonUnaryIso.toFun nonUnary, payload)
       (Or.inl data.unaryCount_pos)
-  refine singleSortedFiniteRank_nonempty_child_lt_of_payload_lt
+  refine singleSortedFiniteRank_nonempty_child_lt_of_payload_bound
     (data := data) (active := active) (frontier := [])
     (childBoundary := Sig.nodePortsExcept nonUnary.val.1 nonUnary.val.2)
     (Signature.nodePortsExcept_ne_nil_of_arity_ne_one
       (Nat.lt_of_le_of_lt (Nat.zero_le nonUnary.val.2.val)
         nonUnary.val.2.isLt)
       nonUnary.property)
-    ?_ hpayload
-  have harity := data.arity_lt_rankScale nonUnary.val.1
-  simp [Signature.nodePortsExcept_length]
-  omega
+    ?_
+  apply SingleSortedFinitePayloadBound.strict
+  · have harity := data.arity_lt_rankScale nonUnary.val.1
+    simp [Signature.nodePortsExcept_length]
+    omega
+  · exact hpayload
 
 private theorem singleSortedFiniteLayer_two_connect_child_rank_lt
     {Sig : Signature} (data : SingleSortedFiniteCodingData Sig)
@@ -1084,7 +1082,7 @@ private theorem singleSortedFiniteLayer_two_bud_child_rank_lt
       (data.entryIso.toFun entry, payload)
       (Or.inl (by decide))
   simpa [openFrontierNonemptyIso] using
-    singleSortedFiniteRank_nonempty_child_lt_of_payload_lt
+    singleSortedFiniteRank_nonempty_child_lt_of_payload_bound
       (data := data) (active := active) (frontier := [first])
       (childBoundary := [first] ++ Sig.nodePortsExcept entry.1 entry.2)
       hchild
@@ -1092,10 +1090,11 @@ private theorem singleSortedFiniteLayer_two_bud_child_rank_lt
         (singleSortedFiniteLayerShapeCarrierIso data [active, first]).toFun
           (Sum.inr (entry, payload)))
       (by
-        have harity := data.arity_lt_rankScale entry.1
-        simp [Signature.nodePortsExcept_length]
-        omega)
-      hpayload
+        apply SingleSortedFinitePayloadBound.strict
+        · have harity := data.arity_lt_rankScale entry.1
+          simp [Signature.nodePortsExcept_length]
+          omega
+        · exact hpayload)
 
 private theorem singleSortedFiniteLayer_many_connect_child_rank_lt
     {Sig : Signature} (data : SingleSortedFiniteCodingData Sig)
@@ -1121,7 +1120,7 @@ private theorem singleSortedFiniteLayer_many_connect_child_rank_lt
       (by simp)
       (Nat.lt_add_right data.nonUnaryCount data.unaryCount_pos)
       (mate, payload)
-  exact singleSortedFiniteRank_nonempty_child_lt_of_payload_le_gap
+  exact singleSortedFiniteRank_nonempty_child_lt_of_payload_bound
     (data := data) (active := active)
     (frontier := first :: second :: rest)
     (childBoundary := eraseFin (first :: second :: rest) mate)
@@ -1130,8 +1129,10 @@ private theorem singleSortedFiniteLayer_many_connect_child_rank_lt
       (singleSortedFiniteLayerShapeCarrierIso data
         (active :: first :: second :: rest)).toFun
           (Sum.inl (mate, payload)))
-    (by simp [eraseFin_length])
-    hpayload
+    (by
+      apply SingleSortedFinitePayloadBound.gap
+      · simp [eraseFin_length]
+      · exact hpayload)
 
 private theorem singleSortedFiniteLayer_many_bud_child_rank_lt
     {Sig : Signature} (data : SingleSortedFiniteCodingData Sig)
@@ -1160,7 +1161,7 @@ private theorem singleSortedFiniteLayer_many_bud_child_rank_lt
       (Nat.lt_add_right data.nonUnaryCount data.unaryCount_pos)
       (data.entryIso.toFun entry, payload)
   simpa [openFrontierNonemptyIso] using
-    singleSortedFiniteRank_nonempty_child_lt_of_payload_lt
+    singleSortedFiniteRank_nonempty_child_lt_of_payload_bound
       (data := data) (active := active)
       (frontier := first :: second :: rest)
       (childBoundary :=
@@ -1171,10 +1172,11 @@ private theorem singleSortedFiniteLayer_many_bud_child_rank_lt
           (active :: first :: second :: rest)).toFun
             (Sum.inr (entry, payload)))
       (by
-        have harity := data.arity_lt_rankScale entry.1
-        simp [Signature.nodePortsExcept_length]
-        omega)
-      hpayload
+        apply SingleSortedFinitePayloadBound.strict
+        · have harity := data.arity_lt_rankScale entry.1
+          simp [Signature.nodePortsExcept_length]
+          omega
+        · exact hpayload)
 
 private theorem singleSortedFiniteLayer_shape_child_rank_lt
     {Sig : Signature} (data : SingleSortedFiniteCodingData Sig) :

@@ -2,6 +2,35 @@ import BijForm.InitialAlgebra
 import BijForm.CodeAlgebra
 
 namespace BijForm
+
+macro "unordered_pair_nat_quotient_rank_descent "
+    "[" defs:Lean.Parser.Tactic.simpLemma,* "]" : tactic =>
+  `(tactic|
+    rintro idx z ctor param out_eq child hdecode q <;>
+    cases idx with
+    | zero =>
+        dsimp [$defs,*] at hdecode
+        cases hdecode
+        cases q
+    | succ m =>
+        dsimp [$defs,*] at hdecode
+        cases hsum : CodeAlgebra.sumNat.invFun z with
+        | inl label =>
+            rw [hsum] at hdecode
+            cases hdecode
+            cases q
+        | inr pairCode =>
+            rw [hsum] at hdecode
+            cases hdecode
+            have hz := Iso.toFun_eq_of_invFun_eq CodeAlgebra.sumNat hsum
+            cases q
+            · exact Nat.lt_of_lt_of_eq
+                (CodeAlgebra.unorderedPairNat_invFun_fst_lt_sumNat_inr pairCode)
+                hz
+            · exact Nat.lt_of_lt_of_eq
+                (CodeAlgebra.unorderedPairNat_invFun_snd_lt_sumNat_inr pairCode)
+                hz)
+
 namespace DepPoly
 
 universe u v w

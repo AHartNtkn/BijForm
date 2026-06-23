@@ -1,4 +1,4 @@
-import BijForm.RankDescent
+import BijForm.TypedBinding
 
 namespace BijForm
 namespace Examples

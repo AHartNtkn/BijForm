@@ -772,46 +772,35 @@ theorem SubcodeLe.finPrefixNat_inr_lt {α : Type u} {β : Type v}
     SubcodeLt (finPrefixNat k tail) (fun x => Sum.inr (embed x)) rank :=
   fun x => finPrefixNat_toFun_inr_lt_of_le k hk tail (h x)
 
-theorem rank_scaled_payload_lt
+inductive ScaledPayloadBound
+    (scale childBase parentBase payload code : Nat) : Prop
+  | strict :
+      childBase < parentBase + scale →
+      payload < code →
+      ScaledPayloadBound scale childBase parentBase payload code
+  | gap :
+      childBase < parentBase →
+      payload ≤ code →
+      ScaledPayloadBound scale childBase parentBase payload code
+
+theorem scaled_payload_child_lt
     {scale childBase parentBase payload code : Nat}
-    (hbase : childBase < parentBase + scale)
-    (hz : payload < code) :
+    (h : ScaledPayloadBound scale childBase parentBase payload code) :
     childBase + scale * payload < parentBase + scale * code := by
-  have hsucc : payload + 1 ≤ code := Nat.succ_le_of_lt hz
-  have hmul : scale * (payload + 1) ≤ scale * code :=
-    Nat.mul_le_mul_left scale hsucc
-  have hstep : childBase + scale * payload <
-      parentBase + scale * (payload + 1) := by
-    rw [Nat.mul_succ]
-    omega
-  exact Nat.lt_of_lt_of_le hstep (Nat.add_le_add_left hmul parentBase)
-
-theorem rank_scaled_payload_le_with_gap
-    {scale childBase parentBase payload code : Nat}
-    (hbase : childBase < parentBase)
-    (hz : payload ≤ code) :
-    childBase + scale * payload < parentBase + scale * code := by
-  have hmul : scale * payload ≤ scale * code :=
-    Nat.mul_le_mul_left scale hz
-  omega
-
-theorem scaled_payload_child_lt_of_payload_lt
-    {scale childBase parentBase payload code : Nat}
-    (hbase : childBase < parentBase + scale)
-    (hpayload : payload < code) :
-    childBase + scale * payload < parentBase + scale * code :=
-  rank_scaled_payload_lt
-    (scale := scale) (childBase := childBase) (parentBase := parentBase)
-    (payload := payload) (code := code) hbase hpayload
-
-theorem scaled_payload_child_lt_of_payload_le_gap
-    {scale childBase parentBase payload code : Nat}
-    (hbase : childBase < parentBase)
-    (hpayload : payload ≤ code) :
-    childBase + scale * payload < parentBase + scale * code :=
-  rank_scaled_payload_le_with_gap
-    (scale := scale) (childBase := childBase) (parentBase := parentBase)
-    (payload := payload) (code := code) hbase hpayload
+  cases h with
+  | strict hbase hpayload =>
+      have hsucc : payload + 1 ≤ code := Nat.succ_le_of_lt hpayload
+      have hmul : scale * (payload + 1) ≤ scale * code :=
+        Nat.mul_le_mul_left scale hsucc
+      have hstep : childBase + scale * payload <
+          parentBase + scale * (payload + 1) := by
+        rw [Nat.mul_succ]
+        omega
+      exact Nat.lt_of_lt_of_le hstep (Nat.add_le_add_left hmul parentBase)
+  | gap hbase hpayload =>
+      have hmul : scale * payload ≤ scale * code :=
+        Nat.mul_le_mul_left scale hpayload
+      omega
 
 /-- Recursive payloads are bounded by their finite-recursive branch code. -/
 theorem finiteRecursiveNat_payload_le

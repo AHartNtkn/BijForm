@@ -895,6 +895,33 @@ theorem of_op
 
 end LayerShapeRankProof
 
+macro "typed_binding_rank_descent " "[" defs:Lean.Parser.Tactic.simpLemma,* "]"
+    " using " "[" h0:term "," h1:term "," h2:term "," h3:term "]" : tactic =>
+  `(tactic|
+    (apply BijForm.TypedBinding.LayerShapeRankProof.of_op <;>
+      rintro ctx ctor child q <;>
+      cases ctor <;>
+        first
+        | (cases q <;> omega)
+        | (cases q using Fin.cases with
+            | zero =>
+                first
+                | (simpa [$defs,*] using $h0 _ _)
+                | (simpa [$defs,*] using $h1 _ _)
+                | (simpa [$defs,*] using $h2 _ _)
+                | (simpa [$defs,*] using $h3 _ _)
+            | succ q =>
+                first
+                | (exact fin_zero_elim q)
+                | (cases q using Fin.cases with
+                    | zero =>
+                        first
+                        | (simpa [$defs,*] using $h0 _ _)
+                        | (simpa [$defs,*] using $h1 _ _)
+                        | (simpa [$defs,*] using $h2 _ _)
+                        | (simpa [$defs,*] using $h3 _ _)
+                    | succ q => exact fin_zero_elim q))))
+
 /-- Coding data whose one-step layer is generated from the typed-binding
 signature before being encoded into the concrete carrier.  Instances supply an
 isomorphism from the generated variable/constructor shape to their carrier,
