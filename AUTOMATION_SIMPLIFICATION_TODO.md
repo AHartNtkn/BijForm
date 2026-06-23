@@ -228,7 +228,7 @@ Every proof-debt item below must keep these fields visible:
   rg -n 'unorderedPair.*repair|unorderedPair' BijForm/QuotientPolynomial.lean BijForm/Examples/HBTQuotient.lean
   ```
 
-- [ ] Collapse HBT quotient relation repair dispatch into quotient normal-form
+- [x] Collapse HBT quotient relation repair dispatch into quotient normal-form
   support.
   Evidence: `decode_encode_layer_rel` still has local position dispatch and
   hand-built branch repair around unordered-pair decode/encode.

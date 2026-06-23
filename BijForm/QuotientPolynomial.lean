@@ -122,6 +122,32 @@ theorem commutativePair_code_decode_encode_repair
   · rw [CodeAlgebra.commutativePairNat_inv_commutativePairCode_of_not_le hle]
     exact branch_swap rhs lhs
 
+theorem commutativePair_boolTarget_decode_encode_repair
+    (Q : QuotientPresentation P)
+    {outIndex : ι}
+    (mkPair : Nat → Nat → Mu P outIndex)
+    (mkChild : (Bool → Nat) → Mu P outIndex)
+    (child : Bool → Nat)
+    (pair_target :
+      ∀ f : Bool → Nat,
+        Rel Q outIndex (mkPair (f false) (f true)) (mkChild f))
+    (branch_swap :
+      ∀ lhs rhs : Nat,
+        Rel Q outIndex (mkPair lhs rhs) (mkPair rhs lhs)) :
+    Rel Q outIndex
+      (mkPair
+        (CodeAlgebra.commutativePairNat.invFun
+          (CodeAlgebra.commutativePairCode
+            (child false) (child true))).val.1
+        (CodeAlgebra.commutativePairNat.invFun
+          (CodeAlgebra.commutativePairCode
+            (child false) (child true))).val.2)
+      (mkChild child) := by
+  exact Rel.trans
+    (commutativePair_code_decode_encode_repair Q mkPair
+      (child false) (child true) branch_swap)
+    (pair_target child)
+
 end Rel
 
 /-- The generated quotient relation bundled as an explicit setoid, so quotient
@@ -415,6 +441,39 @@ structure LayerNormalForm
 namespace LayerNormalForm
 
 variable {Q : QuotientPresentation P} {Out : ι → Type w}
+
+def ofComponents
+    (encodeLayer : ∀ i, Obj P Out i → Out i)
+    (decodeLayer : ∀ i, Out i → Obj P Out i)
+    (rank : ∀ i, Out i → Nat)
+    (decoded_child_rank_lt :
+      ∀ {i : ι} (z : Out i)
+        (q : P.Pos (decodeLayer i z).ctor (decodeLayer i z).param),
+        rank (P.input (decodeLayer i z).param q)
+            ((decodeLayer i z).child q) <
+          rank i z)
+    (encode_decode_layer :
+      ∀ i (z : Out i), encodeLayer i (decodeLayer i z) = z)
+    (layer_rel_respects :
+      ∀ {i : ι} {x y : Obj P (Mu P) i}
+        (encodeChild : ∀ j, Mu P j → Out j),
+        Q.LayerRel i x y →
+          encodeLayer i (Obj.map encodeChild x) =
+            encodeLayer i (Obj.map encodeChild y))
+    (layerRepair :
+      ∀ {i : ι} (realize : ∀ j, Out j → Mu P j)
+        (layer : Obj P Out i),
+        Rel Q i
+          (Mu.inn (Obj.map realize (decodeLayer i (encodeLayer i layer))))
+          (Mu.inn (Obj.map realize layer))) :
+    LayerNormalForm Q Out where
+  encodeLayer := encodeLayer
+  decodeLayer := decodeLayer
+  rank := rank
+  decoded_child_rank_lt := decoded_child_rank_lt
+  encode_decode_layer := encode_decode_layer
+  layer_rel_respects := layer_rel_respects
+  decode_encode_layer_rel := layerRepair
 
 def normalize (L : LayerNormalForm Q Out) : ∀ i, Mu P i → Out i
   | i, Mu.sup c p h child =>

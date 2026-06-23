@@ -165,164 +165,153 @@ theorem HBTChildSwapDecodedChildRank :
 /-- Layer-local data from which the quotient framework derives the recursive
 normalizer, denormalizer, and descended concrete Nat coding. -/
 def HBTChildSwapLayerNormalForm :
-    QuotientPresentation.LayerNormalForm HBTChildSwapQuotient (fun _ => Nat) where
-  encodeLayer := HBTChildSwapLayerEncode
-  decodeLayer := HBTChildSwapLayerDecode
-  rank := fun _ n => n
-  decoded_child_rank_lt := by
-    intro i z q
-    exact HBTChildSwapDecodedChildRank i z q
-  encode_decode_layer := by
-    intro i z
-    cases i with
-    | zero =>
-        rfl
-    | succ m =>
-        dsimp [HBTChildSwapLayerEncode, HBTChildSwapLayerDecode,
-          HBTChildSwapLayerDecodeSucc]
-        generalize hdecode : CodeAlgebra.sumNatDecode z = s
-        have hright := CodeAlgebra.sumNat_encode_decode z
-        rw [hdecode] at hright
-        cases s with
-        | inl label =>
-            simpa [HBTChildSwapLayerEncode] using hright
-        | inr pairCode =>
-            have hpair := CodeAlgebra.commutativePairCode_invFun pairCode
-            simpa [HBTChildSwapLayerEncode, hpair] using hright
-  layer_rel_respects := by
-    intro i x y encodeChild h
-    cases h with
-    | branch lhs rhs =>
-        simpa [HBTChildSwapLayerEncode, Obj.map, HBTPoly, HBTInput] using
-          CodeAlgebra.sumNat_commutativePairCode_swap
-            (encodeChild _ lhs) (encodeChild _ rhs)
-  decode_encode_layer_rel := by
-    intro i realize layer
-    cases layer with
-    | mk ctor param out_eq child =>
+    QuotientPresentation.LayerNormalForm HBTChildSwapQuotient (fun _ => Nat) :=
+  QuotientPresentation.LayerNormalForm.ofComponents
+    (Q := HBTChildSwapQuotient)
+    (Out := fun _ => Nat)
+    HBTChildSwapLayerEncode
+    HBTChildSwapLayerDecode
+    (fun _ n => n)
+    (by
+      intro i z q
+      exact HBTChildSwapDecodedChildRank i z q)
+    (by
+      intro i z
       cases i with
       | zero =>
-          cases ctor with
-          | leaf =>
-              cases param with
-              | mk height label =>
-                cases out_eq
-                simp [HBTChildSwapLayerEncode, HBTChildSwapLayerDecode,
-                  Obj.map, Mu.inn]
-                apply QuotientPresentation.Rel.congr
-                intro q
-                cases q
-          | branch =>
-              cases out_eq
+          rfl
       | succ m =>
-          cases ctor with
-          | leaf =>
-              cases param with
-              | mk height label =>
+          dsimp [HBTChildSwapLayerEncode, HBTChildSwapLayerDecode,
+            HBTChildSwapLayerDecodeSucc]
+          generalize hdecode : CodeAlgebra.sumNatDecode z = s
+          have hright := CodeAlgebra.sumNat_encode_decode z
+          rw [hdecode] at hright
+          cases s with
+          | inl label =>
+              simpa [HBTChildSwapLayerEncode] using hright
+          | inr pairCode =>
+              have hpair := CodeAlgebra.commutativePairCode_invFun pairCode
+              simpa [HBTChildSwapLayerEncode, hpair] using hright)
+    (by
+      intro i x y encodeChild h
+      cases h with
+      | branch lhs rhs =>
+          simpa [HBTChildSwapLayerEncode, Obj.map, HBTPoly, HBTInput] using
+            CodeAlgebra.sumNat_commutativePairCode_swap
+              (encodeChild _ lhs) (encodeChild _ rhs))
+    (by
+      intro i realize layer
+      cases layer with
+      | mk ctor param out_eq child =>
+        cases i with
+        | zero =>
+            cases ctor with
+            | leaf =>
+                cases param with
+                | mk height label =>
+                  cases out_eq
+                  simp [HBTChildSwapLayerEncode, HBTChildSwapLayerDecode,
+                    Obj.map, Mu.inn]
+                  apply QuotientPresentation.Rel.congr
+                  intro q
+                  cases q
+            | branch =>
+                cases out_eq
+        | succ m =>
+            cases ctor with
+            | leaf =>
+                cases param with
+                | mk height label =>
+                  cases out_eq
+                  dsimp [HBTChildSwapLayerEncode, HBTChildSwapLayerDecode,
+                    HBTChildSwapLayerDecodeSucc, Obj.map, Mu.inn]
+                  rw [show
+                    CodeAlgebra.sumNatDecode
+                      (CodeAlgebra.sumNat.toFun (Sum.inl label)) =
+                        Sum.inl label by
+                    exact CodeAlgebra.sumNatDecode_encode (Sum.inl label)]
+                  simp
+                  apply QuotientPresentation.Rel.congr
+                  intro q
+                  cases q
+            | branch =>
                 cases out_eq
                 dsimp [HBTChildSwapLayerEncode, HBTChildSwapLayerDecode,
                   HBTChildSwapLayerDecodeSucc, Obj.map, Mu.inn]
                 rw [show
                   CodeAlgebra.sumNatDecode
-                    (CodeAlgebra.sumNat.toFun (Sum.inl label)) =
-                      Sum.inl label by
-                  exact CodeAlgebra.sumNatDecode_encode (Sum.inl label)]
-                simp
-                apply QuotientPresentation.Rel.congr
-                intro q
-                cases q
-          | branch =>
-              cases out_eq
-              dsimp [HBTChildSwapLayerEncode, HBTChildSwapLayerDecode,
-                HBTChildSwapLayerDecodeSucc, Obj.map, Mu.inn]
-              rw [show
-                CodeAlgebra.sumNatDecode
-                  (CodeAlgebra.sumNat.toFun
-                    (Sum.inr
-                      (CodeAlgebra.commutativePairCode
-                        (child false) (child true)))) =
-                    Sum.inr
-                      (CodeAlgebra.commutativePairCode
-                        (child false) (child true)) by
+                    (CodeAlgebra.sumNat.toFun
+                      (Sum.inr
+                        (CodeAlgebra.commutativePairCode
+                          (child false) (child true)))) =
+                      Sum.inr
+                        (CodeAlgebra.commutativePairCode
+                          (child false) (child true)) by
                 exact CodeAlgebra.sumNatDecode_encode
                   (Sum.inr
                     (CodeAlgebra.commutativePairCode
                       (child false) (child true)))]
-              simp
-              have hrepair :
-                  QuotientPresentation.Rel HBTChildSwapQuotient (m + 1)
-                    (Mu.sup (P := HBTPoly) .branch m rfl
-                      (fun q => realize m (match q with
-                        | false =>
-                            (CodeAlgebra.commutativePairNat.invFun
-                              (CodeAlgebra.commutativePairCode
-                                (child false) (child true))).val.1
-                        | true =>
-                            (CodeAlgebra.commutativePairNat.invFun
-                              (CodeAlgebra.commutativePairCode
-                                (child false) (child true))).val.2)))
-                    (Mu.sup (P := HBTPoly) .branch m rfl
-                      (fun q => realize m (match q with
-                        | false => child false
-                        | true => child true))) :=
-                QuotientPresentation.Rel.commutativePair_code_decode_encode_repair
-                  HBTChildSwapQuotient
-                  (fun lhs rhs =>
-                    Mu.sup (P := HBTPoly) .branch m rfl
-                      (fun q => realize m (match q with
-                        | false => lhs
-                        | true => rhs)))
-                  (child false)
-                  (child true)
-                  (fun lhs rhs => by
-                    have hleft :
-                        QuotientPresentation.Rel HBTChildSwapQuotient (m + 1)
-                          (Mu.sup (P := HBTPoly) .branch m rfl
-                            (fun q => realize m (match q with
-                              | false => lhs
-                              | true => rhs)))
-                          (Mu.sup (P := HBTPoly) .branch m rfl (fun
-                            | false => realize m lhs
-                            | true => realize m rhs)) := by
+                simp
+                exact
+                  QuotientPresentation.Rel.commutativePair_boolTarget_decode_encode_repair
+                    HBTChildSwapQuotient
+                    (fun lhs rhs =>
+                      Mu.sup (P := HBTPoly) .branch m rfl
+                        (fun q => realize m (match q with
+                          | false => lhs
+                          | true => rhs)))
+                    (fun f =>
+                      Mu.sup (P := HBTPoly) .branch m rfl
+                        (fun q => realize m (f q)))
+                    child
+                    (fun f => by
                       apply QuotientPresentation.Rel.congr
                       intro q
-                      cases q <;> exact QuotientPresentation.Rel.refl _
-                    have hswap :
-                        QuotientPresentation.Rel HBTChildSwapQuotient (m + 1)
-                          (Mu.sup (P := HBTPoly) .branch m rfl (fun
-                            | false => realize m lhs
-                            | true => realize m rhs))
-                          (Mu.sup (P := HBTPoly) .branch m rfl (fun
-                            | false => realize m rhs
-                            | true => realize m lhs)) :=
-                      QuotientPresentation.Rel.layer
-                        (HBTSwapLayerRel.branch (realize m lhs) (realize m rhs))
-                    have hright :
-                        QuotientPresentation.Rel HBTChildSwapQuotient (m + 1)
-                          (Mu.sup (P := HBTPoly) .branch m rfl (fun
-                            | false => realize m rhs
-                            | true => realize m lhs))
-                          (Mu.sup (P := HBTPoly) .branch m rfl
-                            (fun q => realize m (match q with
-                              | false => rhs
-                              | true => lhs))) := by
-                      apply QuotientPresentation.Rel.congr
-                      intro q
-                      cases q <;> exact QuotientPresentation.Rel.refl _
-                    exact QuotientPresentation.Rel.trans hleft
-                      (QuotientPresentation.Rel.trans hswap hright))
-              have htarget :
-                  QuotientPresentation.Rel HBTChildSwapQuotient (m + 1)
-                    (Mu.sup (P := HBTPoly) .branch m rfl
-                      (fun q => realize m (match q with
-                        | false => child false
-                        | true => child true)))
-                    (Mu.sup (P := HBTPoly) .branch m rfl
-                      (fun q => realize m (child q))) := by
-                apply QuotientPresentation.Rel.congr
-                intro q
-                cases q <;> exact QuotientPresentation.Rel.refl _
-              exact QuotientPresentation.Rel.trans hrepair htarget
+                      cases q
+                      · exact QuotientPresentation.Rel.refl _
+                      · exact QuotientPresentation.Rel.refl _)
+                    (fun lhs rhs => by
+                      have leftStep :
+                          QuotientPresentation.Rel HBTChildSwapQuotient (m + 1)
+                            (Mu.sup (P := HBTPoly) .branch m rfl
+                              (fun q => realize m (match q with
+                                | false => lhs
+                                | true => rhs)))
+                            (Mu.sup (P := HBTPoly) .branch m rfl (fun
+                              | false => realize m lhs
+                              | true => realize m rhs)) := by
+                        apply QuotientPresentation.Rel.congr
+                        intro q
+                        cases q
+                        · exact QuotientPresentation.Rel.refl _
+                        · exact QuotientPresentation.Rel.refl _
+                      have swapStep :
+                          QuotientPresentation.Rel HBTChildSwapQuotient (m + 1)
+                            (Mu.sup (P := HBTPoly) .branch m rfl (fun
+                              | false => realize m lhs
+                              | true => realize m rhs))
+                            (Mu.sup (P := HBTPoly) .branch m rfl (fun
+                              | false => realize m rhs
+                              | true => realize m lhs)) :=
+                        QuotientPresentation.Rel.layer
+                          (HBTSwapLayerRel.branch (realize m lhs) (realize m rhs))
+                      have rightStep :
+                          QuotientPresentation.Rel HBTChildSwapQuotient (m + 1)
+                            (Mu.sup (P := HBTPoly) .branch m rfl (fun
+                              | false => realize m rhs
+                              | true => realize m lhs))
+                            (Mu.sup (P := HBTPoly) .branch m rfl
+                              (fun q => realize m (match q with
+                                | false => rhs
+                                | true => lhs))) := by
+                        apply QuotientPresentation.Rel.congr
+                        intro q
+                        cases q
+                        · exact QuotientPresentation.Rel.refl _
+                        · exact QuotientPresentation.Rel.refl _
+                      exact QuotientPresentation.Rel.trans leftStep
+                        (QuotientPresentation.Rel.trans swapStep rightStep))
+    )
 
 /-- Concrete descent of the generated HBT Nat code through the branch-swap
 quotient relation. -/
