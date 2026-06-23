@@ -1,5 +1,5 @@
 import BijForm.Examples.Num
-import BijForm.RankDescent
+import BijForm.CodeAlgebra
 
 namespace BijForm
 namespace Examples
@@ -99,17 +99,8 @@ def PeanoSyntaxToLayer (k : Nat) :
       | true => rhs⟩
   | .forallE e => ⟨⟨PeanoCtor.forallE, (k : Nat), rfl⟩, fun _ => e⟩
 
-theorem Peano_layer_child_rank_lt :
-    ∀ {k : Nat} (z : PeanoSyntax k)
-      (q : PeanoPoly.Pos
-          (PeanoInversion.decode k (PeanoSyntaxToLayer k z).1).ctor
-          (PeanoInversion.decode k (PeanoSyntaxToLayer k z).1).param),
-      PeanoSyntax.rank ((PeanoSyntaxToLayer k z).2 q) <
-        PeanoSyntax.rank z := by
-  rank_descent
-
 def PeanoSyntaxPresentation : SyntaxPresentation PeanoPoly PeanoInversion PeanoSyntax :=
-  SyntaxPresentation.ofLayerIso
+  SyntaxPresentation.ofLayerIsoChildRank
     (fun k =>
       { toFun := PeanoLayerToSyntax k
         invFun := PeanoSyntaxToLayer k
@@ -135,7 +126,29 @@ def PeanoSyntaxPresentation : SyntaxPresentation PeanoPoly PeanoInversion PeanoS
           intro e
           cases e <;> simp [PeanoLayerToSyntax, PeanoSyntaxToLayer] })
     (fun _ e => PeanoSyntax.rank e)
-    Peano_layer_child_rank_lt
+    (by
+      intro k layer q
+      rcases layer with ⟨⟨ctor, param, out_eq⟩, child⟩
+      cases ctor with
+      | eq =>
+          cases param with
+          | mk k' pair =>
+              cases pair with
+              | mk lhs rhs =>
+                  dsimp [PeanoPoly, PeanoOut] at out_eq
+                  cases out_eq
+                  cases q
+      | not =>
+          cases out_eq
+          cases q
+          simp [PeanoLayerToSyntax]
+      | implies =>
+          cases out_eq
+          cases q <;> simp [PeanoLayerToSyntax]
+      | forallE =>
+          cases out_eq
+          cases q
+          simp [PeanoLayerToSyntax])
 
 def PeanoGeneratedCode : GeneratedCode PeanoPoly PeanoSyntax :=
   PeanoSyntaxPresentation.generatedCode
@@ -224,24 +237,44 @@ def PeanoNatLayerShapeLayerPresentation :
           rcases tail with child | (⟨_lhs, _rhs⟩ | child) <;> rfl
     exact hshape x)
 
-theorem PeanoNat_layer_child_lt :
-    ∀ {k : Nat} (layer : CodeLayer PeanoPoly PeanoInversion (fun _ => Nat) k)
-      (q : PeanoPoly.Pos
-          (PeanoInversion.decode k layer.1).ctor
-          (PeanoInversion.decode k layer.1).param),
-      layer.2 q <
-        CodeAlgebra.prodOrNatOrProdOrNat.toFun (PeanoNatLayerShapeTo k layer) := by
-  rank_descent [PeanoNatLayerShapeTo, PeanoPoly, PeanoOut, PeanoPos,
-    PeanoInput, PeanoInversion]
-
 def PeanoNatLayerPresentation : NatLayerPresentation PeanoPoly PeanoInversion :=
   LayerPresentation.ofLayerShapeChildRank
     PeanoNatLayerShapeLayerPresentation
     (fun _ => CodeAlgebra.prodOrNatOrProdOrNat)
     (fun _ n => n)
     (by
-    intro k layer q
-    exact PeanoNat_layer_child_lt layer q)
+      intro k layer q
+      rcases layer with ⟨⟨ctor, param, out_eq⟩, child⟩
+      cases ctor with
+      | eq =>
+          cases param with
+          | mk k' pair =>
+              cases pair with
+              | mk lhs rhs =>
+                  dsimp [PeanoPoly, PeanoOut] at out_eq
+                  cases out_eq
+                  cases q
+      | not =>
+          cases out_eq
+          cases q
+          simp [CodeLayerPresentation.iso, CodeLayerPresentation.transCarrier,
+            PeanoNatLayerShapeLayerPresentation, PeanoNatLayerShapeTo,
+            PeanoPoly, PeanoOut, PeanoInput, PeanoInversion,
+            OutputIndexInversion.canonical]
+      | implies =>
+          cases out_eq
+          cases q <;>
+            simp [CodeLayerPresentation.iso, CodeLayerPresentation.transCarrier,
+              PeanoNatLayerShapeLayerPresentation, PeanoNatLayerShapeTo,
+              PeanoPoly, PeanoOut, PeanoInput, PeanoInversion,
+              OutputIndexInversion.canonical]
+      | forallE =>
+          cases out_eq
+          cases q
+          simp [CodeLayerPresentation.iso, CodeLayerPresentation.transCarrier,
+            PeanoNatLayerShapeLayerPresentation, PeanoNatLayerShapeTo,
+            PeanoPoly, PeanoOut, PeanoInput, PeanoInversion,
+            OutputIndexInversion.canonical])
 
 def PeanoNatGeneratedCode : GeneratedNatCode PeanoPoly :=
   LayerPresentation.generatedCode PeanoNatLayerPresentation

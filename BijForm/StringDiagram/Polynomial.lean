@@ -1,5 +1,5 @@
 import BijForm.StringDiagram.Basic
-import BijForm.RankDescent
+import BijForm.InitialAlgebra
 
 namespace BijForm
 namespace StringDiagram
@@ -105,21 +105,10 @@ def syntaxToLayer (Sig : Signature) (boundary : List Sig.Port) :
   | @Diag.bud _ active frontier node entry ok child =>
       ⟨⟨Ctor.bud, ⟨active, frontier, node, entry, ok⟩, rfl⟩, fun _ => child⟩
 
-theorem layer_child_rank_lt (Sig : Signature) :
-    ∀ {boundary : List Sig.Port} (z : Diag Sig boundary)
-      (q : (poly Sig).Pos
-          ((inversion Sig).decode boundary
-            (syntaxToLayer Sig boundary z).1).ctor
-          ((inversion Sig).decode boundary
-            (syntaxToLayer Sig boundary z).1).param),
-      Diag.rank ((syntaxToLayer Sig boundary z).2 q) <
-        Diag.rank z := by
-  rank_descent
-
 /-- Presentation of typed rooted open diagram syntax as generated code data. -/
 def syntaxPresentation (Sig : Signature) :
     SyntaxPresentation (poly Sig) (inversion Sig) (Diag Sig) :=
-  SyntaxPresentation.ofLayerIso
+  SyntaxPresentation.ofLayerIsoChildRank
     (fun boundary =>
       { toFun := layerToSyntax Sig boundary
         invFun := syntaxToLayer Sig boundary
@@ -147,7 +136,26 @@ def syntaxPresentation (Sig : Signature) :
           | connect mate ok child => rfl
           | bud node entry ok child => rfl })
     (fun _ t => Diag.rank t)
-    (layer_child_rank_lt Sig)
+    (by
+      intro boundary layer q
+      rcases layer with ⟨⟨ctor, param, out_eq⟩, child⟩
+      cases ctor with
+      | finish =>
+          cases param
+          cases out_eq
+          cases q
+      | connect =>
+          cases param with
+          | mk active frontier mate ok =>
+              cases out_eq
+              cases q
+              simp [layerToSyntax]
+      | bud =>
+          cases param with
+          | mk active frontier node entry ok =>
+              cases out_eq
+              cases q
+              simp [layerToSyntax])
 
 /-- Generated coding data for typed rooted open diagram syntax. -/
 def generatedCode (Sig : Signature) : GeneratedCode (poly Sig) (Diag Sig) :=

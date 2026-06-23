@@ -826,6 +826,22 @@ def ofCarrierLayerIso
     LayerPresentation P H Code :=
   ofLayer (CodeLayerPresentation.ofIso layer) rank child_rank_lt
 
+/--
+Build a layer presentation from a carrier isomorphism and a layer-local child
+descent proof. This keeps structural rank evidence at the decoded layer
+boundary instead of requiring callers to restate it over re-decoded parents.
+-/
+def ofCarrierLayerIsoChildRank
+    (layer : ∀ i, CodeLayer P H Code i ≃ᵢ Code i)
+    (rank : ∀ i, Code i → Nat)
+    (layer_child_rank_lt :
+      ∀ {i : ι} (x : CodeLayer P H Code i)
+        (q : P.Pos (H.decode i x.1).ctor (H.decode i x.1).param),
+        rank (P.input (H.decode i x.1).param q) (x.2 q) <
+          rank i ((layer i).toFun x)) :
+    LayerPresentation P H Code :=
+  ofLayerChildRank (CodeLayerPresentation.ofIso layer) rank layer_child_rank_lt
+
 def generatedCode (D : LayerPresentation P H Code) :
     GeneratedCode P Code :=
   GeneratedCode.ofLayerChildRank H D.layer.iso D.rank (by
@@ -873,6 +889,21 @@ def ofLayerIso
             (((layer i).invFun z).2 q) < rank i z) :
     SyntaxPresentation P H Syntax :=
   LayerPresentation.ofCarrierLayerIso layer rank child_rank_lt
+
+/--
+Readable-syntax presentation from a layer isomorphism and a layer-local
+structural rank proof.
+-/
+def ofLayerIsoChildRank
+    (layer : ∀ i, CodeLayer P H Syntax i ≃ᵢ Syntax i)
+    (rank : ∀ i, Syntax i → Nat)
+    (layer_child_rank_lt :
+      ∀ {i : ι} (x : CodeLayer P H Syntax i)
+        (q : P.Pos (H.decode i x.1).ctor (H.decode i x.1).param),
+        rank (P.input (H.decode i x.1).param q) (x.2 q) <
+          rank i ((layer i).toFun x)) :
+    SyntaxPresentation P H Syntax :=
+  LayerPresentation.ofCarrierLayerIsoChildRank layer rank layer_child_rank_lt
 
 def ofLayerMaps
     (toSyntax : ∀ i, CodeLayer P H Syntax i → Syntax i)

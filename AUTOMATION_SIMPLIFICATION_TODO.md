@@ -20,10 +20,9 @@ rg -n 'LayerPresentation\.ofCarrierLayerIso|LayerPresentation\.ofLayerMaps|Synta
 For every closed item, add a source scan that would fail if the old proof-owner
 model reappears under a renamed theorem, wrapper, or compatibility alias.
 
-## Required Item Shape
+## Required Proof-Debt Item Shape
 
-Every item below must remain proof-automation or proof-schema debt. Each item
-must keep these fields visible:
+Every proof-debt item below must keep these fields visible:
 
 - Evidence: current source symbols or proof patterns preserving the wrong model.
 - Owner: generic proof/schema boundary that should discharge the class.
@@ -33,7 +32,7 @@ must keep these fields visible:
 
 ## Rank Descent And Layer Presentations
 
-- [ ] Replace the current `rank_descent` macro model with real structural rank
+- [x] Replace the current `rank_descent` macro model with real structural rank
   schemas.
   Evidence: `BijForm/RankDescent.lean` has macros that destruct `idx`, `z`,
   `layer`, `ctor`, and `out_eq`, then rely on `simp_all!` and `omega`.
@@ -46,7 +45,7 @@ must keep these fields visible:
   `*_layer_child_rank_lt` wrappers whose bodies are only `rank_descent`.
   Validation:
   ```bash
-  rg -n 'theorem .*_layer_child_rank_lt|rank_descent' BijForm/Examples BijForm/StringDiagram/Polynomial.lean
+  rg -n 'theorem .*_layer_child_rank_lt|\brank_descent\b' BijForm/Examples BijForm/StringDiagram/Polynomial.lean
   ```
 
 - [ ] Collapse thin `LayerPresentation` transport constructors into one
@@ -378,4 +377,34 @@ must keep these fields visible:
   Validation:
   ```bash
   rg -n 'EdgeMateData|FirstPendingStepSearchView|RenderPrefixChildStep' BijForm/StringDiagram
+  ```
+
+## Boundary Hygiene
+
+These items are intentionally separate from the proof-debt list above. They are
+tracked here because they were found during the same simplification survey and
+were explicitly requested to remain visible.
+
+- [ ] Move concrete unordered-pair/BinarySwap example material out of shared
+  tuple-action infrastructure or generalize it.
+  Evidence: `TupleAction.lean` contains `BinarySwap`, while shared tuple-action
+  support should expose `ConcreteQuotientCode`, `FiniteAction`, and orbit
+  coding schemas.
+  Owner: either an examples module or a genuinely generic finite action schema.
+  Delete or replace: concrete `BinarySwap` shared-layer declarations if they
+  are only example material.
+  Validation:
+  ```bash
+  rg -n 'BinarySwap|unorderedPair' BijForm/TupleAction.lean BijForm/Examples
+  ```
+
+- [ ] Fix README/API drift for string-diagram finite coding rank names after
+  the finite-coding rank schema is simplified.
+  Evidence: README mentions `StringDiagram.singleSortedFiniteLayer_child_rank_lt`,
+  while source currently has private `singleSortedFiniteLayer_shape_child_rank_lt`.
+  Owner: README only after the source API is settled.
+  Delete or replace: stale public-surface names in docs.
+  Validation:
+  ```bash
+  rg -n 'singleSortedFiniteLayer_child_rank_lt|singleSortedFiniteLayer_shape_child_rank_lt' README.md BijForm
   ```

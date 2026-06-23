@@ -1,4 +1,5 @@
-import BijForm.RankDescent
+import BijForm.InitialAlgebra
+import BijForm.CodeAlgebra
 
 namespace BijForm
 namespace Examples
@@ -83,17 +84,8 @@ def LamSyntaxToLayer (k : Nat) :
       | false => fn
       | true => arg⟩
 
-theorem Lam_layer_child_rank_lt :
-    ∀ {k : Nat} (z : LamSyntax k)
-      (q : LamPoly.Pos
-          (LamInversion.decode k (LamSyntaxToLayer k z).1).ctor
-          (LamInversion.decode k (LamSyntaxToLayer k z).1).param),
-      LamSyntax.rank ((LamSyntaxToLayer k z).2 q) <
-        LamSyntax.rank z := by
-  rank_descent
-
 def LamSyntaxPresentation : SyntaxPresentation LamPoly LamInversion LamSyntax :=
-  SyntaxPresentation.ofLayerIso
+  SyntaxPresentation.ofLayerIsoChildRank
     (fun k =>
       { toFun := LamLayerToSyntax k
         invFun := LamSyntaxToLayer k
@@ -115,7 +107,22 @@ def LamSyntaxPresentation : SyntaxPresentation LamPoly LamInversion LamSyntax :=
           intro t
           cases t <;> simp [LamLayerToSyntax, LamSyntaxToLayer] })
     (fun _ t => LamSyntax.rank t)
-    Lam_layer_child_rank_lt
+    (by
+      intro k layer q
+      rcases layer with ⟨⟨ctor, param, out_eq⟩, child⟩
+      cases ctor with
+      | var =>
+          cases param with
+          | mk k' v =>
+              cases out_eq
+              cases q
+      | lam =>
+          cases out_eq
+          cases q
+          simp [LamLayerToSyntax]
+      | app =>
+          cases out_eq
+          cases q <;> simp [LamLayerToSyntax])
 
 def LamGeneratedCode : GeneratedCode LamPoly LamSyntax :=
   LamSyntaxPresentation.generatedCode
@@ -194,28 +201,43 @@ theorem LamNatLayer_zero_invFun_zero :
       ⟨⟨LamCtor.lam, (0 : Nat), rfl⟩, fun _ => 0⟩ := by
   rfl
 
-theorem LamNat_layer_child_rank_lt :
-    ∀ {k : Nat} (layer : CodeLayer LamPoly LamInversion (fun _ => Nat) k)
-      (q : LamPoly.Pos
-          (LamInversion.decode k layer.1).ctor
-          (LamInversion.decode k layer.1).param),
-      LamNatRank
-          (LamPoly.input (LamInversion.decode k layer.1).param q)
-          (layer.2 q) <
-        LamNatRank k
-          ((CodeAlgebra.finPrefixNat k CodeAlgebra.sumProdNat).toFun
-            (LamNatLayerShapeTo k layer)) := by
-  rank_descent [LamNatLayerShapeTo, LamNatRank, LamPoly, LamOut, LamPos,
-    LamInput, LamInversion]
-
 def LamNatLayerPresentation : RankedNatLayerPresentation LamPoly LamInversion :=
   LayerPresentation.ofLayerShapeChildRank
     LamNatLayerShapeLayerPresentation
     (fun k => CodeAlgebra.finPrefixNat k CodeAlgebra.sumProdNat)
     LamNatRank
     (by
-    intro k layer q
-    exact LamNat_layer_child_rank_lt layer q)
+      intro k layer q
+      rcases layer with ⟨⟨ctor, param, out_eq⟩, child⟩
+      cases ctor with
+      | var =>
+          cases param with
+          | mk k' v =>
+              cases out_eq
+              cases q
+      | lam =>
+          cases out_eq
+          cases q
+          simp [CodeLayerPresentation.iso, CodeLayerPresentation.transCarrier,
+            LamNatLayerShapeLayerPresentation, LamNatLayerShapeTo, LamNatRank,
+            LamPoly, LamOut, LamInput, LamInversion, OutputIndexInversion.canonical]
+      | app =>
+          cases out_eq
+          cases q
+          · have h :=
+              CodeAlgebra.finPrefixNat_sumProdNat_toFun_inr_inr_fst_pair_lt
+                param (child false) (child true)
+            simp [CodeLayerPresentation.iso, CodeLayerPresentation.transCarrier,
+              LamNatLayerShapeLayerPresentation, LamNatLayerShapeTo, LamNatRank,
+              LamPoly, LamOut, LamInput, LamInversion,
+              OutputIndexInversion.canonical] at h ⊢
+          · have h :=
+              CodeAlgebra.finPrefixNat_sumProdNat_toFun_inr_inr_snd_pair_lt
+                param (child false) (child true)
+            simp [CodeLayerPresentation.iso, CodeLayerPresentation.transCarrier,
+              LamNatLayerShapeLayerPresentation, LamNatLayerShapeTo, LamNatRank,
+              LamPoly, LamOut, LamInput, LamInversion,
+              OutputIndexInversion.canonical] at h ⊢)
 
 def LamNatGeneratedCode : GeneratedNatCode LamPoly :=
   LayerPresentation.generatedCode LamNatLayerPresentation

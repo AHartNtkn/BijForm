@@ -1,4 +1,5 @@
-import BijForm.RankDescent
+import BijForm.InitialAlgebra
+import BijForm.CodeAlgebra
 
 namespace BijForm
 namespace Examples
@@ -161,19 +162,8 @@ def SortedSyntaxToLayer (i : SortedIx) :
         | false => lhs
         | true => rhs⟩
 
-theorem Sorted_layer_child_rank_lt :
-    ∀ {i : SortedIx} (z : SortedSyntax i)
-      (q : SortedPoly.Pos
-          (SortedInversion.decode i
-            (SortedSyntaxToLayer i z).1).ctor
-          (SortedInversion.decode i
-            (SortedSyntaxToLayer i z).1).param),
-      SortedSyntax.rank ((SortedSyntaxToLayer i z).2 q) <
-        SortedSyntax.rank z := by
-  rank_descent
-
 def SortedSyntaxPresentation : SyntaxPresentation SortedPoly SortedInversion SortedSyntax :=
-  SyntaxPresentation.ofLayerIso
+  SyntaxPresentation.ofLayerIsoChildRank
     (fun i =>
       { toFun := SortedLayerToSyntax i
         invFun := SortedSyntaxToLayer i
@@ -195,7 +185,18 @@ def SortedSyntaxPresentation : SyntaxPresentation SortedPoly SortedInversion Sor
           | leaf => rfl
           | branch pivot lhs rhs => rfl })
     (fun _ t => SortedSyntax.rank t)
-    Sorted_layer_child_rank_lt
+    (by
+      intro i layer q
+      rcases layer with ⟨⟨ctor, param, out_eq⟩, child⟩
+      cases ctor with
+      | leaf =>
+          cases out_eq
+          cases q
+      | branch =>
+          cases param with
+          | mk j pivot =>
+              cases out_eq
+              cases q <;> simp [SortedLayerToSyntax])
 
 def SortedGeneratedCode : GeneratedCode SortedPoly SortedSyntax :=
   SortedSyntaxPresentation.generatedCode

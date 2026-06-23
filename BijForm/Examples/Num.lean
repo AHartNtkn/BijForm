@@ -1,4 +1,5 @@
-import BijForm.RankDescent
+import BijForm.InitialAlgebra
+import BijForm.CodeAlgebra
 
 namespace BijForm
 namespace Examples
@@ -114,17 +115,8 @@ def NumSyntaxToLayer (k : Nat) :
       | false => lhs
       | true => rhs⟩
 
-theorem Num_layer_child_rank_lt :
-    ∀ {k : Nat} (z : NumSyntax k)
-      (q : NumPoly.Pos
-          (NumInversion.decode k (NumSyntaxToLayer k z).1).ctor
-          (NumInversion.decode k (NumSyntaxToLayer k z).1).param),
-      NumSyntax.rank ((NumSyntaxToLayer k z).2 q) <
-        NumSyntax.rank z := by
-  rank_descent
-
 def NumSyntaxPresentation : SyntaxPresentation NumPoly NumInversion NumSyntax :=
-  SyntaxPresentation.ofLayerIso
+  SyntaxPresentation.ofLayerIsoChildRank
     (fun k =>
       { toFun := NumLayerToSyntax k
         invFun := NumSyntaxToLayer k
@@ -150,7 +142,33 @@ def NumSyntaxPresentation : SyntaxPresentation NumPoly NumInversion NumSyntax :=
           intro e
           cases e <;> simp [NumLayerToSyntax, NumSyntaxToLayer] })
     (fun _ e => NumSyntax.rank e)
-    Num_layer_child_rank_lt
+    (by
+      intro k layer q
+      rcases layer with ⟨⟨ctor, param, out_eq⟩, child⟩
+      cases ctor with
+      | var =>
+          cases param with
+          | mk k' v =>
+              dsimp [NumPoly, NumOut] at out_eq
+              cases out_eq
+              cases q
+      | zero =>
+          dsimp [NumPoly, NumOut] at out_eq
+          cases out_eq
+          cases q
+      | succ =>
+          dsimp [NumPoly, NumOut] at out_eq
+          cases out_eq
+          cases q
+          simp [NumLayerToSyntax]
+      | plus =>
+          dsimp [NumPoly, NumOut] at out_eq
+          cases out_eq
+          cases q <;> simp [NumLayerToSyntax]
+      | times =>
+          dsimp [NumPoly, NumOut] at out_eq
+          cases out_eq
+          cases q <;> simp [NumLayerToSyntax])
 
 def NumGeneratedCode : GeneratedCode NumPoly NumSyntax :=
   NumSyntaxPresentation.generatedCode
@@ -273,25 +291,47 @@ def NumNatLayerShapeLayerPresentation :
             rfl
     exact hshape x)
 
-theorem NumNat_layer_child_lt :
-    ∀ {k : Nat} (layer : CodeLayer NumPoly NumInversion (fun _ => Nat) k)
-      (q : NumPoly.Pos
-          (NumInversion.decode k layer.1).ctor
-          (NumInversion.decode k layer.1).param),
-      layer.2 q <
-        (CodeAlgebra.finPrefixNat (k + 2) CodeAlgebra.natOrProdOrProdNat).toFun
-          (NumNatLayerShapeTo k layer) := by
-  rank_descent [NumNatLayerShapeTo, NumPoly, NumOut, NumPos, NumInput,
-    NumInversion]
-
 def NumNatLayerPresentation : NatLayerPresentation NumPoly NumInversion :=
   LayerPresentation.ofLayerShapeChildRank
     NumNatLayerShapeLayerPresentation
     (fun k => CodeAlgebra.finPrefixNat (k + 2) CodeAlgebra.natOrProdOrProdNat)
     (fun _ n => n)
     (by
-    intro k layer q
-    exact NumNat_layer_child_lt layer q)
+      intro k layer q
+      rcases layer with ⟨⟨ctor, param, out_eq⟩, child⟩
+      cases ctor with
+      | var =>
+          cases param with
+          | mk k' v =>
+              dsimp [NumPoly, NumOut] at out_eq
+              cases out_eq
+              cases q
+      | zero =>
+          dsimp [NumPoly, NumOut] at out_eq
+          cases out_eq
+          cases q
+      | succ =>
+          dsimp [NumPoly, NumOut] at out_eq
+          cases out_eq
+          cases q
+          simp [CodeLayerPresentation.iso, CodeLayerPresentation.transCarrier,
+            NumNatLayerShapeLayerPresentation, NumNatLayerShapeTo]
+      | plus =>
+          dsimp [NumPoly, NumOut] at out_eq
+          cases out_eq
+          cases q
+          · simp [CodeLayerPresentation.iso, CodeLayerPresentation.transCarrier,
+              NumNatLayerShapeLayerPresentation, NumNatLayerShapeTo]
+          · simp [CodeLayerPresentation.iso, CodeLayerPresentation.transCarrier,
+              NumNatLayerShapeLayerPresentation, NumNatLayerShapeTo]
+      | times =>
+          dsimp [NumPoly, NumOut] at out_eq
+          cases out_eq
+          cases q
+          · simp [CodeLayerPresentation.iso, CodeLayerPresentation.transCarrier,
+              NumNatLayerShapeLayerPresentation, NumNatLayerShapeTo]
+          · simp [CodeLayerPresentation.iso, CodeLayerPresentation.transCarrier,
+              NumNatLayerShapeLayerPresentation, NumNatLayerShapeTo])
 
 def NumNatGeneratedCode : GeneratedNatCode NumPoly :=
   LayerPresentation.generatedCode NumNatLayerPresentation

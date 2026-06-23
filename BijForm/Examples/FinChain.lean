@@ -1,4 +1,5 @@
-import BijForm.RankDescent
+import BijForm.InitialAlgebra
+import BijForm.CodeAlgebra
 
 namespace BijForm
 namespace Examples
@@ -70,20 +71,9 @@ def FinChainSyntaxToLayer (i : Nat) :
   | @FinChainSyntax.step n tag child =>
       ⟨⟨FinChainCtor.step, ⟨n, tag⟩, rfl⟩, fun _ => child⟩
 
-theorem FinChain_layer_child_rank_lt :
-    ∀ {i : Nat} (z : FinChainSyntax i)
-      (q : FinChainPoly.Pos
-          (FinChainInversion.decode i
-            (FinChainSyntaxToLayer i z).1).ctor
-          (FinChainInversion.decode i
-            (FinChainSyntaxToLayer i z).1).param),
-      FinChainSyntax.rank ((FinChainSyntaxToLayer i z).2 q) <
-        FinChainSyntax.rank z := by
-  rank_descent
-
 def FinChainSyntaxPresentation :
     SyntaxPresentation FinChainPoly FinChainInversion FinChainSyntax :=
-  SyntaxPresentation.ofLayerIso
+  SyntaxPresentation.ofLayerIsoChildRank
     (fun i =>
       { toFun := FinChainLayerToSyntax i
         invFun := FinChainSyntaxToLayer i
@@ -105,7 +95,19 @@ def FinChainSyntaxPresentation :
           | done => rfl
           | step tag child => rfl })
     (fun _ t => FinChainSyntax.rank t)
-    FinChain_layer_child_rank_lt
+    (by
+      intro i layer q
+      rcases layer with ⟨⟨ctor, param, out_eq⟩, child⟩
+      cases ctor with
+      | done =>
+          cases out_eq
+          cases q
+      | step =>
+          cases param with
+          | mk n tag =>
+              cases out_eq
+              cases q
+              simp [FinChainLayerToSyntax])
 
 def FinChainGeneratedCode : GeneratedCode FinChainPoly FinChainSyntax :=
   FinChainSyntaxPresentation.generatedCode
@@ -217,9 +219,20 @@ def FinChainLayerPresentation :
     FinChainLayerCarrierIso
     (fun i _ => i)
     (by
-    rank_descent [FinChainLayerShape, FinChainLayerShapeLayerPresentation,
-      FinChainLayerCarrierIso, FinChainCarrier, FinChainShape, FinChainPos,
-      FinChainInput, FinChainPoly, FinChainOut, FinChainInversion])
+      intro i shape q
+      cases i with
+      | zero =>
+          cases q
+      | succ n =>
+          cases shape with
+          | inl done =>
+              cases q
+          | inr pair =>
+              cases q
+              simp [FinChainLayerShapeLayerPresentation, FinChainLayerShape,
+                FinChainCarrier, FinChainShape, FinChainPos, FinChainInput,
+                FinChainPoly, FinChainOut, FinChainInversion,
+                OutputIndexInversion.canonical])
 
 def FinChainShapeLayerPresentation :
     ShapeLayerPresentation FinChainPoly FinChainInversion :=

@@ -1,4 +1,5 @@
-import BijForm.RankDescent
+import BijForm.InitialAlgebra
+import BijForm.CodeAlgebra
 
 namespace BijForm
 namespace Examples
@@ -89,22 +90,13 @@ def HBTSyntaxToLayer (i : Nat) :
         | false => lhs
         | true => rhs⟩
 
-theorem HBT_layer_child_rank_lt :
-    ∀ {i : Nat} (z : HBTSyntax i)
-        (q : HBTPoly.Pos
-          (HBTInversion.decode i (HBTSyntaxToLayer i z).1).ctor
-          (HBTInversion.decode i (HBTSyntaxToLayer i z).1).param),
-      HBTSyntax.rank ((HBTSyntaxToLayer i z).2 q) <
-        HBTSyntax.rank z := by
-  rank_descent
-
 /--
 Generated coding data for height-bounded trees. The example supplies only
 the local layer coding over `HBTInversion`; the full object-layer step is
 produced by the generated-code construction.
 -/
 def HBTSyntaxPresentation : SyntaxPresentation HBTPoly HBTInversion HBTSyntax :=
-  SyntaxPresentation.ofLayerIso
+  SyntaxPresentation.ofLayerIsoChildRank
     (fun i =>
       { toFun := HBTLayerToSyntax i
         invFun := HBTSyntaxToLayer i
@@ -124,7 +116,18 @@ def HBTSyntaxPresentation : SyntaxPresentation HBTPoly HBTInversion HBTSyntax :=
           intro t
           cases t <;> simp [HBTLayerToSyntax, HBTSyntaxToLayer] })
     (fun _ t => HBTSyntax.rank t)
-    HBT_layer_child_rank_lt
+    (by
+      intro i layer q
+      rcases layer with ⟨⟨ctor, param, out_eq⟩, child⟩
+      cases ctor with
+      | leaf =>
+          cases param with
+          | mk height label =>
+              cases out_eq
+              cases q
+      | branch =>
+          cases out_eq
+          cases q <;> simp [HBTLayerToSyntax])
 
 def HBTGeneratedCode : GeneratedCode HBTPoly HBTSyntax :=
   HBTSyntaxPresentation.generatedCode
@@ -206,8 +209,20 @@ def HBTNatLayerPresentation : NatLayerPresentation HBTPoly HBTInversion :=
     HBTNatLayerCarrierIso
     (fun _ n => n)
     (by
-    rank_descent [HBTNatLayerShape, HBTNatLayerShapeLayerPresentation,
-      HBTNatLayerCarrierIso])
+      intro i shape q
+      cases i with
+      | zero =>
+          cases q
+      | succ m =>
+          cases shape with
+          | inl label =>
+              cases q
+          | inr p =>
+              cases p with
+              | mk lhs rhs =>
+                  cases q
+                  · exact CodeAlgebra.sumProdNat_toFun_inr_fst_pair_lt lhs rhs
+                  · exact CodeAlgebra.sumProdNat_toFun_inr_snd_pair_lt lhs rhs)
 
 /-- Generated Nat coding data for height-bounded trees. The recursive encoder
 and decoder are produced by `GeneratedNatCode`, not by an example-specific
