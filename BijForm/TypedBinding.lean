@@ -781,63 +781,7 @@ variable {Ty : Type} {S : Signature Ty} {Code : Poly.Ix S → Type}
 variable {layerShape : ∀ Γ t, LayerShape S Code Γ t ≃ᵢ Code (Γ, t)}
 variable {rank : ∀ i, Code i → Nat}
 
-theorem of_op
-    (hop : ∀ (Γ : List Ty) (c : S.Ctor)
-      (child :
-        (q : S.ArgPos c) →
-          Code ((S.arg c q).binders ++ Γ, (S.arg c q).sort))
-      (q : S.ArgPos c),
-      rank ((S.arg c q).binders ++ Γ, (S.arg c q).sort) (child q) <
-        rank (Γ, S.ret c)
-          ((layerShape Γ (S.ret c)).toFun
-            (Sum.inr
-              (⟨c, rfl, child⟩ :
-                CtorLayer S Code Γ (S.ret c))))) :
-    LayerShapeRankProof S Code layerShape rank := by
-  intro Γ t layer q
-  cases layer with
-  | mk code child =>
-    cases code with
-    | mk ctor paramCode =>
-        cases ctor with
-        | var =>
-            cases q
-        | op c =>
-            cases paramCode with
-            | up h =>
-                cases h
-                simpa [LayerShape.layerCoding, LayerShape.iso, LayerShape.layerToShape,
-                  Poly.input, Poly.depPoly] using
-                  hop Γ c child q
-
 end LayerShapeRankProof
-
-macro "typed_binding_rank_descent " "[" defs:Lean.Parser.Tactic.simpLemma,* "]"
-    " using " "[" h0:term "," h1:term "," h2:term "," h3:term "]" : tactic =>
-  `(tactic|
-    (apply BijForm.TypedBinding.LayerShapeRankProof.of_op <;>
-      rintro ctx ctor child q <;>
-      cases ctor <;>
-        first
-        | (cases q <;> omega)
-        | (cases q using Fin.cases with
-            | zero =>
-                first
-                | (simpa [$defs,*] using $h0 _ _)
-                | (simpa [$defs,*] using $h1 _ _)
-                | (simpa [$defs,*] using $h2 _ _)
-                | (simpa [$defs,*] using $h3 _ _)
-            | succ q =>
-                first
-                | (exact fin_zero_elim q)
-                | (cases q using Fin.cases with
-                    | zero =>
-                        first
-                        | (simpa [$defs,*] using $h0 _ _)
-                        | (simpa [$defs,*] using $h1 _ _)
-                        | (simpa [$defs,*] using $h2 _ _)
-                        | (simpa [$defs,*] using $h3 _ _)
-                    | succ q => exact fin_zero_elim q))))
 
 /-- Coding data whose one-step layer is generated from the typed-binding
 signature before being encoded into the concrete carrier.  Instances supply an

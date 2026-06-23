@@ -145,12 +145,17 @@ theorem NFNormalCtorIndex_spec (c : NFCtor) (h : NFRet c = .normalExp) :
 theorem NFNormalCtorIndex_get (q : Fin NFNormalCtorCases.length) :
     NFNormalCtorIndex (NFNormalCtorCases.get q).ctor
       (NFNormalCtorCases.get q).ret_eq = q := by
-  cases q using Fin.cases with
-  | zero => rfl
-  | succ q =>
-      cases q using Fin.cases with
+  cases q with
+  | mk n hn =>
+      cases n with
       | zero => rfl
-      | succ q => exact fin_zero_elim q
+      | succ n =>
+          cases n with
+          | zero => rfl
+          | succ n =>
+              exact False.elim (by
+                simp [NFNormalCtorCases] at hn
+                omega)
 
 def NFAppCtorIndex (c : NFCtor) (h : NFRet c = .appTerm) :
     Fin NFAppCtorCases.length :=
@@ -169,9 +174,13 @@ theorem NFAppCtorIndex_spec (c : NFCtor) (h : NFRet c = .appTerm) :
 theorem NFAppCtorIndex_get (q : Fin NFAppCtorCases.length) :
     NFAppCtorIndex (NFAppCtorCases.get q).ctor
       (NFAppCtorCases.get q).ret_eq = q := by
-  cases q using Fin.cases with
-  | zero => rfl
-  | succ q => exact fin_zero_elim q
+  cases q with
+  | mk n hn =>
+      cases n with
+      | zero => rfl
+      | succ n =>
+          exact False.elim (by
+            simp [NFAppCtorCases] at hn)
 
 def NFNormalDumArgsIso (Γ : List NFSort) :
     ArgTuple NFSignature NFCode Γ (NFArgs NFCtor.dum) ≃ᵢ
@@ -230,14 +239,19 @@ def NFNormalCaseCarrierIso (Γ : List NFSort) :
     intro entry
     cases entry with
     | mk q args =>
-        cases q using Fin.cases with
-        | zero =>
-            exact Sigma.ext rfl (heq_of_eq ((NFNormalDumArgsIso Γ).left_inv args))
-        | succ q =>
-            cases q using Fin.cases with
+        cases q with
+        | mk n hn =>
+            cases n with
             | zero =>
-                exact Sigma.ext rfl (heq_of_eq ((NFNormalLamArgsIso Γ).left_inv args))
-            | succ q => exact fin_zero_elim q
+                exact Sigma.ext rfl (heq_of_eq ((NFNormalDumArgsIso Γ).left_inv args))
+            | succ n =>
+                cases n with
+                | zero =>
+                    exact Sigma.ext rfl (heq_of_eq ((NFNormalLamArgsIso Γ).left_inv args))
+                | succ n =>
+                    exact False.elim (by
+                      simp [NFNormalCtorCases] at hn
+                      omega)
   right_inv := by
     intro z
     cases z with
@@ -317,10 +331,14 @@ def NFAppCaseCarrierIso (Γ : List NFSort) :
     intro entry
     cases entry with
     | mk q args =>
-        cases q using Fin.cases with
-        | zero =>
-            exact Sigma.ext rfl (heq_of_eq ((NFAppArgsIso Γ).left_inv args))
-        | succ q => exact fin_zero_elim q
+        cases q with
+        | mk n hn =>
+            cases n with
+            | zero =>
+                exact Sigma.ext rfl (heq_of_eq ((NFAppArgsIso Γ).left_inv args))
+            | succ n =>
+                exact False.elim (by
+                  simp [NFAppCtorCases] at hn)
   right_inv := by
     intro z
     exact (NFAppArgsIso Γ).right_inv z
@@ -657,25 +675,69 @@ theorem NFGeneratedLayer_app_arg_child_rank_lt (Γ : List NFSort)
     exact Nat.lt_succ_of_le (CodeAlgebra.prodNat_toFun_snd_le (fn.2, arg))
   omega
 
-theorem NFGeneratedLayer_child_rank_lt :
-    LayerShapeRankProof NFSignature NFCode NFGeneratedShapeIso NFCodeRank := by
-  typed_binding_rank_descent
-    [NFSignature, NFArgs, NFGeneratedShapeIso, NFGeneratedLayerIso,
-      NFNormalGeneratedShapeIso, NFNormalGeneratedLayerIso,
-      NFAppGeneratedShapeIso, NFAppGeneratedLayerIso]
-    using
-      [NFGeneratedLayer_dum_child_rank_lt,
-        NFGeneratedLayer_lam_child_rank_lt,
-        NFGeneratedLayer_app_fn_child_rank_lt,
-        NFGeneratedLayer_app_arg_child_rank_lt]
-
 def NFLayerShapeCodingData : LayerShapeCodingData NFSignature where
   Code := NFCode
   layerShape := NFGeneratedShapeIso
   rank := NFCodeRank
   shape_child_rank_lt := by
     intro Γ t layer q
-    exact NFGeneratedLayer_child_rank_lt layer q
+    rcases layer with ⟨⟨ctor, paramCode⟩, child⟩
+    cases ctor with
+    | var =>
+        cases q
+    | op c =>
+        cases paramCode with
+        | up h =>
+            cases h
+            cases c with
+            | dum =>
+                cases q with
+                | mk n hn =>
+                    cases n with
+                    | zero =>
+                        simpa [NFSignature, NFArgs, NFGeneratedShapeIso,
+                          NFGeneratedLayerIso, NFNormalGeneratedShapeIso,
+                          NFNormalGeneratedLayerIso, NFAppGeneratedShapeIso,
+                          NFAppGeneratedLayerIso, Poly.input, Poly.depPoly] using
+                          NFGeneratedLayer_dum_child_rank_lt Γ child
+                    | succ n =>
+                        exact False.elim (by
+                          simp [NFSignature, NFArgs] at hn)
+            | lam =>
+                cases q with
+                | mk n hn =>
+                    cases n with
+                    | zero =>
+                        simpa [NFSignature, NFArgs, NFGeneratedShapeIso,
+                          NFGeneratedLayerIso, NFNormalGeneratedShapeIso,
+                          NFNormalGeneratedLayerIso, NFAppGeneratedShapeIso,
+                          NFAppGeneratedLayerIso, Poly.input, Poly.depPoly] using
+                          NFGeneratedLayer_lam_child_rank_lt Γ child
+                    | succ n =>
+                        exact False.elim (by
+                          simp [NFSignature, NFArgs] at hn)
+            | app =>
+                cases q with
+                | mk n hn =>
+                    cases n with
+                    | zero =>
+                        simpa [NFSignature, NFArgs, NFGeneratedShapeIso,
+                          NFGeneratedLayerIso, NFNormalGeneratedShapeIso,
+                          NFNormalGeneratedLayerIso, NFAppGeneratedShapeIso,
+                          NFAppGeneratedLayerIso, Poly.input, Poly.depPoly] using
+                          NFGeneratedLayer_app_fn_child_rank_lt Γ child
+                    | succ n =>
+                        cases n with
+                        | zero =>
+                            simpa [NFSignature, NFArgs, NFGeneratedShapeIso,
+                              NFGeneratedLayerIso, NFNormalGeneratedShapeIso,
+                              NFNormalGeneratedLayerIso, NFAppGeneratedShapeIso,
+                              NFAppGeneratedLayerIso, Poly.input, Poly.depPoly] using
+                              NFGeneratedLayer_app_arg_child_rank_lt Γ child
+                        | succ n =>
+                            exact False.elim (by
+                              simp [NFSignature, NFArgs] at hn
+                              omega)
 
 def NFSyntaxCodeIso (Γ : List NFSort) (t : NFSort) :
     NFTerm Γ t ≃ᵢ NFCode (Γ, t) :=

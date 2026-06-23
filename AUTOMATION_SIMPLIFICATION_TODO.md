@@ -151,7 +151,7 @@ Every proof-debt item below must keep these fields visible:
   rg -n 'ArgTuple\.(singleIso|pairIso)|CtorFamily\.(singleIso|sumIso)|LayerShape\..*_op_toFun' BijForm/TypedBinding.lean BijForm/Examples/TypedBinding
   ```
 
-- [ ] Replace typed-binding rank dispatch with table-driven argument descent.
+- [x] Replace typed-binding rank dispatch with table-driven argument descent.
   Evidence: `LayerShapeRankProof.of_op` and `typed_binding_rank_descent` still
   perform constructor/`Fin` dispatch; `NFGeneratedLayer_child_rank_lt` passes
   four explicit helper facts.
