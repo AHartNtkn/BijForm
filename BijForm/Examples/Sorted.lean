@@ -487,7 +487,7 @@ private theorem sortedConstructorPayload_child_rank_lt
             have hrightBound : Bound.le pivot.1 upper := pivot.property.2
             cases q
             · have hlt :=
-                CodeAlgebra.finPrefixNat_toFun_inr_lt_of_le 1 (by decide) tail
+                CodeAlgebra.prefixTail_lt_of_le 1 (by decide) tail
                   (lhs_le (pivotCode, (lhsCode, rhsCode)))
               simpa [SortedCarrierRank, SortedPoly, SortedInput, SortedInversion,
                 OutputIndexInversion.canonical, sortedBranchFiber, lhsCode,
@@ -495,7 +495,7 @@ private theorem sortedConstructorPayload_child_rank_lt
                 Function.comp, SortedCarrier.toNat, SortedCarrier.ofNat,
                 SortedCarrier, SortedShape, hBound, hleftBound] using hlt
             · have hlt :=
-                CodeAlgebra.finPrefixNat_toFun_inr_lt_of_le 1 (by decide) tail
+                CodeAlgebra.prefixTail_lt_of_le 1 (by decide) tail
                   (rhs_le (pivotCode, (lhsCode, rhsCode)))
               simpa [SortedCarrierRank, SortedPoly, SortedInput, SortedInversion,
                 OutputIndexInversion.canonical, sortedBranchFiber, lhsCode,

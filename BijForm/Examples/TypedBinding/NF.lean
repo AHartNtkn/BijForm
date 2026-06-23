@@ -406,9 +406,8 @@ theorem NFGeneratedLayer_app_fn_child_rank_lt (Γ : List NFSort)
       fn.2 <
         ((CodeAlgebra.finTaggedProdNat
           (appTermCount Γ)).toFun (Sum.inr pair)).2 := by
-    simpa [pair] using
-      CodeAlgebra.finTaggedProdNat_inr_fst_payload_lt
-        (appTermCount Γ) pair
+    dsimp [CodeAlgebra.finTaggedProdNat]
+    exact Nat.lt_succ_of_le (CodeAlgebra.prodNat_toFun_fst_le (fn.2, arg))
   omega
 
 theorem NFGeneratedLayer_app_arg_child_rank_lt (Γ : List NFSort)
@@ -436,9 +435,8 @@ theorem NFGeneratedLayer_app_arg_child_rank_lt (Γ : List NFSort)
       arg <
         ((CodeAlgebra.finTaggedProdNat
           (appTermCount Γ)).toFun (Sum.inr pair)).2 := by
-    simpa [pair] using
-      CodeAlgebra.finTaggedProdNat_inr_snd_lt
-        (appTermCount Γ) pair
+    dsimp [CodeAlgebra.finTaggedProdNat]
+    exact Nat.lt_succ_of_le (CodeAlgebra.prodNat_toFun_snd_le (fn.2, arg))
   omega
 
 theorem NFGeneratedLayer_child_rank_lt :

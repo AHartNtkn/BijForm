@@ -998,19 +998,37 @@ private theorem singleSortedFiniteRank_nonempty_child_lt_of_payload_bound
   cases childBoundary with
   | nil => exact False.elim (hchild rfl)
   | cons _ childFrontier =>
-      apply CodeAlgebra.scaled_payload_child_lt
-        (scale := data.rankScale)
-        (childBase := childFrontier.length + 1)
-        (parentBase := frontier.length + 1)
-        (payload := payload)
-        (code := (show Nat from parentCode))
+      change
+        childFrontier.length + 1 + data.rankScale * payload <
+          frontier.length + 1 + data.rankScale * (show Nat from parentCode)
       cases hbound with
       | strict hbase hpayload =>
-          exact CodeAlgebra.ScaledPayloadBound.strict (by simpa using hbase)
-            hpayload
+          have hbase' :
+              childFrontier.length + 1 <
+                frontier.length + 1 + data.rankScale := by
+            simpa using hbase
+          have hsucc : payload + 1 ≤ (show Nat from parentCode) :=
+            Nat.succ_le_of_lt hpayload
+          have hmul :
+              data.rankScale * (payload + 1) ≤
+                data.rankScale * (show Nat from parentCode) :=
+            Nat.mul_le_mul_left data.rankScale hsucc
+          have hstep :
+              childFrontier.length + 1 + data.rankScale * payload <
+                frontier.length + 1 + data.rankScale * (payload + 1) := by
+            rw [Nat.mul_succ]
+            omega
+          exact Nat.lt_of_lt_of_le hstep
+            (Nat.add_le_add_left hmul (frontier.length + 1))
       | gap hbase hpayload =>
-          exact CodeAlgebra.ScaledPayloadBound.gap (by simpa using hbase)
-            hpayload
+          have hbase' :
+              childFrontier.length + 1 < frontier.length + 1 := by
+            simpa using hbase
+          have hmul :
+              data.rankScale * payload ≤
+                data.rankScale * (show Nat from parentCode) :=
+            Nat.mul_le_mul_left data.rankScale hpayload
+          omega
 
 private theorem singleSortedFiniteLayer_one_unary_child_rank_lt
     {Sig : Signature} (data : SingleSortedFiniteCodingData Sig)

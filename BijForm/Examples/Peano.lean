@@ -309,24 +309,75 @@ def PeanoNatLayerPresentation :
       | not =>
           cases out_eq
           cases q
+          have hsub :
+              CodeAlgebra.SubcodeLt
+                CodeAlgebra.prodOrNatOrProdOrNat
+                (fun n : Nat => Sum.inr (Sum.inl n))
+                id :=
+            CodeAlgebra.SubcodeLe.toNatSum_inr_lt
+              (h := CodeAlgebra.SubcodeLe.toNatSum_inl
+                (h := CodeAlgebra.subcode_nat_id))
+          have h := hsub (child ())
           simp [CodeLayerPresentation.iso, CodeLayerPresentation.transCarrier,
             PeanoNatLayerShapeLayerPresentation, PeanoNatLayerShapeTo,
             PeanoPoly, PeanoOut, PeanoInput, PeanoInversion,
-            OutputIndexInversion.canonical]
+            OutputIndexInversion.canonical] at h ⊢
+          have hsame : child PUnit.unit = child () := rfl
+          rw [hsame]
+          exact h
       | implies =>
           cases out_eq
-          cases q <;>
+          cases q
+          · have hsub :
+                CodeAlgebra.SubcodeLt
+                  CodeAlgebra.prodOrNatOrProdOrNat
+                  (fun p : Nat × Nat => Sum.inr (Sum.inr (Sum.inl p)))
+                  (fun p : Nat × Nat => p.1) :=
+              CodeAlgebra.SubcodeLt.toNatSum_inr
+                (h := CodeAlgebra.SubcodeLe.toNatSum_inr_lt
+                  (h := CodeAlgebra.SubcodeLe.toNatSum_inl
+                    (h := CodeAlgebra.subcode_prodNat_fst)))
+            have h := hsub (child false, child true)
             simp [CodeLayerPresentation.iso, CodeLayerPresentation.transCarrier,
               PeanoNatLayerShapeLayerPresentation, PeanoNatLayerShapeTo,
               PeanoPoly, PeanoOut, PeanoInput, PeanoInversion,
-              OutputIndexInversion.canonical]
+              OutputIndexInversion.canonical] at h ⊢
+            exact h
+          · have hsub :
+                CodeAlgebra.SubcodeLt
+                  CodeAlgebra.prodOrNatOrProdOrNat
+                  (fun p : Nat × Nat => Sum.inr (Sum.inr (Sum.inl p)))
+                  (fun p : Nat × Nat => p.2) :=
+              CodeAlgebra.SubcodeLt.toNatSum_inr
+                (h := CodeAlgebra.SubcodeLe.toNatSum_inr_lt
+                  (h := CodeAlgebra.SubcodeLe.toNatSum_inl
+                    (h := CodeAlgebra.subcode_prodNat_snd)))
+            have h := hsub (child false, child true)
+            simp [CodeLayerPresentation.iso, CodeLayerPresentation.transCarrier,
+              PeanoNatLayerShapeLayerPresentation, PeanoNatLayerShapeTo,
+              PeanoPoly, PeanoOut, PeanoInput, PeanoInversion,
+              OutputIndexInversion.canonical] at h ⊢
+            exact h
       | forallE =>
           cases out_eq
           cases q
+          have hsub :
+              CodeAlgebra.SubcodeLt
+                CodeAlgebra.prodOrNatOrProdOrNat
+                (fun n : Nat => Sum.inr (Sum.inr (Sum.inr n)))
+                id :=
+            CodeAlgebra.SubcodeLt.toNatSum_inr
+              (h := CodeAlgebra.SubcodeLt.toNatSum_inr
+                (h := CodeAlgebra.SubcodeLe.toNatSum_inr_lt
+                  (h := CodeAlgebra.subcode_nat_id)))
+          have h := hsub (child ())
           simp [CodeLayerPresentation.iso, CodeLayerPresentation.transCarrier,
             PeanoNatLayerShapeLayerPresentation, PeanoNatLayerShapeTo,
             PeanoPoly, PeanoOut, PeanoInput, PeanoInversion,
-            OutputIndexInversion.canonical])
+            OutputIndexInversion.canonical] at h ⊢
+          have hsame : child PUnit.unit = child () := rfl
+          rw [hsame]
+          exact h)
 
 def PeanoNatGeneratedCode : GeneratedNatCode PeanoPoly :=
   LayerPresentation.generatedCode PeanoNatLayerPresentation

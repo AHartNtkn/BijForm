@@ -240,77 +240,6 @@ theorem toNatSum_inr_lt_of_lt {α : Type u} {β : Type v}
     m < (toNatSum left right).toFun (Sum.inr b) :=
   toNatSum_inr_lt_of_le left right (Nat.le_of_lt h)
 
-/-- Right-associated three-way sum coding into `Nat`. -/
-def toNatSum3 {α : Type u} {β : Type v} {γ : Type w}
-    (left : α ≃ᵢ Nat) (middle : β ≃ᵢ Nat) (right : γ ≃ᵢ Nat) :
-    (α ⊕ (β ⊕ γ)) ≃ᵢ Nat :=
-  toNatSum left (toNatSum middle right)
-
-theorem toNatSum3_inl_le_of_le {α : Type u} {β : Type v} {γ : Type w}
-    (left : α ≃ᵢ Nat) (middle : β ≃ᵢ Nat) (right : γ ≃ᵢ Nat)
-    {a : α} {m : Nat} (h : m ≤ left.toFun a) :
-    m ≤ (toNatSum3 left middle right).toFun (Sum.inl a) :=
-  toNatSum_inl_le_of_le left (toNatSum middle right) h
-
-theorem toNatSum3_inr_inl_lt_of_le {α : Type u} {β : Type v} {γ : Type w}
-    (left : α ≃ᵢ Nat) (middle : β ≃ᵢ Nat) (right : γ ≃ᵢ Nat)
-    {b : β} {m : Nat} (h : m ≤ middle.toFun b) :
-    m < (toNatSum3 left middle right).toFun (Sum.inr (Sum.inl b)) := by
-  exact toNatSum_inr_lt_of_le left (toNatSum middle right)
-    (toNatSum_inl_le_of_le middle right h)
-
-theorem toNatSum3_inr_inr_lt_of_le {α : Type u} {β : Type v} {γ : Type w}
-    (left : α ≃ᵢ Nat) (middle : β ≃ᵢ Nat) (right : γ ≃ᵢ Nat)
-    {c : γ} {m : Nat} (h : m ≤ right.toFun c) :
-    m < (toNatSum3 left middle right).toFun (Sum.inr (Sum.inr c)) := by
-  exact toNatSum_inr_lt_of_lt left (toNatSum middle right)
-    (toNatSum_inr_lt_of_le middle right h)
-
-/-- Right-associated four-way sum coding into `Nat`. -/
-def toNatSum4 {α : Type u} {β : Type v} {γ : Type w} {δ : Type x}
-    (first : α ≃ᵢ Nat) (second : β ≃ᵢ Nat)
-    (third : γ ≃ᵢ Nat) (fourth : δ ≃ᵢ Nat) :
-    (α ⊕ (β ⊕ (γ ⊕ δ))) ≃ᵢ Nat :=
-  toNatSum first (toNatSum3 second third fourth)
-
-theorem toNatSum4_inl_le_of_le {α : Type u} {β : Type v}
-    {γ : Type w} {δ : Type x}
-    (first : α ≃ᵢ Nat) (second : β ≃ᵢ Nat)
-    (third : γ ≃ᵢ Nat) (fourth : δ ≃ᵢ Nat)
-    {a : α} {m : Nat} (h : m ≤ first.toFun a) :
-    m ≤ (toNatSum4 first second third fourth).toFun (Sum.inl a) :=
-  toNatSum_inl_le_of_le first (toNatSum3 second third fourth) h
-
-theorem toNatSum4_inr_inl_lt_of_le {α : Type u} {β : Type v}
-    {γ : Type w} {δ : Type x}
-    (first : α ≃ᵢ Nat) (second : β ≃ᵢ Nat)
-    (third : γ ≃ᵢ Nat) (fourth : δ ≃ᵢ Nat)
-    {b : β} {m : Nat} (h : m ≤ second.toFun b) :
-    m < (toNatSum4 first second third fourth).toFun
-      (Sum.inr (Sum.inl b)) := by
-  exact toNatSum_inr_lt_of_le first (toNatSum3 second third fourth)
-    (toNatSum3_inl_le_of_le second third fourth h)
-
-theorem toNatSum4_inr_inr_inl_lt_of_le {α : Type u} {β : Type v}
-    {γ : Type w} {δ : Type x}
-    (first : α ≃ᵢ Nat) (second : β ≃ᵢ Nat)
-    (third : γ ≃ᵢ Nat) (fourth : δ ≃ᵢ Nat)
-    {c : γ} {m : Nat} (h : m ≤ third.toFun c) :
-    m < (toNatSum4 first second third fourth).toFun
-      (Sum.inr (Sum.inr (Sum.inl c))) := by
-  exact toNatSum_inr_lt_of_lt first (toNatSum3 second third fourth)
-    (toNatSum3_inr_inl_lt_of_le second third fourth h)
-
-theorem toNatSum4_inr_inr_inr_lt_of_le {α : Type u} {β : Type v}
-    {γ : Type w} {δ : Type x}
-    (first : α ≃ᵢ Nat) (second : β ≃ᵢ Nat)
-    (third : γ ≃ᵢ Nat) (fourth : δ ≃ᵢ Nat)
-    {d : δ} {m : Nat} (h : m ≤ fourth.toFun d) :
-    m < (toNatSum4 first second third fourth).toFun
-      (Sum.inr (Sum.inr (Sum.inr d))) := by
-  exact toNatSum_inr_lt_of_lt first (toNatSum3 second third fourth)
-    (toNatSum3_inr_inr_lt_of_le second third fourth h)
-
 /-- Product coding delegates to the proved simplified pairing function. -/
 def prodNat : (Nat × Nat) ≃ᵢ Nat :=
   Pairing.iso
@@ -403,72 +332,6 @@ theorem SubcodeLt.toNatSum_inr {α : Type u} {β : Type v} {γ : Type w}
     SubcodeLt (toNatSum left right) (fun x => Sum.inr (embed x)) rank :=
   fun x => toNatSum_inr_lt_of_lt left right (h x)
 
-theorem SubcodeLe.toNatSum3_inl {α : Type u} {β : Type v}
-    {γ : Type w} {δ : Type x}
-    {left : α ≃ᵢ Nat} {middle : β ≃ᵢ Nat} {right : γ ≃ᵢ Nat}
-    {embed : δ → α} {rank : δ → Nat}
-    (h : SubcodeLe left embed rank) :
-    SubcodeLe (toNatSum3 left middle right) (fun x => Sum.inl (embed x)) rank :=
-  fun x => toNatSum3_inl_le_of_le left middle right (h x)
-
-theorem SubcodeLe.toNatSum3_inr_inl_lt {α : Type u} {β : Type v}
-    {γ : Type w} {δ : Type x}
-    {left : α ≃ᵢ Nat} {middle : β ≃ᵢ Nat} {right : γ ≃ᵢ Nat}
-    {embed : δ → β} {rank : δ → Nat}
-    (h : SubcodeLe middle embed rank) :
-    SubcodeLt (toNatSum3 left middle right)
-      (fun x => Sum.inr (Sum.inl (embed x))) rank :=
-  fun x => toNatSum3_inr_inl_lt_of_le left middle right (h x)
-
-theorem SubcodeLe.toNatSum3_inr_inr_lt {α : Type u} {β : Type v}
-    {γ : Type w} {δ : Type x}
-    {left : α ≃ᵢ Nat} {middle : β ≃ᵢ Nat} {right : γ ≃ᵢ Nat}
-    {embed : δ → γ} {rank : δ → Nat}
-    (h : SubcodeLe right embed rank) :
-    SubcodeLt (toNatSum3 left middle right)
-      (fun x => Sum.inr (Sum.inr (embed x))) rank :=
-  fun x => toNatSum3_inr_inr_lt_of_le left middle right (h x)
-
-theorem SubcodeLe.toNatSum4_inl {α : Type u} {β : Type v}
-    {γ : Type w} {δ : Type x} {ε : Type y}
-    {first : α ≃ᵢ Nat} {second : β ≃ᵢ Nat}
-    {third : γ ≃ᵢ Nat} {fourth : δ ≃ᵢ Nat}
-    {embed : ε → α} {rank : ε → Nat}
-    (h : SubcodeLe first embed rank) :
-    SubcodeLe (toNatSum4 first second third fourth)
-      (fun x => Sum.inl (embed x)) rank :=
-  fun x => toNatSum4_inl_le_of_le first second third fourth (h x)
-
-theorem SubcodeLe.toNatSum4_inr_inl_lt {α : Type u} {β : Type v}
-    {γ : Type w} {δ : Type x} {ε : Type y}
-    {first : α ≃ᵢ Nat} {second : β ≃ᵢ Nat}
-    {third : γ ≃ᵢ Nat} {fourth : δ ≃ᵢ Nat}
-    {embed : ε → β} {rank : ε → Nat}
-    (h : SubcodeLe second embed rank) :
-    SubcodeLt (toNatSum4 first second third fourth)
-      (fun x => Sum.inr (Sum.inl (embed x))) rank :=
-  fun x => toNatSum4_inr_inl_lt_of_le first second third fourth (h x)
-
-theorem SubcodeLe.toNatSum4_inr_inr_inl_lt {α : Type u} {β : Type v}
-    {γ : Type w} {δ : Type x} {ε : Type y}
-    {first : α ≃ᵢ Nat} {second : β ≃ᵢ Nat}
-    {third : γ ≃ᵢ Nat} {fourth : δ ≃ᵢ Nat}
-    {embed : ε → γ} {rank : ε → Nat}
-    (h : SubcodeLe third embed rank) :
-    SubcodeLt (toNatSum4 first second third fourth)
-      (fun x => Sum.inr (Sum.inr (Sum.inl (embed x)))) rank :=
-  fun x => toNatSum4_inr_inr_inl_lt_of_le first second third fourth (h x)
-
-theorem SubcodeLe.toNatSum4_inr_inr_inr_lt {α : Type u} {β : Type v}
-    {γ : Type w} {δ : Type x} {ε : Type y}
-    {first : α ≃ᵢ Nat} {second : β ≃ᵢ Nat}
-    {third : γ ≃ᵢ Nat} {fourth : δ ≃ᵢ Nat}
-    {embed : ε → δ} {rank : ε → Nat}
-    (h : SubcodeLe fourth embed rank) :
-    SubcodeLt (toNatSum4 first second third fourth)
-      (fun x => Sum.inr (Sum.inr (Sum.inr (embed x)))) rank :=
-  fun x => toNatSum4_inr_inr_inr_lt_of_le first second third fourth (h x)
-
 theorem SubcodeLe.toNatProd_left {α : Type u} {β : Type v} {γ : Type w}
     {left : α ≃ᵢ Nat} {right : β ≃ᵢ Nat}
     {embed : γ → α} {fill : γ → β} {rank : γ → Nat}
@@ -541,266 +404,46 @@ theorem sumProdNat_invFun_inr_snd_lt {n a b : Nat}
 
 def natOrProdOrProdNat :
     (Nat ⊕ ((Nat × Nat) ⊕ (Nat × Nat))) ≃ᵢ Nat :=
-  toNatSum3 (Iso.refl Nat) prodNat prodNat
-
-@[simp]
-theorem natOrProdOrProdNat_toFun_inl_le (n : Nat) :
-    n ≤ natOrProdOrProdNat.toFun (Sum.inl n) :=
-  toNatSum3_inl_le_of_le (Iso.refl Nat) prodNat prodNat
-    (Nat.le_refl n)
-
-@[simp]
-theorem natOrProdOrProdNat_toFun_inr_inl_fst_lt (p : Nat × Nat) :
-    p.1 < natOrProdOrProdNat.toFun (Sum.inr (Sum.inl p)) :=
-  toNatSum3_inr_inl_lt_of_le (Iso.refl Nat) prodNat prodNat
-    (prodNat_toFun_fst_le p)
-
-@[simp]
-theorem natOrProdOrProdNat_toFun_inr_inl_snd_lt (p : Nat × Nat) :
-    p.2 < natOrProdOrProdNat.toFun (Sum.inr (Sum.inl p)) :=
-  toNatSum3_inr_inl_lt_of_le (Iso.refl Nat) prodNat prodNat
-    (prodNat_toFun_snd_le p)
-
-@[simp]
-theorem natOrProdOrProdNat_toFun_inr_inr_fst_lt (p : Nat × Nat) :
-    p.1 < natOrProdOrProdNat.toFun (Sum.inr (Sum.inr p)) :=
-  toNatSum3_inr_inr_lt_of_le (Iso.refl Nat) prodNat prodNat
-    (prodNat_toFun_fst_le p)
-
-@[simp]
-theorem natOrProdOrProdNat_toFun_inr_inr_snd_lt (p : Nat × Nat) :
-    p.2 < natOrProdOrProdNat.toFun (Sum.inr (Sum.inr p)) :=
-  toNatSum3_inr_inr_lt_of_le (Iso.refl Nat) prodNat prodNat
-    (prodNat_toFun_snd_le p)
+  toNatSum (Iso.refl Nat) (toNatSum prodNat prodNat)
 
 def prodOrNatOrProdOrNat :
     ((Nat × Nat) ⊕ (Nat ⊕ ((Nat × Nat) ⊕ Nat))) ≃ᵢ Nat :=
-  toNatSum4 prodNat (Iso.refl Nat) prodNat (Iso.refl Nat)
-
-@[simp]
-theorem prodOrNatOrProdOrNat_toFun_inr_inl_lt (n : Nat) :
-    n < prodOrNatOrProdOrNat.toFun (Sum.inr (Sum.inl n)) :=
-  toNatSum4_inr_inl_lt_of_le prodNat (Iso.refl Nat) prodNat
-    (Iso.refl Nat) (Nat.le_refl n)
-
-@[simp]
-theorem prodOrNatOrProdOrNat_toFun_inr_inr_inl_fst_lt
-    (p : Nat × Nat) :
-    p.1 < prodOrNatOrProdOrNat.toFun
-      (Sum.inr (Sum.inr (Sum.inl p))) :=
-  toNatSum4_inr_inr_inl_lt_of_le prodNat (Iso.refl Nat) prodNat
-    (Iso.refl Nat) (prodNat_toFun_fst_le p)
-
-@[simp]
-theorem prodOrNatOrProdOrNat_toFun_inr_inr_inl_snd_lt
-    (p : Nat × Nat) :
-    p.2 < prodOrNatOrProdOrNat.toFun
-      (Sum.inr (Sum.inr (Sum.inl p))) :=
-  toNatSum4_inr_inr_inl_lt_of_le prodNat (Iso.refl Nat) prodNat
-    (Iso.refl Nat) (prodNat_toFun_snd_le p)
-
-@[simp]
-theorem prodOrNatOrProdOrNat_toFun_inr_inr_inl_fst_pair_lt
-    (a b : Nat) :
-    a < prodOrNatOrProdOrNat.toFun
-      (Sum.inr (Sum.inr (Sum.inl (a, b)))) :=
-  prodOrNatOrProdOrNat_toFun_inr_inr_inl_fst_lt (a, b)
-
-@[simp]
-theorem prodOrNatOrProdOrNat_toFun_inr_inr_inl_snd_pair_lt
-    (a b : Nat) :
-    b < prodOrNatOrProdOrNat.toFun
-      (Sum.inr (Sum.inr (Sum.inl (a, b)))) :=
-  prodOrNatOrProdOrNat_toFun_inr_inr_inl_snd_lt (a, b)
-
-@[simp]
-theorem prodOrNatOrProdOrNat_toFun_inr_inr_inr_lt (n : Nat) :
-    n < prodOrNatOrProdOrNat.toFun
-      (Sum.inr (Sum.inr (Sum.inr n))) :=
-  toNatSum4_inr_inr_inr_lt_of_le prodNat (Iso.refl Nat) prodNat
-    (Iso.refl Nat) (Nat.le_refl n)
+  toNatSum prodNat (toNatSum (Iso.refl Nat) (toNatSum prodNat (Iso.refl Nat)))
 
 def finPrefixNat {α : Type u} (k : Nat) (tail : α ≃ᵢ Nat) :
     (Fin k ⊕ α) ≃ᵢ Nat :=
   Iso.trans (Iso.sum (Iso.refl (Fin k)) tail) (finPlusNat k)
-
-@[simp]
-theorem finPrefixNat_sumProdNat_toFun_inr_inr_fst_lt
-    (k : Nat) (p : Nat × Nat) :
-    p.1 < (finPrefixNat k sumProdNat).toFun (Sum.inr (Sum.inr p)) :=
-by
-  have h := sumProdNat_toFun_inr_fst_lt p
-  dsimp [finPrefixNat, Iso.trans, Iso.sum, finPlusNat]
-  omega
-
-@[simp]
-theorem finPrefixNat_sumProdNat_toFun_inr_inr_snd_lt
-    (k : Nat) (p : Nat × Nat) :
-    p.2 < (finPrefixNat k sumProdNat).toFun (Sum.inr (Sum.inr p)) :=
-by
-  have h := sumProdNat_toFun_inr_snd_lt p
-  dsimp [finPrefixNat, Iso.trans, Iso.sum, finPlusNat]
-  omega
-
-@[simp]
-theorem finPrefixNat_sumProdNat_toFun_inr_inr_fst_pair_lt
-    (k a b : Nat) :
-    a < (finPrefixNat k sumProdNat).toFun (Sum.inr (Sum.inr (a, b))) :=
-  finPrefixNat_sumProdNat_toFun_inr_inr_fst_lt k (a, b)
-
-@[simp]
-theorem finPrefixNat_sumProdNat_toFun_inr_inr_snd_pair_lt
-    (k a b : Nat) :
-    b < (finPrefixNat k sumProdNat).toFun (Sum.inr (Sum.inr (a, b))) :=
-  finPrefixNat_sumProdNat_toFun_inr_inr_snd_lt k (a, b)
-
-@[simp]
-theorem finPrefixNat_sumProdNat_toFun_inr_inl_lt_rankOffset
-    (k n : Nat) :
-    n < (finPrefixNat k sumProdNat).toFun (Sum.inr (Sum.inl n)) +
-      (if k = 0 then 1 else 0) := by
-  have h := sumProdNat_toFun_inl_le n
-  dsimp [finPrefixNat, Iso.trans, Iso.sum, finPlusNat]
-  split <;> omega
-
-@[simp]
-theorem finPrefixNat_natOrProdOrProdNat_toFun_inr_inl_lt_add_two
-    (k n : Nat) :
-    n < (finPrefixNat (k + 2) natOrProdOrProdNat).toFun
-      (Sum.inr (Sum.inl n)) :=
-by
-  have h := natOrProdOrProdNat_toFun_inl_le n
-  dsimp [finPrefixNat, Iso.trans, Iso.sum, finPlusNat]
-  omega
-
-@[simp]
-theorem finPrefixNat_natOrProdOrProdNat_toFun_inr_inr_inl_fst_lt
-    (k : Nat) (p : Nat × Nat) :
-    p.1 < (finPrefixNat k natOrProdOrProdNat).toFun
-      (Sum.inr (Sum.inr (Sum.inl p))) :=
-by
-  have h := natOrProdOrProdNat_toFun_inr_inl_fst_lt p
-  dsimp [finPrefixNat, Iso.trans, Iso.sum, finPlusNat]
-  omega
-
-@[simp]
-theorem finPrefixNat_natOrProdOrProdNat_toFun_inr_inr_inl_snd_lt
-    (k : Nat) (p : Nat × Nat) :
-    p.2 < (finPrefixNat k natOrProdOrProdNat).toFun
-      (Sum.inr (Sum.inr (Sum.inl p))) :=
-by
-  have h := natOrProdOrProdNat_toFun_inr_inl_snd_lt p
-  dsimp [finPrefixNat, Iso.trans, Iso.sum, finPlusNat]
-  omega
-
-@[simp]
-theorem finPrefixNat_natOrProdOrProdNat_toFun_inr_inr_inl_fst_pair_lt
-    (k a b : Nat) :
-    a < (finPrefixNat k natOrProdOrProdNat).toFun
-      (Sum.inr (Sum.inr (Sum.inl (a, b)))) :=
-  finPrefixNat_natOrProdOrProdNat_toFun_inr_inr_inl_fst_lt k (a, b)
-
-@[simp]
-theorem finPrefixNat_natOrProdOrProdNat_toFun_inr_inr_inl_snd_pair_lt
-    (k a b : Nat) :
-    b < (finPrefixNat k natOrProdOrProdNat).toFun
-      (Sum.inr (Sum.inr (Sum.inl (a, b)))) :=
-  finPrefixNat_natOrProdOrProdNat_toFun_inr_inr_inl_snd_lt k (a, b)
-
-@[simp]
-theorem finPrefixNat_natOrProdOrProdNat_toFun_inr_inr_inr_fst_lt
-    (k : Nat) (p : Nat × Nat) :
-    p.1 < (finPrefixNat k natOrProdOrProdNat).toFun
-      (Sum.inr (Sum.inr (Sum.inr p))) :=
-by
-  have h := natOrProdOrProdNat_toFun_inr_inr_fst_lt p
-  dsimp [finPrefixNat, Iso.trans, Iso.sum, finPlusNat]
-  omega
-
-@[simp]
-theorem finPrefixNat_natOrProdOrProdNat_toFun_inr_inr_inr_snd_lt
-    (k : Nat) (p : Nat × Nat) :
-    p.2 < (finPrefixNat k natOrProdOrProdNat).toFun
-      (Sum.inr (Sum.inr (Sum.inr p))) :=
-by
-  have h := natOrProdOrProdNat_toFun_inr_inr_snd_lt p
-  dsimp [finPrefixNat, Iso.trans, Iso.sum, finPlusNat]
-  omega
-
-@[simp]
-theorem finPrefixNat_natOrProdOrProdNat_toFun_inr_inr_inr_fst_pair_lt
-    (k a b : Nat) :
-    a < (finPrefixNat k natOrProdOrProdNat).toFun
-      (Sum.inr (Sum.inr (Sum.inr (a, b)))) :=
-  finPrefixNat_natOrProdOrProdNat_toFun_inr_inr_inr_fst_lt k (a, b)
-
-@[simp]
-theorem finPrefixNat_natOrProdOrProdNat_toFun_inr_inr_inr_snd_pair_lt
-    (k a b : Nat) :
-    b < (finPrefixNat k natOrProdOrProdNat).toFun
-      (Sum.inr (Sum.inr (Sum.inr (a, b)))) :=
-  finPrefixNat_natOrProdOrProdNat_toFun_inr_inr_inr_snd_lt k (a, b)
 
 /-- Finite constructor branches plus finitely tagged recursive `Nat` branches. -/
 def finiteRecursiveNat (finite recursive : Nat) (hrec : 0 < recursive) :
     (Fin finite ⊕ (Fin recursive × Nat)) ≃ᵢ Nat :=
   finPrefixNat finite (finProdNat recursive hrec)
 
-theorem finPrefixNat_toFun_inr_lt_of_lt {α : Type u}
+theorem prefixTail_lt_of_lt {α : Type u}
     (k : Nat) (tail : α ≃ᵢ Nat) {a : α} {m : Nat}
     (h : m < tail.toFun a) :
     m < (finPrefixNat k tail).toFun (Sum.inr a) := by
   dsimp [finPrefixNat, Iso.trans, Iso.sum, finPlusNat]
   omega
 
-theorem finPrefixNat_toFun_inr_lt_of_le {α : Type u}
+theorem prefixTail_lt_of_le {α : Type u}
     (k : Nat) (hk : 0 < k) (tail : α ≃ᵢ Nat) {a : α} {m : Nat}
     (h : m ≤ tail.toFun a) :
     m < (finPrefixNat k tail).toFun (Sum.inr a) := by
   dsimp [finPrefixNat, Iso.trans, Iso.sum, finPlusNat]
   omega
 
-theorem SubcodeLt.finPrefixNat_inr {α : Type u} {β : Type v}
+theorem SubcodeLt.prefixTail {α : Type u} {β : Type v}
     {tail : α ≃ᵢ Nat} {embed : β → α} {rank : β → Nat}
     (k : Nat) (h : SubcodeLt tail embed rank) :
     SubcodeLt (finPrefixNat k tail) (fun x => Sum.inr (embed x)) rank :=
-  fun x => finPrefixNat_toFun_inr_lt_of_lt k tail (h x)
+  fun x => prefixTail_lt_of_lt k tail (h x)
 
-theorem SubcodeLe.finPrefixNat_inr_lt {α : Type u} {β : Type v}
+theorem SubcodeLe.prefixTailOfPos {α : Type u} {β : Type v}
     {tail : α ≃ᵢ Nat} {embed : β → α} {rank : β → Nat}
     (k : Nat) (hk : 0 < k) (h : SubcodeLe tail embed rank) :
     SubcodeLt (finPrefixNat k tail) (fun x => Sum.inr (embed x)) rank :=
-  fun x => finPrefixNat_toFun_inr_lt_of_le k hk tail (h x)
-
-inductive ScaledPayloadBound
-    (scale childBase parentBase payload code : Nat) : Prop
-  | strict :
-      childBase < parentBase + scale →
-      payload < code →
-      ScaledPayloadBound scale childBase parentBase payload code
-  | gap :
-      childBase < parentBase →
-      payload ≤ code →
-      ScaledPayloadBound scale childBase parentBase payload code
-
-theorem scaled_payload_child_lt
-    {scale childBase parentBase payload code : Nat}
-    (h : ScaledPayloadBound scale childBase parentBase payload code) :
-    childBase + scale * payload < parentBase + scale * code := by
-  cases h with
-  | strict hbase hpayload =>
-      have hsucc : payload + 1 ≤ code := Nat.succ_le_of_lt hpayload
-      have hmul : scale * (payload + 1) ≤ scale * code :=
-        Nat.mul_le_mul_left scale hsucc
-      have hstep : childBase + scale * payload <
-          parentBase + scale * (payload + 1) := by
-        rw [Nat.mul_succ]
-        omega
-      exact Nat.lt_of_lt_of_le hstep (Nat.add_le_add_left hmul parentBase)
-  | gap hbase hpayload =>
-      have hmul : scale * payload ≤ scale * code :=
-        Nat.mul_le_mul_left scale hpayload
-      omega
+  fun x => prefixTail_lt_of_le k hk tail (h x)
 
 /-- Recursive payloads are bounded by their finite-recursive branch code. -/
 theorem finiteRecursiveNat_payload_le
@@ -986,18 +629,6 @@ def finTaggedProdNat (k : Nat) :
       | succ n =>
           dsimp
           rw [prodNat.right_inv n]
-
-theorem finTaggedProdNat_inr_fst_payload_lt (k : Nat)
-    (p : (Fin k × Nat) × Nat) :
-    p.1.2 < ((finTaggedProdNat k).toFun (Sum.inr p)).2 := by
-  dsimp [finTaggedProdNat]
-  exact Nat.lt_succ_of_le (prodNat_toFun_fst_le (p.1.2, p.2))
-
-theorem finTaggedProdNat_inr_snd_lt (k : Nat)
-    (p : (Fin k × Nat) × Nat) :
-    p.2 < ((finTaggedProdNat k).toFun (Sum.inr p)).2 := by
-  dsimp [finTaggedProdNat]
-  exact Nat.lt_succ_of_le (prodNat_toFun_snd_le (p.1.2, p.2))
 
 /-- Put two natural numbers into nondecreasing order. -/
 def sortNatPair (a b : Nat) : {p : Nat × Nat // p.1 ≤ p.2} :=

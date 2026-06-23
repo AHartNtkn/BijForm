@@ -373,24 +373,80 @@ def NumNatLayerPresentation :
           dsimp [NumPoly, NumOut] at out_eq
           cases out_eq
           cases q
+          have hsub :
+              CodeAlgebra.SubcodeLt
+                (CodeAlgebra.finPrefixNat (k + 2) CodeAlgebra.natOrProdOrProdNat)
+                (fun n : Nat => Sum.inr (Sum.inl n))
+                id :=
+            CodeAlgebra.SubcodeLe.prefixTailOfPos (k + 2) (by omega)
+              (CodeAlgebra.SubcodeLe.toNatSum_inl
+                (h := CodeAlgebra.subcode_nat_id))
+          have h := hsub (child ())
           simp [CodeLayerPresentation.iso, CodeLayerPresentation.transCarrier,
-            NumNatLayerShapeLayerPresentation, NumNatLayerShapeTo]
+            NumNatLayerShapeLayerPresentation, NumNatLayerShapeTo] at h ⊢
+          have hsame : child PUnit.unit = child () := rfl
+          rw [hsame]
+          exact h
       | plus =>
           dsimp [NumPoly, NumOut] at out_eq
           cases out_eq
           cases q
-          · simp [CodeLayerPresentation.iso, CodeLayerPresentation.transCarrier,
-              NumNatLayerShapeLayerPresentation, NumNatLayerShapeTo]
-          · simp [CodeLayerPresentation.iso, CodeLayerPresentation.transCarrier,
-              NumNatLayerShapeLayerPresentation, NumNatLayerShapeTo]
+          · have hsub :
+                CodeAlgebra.SubcodeLt
+                  (CodeAlgebra.finPrefixNat (k + 2) CodeAlgebra.natOrProdOrProdNat)
+                  (fun p : Nat × Nat => Sum.inr (Sum.inr (Sum.inl p)))
+                  (fun p : Nat × Nat => p.1) :=
+              CodeAlgebra.SubcodeLt.prefixTail (k + 2)
+                (CodeAlgebra.SubcodeLe.toNatSum_inr_lt
+                  (h := CodeAlgebra.SubcodeLe.toNatSum_inl
+                    (h := CodeAlgebra.subcode_prodNat_fst)))
+            have h := hsub (child false, child true)
+            simp [CodeLayerPresentation.iso, CodeLayerPresentation.transCarrier,
+              NumNatLayerShapeLayerPresentation, NumNatLayerShapeTo] at h ⊢
+            exact h
+          · have hsub :
+                CodeAlgebra.SubcodeLt
+                  (CodeAlgebra.finPrefixNat (k + 2) CodeAlgebra.natOrProdOrProdNat)
+                  (fun p : Nat × Nat => Sum.inr (Sum.inr (Sum.inl p)))
+                  (fun p : Nat × Nat => p.2) :=
+              CodeAlgebra.SubcodeLt.prefixTail (k + 2)
+                (CodeAlgebra.SubcodeLe.toNatSum_inr_lt
+                  (h := CodeAlgebra.SubcodeLe.toNatSum_inl
+                    (h := CodeAlgebra.subcode_prodNat_snd)))
+            have h := hsub (child false, child true)
+            simp [CodeLayerPresentation.iso, CodeLayerPresentation.transCarrier,
+              NumNatLayerShapeLayerPresentation, NumNatLayerShapeTo] at h ⊢
+            exact h
       | times =>
           dsimp [NumPoly, NumOut] at out_eq
           cases out_eq
           cases q
-          · simp [CodeLayerPresentation.iso, CodeLayerPresentation.transCarrier,
-              NumNatLayerShapeLayerPresentation, NumNatLayerShapeTo]
-          · simp [CodeLayerPresentation.iso, CodeLayerPresentation.transCarrier,
-              NumNatLayerShapeLayerPresentation, NumNatLayerShapeTo])
+          · have hsub :
+                CodeAlgebra.SubcodeLt
+                  (CodeAlgebra.finPrefixNat (k + 2) CodeAlgebra.natOrProdOrProdNat)
+                  (fun p : Nat × Nat => Sum.inr (Sum.inr (Sum.inr p)))
+                  (fun p : Nat × Nat => p.1) :=
+              CodeAlgebra.SubcodeLt.prefixTail (k + 2)
+                (CodeAlgebra.SubcodeLt.toNatSum_inr
+                  (h := CodeAlgebra.SubcodeLe.toNatSum_inr_lt
+                    (h := CodeAlgebra.subcode_prodNat_fst)))
+            have h := hsub (child false, child true)
+            simp [CodeLayerPresentation.iso, CodeLayerPresentation.transCarrier,
+              NumNatLayerShapeLayerPresentation, NumNatLayerShapeTo] at h ⊢
+            exact h
+          · have hsub :
+                CodeAlgebra.SubcodeLt
+                  (CodeAlgebra.finPrefixNat (k + 2) CodeAlgebra.natOrProdOrProdNat)
+                  (fun p : Nat × Nat => Sum.inr (Sum.inr (Sum.inr p)))
+                  (fun p : Nat × Nat => p.2) :=
+              CodeAlgebra.SubcodeLt.prefixTail (k + 2)
+                (CodeAlgebra.SubcodeLt.toNatSum_inr
+                  (h := CodeAlgebra.SubcodeLe.toNatSum_inr_lt
+                    (h := CodeAlgebra.subcode_prodNat_snd)))
+            have h := hsub (child false, child true)
+            simp [CodeLayerPresentation.iso, CodeLayerPresentation.transCarrier,
+              NumNatLayerShapeLayerPresentation, NumNatLayerShapeTo] at h ⊢
+            exact h)
 
 def NumNatGeneratedCode : GeneratedNatCode NumPoly :=
   LayerPresentation.generatedCode NumNatLayerPresentation

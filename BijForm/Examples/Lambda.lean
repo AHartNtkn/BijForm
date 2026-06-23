@@ -261,23 +261,42 @@ def LamNatLayerPresentation :
             LamNatLayerShapeLayerPresentation, CodeLayerPresentation.ofMapsExt,
             LamNatLayerShapeTo, LamNatRank, LamPoly, LamOut, LamInput, LamInversion,
             OutputIndexInversion.canonical]
+          have hsame : child PUnit.unit = child () := rfl
+          rw [hsame]
+          have h := CodeAlgebra.sumProdNat_toFun_inl_le (child ())
+          dsimp [CodeAlgebra.finPrefixNat, Iso.trans, Iso.sum, CodeAlgebra.finPlusNat]
+          split <;> omega
       | app =>
           cases out_eq
           cases q
-          · have h :=
-              CodeAlgebra.finPrefixNat_sumProdNat_toFun_inr_inr_fst_pair_lt
-                param (child false) (child true)
+          · have hsub :
+                CodeAlgebra.SubcodeLt
+                  (CodeAlgebra.finPrefixNat param CodeAlgebra.sumProdNat)
+                  (fun p : Nat × Nat => Sum.inr (Sum.inr p))
+                  (fun p : Nat × Nat => p.1) :=
+              CodeAlgebra.SubcodeLt.prefixTail param
+                (CodeAlgebra.SubcodeLe.toNatSum_inr_lt
+                  (h := CodeAlgebra.subcode_prodNat_fst))
+            have h := hsub (child false, child true)
             simp [CodeLayerPresentation.iso, CodeLayerPresentation.transCarrier,
               LamNatLayerShapeLayerPresentation, CodeLayerPresentation.ofMapsExt,
               LamNatLayerShapeTo, LamNatRank, LamPoly, LamOut, LamInput, LamInversion,
               OutputIndexInversion.canonical] at h ⊢
-          · have h :=
-              CodeAlgebra.finPrefixNat_sumProdNat_toFun_inr_inr_snd_pair_lt
-                param (child false) (child true)
+            exact h
+          · have hsub :
+                CodeAlgebra.SubcodeLt
+                  (CodeAlgebra.finPrefixNat param CodeAlgebra.sumProdNat)
+                  (fun p : Nat × Nat => Sum.inr (Sum.inr p))
+                  (fun p : Nat × Nat => p.2) :=
+              CodeAlgebra.SubcodeLt.prefixTail param
+                (CodeAlgebra.SubcodeLe.toNatSum_inr_lt
+                  (h := CodeAlgebra.subcode_prodNat_snd))
+            have h := hsub (child false, child true)
             simp [CodeLayerPresentation.iso, CodeLayerPresentation.transCarrier,
               LamNatLayerShapeLayerPresentation, CodeLayerPresentation.ofMapsExt,
               LamNatLayerShapeTo, LamNatRank, LamPoly, LamOut, LamInput, LamInversion,
-              OutputIndexInversion.canonical] at h ⊢)
+              OutputIndexInversion.canonical] at h ⊢
+            exact h)
 
 def LamNatGeneratedCode : GeneratedNatCode LamPoly :=
   LayerPresentation.generatedCode LamNatLayerPresentation

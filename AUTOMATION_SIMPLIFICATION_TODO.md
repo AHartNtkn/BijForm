@@ -105,7 +105,7 @@ Every proof-debt item below must keep these fields visible:
 
 ## Codec Bounds And Carrier Ranks
 
-- [ ] Turn `SubcodeLe` / `SubcodeLt` bound propagation into a codec-path
+- [x] Turn `SubcodeLe` / `SubcodeLt` bound propagation into a codec-path
   synthesis schema.
   Evidence: `CodeAlgebra.lean` has arity-specific and path-specific facts for
   `toNatSum3`, `toNatSum4`, finite prefixes, finite products, tagged products,
