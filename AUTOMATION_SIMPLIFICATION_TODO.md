@@ -377,6 +377,8 @@ Every proof-debt item below must keep these fields visible:
   Validation:
   ```bash
   rg -n 'EdgeMateData|FirstPendingStepSearchView|RenderPrefixChildStep' BijForm/StringDiagram
+  rg -U -n 'def edgeMateCandidate\?[\s\S]*?:\n\s*Bool' BijForm/StringDiagram/Hypergraph.lean
+  rg -n 'PLift \(EdgeMate|\.down|\.proof' BijForm/StringDiagram/Hypergraph.lean BijForm/StringDiagram/Traversal/Search.lean
   ```
 
 ## Boundary Hygiene

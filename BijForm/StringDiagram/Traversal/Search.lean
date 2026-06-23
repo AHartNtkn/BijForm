@@ -17,9 +17,12 @@ def firstPendingConnectSearch? (G : OpenPortHypergraph Sig boundary)
     (rest : List (Fin G.raw.endpointCount)) :
     Option (FirstPendingStep G seenNode active rest) :=
   (List.finRange rest.length).findSome? fun mate =>
-    match PortHypergraph.edgeMateCandidate? G.raw active (rest.get mate) with
-    | some hmate => some (FirstPendingStep.connect mate hmate.down)
-    | none => none
+    if hmate : PortHypergraph.edgeMateCandidate? G.raw active (rest.get mate) then
+      some (FirstPendingStep.connect mate
+        ((PortHypergraph.edgeMateCandidate?_eq_true_iff G.raw active
+          (rest.get mate)).1 hmate))
+    else
+      none
 
 theorem firstPendingConnectSearch?_exists_of_witness
     (G : OpenPortHypergraph Sig boundary)
@@ -33,10 +36,10 @@ theorem firstPendingConnectSearch?_exists_of_witness
   unfold firstPendingConnectSearch?
   apply findSome?_exists_of_mem_isSome
   · exact List.mem_finRange mate
-  · rcases PortHypergraph.edgeMateCandidate?_some_of_edgeMate G.raw hmate with
-      ⟨data, hdata⟩
-    rw [hdata]
-    simp
+  · have htrue :
+        PortHypergraph.edgeMateCandidate? G.raw active (rest.get mate) = true :=
+      PortHypergraph.edgeMateCandidate?_true_of_edgeMate G.raw hmate
+    simpa using htrue
 
 theorem firstPendingConnectSearch?_some_connect
     (G : OpenPortHypergraph Sig boundary)
@@ -51,15 +54,11 @@ theorem firstPendingConnectSearch?_some_connect
   unfold firstPendingConnectSearch? at hstep
   rcases List.exists_of_findSome?_eq_some hstep with
     ⟨mate, _hmem, hcandidate⟩
-  cases hcase : PortHypergraph.edgeMateCandidate? G.raw active
-      (rest.get mate) with
-  | none =>
-      rw [hcase] at hcandidate
-      cases hcandidate
-  | some data =>
-      rw [hcase] at hcandidate
-      injection hcandidate with hstepEq
-      exact ⟨mate, data.down, hstepEq.symm⟩
+  simp at hcandidate
+  rcases hcandidate with ⟨htrue, hstepEq⟩
+  exact ⟨mate,
+    (PortHypergraph.edgeMateCandidate?_eq_true_iff G.raw active
+      (rest.get mate)).1 htrue, hstepEq.symm⟩
 
 theorem firstPendingConnectSearch?_none_of_forall_not_edgeMate
     (G : OpenPortHypergraph Sig boundary)
@@ -94,12 +93,14 @@ def firstPendingBudSearch? {G : OpenPortHypergraph Sig boundary}
       none
     else
       (List.finRange (G.raw.incident node).length).findSome? fun slot =>
-        match PortHypergraph.edgeMateCandidate? G.raw active
-            ((G.raw.incident node).get slot) with
-        | some hmate =>
-            some (FirstPendingStep.bud node slot hmate.down
-              (by simpa [seenNode] using hseen))
-        | none => none
+        if hmate : PortHypergraph.edgeMateCandidate? G.raw active
+            ((G.raw.incident node).get slot) then
+          some (FirstPendingStep.bud node slot
+            ((PortHypergraph.edgeMateCandidate?_eq_true_iff G.raw active
+              ((G.raw.incident node).get slot)).1 hmate)
+            (by simpa [seenNode] using hseen))
+        else
+          none
 
 theorem firstPendingBudSearch?_exists_of_witness
     {G : OpenPortHypergraph Sig boundary}
@@ -120,16 +121,7 @@ theorem firstPendingBudSearch?_exists_of_witness
       simpa [seenNode] using hunseen
     simp [hnodeUnseen]
     refine ⟨slot, ?_⟩
-    rcases PortHypergraph.edgeMateCandidate?_some_of_edgeMate G.raw hmate with
-      ⟨data, hdata⟩
-    change
-      (match PortHypergraph.edgeMateCandidate? G.raw active
-          ((G.raw.incident node).get slot) with
-        | some hmate => some (FirstPendingStep.bud node slot
-            hmate.down (by simpa [seenNode] using hnodeUnseen))
-        | none => none).isSome = true
-    rw [hdata]
-    simp
+    exact PortHypergraph.edgeMateCandidate?_true_of_edgeMate G.raw hmate
 
 theorem firstPendingBudSearch?_some_bud
     {G : OpenPortHypergraph Sig boundary}
@@ -152,22 +144,12 @@ theorem firstPendingBudSearch?_some_bud
   · simp [hseen] at hnodeCandidate
     rcases List.exists_of_findSome?_eq_some hnodeCandidate with
       ⟨slot, _hslotMem, hslotCandidate⟩
-    change
-      (match PortHypergraph.edgeMateCandidate? G.raw active
-          ((G.raw.incident node).get slot) with
-        | some hmate => some (FirstPendingStep.bud node slot
-            hmate.down (by simpa [seenNode] using hseen))
-        | none => none) = some step at hslotCandidate
-    cases hcase : PortHypergraph.edgeMateCandidate? G.raw active
-        ((G.raw.incident node).get slot) with
-    | none =>
-        rw [hcase] at hslotCandidate
-        cases hslotCandidate
-    | some data =>
-        rw [hcase] at hslotCandidate
-        injection hslotCandidate with hstepEq
-        exact ⟨node, slot, data.down, by simpa [seenNode] using hseen,
-          hstepEq.symm⟩
+    simp at hslotCandidate
+    rcases hslotCandidate with ⟨htrue, hstepEq⟩
+    exact ⟨node, slot,
+      (PortHypergraph.edgeMateCandidate?_eq_true_iff G.raw active
+        ((G.raw.incident node).get slot)).1 htrue,
+      by simpa [seenNode] using hseen, hstepEq.symm⟩
 
 /--
 Executable first-pending search.  It tries the remaining pending frontier

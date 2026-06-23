@@ -157,41 +157,40 @@ theorem EdgeMate.symm {G : PortHypergraph Sig boundary}
 /-- Check whether a concrete endpoint is the edge mate of another endpoint. -/
 def edgeMateCandidate? (G : PortHypergraph Sig boundary)
     (endpoint mate : Fin G.endpointCount) :
-    Option (PLift (EdgeMate G endpoint mate)) :=
-  if hsame : endpoint = mate then
-    none
-  else if hedge : G.endpointEdge endpoint = G.endpointEdge mate then
-    some ⟨⟨hsame, hedge⟩⟩
+    Bool :=
+  if _hsame : endpoint = mate then
+    false
+  else if _hedge : G.endpointEdge endpoint = G.endpointEdge mate then
+    true
   else
-    none
+    false
 
-theorem edgeMateCandidate?_isSome_of_edgeMate (G : PortHypergraph Sig boundary)
+theorem edgeMateCandidate?_eq_true_iff (G : PortHypergraph Sig boundary)
+    (endpoint mate : Fin G.endpointCount) :
+    edgeMateCandidate? G endpoint mate = true ↔
+      EdgeMate G endpoint mate := by
+  unfold edgeMateCandidate? EdgeMate
+  by_cases hsame : endpoint = mate
+  · simp [hsame]
+  · by_cases hedge : G.endpointEdge endpoint = G.endpointEdge mate
+    · simp [hsame, hedge]
+    · simp [hsame, hedge]
+
+theorem edgeMateCandidate?_true_of_edgeMate (G : PortHypergraph Sig boundary)
     {endpoint mate : Fin G.endpointCount}
     (hmate : EdgeMate G endpoint mate) :
-    (edgeMateCandidate? G endpoint mate).isSome := by
-  simp [edgeMateCandidate?, hmate.1, hmate.2]
-
-theorem edgeMateCandidate?_some_of_edgeMate (G : PortHypergraph Sig boundary)
-    {endpoint mate : Fin G.endpointCount}
-    (hmate : EdgeMate G endpoint mate) :
-    ∃ proof : PLift (EdgeMate G endpoint mate),
-      edgeMateCandidate? G endpoint mate = some proof := by
-  cases hcase : edgeMateCandidate? G endpoint mate with
-  | none =>
-      have hsome := edgeMateCandidate?_isSome_of_edgeMate G hmate
-      rw [hcase] at hsome
-      simp at hsome
-  | some data =>
-      exact ⟨data, rfl⟩
+    edgeMateCandidate? G endpoint mate = true :=
+  (edgeMateCandidate?_eq_true_iff G endpoint mate).2 hmate
 
 /-- Search the finite endpoint set for the mate of a concrete endpoint. -/
 def edgeMateSearch? (G : PortHypergraph Sig boundary)
     (endpoint : Fin G.endpointCount) :
     Option { mate : Fin G.endpointCount // EdgeMate G endpoint mate } :=
   (List.finRange G.endpointCount).findSome? fun mate =>
-    match edgeMateCandidate? G endpoint mate with
-    | some hmate => some ⟨mate, hmate.down⟩
-    | none => none
+    if hmate : edgeMateCandidate? G endpoint mate then
+      some ⟨mate, (edgeMateCandidate?_eq_true_iff G endpoint mate).1 hmate⟩
+    else
+      none
 
 /-- Every endpoint has exactly one mate on its edge. -/
 theorem edgeMate_existsUnique (G : PortHypergraph Sig boundary)
