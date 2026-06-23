@@ -90,7 +90,7 @@ theorem Lam_layer_child_rank_lt :
           (LamInversion.decode k (LamSyntaxToLayer k z).1).param),
       LamSyntax.rank ((LamSyntaxToLayer k z).2 q) <
         LamSyntax.rank z := by
-  finish_rank_descent
+  rank_descent
 
 def LamSyntaxPresentation : SyntaxPresentation LamPoly LamInversion LamSyntax :=
   SyntaxPresentation.ofLayerIso
@@ -205,7 +205,7 @@ theorem LamNat_layer_child_rank_lt :
         LamNatRank k
           ((CodeAlgebra.finPrefixNat k CodeAlgebra.sumProdNat).toFun
             (LamNatLayerShapeTo k layer)) := by
-  finish_rank_descent [LamNatLayerShapeTo, LamNatRank, LamPoly, LamOut, LamPos,
+  rank_descent [LamNatLayerShapeTo, LamNatRank, LamPoly, LamOut, LamPos,
     LamInput, LamInversion]
 
 def LamNatLayerPresentation : RankedNatLayerPresentation LamPoly LamInversion :=

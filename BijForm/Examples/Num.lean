@@ -121,7 +121,7 @@ theorem Num_layer_child_rank_lt :
           (NumInversion.decode k (NumSyntaxToLayer k z).1).param),
       NumSyntax.rank ((NumSyntaxToLayer k z).2 q) <
         NumSyntax.rank z := by
-  finish_rank_descent
+  rank_descent
 
 def NumSyntaxPresentation : SyntaxPresentation NumPoly NumInversion NumSyntax :=
   SyntaxPresentation.ofLayerIso
@@ -281,7 +281,7 @@ theorem NumNat_layer_child_lt :
       layer.2 q <
         (CodeAlgebra.finPrefixNat (k + 2) CodeAlgebra.natOrProdOrProdNat).toFun
           (NumNatLayerShapeTo k layer) := by
-  finish_rank_descent [NumNatLayerShapeTo, NumPoly, NumOut, NumPos, NumInput,
+  rank_descent [NumNatLayerShapeTo, NumPoly, NumOut, NumPos, NumInput,
     NumInversion]
 
 def NumNatLayerPresentation : NatLayerPresentation NumPoly NumInversion :=

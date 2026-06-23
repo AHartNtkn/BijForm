@@ -106,7 +106,7 @@ theorem Peano_layer_child_rank_lt :
           (PeanoInversion.decode k (PeanoSyntaxToLayer k z).1).param),
       PeanoSyntax.rank ((PeanoSyntaxToLayer k z).2 q) <
         PeanoSyntax.rank z := by
-  finish_rank_descent
+  rank_descent
 
 def PeanoSyntaxPresentation : SyntaxPresentation PeanoPoly PeanoInversion PeanoSyntax :=
   SyntaxPresentation.ofLayerIso
@@ -231,7 +231,7 @@ theorem PeanoNat_layer_child_lt :
           (PeanoInversion.decode k layer.1).param),
       layer.2 q <
         CodeAlgebra.prodOrNatOrProdOrNat.toFun (PeanoNatLayerShapeTo k layer) := by
-  finish_rank_descent [PeanoNatLayerShapeTo, PeanoPoly, PeanoOut, PeanoPos,
+  rank_descent [PeanoNatLayerShapeTo, PeanoPoly, PeanoOut, PeanoPos,
     PeanoInput, PeanoInversion]
 
 def PeanoNatLayerPresentation : NatLayerPresentation PeanoPoly PeanoInversion :=

@@ -96,7 +96,7 @@ theorem HBT_layer_child_rank_lt :
           (HBTInversion.decode i (HBTSyntaxToLayer i z).1).param),
       HBTSyntax.rank ((HBTSyntaxToLayer i z).2 q) <
         HBTSyntax.rank z := by
-  finish_rank_descent
+  rank_descent
 
 /--
 Generated coding data for height-bounded trees. The example supplies only
@@ -206,7 +206,7 @@ def HBTNatLayerPresentation : NatLayerPresentation HBTPoly HBTInversion :=
     HBTNatLayerCarrierIso
     (fun _ n => n)
     (by
-    finish_rank_descent [HBTNatLayerShape, HBTNatLayerShapeLayerPresentation,
+    rank_descent [HBTNatLayerShape, HBTNatLayerShapeLayerPresentation,
       HBTNatLayerCarrierIso])
 
 /-- Generated Nat coding data for height-bounded trees. The recursive encoder

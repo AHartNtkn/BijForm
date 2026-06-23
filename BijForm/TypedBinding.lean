@@ -133,25 +133,6 @@ namespace Term
 
 variable {Ty : Type} {S : Signature Ty}
 
-def finMax : {n : Nat} → (Fin n → Nat) → Nat
-  | 0, _ => 0
-  | n + 1, f =>
-      Nat.max (f ⟨0, Nat.zero_lt_succ n⟩)
-        (finMax (fun q : Fin n => f q.succ))
-
-theorem le_finMax {n : Nat} (f : Fin n → Nat) (q : Fin n) :
-    f q ≤ finMax f := by
-  induction n with
-  | zero =>
-      exact fin_zero_elim q
-  | succ n ih =>
-      cases q using Fin.cases with
-      | zero =>
-          exact Nat.le_max_left _ _
-      | succ q =>
-          exact Nat.le_trans (ih (fun r : Fin n => f r.succ) q)
-            (Nat.le_max_right _ _)
-
 /-- Structural rank used for the generated syntax coding. -/
 def rank : {Γ : List Ty} → {t : Ty} → Term S Γ t → Nat
   | _, _, var _ => 0
@@ -164,7 +145,7 @@ theorem child_rank_lt {Γ : List Ty} {c : S.Ctor}
         Term S ((S.arg c q).binders ++ Γ) (S.arg c q).sort)
     (q : S.ArgPos c) :
     rank (child q) < rank (Term.op (S := S) (Γ := Γ) c child) := by
-  exact Nat.lt_succ_of_le (le_finMax (fun q : S.ArgPos c => rank (child q)) q)
+  exact lt_finMax_succ (fun q : S.ArgPos c => rank (child q)) q
 
 end Term
 
@@ -814,6 +795,30 @@ theorem layerCarrierCoding_op_toFun (Γ : List Ty)
           ⟨c, rfl,
             ArgTuple.ofChild (S := S) (Code := Code) Γ
               (args := S.args c) child⟩) :=
+  rfl
+
+@[simp]
+theorem trans_layerCarrierCoding_op_toFun (Γ : List Ty)
+    {VarCode CtorCode Carrier : Type}
+    (c : S.Ctor)
+    (varIso : Var Γ (S.ret c) ≃ᵢ VarCode)
+    (ctorIso : CtorFamily S Code Γ (S.ret c) ≃ᵢ CtorCode)
+    (post : (VarCode ⊕ CtorCode) ≃ᵢ Carrier)
+    (child :
+      (q : S.ArgPos c) →
+        Code ((S.arg c q).binders ++ Γ, (S.arg c q).sort)) :
+    (Iso.trans
+        (layerCarrierCoding (S := S) (Code := Code) Γ (S.ret c)
+          varIso ctorIso)
+        post).toFun
+        (⟨FiberCode.op c rfl, child⟩ :
+          CodeLayer (PolyOf S) (inversion S) Code (Γ, S.ret c)) =
+      post.toFun
+        (Sum.inr
+          (ctorIso.toFun
+            ⟨c, rfl,
+              ArgTuple.ofChild (S := S) (Code := Code) Γ
+                (args := S.args c) child⟩)) :=
   rfl
 
 theorem carrierCoding_op_toFun (Γ : List Ty)

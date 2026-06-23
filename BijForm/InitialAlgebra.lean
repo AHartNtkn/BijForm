@@ -236,6 +236,29 @@ theorem nat_lt_max_succ_left (a b : Nat) : a < Nat.max a b + 1 :=
 theorem nat_lt_max_succ_right (a b : Nat) : b < Nat.max a b + 1 :=
   Nat.lt_succ_of_le (Nat.le_max_right a b)
 
+def finMax : {n : Nat} → (Fin n → Nat) → Nat
+  | 0, _ => 0
+  | n + 1, f =>
+      Nat.max (f ⟨0, Nat.zero_lt_succ n⟩)
+        (finMax (fun q : Fin n => f q.succ))
+
+theorem le_finMax {n : Nat} (f : Fin n → Nat) (q : Fin n) :
+    f q ≤ finMax f := by
+  induction n with
+  | zero =>
+      exact fin_zero_elim q
+  | succ n ih =>
+      exact Fin.cases
+        (Nat.le_max_left _ _)
+        (fun q =>
+          Nat.le_trans (ih (fun r : Fin n => f r.succ) q)
+            (Nat.le_max_right _ _))
+        q
+
+theorem lt_finMax_succ {n : Nat} (f : Fin n → Nat) (q : Fin n) :
+    f q < finMax f + 1 :=
+  Nat.lt_succ_of_le (le_finMax f q)
+
 def castFiberChild {P : DepPoly ι} {Code : ι → Type v} {i : ι}
     {f g : Fiber P i} (h : f = g)
     (child : (q : P.Pos f.ctor f.param) → Code (P.input f.param q)) :

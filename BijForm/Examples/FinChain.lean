@@ -79,7 +79,7 @@ theorem FinChain_layer_child_rank_lt :
             (FinChainSyntaxToLayer i z).1).param),
       FinChainSyntax.rank ((FinChainSyntaxToLayer i z).2 q) <
         FinChainSyntax.rank z := by
-  finish_rank_descent
+  rank_descent
 
 def FinChainSyntaxPresentation :
     SyntaxPresentation FinChainPoly FinChainInversion FinChainSyntax :=
@@ -217,7 +217,7 @@ def FinChainLayerPresentation :
     FinChainLayerCarrierIso
     (fun i _ => i)
     (by
-    finish_rank_descent [FinChainLayerShape, FinChainLayerShapeLayerPresentation,
+    rank_descent [FinChainLayerShape, FinChainLayerShapeLayerPresentation,
       FinChainLayerCarrierIso, FinChainCarrier, FinChainShape, FinChainPos,
       FinChainInput, FinChainPoly, FinChainOut, FinChainInversion])
 

@@ -4,10 +4,10 @@ import BijForm.CodeAlgebra
 namespace BijForm
 
 /--
-Close generated child-rank descent goals after the local presentation and
-carrier maps are supplied as simplification definitions.
+Close generated rank-descent goals after the local presentation and carrier
+maps are supplied as simplification definitions.
 -/
-macro "finish_rank_descent" : tactic =>
+macro "rank_descent" : tactic =>
   `(tactic|
     rintro idx z q <;>
     cases z <;>
@@ -16,7 +16,7 @@ macro "finish_rank_descent" : tactic =>
       simp_all! [BijForm.DepPoly.OutputIndexInversion.canonical] <;>
       omega)
 
-macro "finish_rank_descent " "[" defs:Lean.Parser.Tactic.simpLemma,* "]" : tactic =>
+macro "rank_descent " "[" defs:Lean.Parser.Tactic.simpLemma,* "]" : tactic =>
   `(tactic|
     first
     | (rintro idx z q <;>
@@ -27,7 +27,7 @@ macro "finish_rank_descent " "[" defs:Lean.Parser.Tactic.simpLemma,* "]" : tacti
          dsimp [$defs,*, BijForm.DepPoly.OutputIndexInversion.canonical] at q ⊢ <;>
          (first | cases q | skip) <;>
          simp_all! [$defs,*, BijForm.DepPoly.OutputIndexInversion.canonical] <;>
-         first
+       first
          | (apply Nat.add_lt_add_right; simp_all!)
          | omega
        done)

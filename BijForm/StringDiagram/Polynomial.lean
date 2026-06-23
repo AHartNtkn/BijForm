@@ -114,7 +114,7 @@ theorem layer_child_rank_lt (Sig : Signature) :
             (syntaxToLayer Sig boundary z).1).param),
       Diag.rank ((syntaxToLayer Sig boundary z).2 q) <
         Diag.rank z := by
-  finish_rank_descent
+  rank_descent
 
 /-- Presentation of typed rooted open diagram syntax as generated code data. -/
 def syntaxPresentation (Sig : Signature) :
