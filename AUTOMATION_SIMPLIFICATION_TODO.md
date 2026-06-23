@@ -178,7 +178,7 @@ Every proof-debt item below must keep these fields visible:
   rg -n 'NFGeneratedLayerIso_.*_toFun|trans_layerCarrierCoding_op_toFun' BijForm/Examples/TypedBinding BijForm/TypedBinding.lean
   ```
 
-- [ ] Replace NF per-position rank facts with declarative carrier/rank bound
+- [x] Replace NF per-position rank facts with declarative carrier/rank bound
   data.
   Evidence: `NFGeneratedLayer_dum_child_rank_lt`,
   `NFGeneratedLayer_lam_child_rank_lt`,

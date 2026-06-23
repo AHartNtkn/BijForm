@@ -414,7 +414,7 @@ def NFNormalGeneratedShapeIso (Γ : List NFSort) :
       Γ .normalExp (Var.finIso Γ .normalExp) (NFNormalFamilyCarrierIso Γ))
     (Iso.trans
       (Iso.sum (Iso.refl (Fin (normalExpCount Γ)))
-        (CodeAlgebra.finProdNatOrNat (appTermCount Γ)))
+        (CodeAlgebra.optionalFinitePayloadNat (appTermCount Γ)))
       (CodeAlgebra.finPlusNat (normalExpCount Γ)))
 
 def NFAppGeneratedShapeIso (Γ : List NFSort) :
@@ -422,7 +422,7 @@ def NFAppGeneratedShapeIso (Γ : List NFSort) :
   Iso.trans
     (LayerShape.carrierCoding (S := NFSignature) (Code := NFCode)
       Γ .appTerm (Var.finIso Γ .appTerm) (NFAppFamilyCarrierIso Γ))
-    (CodeAlgebra.finTaggedProdNat (appTermCount Γ))
+    (CodeAlgebra.taggedPairPayload (appTermCount Γ))
 
 def NFGeneratedShapeIso :
     ∀ Γ t, LayerShape NFSignature NFCode Γ t ≃ᵢ NFCode (Γ, t)
@@ -437,7 +437,7 @@ def NFNormalGeneratedLayerIso (Γ : List NFSort) :
       Γ .normalExp (Var.finIso Γ .normalExp) (NFNormalFamilyCarrierIso Γ))
     (Iso.trans
       (Iso.sum (Iso.refl (Fin (normalExpCount Γ)))
-        (CodeAlgebra.finProdNatOrNat (appTermCount Γ)))
+        (CodeAlgebra.optionalFinitePayloadNat (appTermCount Γ)))
       (CodeAlgebra.finPlusNat (normalExpCount Γ)))
 
 def NFAppGeneratedLayerIso (Γ : List NFSort) :
@@ -446,324 +446,283 @@ def NFAppGeneratedLayerIso (Γ : List NFSort) :
   Iso.trans
     (LayerShape.layerCarrierCoding (S := NFSignature) (Code := NFCode)
       Γ .appTerm (Var.finIso Γ .appTerm) (NFAppFamilyCarrierIso Γ))
-    (CodeAlgebra.finTaggedProdNat (appTermCount Γ))
+    (CodeAlgebra.taggedPairPayload (appTermCount Γ))
 
 def NFGeneratedLayerIso :
     ∀ Γ t, CodeLayer NFPoly NFInversion NFCode (Γ, t) ≃ᵢ NFCode (Γ, t)
   | Γ, .normalExp => NFNormalGeneratedLayerIso Γ
   | Γ, .appTerm => NFAppGeneratedLayerIso Γ
 
-theorem NFGeneratedLayer_dum_child_rank_lt (Γ : List NFSort)
-    (child :
-      (q : NFSignature.ArgPos NFCtor.dum) →
-        NFCode ((NFSignature.arg NFCtor.dum q).binders ++ Γ,
-          (NFSignature.arg NFCtor.dum q).sort)) :
-    NFCodeRank (Γ, NFSort.appTerm) (child ⟨0, by decide⟩) <
-      NFCodeRank (Γ, NFSort.normalExp)
-        ((NFGeneratedLayerIso Γ NFSort.normalExp).toFun
-          ⟨FiberCode.op NFCtor.dum rfl, child⟩) := by
-  let app : Fin (appTermCount Γ) × Nat := child ⟨0, by decide⟩
-  have hcount : 0 < appTermCount Γ :=
-    Nat.lt_of_le_of_lt (Nat.zero_le app.1.val) app.1.isLt
-  have hcne : ¬appTermCount Γ = 0 := Nat.ne_of_gt hcount
-  let tail :=
-    (CodeAlgebra.finProdNatOrNat (appTermCount Γ)).toFun
-      (Sum.inl app)
-  rw [show
-    (NFGeneratedLayerIso Γ NFSort.normalExp).toFun
-        ⟨FiberCode.op NFCtor.dum rfl, child⟩ =
-      normalExpCount Γ +
-        (CodeAlgebra.finProdNatOrNat (appTermCount Γ)).toFun
-          (Sum.inl (child ⟨0, by decide⟩)) by
-    dsimp [NFGeneratedLayerIso, NFNormalGeneratedLayerIso]
-    rw [show
-      (Iso.trans
-        (LayerShape.layerCarrierCoding (S := NFSignature)
-            (Code := NFCode) Γ NFSort.normalExp
-            (Var.finIso Γ NFSort.normalExp)
-            (NFNormalFamilyCarrierIso Γ))
-        (Iso.trans
-          (Iso.sum (Iso.refl (Fin (normalExpCount Γ)))
-            (CodeAlgebra.finProdNatOrNat (appTermCount Γ)))
-          (CodeAlgebra.finPlusNat (normalExpCount Γ)))).toFun
-          ⟨FiberCode.op NFCtor.dum rfl, child⟩ = _ by
-        simpa [NFSignature, NFRet] using
-          (transLayerCarrierCodingOp
-            (S := NFSignature) (Code := NFCode) (Γ := Γ)
-            (c := NFCtor.dum)
-            (varIso := Var.finIso Γ NFSort.normalExp)
-            (ctorIso := NFNormalFamilyCarrierIso Γ)
-            (post :=
-              Iso.trans
-                (Iso.sum (Iso.refl (Fin (normalExpCount Γ)))
-                  (CodeAlgebra.finProdNatOrNat (appTermCount Γ)))
-                (CodeAlgebra.finPlusNat (normalExpCount Γ)))
-            (child := child))]
-    simp [Iso.trans, Iso.sum, CodeAlgebra.finPlusNat, CodeAlgebra.finProdNatOrNat]]
-  change NFCodeRank (Γ, NFSort.appTerm) app <
-    NFCodeRank (Γ, NFSort.normalExp) (normalExpCount Γ + tail)
-  simp [NFCodeRank, hcne]
-  have happ_le : app.2 ≤ tail := by
-    simpa [tail] using
-      CodeAlgebra.finProdNatOrNat_inl_snd_le
-        (appTermCount Γ) app
-  omega
-
-theorem NFGeneratedLayer_lam_child_rank_lt (Γ : List NFSort)
-    (child :
-      (q : NFSignature.ArgPos NFCtor.lam) →
-        NFCode ((NFSignature.arg NFCtor.lam q).binders ++ Γ,
-          (NFSignature.arg NFCtor.lam q).sort)) :
-    NFCodeRank (NFSort.appTerm :: Γ, NFSort.normalExp)
-        (child ⟨0, by decide⟩) <
-      NFCodeRank (Γ, NFSort.normalExp)
-        ((NFGeneratedLayerIso Γ NFSort.normalExp).toFun
-          ⟨FiberCode.op NFCtor.lam rfl, child⟩) := by
-  let body : Nat := child ⟨0, by decide⟩
-  let tail :=
-    (CodeAlgebra.finProdNatOrNat (appTermCount Γ)).toFun
-      (Sum.inr body)
-  have hbody_le : body ≤ tail := by
-    simpa [tail] using
-      CodeAlgebra.finProdNatOrNat_inr_le
-        (appTermCount Γ) body
-  by_cases hc : appTermCount Γ = 0
-  · rw [show
-      (NFGeneratedLayerIso Γ NFSort.normalExp).toFun
-          ⟨FiberCode.op NFCtor.lam rfl, child⟩ =
-        normalExpCount Γ +
-          (CodeAlgebra.finProdNatOrNat (appTermCount Γ)).toFun
-            (Sum.inr (child ⟨0, by decide⟩)) by
-      dsimp [NFGeneratedLayerIso, NFNormalGeneratedLayerIso]
-      rw [show
-        (Iso.trans
-          (LayerShape.layerCarrierCoding (S := NFSignature)
-              (Code := NFCode) Γ NFSort.normalExp
-              (Var.finIso Γ NFSort.normalExp)
-              (NFNormalFamilyCarrierIso Γ))
-          (Iso.trans
-            (Iso.sum (Iso.refl (Fin (normalExpCount Γ)))
-              (CodeAlgebra.finProdNatOrNat (appTermCount Γ)))
-            (CodeAlgebra.finPlusNat (normalExpCount Γ)))).toFun
-            ⟨FiberCode.op NFCtor.lam rfl, child⟩ = _ by
-          simpa [NFSignature, NFRet] using
-            (transLayerCarrierCodingOp
-              (S := NFSignature) (Code := NFCode) (Γ := Γ)
-              (c := NFCtor.lam)
-              (varIso := Var.finIso Γ NFSort.normalExp)
-              (ctorIso := NFNormalFamilyCarrierIso Γ)
-              (post :=
-                Iso.trans
-                  (Iso.sum (Iso.refl (Fin (normalExpCount Γ)))
-                    (CodeAlgebra.finProdNatOrNat (appTermCount Γ)))
-                  (CodeAlgebra.finPlusNat (normalExpCount Γ)))
-              (child := child))]
-      simp [hc, Iso.trans, Iso.sum, CodeAlgebra.finPlusNat,
-        CodeAlgebra.finProdNatOrNat]]
-    change NFCodeRank (NFSort.appTerm :: Γ, NFSort.normalExp) body <
-      NFCodeRank (Γ, NFSort.normalExp) (normalExpCount Γ + tail)
-    simp [NFCodeRank, appTermCount, Var.count, hc]
-    omega
-  · have hpos : 0 < appTermCount Γ := Nat.pos_of_ne_zero hc
-    have hbody_lt : body < tail := by
-      simpa [tail] using
-        CodeAlgebra.finProdNatOrNat_inr_lt_of_pos
-          (k := appTermCount Γ) (n := body) hpos
-    rw [show
-      (NFGeneratedLayerIso Γ NFSort.normalExp).toFun
-          ⟨FiberCode.op NFCtor.lam rfl, child⟩ =
-        normalExpCount Γ +
-          (CodeAlgebra.finProdNatOrNat (appTermCount Γ)).toFun
-            (Sum.inr (child ⟨0, by decide⟩)) by
-      dsimp [NFGeneratedLayerIso, NFNormalGeneratedLayerIso]
-      rw [show
-        (Iso.trans
-          (LayerShape.layerCarrierCoding (S := NFSignature)
-              (Code := NFCode) Γ NFSort.normalExp
-              (Var.finIso Γ NFSort.normalExp)
-              (NFNormalFamilyCarrierIso Γ))
-          (Iso.trans
-            (Iso.sum (Iso.refl (Fin (normalExpCount Γ)))
-              (CodeAlgebra.finProdNatOrNat (appTermCount Γ)))
-            (CodeAlgebra.finPlusNat (normalExpCount Γ)))).toFun
-            ⟨FiberCode.op NFCtor.lam rfl, child⟩ = _ by
-          simpa [NFSignature, NFRet] using
-            (transLayerCarrierCodingOp
-              (S := NFSignature) (Code := NFCode) (Γ := Γ)
-              (c := NFCtor.lam)
-              (varIso := Var.finIso Γ NFSort.normalExp)
-              (ctorIso := NFNormalFamilyCarrierIso Γ)
-              (post :=
-                Iso.trans
-                  (Iso.sum (Iso.refl (Fin (normalExpCount Γ)))
-                    (CodeAlgebra.finProdNatOrNat (appTermCount Γ)))
-                  (CodeAlgebra.finPlusNat (normalExpCount Γ)))
-              (child := child))]
-      simp [hpos, Iso.trans, Iso.sum, CodeAlgebra.finPlusNat,
-        CodeAlgebra.finProdNatOrNat]]
-    change NFCodeRank (NFSort.appTerm :: Γ, NFSort.normalExp) body <
-      NFCodeRank (Γ, NFSort.normalExp) (normalExpCount Γ + tail)
-    simp [NFCodeRank, appTermCount, Var.count, hc]
-    omega
-
-theorem NFGeneratedLayer_app_fn_child_rank_lt (Γ : List NFSort)
-    (child :
-      (q : NFSignature.ArgPos NFCtor.app) →
-        NFCode ((NFSignature.arg NFCtor.app q).binders ++ Γ,
-          (NFSignature.arg NFCtor.app q).sort)) :
-    NFCodeRank (Γ, NFSort.appTerm) (child ⟨0, by decide⟩) <
-      NFCodeRank (Γ, NFSort.appTerm)
-        ((NFGeneratedLayerIso Γ NFSort.appTerm).toFun
-          ⟨FiberCode.op NFCtor.app rfl, child⟩) := by
-  let fn : Fin (appTermCount Γ) × Nat := child ⟨0, by decide⟩
-  let arg : Nat := child ⟨1, by decide⟩
-  let pair := (fn, arg)
-  rw [show
-    (NFGeneratedLayerIso Γ NFSort.appTerm).toFun
-        ⟨FiberCode.op NFCtor.app rfl, child⟩ =
-      (CodeAlgebra.finTaggedProdNat (appTermCount Γ)).toFun
-        (Sum.inr (child ⟨0, by decide⟩, child ⟨1, by decide⟩)) by
-    dsimp [NFGeneratedLayerIso, NFAppGeneratedLayerIso]
-    rw [show
-      (Iso.trans
-        (LayerShape.layerCarrierCoding (S := NFSignature)
-            (Code := NFCode) Γ NFSort.appTerm
-            (Var.finIso Γ NFSort.appTerm)
-            (NFAppFamilyCarrierIso Γ))
-        (CodeAlgebra.finTaggedProdNat (appTermCount Γ))).toFun
-          ⟨FiberCode.op NFCtor.app rfl, child⟩ = _ by
-        simpa [NFSignature, NFRet] using
-          (transLayerCarrierCodingOp
-            (S := NFSignature) (Code := NFCode) (Γ := Γ)
-            (c := NFCtor.app)
-            (varIso := Var.finIso Γ NFSort.appTerm)
-            (ctorIso := NFAppFamilyCarrierIso Γ)
-            (post := CodeAlgebra.finTaggedProdNat (appTermCount Γ))
-            (child := child))]]
-  change NFCodeRank (Γ, NFSort.appTerm) fn <
-    NFCodeRank (Γ, NFSort.appTerm)
-      ((CodeAlgebra.finTaggedProdNat (appTermCount Γ)).toFun (Sum.inr pair))
-  simp [NFCodeRank]
-  have hfn_lt :
-      fn.2 <
-        ((CodeAlgebra.finTaggedProdNat
-          (appTermCount Γ)).toFun (Sum.inr pair)).2 := by
-    dsimp [CodeAlgebra.finTaggedProdNat]
-    exact Nat.lt_succ_of_le (CodeAlgebra.prodNat_toFun_fst_le (fn.2, arg))
-  omega
-
-theorem NFGeneratedLayer_app_arg_child_rank_lt (Γ : List NFSort)
-    (child :
-      (q : NFSignature.ArgPos NFCtor.app) →
-        NFCode ((NFSignature.arg NFCtor.app q).binders ++ Γ,
-          (NFSignature.arg NFCtor.app q).sort)) :
-    NFCodeRank (Γ, NFSort.normalExp) (child ⟨1, by decide⟩) <
-      NFCodeRank (Γ, NFSort.appTerm)
-        ((NFGeneratedLayerIso Γ NFSort.appTerm).toFun
-          ⟨FiberCode.op NFCtor.app rfl, child⟩) := by
-  let fn : Fin (appTermCount Γ) × Nat := child ⟨0, by decide⟩
-  let arg : Nat := child ⟨1, by decide⟩
-  have hcount : 0 < appTermCount Γ :=
-    Nat.lt_of_le_of_lt (Nat.zero_le fn.1.val) fn.1.isLt
-  have hcne : ¬appTermCount Γ = 0 := Nat.ne_of_gt hcount
-  let pair := (fn, arg)
-  rw [show
-    (NFGeneratedLayerIso Γ NFSort.appTerm).toFun
-        ⟨FiberCode.op NFCtor.app rfl, child⟩ =
-      (CodeAlgebra.finTaggedProdNat (appTermCount Γ)).toFun
-        (Sum.inr (child ⟨0, by decide⟩, child ⟨1, by decide⟩)) by
-    dsimp [NFGeneratedLayerIso, NFAppGeneratedLayerIso]
-    rw [show
-      (Iso.trans
-        (LayerShape.layerCarrierCoding (S := NFSignature)
-            (Code := NFCode) Γ NFSort.appTerm
-            (Var.finIso Γ NFSort.appTerm)
-            (NFAppFamilyCarrierIso Γ))
-        (CodeAlgebra.finTaggedProdNat (appTermCount Γ))).toFun
-          ⟨FiberCode.op NFCtor.app rfl, child⟩ = _ by
-        simpa [NFSignature, NFRet] using
-          (transLayerCarrierCodingOp
-            (S := NFSignature) (Code := NFCode) (Γ := Γ)
-            (c := NFCtor.app)
-            (varIso := Var.finIso Γ NFSort.appTerm)
-            (ctorIso := NFAppFamilyCarrierIso Γ)
-            (post := CodeAlgebra.finTaggedProdNat (appTermCount Γ))
-            (child := child))]]
-  change NFCodeRank (Γ, NFSort.normalExp) arg <
-    NFCodeRank (Γ, NFSort.appTerm)
-      ((CodeAlgebra.finTaggedProdNat (appTermCount Γ)).toFun (Sum.inr pair))
-  simp [NFCodeRank, hcne]
-  have harg_lt :
-      arg <
-        ((CodeAlgebra.finTaggedProdNat
-          (appTermCount Γ)).toFun (Sum.inr pair)).2 := by
-    dsimp [CodeAlgebra.finTaggedProdNat]
-    exact Nat.lt_succ_of_le (CodeAlgebra.prodNat_toFun_snd_le (fn.2, arg))
-  omega
+theorem NFCtorFamilyRankBound :
+    LayerShapeRankProof.CtorFamilyRankBound
+      (S := NFSignature) (Code := NFCode)
+      (layerShape := NFGeneratedShapeIso) (rank := NFCodeRank) := by
+  intro Γ t family q
+  cases family with
+  | mk c h args =>
+      cases c with
+      | dum =>
+          cases h
+          cases q with
+          | mk n hn =>
+              cases n with
+              | zero =>
+                  let app : Fin (appTermCount Γ) × Nat :=
+                    ArgTuple.toChild (S := NFSignature) (Code := NFCode) Γ
+                      args ⟨0, hn⟩
+                  have hcount : 0 < appTermCount Γ :=
+                    Nat.lt_of_le_of_lt (Nat.zero_le app.1.val) app.1.isLt
+                  have hcne : ¬appTermCount Γ = 0 := Nat.ne_of_gt hcount
+                  let tail :=
+                    (CodeAlgebra.optionalFinitePayloadNat
+                      (appTermCount Γ)).toFun (Sum.inl app)
+                  change NFCodeRank (Γ, NFSort.appTerm) app <
+                    NFCodeRank (Γ, NFSort.normalExp)
+                      ((NFGeneratedShapeIso Γ NFSort.normalExp).toFun
+                        (Sum.inr
+                          (CtorLayer.ofFamily
+                            (S := NFSignature) (Code := NFCode)
+                            Γ NFSort.normalExp
+                            (⟨NFCtor.dum, rfl, args⟩ :
+                              CtorFamily NFSignature NFCode Γ
+                                NFSort.normalExp))))
+                  rw [show
+                    (NFGeneratedShapeIso Γ NFSort.normalExp).toFun
+                        (Sum.inr
+                          (CtorLayer.ofFamily
+                            (S := NFSignature) (Code := NFCode)
+                            Γ NFSort.normalExp
+                            (⟨NFCtor.dum, rfl, args⟩ :
+                              CtorFamily NFSignature NFCode Γ
+                                NFSort.normalExp))) =
+                      normalExpCount Γ + tail by
+                    simp [NFGeneratedShapeIso, NFNormalGeneratedShapeIso,
+                      LayerShape.carrierCoding, LayerShape.familyIso,
+                      CtorLayer.ofFamily, CtorLayer.toFamily,
+                      CtorLayer.familyIso, ArgTuple.ofChild_toChild,
+                      NFNormalFamilyCarrierIso, NFNormalDumArgsIso, app, tail,
+                      Iso.trans, Iso.sum, CodeAlgebra.finPlusNat]]
+                  change NFCodeRank (Γ, NFSort.appTerm) app <
+                    NFCodeRank (Γ, NFSort.normalExp)
+                      (normalExpCount Γ + tail)
+                  simp [NFCodeRank, hcne]
+                  have happ_le : app.2 ≤ tail := by
+                    simpa [tail] using
+                      CodeAlgebra.optionalFinitePayloadNat_left_payload_le
+                        (appTermCount Γ) app
+                  omega
+              | succ n =>
+                  exact False.elim (by
+                    simp [NFSignature, NFArgs] at hn)
+      | lam =>
+          cases h
+          cases q with
+          | mk n hn =>
+              cases n with
+              | zero =>
+                  let body : Nat :=
+                    ArgTuple.toChild (S := NFSignature) (Code := NFCode) Γ
+                      args ⟨0, hn⟩
+                  let tail :=
+                    (CodeAlgebra.optionalFinitePayloadNat
+                      (appTermCount Γ)).toFun (Sum.inr body)
+                  have hbody_le : body ≤ tail := by
+                    simpa [tail] using
+                      CodeAlgebra.optionalFinitePayloadNat_right_payload_le
+                        (appTermCount Γ) body
+                  by_cases hc : appTermCount Γ = 0
+                  · change NFCodeRank
+                        (NFSort.appTerm :: Γ, NFSort.normalExp) body <
+                      NFCodeRank (Γ, NFSort.normalExp)
+                        ((NFGeneratedShapeIso Γ NFSort.normalExp).toFun
+                          (Sum.inr
+                            (CtorLayer.ofFamily
+                              (S := NFSignature) (Code := NFCode)
+                              Γ NFSort.normalExp
+                              (⟨NFCtor.lam, rfl, args⟩ :
+                                CtorFamily NFSignature NFCode Γ
+                                  NFSort.normalExp))))
+                    rw [show
+                      (NFGeneratedShapeIso Γ NFSort.normalExp).toFun
+                          (Sum.inr
+                            (CtorLayer.ofFamily
+                              (S := NFSignature) (Code := NFCode)
+                              Γ NFSort.normalExp
+                              (⟨NFCtor.lam, rfl, args⟩ :
+                                CtorFamily NFSignature NFCode Γ
+                                  NFSort.normalExp))) =
+                        normalExpCount Γ + tail by
+                      simp [NFGeneratedShapeIso, NFNormalGeneratedShapeIso,
+                        LayerShape.carrierCoding, LayerShape.familyIso,
+                        CtorLayer.ofFamily, CtorLayer.toFamily,
+                        CtorLayer.familyIso, ArgTuple.ofChild_toChild,
+                        NFNormalFamilyCarrierIso, NFNormalLamArgsIso, body, tail,
+                        Iso.trans, Iso.sum, CodeAlgebra.finPlusNat]]
+                    change NFCodeRank
+                        (NFSort.appTerm :: Γ, NFSort.normalExp) body <
+                      NFCodeRank (Γ, NFSort.normalExp)
+                        (normalExpCount Γ + tail)
+                    simp [NFCodeRank, appTermCount, Var.count, hc]
+                    omega
+                  · have hpos : 0 < appTermCount Γ := Nat.pos_of_ne_zero hc
+                    have hbody_lt : body < tail := by
+                      simpa [tail] using
+                        CodeAlgebra.optionalFinitePayloadNat_right_payload_lt_of_pos
+                          (k := appTermCount Γ) (n := body) hpos
+                    change NFCodeRank
+                        (NFSort.appTerm :: Γ, NFSort.normalExp) body <
+                      NFCodeRank (Γ, NFSort.normalExp)
+                        ((NFGeneratedShapeIso Γ NFSort.normalExp).toFun
+                          (Sum.inr
+                            (CtorLayer.ofFamily
+                              (S := NFSignature) (Code := NFCode)
+                              Γ NFSort.normalExp
+                              (⟨NFCtor.lam, rfl, args⟩ :
+                                CtorFamily NFSignature NFCode Γ
+                                  NFSort.normalExp))))
+                    rw [show
+                      (NFGeneratedShapeIso Γ NFSort.normalExp).toFun
+                          (Sum.inr
+                            (CtorLayer.ofFamily
+                              (S := NFSignature) (Code := NFCode)
+                              Γ NFSort.normalExp
+                              (⟨NFCtor.lam, rfl, args⟩ :
+                                CtorFamily NFSignature NFCode Γ
+                                  NFSort.normalExp))) =
+                        normalExpCount Γ + tail by
+                      simp [NFGeneratedShapeIso, NFNormalGeneratedShapeIso,
+                        LayerShape.carrierCoding, LayerShape.familyIso,
+                        CtorLayer.ofFamily, CtorLayer.toFamily,
+                        CtorLayer.familyIso, ArgTuple.ofChild_toChild,
+                        NFNormalFamilyCarrierIso, NFNormalLamArgsIso, body, tail,
+                        Iso.trans, Iso.sum, CodeAlgebra.finPlusNat]]
+                    change NFCodeRank
+                        (NFSort.appTerm :: Γ, NFSort.normalExp) body <
+                      NFCodeRank (Γ, NFSort.normalExp)
+                        (normalExpCount Γ + tail)
+                    simp [NFCodeRank, appTermCount, Var.count, hc]
+                    omega
+              | succ n =>
+                  exact False.elim (by
+                    simp [NFSignature, NFArgs] at hn)
+      | app =>
+          cases h
+          cases q with
+          | mk n hn =>
+              cases n with
+              | zero =>
+                  let fn : Fin (appTermCount Γ) × Nat :=
+                    ArgTuple.toChild (S := NFSignature) (Code := NFCode) Γ
+                      args ⟨0, hn⟩
+                  let arg : Nat :=
+                    ArgTuple.toChild (S := NFSignature) (Code := NFCode) Γ
+                      args ⟨1, by decide⟩
+                  let pair := (fn, arg)
+                  change NFCodeRank (Γ, NFSort.appTerm) fn <
+                    NFCodeRank (Γ, NFSort.appTerm)
+                      ((NFGeneratedShapeIso Γ NFSort.appTerm).toFun
+                        (Sum.inr
+                          (CtorLayer.ofFamily
+                            (S := NFSignature) (Code := NFCode)
+                            Γ NFSort.appTerm
+                            (⟨NFCtor.app, rfl, args⟩ :
+                              CtorFamily NFSignature NFCode Γ
+                                NFSort.appTerm))))
+                  rw [show
+                    (NFGeneratedShapeIso Γ NFSort.appTerm).toFun
+                        (Sum.inr
+                          (CtorLayer.ofFamily
+                            (S := NFSignature) (Code := NFCode)
+                            Γ NFSort.appTerm
+                            (⟨NFCtor.app, rfl, args⟩ :
+                              CtorFamily NFSignature NFCode Γ
+                                NFSort.appTerm))) =
+                      (CodeAlgebra.taggedPairPayload
+                        (appTermCount Γ)).toFun (Sum.inr pair) by
+                    simp [NFGeneratedShapeIso, NFAppGeneratedShapeIso,
+                      LayerShape.carrierCoding, LayerShape.familyIso,
+                      CtorLayer.ofFamily, CtorLayer.toFamily,
+                      CtorLayer.familyIso, ArgTuple.ofChild_toChild,
+                      NFAppFamilyCarrierIso, NFAppArgsIso, fn, arg, pair,
+                      Iso.trans, Iso.sum]]
+                  change NFCodeRank (Γ, NFSort.appTerm) fn <
+                    NFCodeRank (Γ, NFSort.appTerm)
+                      ((CodeAlgebra.taggedPairPayload
+                        (appTermCount Γ)).toFun (Sum.inr pair))
+                  simp [NFCodeRank]
+                  have hfn_lt :
+                      fn.2 <
+                        ((CodeAlgebra.taggedPairPayload
+                          (appTermCount Γ)).toFun (Sum.inr pair)).2 :=
+                    CodeAlgebra.taggedPairPayload_left_payload_lt
+                      (appTermCount Γ) pair
+                  omega
+              | succ n =>
+                  cases n with
+                  | zero =>
+                      let fn : Fin (appTermCount Γ) × Nat :=
+                        ArgTuple.toChild (S := NFSignature) (Code := NFCode) Γ
+                          args ⟨0, by decide⟩
+                      let arg : Nat :=
+                        ArgTuple.toChild (S := NFSignature) (Code := NFCode) Γ
+                          args ⟨0 + 1, hn⟩
+                      have hcount : 0 < appTermCount Γ :=
+                        Nat.lt_of_le_of_lt (Nat.zero_le fn.1.val) fn.1.isLt
+                      have hcne : ¬appTermCount Γ = 0 := Nat.ne_of_gt hcount
+                      let pair := (fn, arg)
+                      change NFCodeRank (Γ, NFSort.normalExp) arg <
+                        NFCodeRank (Γ, NFSort.appTerm)
+                          ((NFGeneratedShapeIso Γ NFSort.appTerm).toFun
+                            (Sum.inr
+                              (CtorLayer.ofFamily
+                                (S := NFSignature) (Code := NFCode)
+                                Γ NFSort.appTerm
+                                (⟨NFCtor.app, rfl, args⟩ :
+                                  CtorFamily NFSignature NFCode Γ
+                                    NFSort.appTerm))))
+                      rw [show
+                        (NFGeneratedShapeIso Γ NFSort.appTerm).toFun
+                            (Sum.inr
+                              (CtorLayer.ofFamily
+                                (S := NFSignature) (Code := NFCode)
+                                Γ NFSort.appTerm
+                                (⟨NFCtor.app, rfl, args⟩ :
+                                  CtorFamily NFSignature NFCode Γ
+                                    NFSort.appTerm))) =
+                          (CodeAlgebra.taggedPairPayload
+                            (appTermCount Γ)).toFun (Sum.inr pair) by
+                        simp [NFGeneratedShapeIso, NFAppGeneratedShapeIso,
+                          LayerShape.carrierCoding, LayerShape.familyIso,
+                          CtorLayer.ofFamily, CtorLayer.toFamily,
+                          CtorLayer.familyIso, ArgTuple.ofChild_toChild,
+                          NFAppFamilyCarrierIso, NFAppArgsIso, fn, arg, pair,
+                          Iso.trans, Iso.sum]]
+                      change NFCodeRank (Γ, NFSort.normalExp) arg <
+                        NFCodeRank (Γ, NFSort.appTerm)
+                          ((CodeAlgebra.taggedPairPayload
+                            (appTermCount Γ)).toFun (Sum.inr pair))
+                      simp [NFCodeRank, hcne]
+                      have harg_lt :
+                          arg <
+                            ((CodeAlgebra.taggedPairPayload
+                              (appTermCount Γ)).toFun (Sum.inr pair)).2 :=
+                        CodeAlgebra.taggedPairPayload_right_payload_lt
+                          (appTermCount Γ) pair
+                      omega
+                  | succ n =>
+                      exact False.elim (by
+                        simp [NFSignature, NFArgs] at hn
+                        omega)
 
 def NFLayerShapeCodingData : LayerShapeCodingData NFSignature where
   Code := NFCode
   layerShape := NFGeneratedShapeIso
   rank := NFCodeRank
-  shape_child_rank_lt := by
-    intro Γ t layer q
-    rcases layer with ⟨⟨ctor, paramCode⟩, child⟩
-    cases ctor with
-    | var =>
-        cases q
-    | op c =>
-        cases paramCode with
-        | up h =>
-            cases h
-            cases c with
-            | dum =>
-                cases q with
-                | mk n hn =>
-                    cases n with
-                    | zero =>
-                        simpa [NFSignature, NFArgs, NFGeneratedShapeIso,
-                          NFGeneratedLayerIso, NFNormalGeneratedShapeIso,
-                          NFNormalGeneratedLayerIso, NFAppGeneratedShapeIso,
-                          NFAppGeneratedLayerIso, Poly.input, Poly.depPoly] using
-                          NFGeneratedLayer_dum_child_rank_lt Γ child
-                    | succ n =>
-                        exact False.elim (by
-                          simp [NFSignature, NFArgs] at hn)
-            | lam =>
-                cases q with
-                | mk n hn =>
-                    cases n with
-                    | zero =>
-                        simpa [NFSignature, NFArgs, NFGeneratedShapeIso,
-                          NFGeneratedLayerIso, NFNormalGeneratedShapeIso,
-                          NFNormalGeneratedLayerIso, NFAppGeneratedShapeIso,
-                          NFAppGeneratedLayerIso, Poly.input, Poly.depPoly] using
-                          NFGeneratedLayer_lam_child_rank_lt Γ child
-                    | succ n =>
-                        exact False.elim (by
-                          simp [NFSignature, NFArgs] at hn)
-            | app =>
-                cases q with
-                | mk n hn =>
-                    cases n with
-                    | zero =>
-                        simpa [NFSignature, NFArgs, NFGeneratedShapeIso,
-                          NFGeneratedLayerIso, NFNormalGeneratedShapeIso,
-                          NFNormalGeneratedLayerIso, NFAppGeneratedShapeIso,
-                          NFAppGeneratedLayerIso, Poly.input, Poly.depPoly] using
-                          NFGeneratedLayer_app_fn_child_rank_lt Γ child
-                    | succ n =>
-                        cases n with
-                        | zero =>
-                            simpa [NFSignature, NFArgs, NFGeneratedShapeIso,
-                              NFGeneratedLayerIso, NFNormalGeneratedShapeIso,
-                              NFNormalGeneratedLayerIso, NFAppGeneratedShapeIso,
-                              NFAppGeneratedLayerIso, Poly.input, Poly.depPoly] using
-                              NFGeneratedLayer_app_arg_child_rank_lt Γ child
-                        | succ n =>
-                            exact False.elim (by
-                              simp [NFSignature, NFArgs] at hn
-                              omega)
+  shape_child_rank_lt :=
+    LayerShapeRankProof.ofCtorFamilyRankBound
+      (S := NFSignature) (Code := NFCode)
+      (layerShape := NFGeneratedShapeIso) (rank := NFCodeRank)
+      NFCtorFamilyRankBound
 
 def NFSyntaxCodeIso (Γ : List NFSort) (t : NFSort) :
     NFTerm Γ t ≃ᵢ NFCode (Γ, t) :=

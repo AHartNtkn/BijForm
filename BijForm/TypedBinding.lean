@@ -781,6 +781,49 @@ variable {Ty : Type} {S : Signature Ty} {Code : Poly.Ix S → Type}
 variable {layerShape : ∀ Γ t, LayerShape S Code Γ t ≃ᵢ Code (Γ, t)}
 variable {rank : ∀ i, Code i → Nat}
 
+/-- Constructor-family descent data for a generated typed-binding layer shape. -/
+abbrev CtorFamilyRankBound : Prop :=
+  ∀ {Γ : List Ty} {t : Ty}
+    (family : CtorFamily S Code Γ t) (q : S.ArgPos family.ctor),
+    rank
+        ((S.arg family.ctor q).binders ++ Γ, (S.arg family.ctor q).sort)
+        (ArgTuple.toChild (S := S) (Code := Code) Γ family.args q) <
+      rank (Γ, t)
+        ((layerShape Γ t).toFun
+          (Sum.inr (CtorLayer.ofFamily (S := S) (Code := Code) Γ t family)))
+
+theorem ofCtorFamilyRankBound (h : CtorFamilyRankBound
+    (S := S) (Code := Code) (layerShape := layerShape) (rank := rank)) :
+    LayerShapeRankProof S Code layerShape rank := by
+  intro Γ t layer q
+  rcases layer with ⟨fiberCode, child⟩
+  cases fiberCode with
+  | mk ctor paramCode =>
+      cases ctor with
+      | var =>
+          cases q
+      | op c =>
+          cases paramCode with
+          | up hret =>
+              cases hret
+              have hbound := h
+                (Γ := Γ) (t := S.ret c)
+                (⟨c, rfl,
+                  ArgTuple.ofChild (S := S) (Code := Code) Γ
+                    (args := S.args c) child⟩ :
+                  CtorFamily S Code Γ (S.ret c)) q
+              change
+                rank ((S.arg c q).binders ++ Γ, (S.arg c q).sort)
+                    (child q) <
+                  rank (Γ, S.ret c)
+                    ((LayerShape.layerCoding (S := S) (Code := Code)
+                      layerShape Γ (S.ret c)).toFun
+                      (⟨FiberCode.op c rfl, child⟩ :
+                        CodeLayer (PolyOf S) (inversion S) Code
+                          (Γ, S.ret c)))
+              rw [LayerShape.layerCoding_op_toFun]
+              simpa [CtorLayer.ofFamily, ArgTuple.toChild_ofChild] using hbound
+
 end LayerShapeRankProof
 
 /-- Coding data whose one-step layer is generated from the typed-binding

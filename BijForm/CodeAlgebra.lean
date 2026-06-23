@@ -595,6 +595,26 @@ theorem finProdNatOrNat_inr_lt_of_pos {k n : Nat} (hk : 0 < k) :
   exact toNatSum_inr_lt_of_le (finProdNat k hk) (Iso.refl Nat) (Nat.le_refl n)
 
 /--
+Ranked carrier coding for a possibly empty finite payload family together with
+a plain natural tail.
+-/
+def optionalFinitePayloadNat (k : Nat) : ((Fin k × Nat) ⊕ Nat) ≃ᵢ Nat :=
+  finProdNatOrNat k
+
+theorem optionalFinitePayloadNat_left_payload_le (k : Nat) (p : Fin k × Nat) :
+    p.2 ≤ (optionalFinitePayloadNat k).toFun (Sum.inl p) :=
+  finProdNatOrNat_inl_snd_le k p
+
+theorem optionalFinitePayloadNat_right_payload_le (k n : Nat) :
+    n ≤ (optionalFinitePayloadNat k).toFun (Sum.inr n) :=
+  finProdNatOrNat_inr_le k n
+
+theorem optionalFinitePayloadNat_right_payload_lt_of_pos {k n : Nat}
+    (hk : 0 < k) :
+    n < (optionalFinitePayloadNat k).toFun (Sum.inr n) :=
+  finProdNatOrNat_inr_lt_of_pos hk
+
+/--
 Code either a bare finite tag or a recursive product with the same tag into a
 finite tag paired with a natural payload. Payload zero is reserved for the bare
 tag; positive payloads decode through `prodNat`.
@@ -629,6 +649,23 @@ def finTaggedProdNat (k : Nat) :
       | succ n =>
           dsimp
           rw [prodNat.right_inv n]
+
+/-- Ranked carrier coding for a finite tag with a recursive binary payload. -/
+def taggedPairPayload (k : Nat) :
+    (Fin k ⊕ ((Fin k × Nat) × Nat)) ≃ᵢ (Fin k × Nat) :=
+  finTaggedProdNat k
+
+theorem taggedPairPayload_left_payload_lt (k : Nat)
+    (p : (Fin k × Nat) × Nat) :
+    p.1.2 < ((taggedPairPayload k).toFun (Sum.inr p)).2 := by
+  dsimp [taggedPairPayload, finTaggedProdNat]
+  exact Nat.lt_succ_of_le (prodNat_toFun_fst_le (p.1.2, p.2))
+
+theorem taggedPairPayload_right_payload_lt (k : Nat)
+    (p : (Fin k × Nat) × Nat) :
+    p.2 < ((taggedPairPayload k).toFun (Sum.inr p)).2 := by
+  dsimp [taggedPairPayload, finTaggedProdNat]
+  exact Nat.lt_succ_of_le (prodNat_toFun_snd_le (p.1.2, p.2))
 
 /-- Put two natural numbers into nondecreasing order. -/
 def sortNatPair (a b : Nat) : {p : Nat × Nat // p.1 ≤ p.2} :=
