@@ -214,6 +214,18 @@ theorem sumNat_inr_le {n a : Nat}
   simp [sumNat] at hright
   omega
 
+/-- Public decoder name for the binary natural-number sum codec. -/
+def sumNatDecode (n : Nat) : Nat ⊕ Nat :=
+  sumNat.invFun n
+
+theorem sumNatDecode_encode (x : Nat ⊕ Nat) :
+    sumNatDecode (sumNat.toFun x) = x :=
+  sumNat.left_inv x
+
+theorem sumNat_encode_decode (n : Nat) :
+    sumNat.toFun (sumNatDecode n) = n :=
+  sumNat.right_inv n
+
 /-- Encode a sum into `Nat` by first coding each side as `Nat`, then using
 the standard binary Nat sum codec. -/
 def toNatSum {α : Type u} {β : Type v}

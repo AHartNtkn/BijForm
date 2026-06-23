@@ -197,7 +197,7 @@ Every proof-debt item below must keep these fields visible:
 
 ## Quotient Normal Forms
 
-- [ ] Replace quotient decoder-rank equality plumbing with a decoded-layer
+- [x] Replace quotient decoder-rank equality plumbing with a decoded-layer
   child-rank constructor.
   Evidence: `LayerNormalForm.child_rank_lt` requires an explicit
   `decodeLayer i z = <...>`; `quotient_rank_descent` only forwards that

@@ -115,7 +115,7 @@ def HBTChildSwapLayerEncode :
 
 def HBTChildSwapLayerDecodeSucc (m n : Nat) :
     Obj HBTPoly (fun _ => Nat) (m + 1) :=
-  match CodeAlgebra.sumNat.invFun n with
+  match CodeAlgebra.sumNatDecode n with
   | Sum.inl label =>
       ⟨HBTCtor.leaf, ((m + 1, label) : Nat × Nat), rfl,
         fun q => nomatch q⟩
@@ -132,36 +132,35 @@ def HBTChildSwapLayerDecode :
       ⟨HBTCtor.leaf, ((0, n) : Nat × Nat), rfl, fun q => nomatch q⟩
   | m + 1, n => HBTChildSwapLayerDecodeSucc m n
 
-theorem HBTChildSwapLayerDecode_child_rank_lt
-    {i z : Nat} {c : HBTPoly.Ctor} {p : HBTPoly.Param c}
-    {h : HBTPoly.out c p = i}
-    {child : HBTPoly.Pos c p → Nat}
-    (hdecode : HBTChildSwapLayerDecode i z = ⟨c, p, h, child⟩)
-    (q : HBTPoly.Pos c p) :
-    child q < z := by
+theorem HBTChildSwapDecodedChildRank :
+    ∀ i z,
+      (q : HBTPoly.Pos (HBTChildSwapLayerDecode i z).ctor
+        (HBTChildSwapLayerDecode i z).param) →
+        (HBTChildSwapLayerDecode i z).child q < z := by
+  intro i z
   cases i with
   | zero =>
-      dsimp [HBTChildSwapLayerDecode] at hdecode
-      cases hdecode
+      intro q
+      dsimp [HBTChildSwapLayerDecode]
       cases q
   | succ m =>
-      dsimp [HBTChildSwapLayerDecode, HBTChildSwapLayerDecodeSucc] at hdecode
-      cases hsum : CodeAlgebra.sumNat.invFun z with
-      | inl label =>
-          rw [hsum] at hdecode
-          cases hdecode
-          cases q
-      | inr pairCode =>
-          rw [hsum] at hdecode
-          cases hdecode
-          have hz := Iso.toFun_eq_of_invFun_eq CodeAlgebra.sumNat hsum
-          cases q
-          · exact Nat.lt_of_lt_of_eq
-              (CodeAlgebra.unorderedPairNat_invFun_fst_lt_sumNat_inr pairCode)
-              hz
-          · exact Nat.lt_of_lt_of_eq
-              (CodeAlgebra.unorderedPairNat_invFun_snd_lt_sumNat_inr pairCode)
-              hz
+      dsimp [HBTChildSwapLayerDecode, HBTChildSwapLayerDecodeSucc]
+      exact
+        match hdecode : CodeAlgebra.sumNatDecode z with
+        | Sum.inl _label => by
+            intro q
+            cases q
+        | Sum.inr pairCode => by
+            intro q
+            have hz := CodeAlgebra.sumNat_encode_decode z
+            rw [hdecode] at hz
+            cases q
+            · exact Nat.lt_of_lt_of_eq
+                (CodeAlgebra.unorderedPairNat_invFun_fst_lt_sumNat_inr pairCode)
+                hz
+            · exact Nat.lt_of_lt_of_eq
+                (CodeAlgebra.unorderedPairNat_invFun_snd_lt_sumNat_inr pairCode)
+                hz
 
 /-- Layer-local data from which the quotient framework derives the recursive
 normalizer, denormalizer, and descended concrete Nat coding. -/
@@ -170,8 +169,9 @@ def HBTChildSwapLayerNormalForm :
   encodeLayer := HBTChildSwapLayerEncode
   decodeLayer := HBTChildSwapLayerDecode
   rank := fun _ n => n
-  child_rank_lt := by
-    quotient_rank_descent using HBTChildSwapLayerDecode_child_rank_lt
+  decoded_child_rank_lt := by
+    intro i z q
+    exact HBTChildSwapDecodedChildRank i z q
   encode_decode_layer := by
     intro i z
     cases i with
@@ -180,9 +180,9 @@ def HBTChildSwapLayerNormalForm :
     | succ m =>
         dsimp [HBTChildSwapLayerEncode, HBTChildSwapLayerDecode,
           HBTChildSwapLayerDecodeSucc]
-        generalize hsum : CodeAlgebra.sumNat.invFun z = s
-        have hright := CodeAlgebra.sumNat.right_inv z
-        rw [hsum] at hright
+        generalize hdecode : CodeAlgebra.sumNatDecode z = s
+        have hright := CodeAlgebra.sumNat_encode_decode z
+        rw [hdecode] at hright
         cases s with
         | inl label =>
             simpa [HBTChildSwapLayerEncode] using hright
@@ -223,10 +223,10 @@ def HBTChildSwapLayerNormalForm :
                 dsimp [HBTChildSwapLayerEncode, HBTChildSwapLayerDecode,
                   HBTChildSwapLayerDecodeSucc, Obj.map, Mu.inn]
                 rw [show
-                  CodeAlgebra.sumNat.invFun
+                  CodeAlgebra.sumNatDecode
                     (CodeAlgebra.sumNat.toFun (Sum.inl label)) =
                       Sum.inl label by
-                  exact CodeAlgebra.sumNat.left_inv (Sum.inl label)]
+                  exact CodeAlgebra.sumNatDecode_encode (Sum.inl label)]
                 simp
                 apply QuotientPresentation.Rel.congr
                 intro q
@@ -236,7 +236,7 @@ def HBTChildSwapLayerNormalForm :
               dsimp [HBTChildSwapLayerEncode, HBTChildSwapLayerDecode,
                 HBTChildSwapLayerDecodeSucc, Obj.map, Mu.inn]
               rw [show
-                CodeAlgebra.sumNat.invFun
+                CodeAlgebra.sumNatDecode
                   (CodeAlgebra.sumNat.toFun
                     (Sum.inr
                       (CodeAlgebra.unorderedPairCode
@@ -244,7 +244,7 @@ def HBTChildSwapLayerNormalForm :
                     Sum.inr
                       (CodeAlgebra.unorderedPairCode
                         (child false) (child true)) by
-                exact CodeAlgebra.sumNat.left_inv
+                exact CodeAlgebra.sumNatDecode_encode
                   (Sum.inr
                     (CodeAlgebra.unorderedPairCode
                       (child false) (child true)))]

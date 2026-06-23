@@ -3,11 +3,6 @@ import BijForm.CodeAlgebra
 
 namespace BijForm
 
-macro "quotient_rank_descent" " using " hfact:term : tactic =>
-  `(tactic|
-    (rintro idx z ctor param out_eq child hdecode q;
-     exact $hfact hdecode q))
-
 namespace DepPoly
 
 universe u v w
@@ -430,12 +425,12 @@ structure LayerNormalForm
   encodeLayer : ∀ i, Obj P Out i → Out i
   decodeLayer : ∀ i, Out i → Obj P Out i
   rank : ∀ i, Out i → Nat
-  child_rank_lt :
+  decoded_child_rank_lt :
     ∀ {i : ι} (z : Out i)
-      {c : P.Ctor} {p : P.Param c} {h : P.out c p = i}
-      {child : (q : P.Pos c p) → Out (P.input p q)},
-      decodeLayer i z = ⟨c, p, h, child⟩ →
-        ∀ q, rank (P.input p q) (child q) < rank i z
+      (q : P.Pos (decodeLayer i z).ctor (decodeLayer i z).param),
+      rank (P.input (decodeLayer i z).param q)
+          ((decodeLayer i z).child q) <
+        rank i z
   encode_decode_layer :
     ∀ i (z : Out i), encodeLayer i (decodeLayer i z) = z
   layer_rel_respects :
@@ -467,7 +462,7 @@ def denormalize (L : LayerNormalForm Q Out) : ∀ i, Out i → Mu P i
         (fun q => denormalize L (P.input layer.param q) (layer.child q))
 termination_by i z => L.rank i z
 decreasing_by
-  exact L.child_rank_lt z rfl q
+  exact L.decoded_child_rank_lt z q
 
 theorem normalize_denormalize (L : LayerNormalForm Q Out) :
     ∀ i (z : Out i), L.normalize i (L.denormalize i z) = z
@@ -490,7 +485,7 @@ theorem normalize_denormalize (L : LayerNormalForm Q Out) :
       exact hstep
 termination_by i z => L.rank i z
 decreasing_by
-  exact L.child_rank_lt z rfl q
+  exact L.decoded_child_rank_lt z q
 
 theorem denormalize_normalize_rel (L : LayerNormalForm Q Out) :
     ∀ i (x : Mu P i), Rel Q i (L.denormalize i (L.normalize i x)) x
