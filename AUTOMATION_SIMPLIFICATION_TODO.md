@@ -258,7 +258,7 @@ Every proof-debt item below must keep these fields visible:
   rg -n 'SingleSortedFinitePayloadBound|singleSortedFiniteRank_nonempty_child_lt_of_payload_bound|singleSortedFiniteLayer_.*child_rank_lt|rank_scaled_payload|scaled_payload_child_lt' BijForm/StringDiagram/FiniteCoding/Syntax.lean
   ```
 
-- [ ] Replace `singleSortedFiniteLayer_shape_child_rank_lt` boundary dispatch
+- [x] Replace `singleSortedFiniteLayer_shape_child_rank_lt` boundary dispatch
   with generated shape-code automation.
   Evidence: the proof manually runs `openBoundaryCases`, cases on shapes, and
   forwards to branch lemmas.
