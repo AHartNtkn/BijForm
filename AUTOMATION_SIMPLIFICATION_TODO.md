@@ -20,6 +20,17 @@ rg -n 'LayerPresentation\.ofCarrierLayerIso|LayerPresentation\.ofLayerMaps|Synta
 For every closed item, add a source scan that would fail if the old proof-owner
 model reappears under a renamed theorem, wrapper, or compatibility alias.
 
+## Required Item Shape
+
+Every item below must remain proof-automation or proof-schema debt. Each item
+must keep these fields visible:
+
+- Evidence: current source symbols or proof patterns preserving the wrong model.
+- Owner: generic proof/schema boundary that should discharge the class.
+- Delete or replace: concrete symbols, wrappers, or proof bodies that should
+  disappear when the item is done.
+- Validation: scan or command that would fail if the old model remains.
+
 ## Rank Descent And Layer Presentations
 
 - [ ] Replace the current `rank_descent` macro model with real structural rank
@@ -367,30 +378,4 @@ model reappears under a renamed theorem, wrapper, or compatibility alias.
   Validation:
   ```bash
   rg -n 'EdgeMateData|FirstPendingStepSearchView|RenderPrefixChildStep' BijForm/StringDiagram
-  ```
-
-## Boundary Hygiene
-
-- [ ] Move concrete unordered-pair/BinarySwap example material out of shared
-  tuple-action infrastructure or generalize it.
-  Evidence: `TupleAction.lean` contains `BinarySwap`, while shared tuple-action
-  support should expose `ConcreteQuotientCode`, `FiniteAction`, and orbit
-  coding schemas.
-  Owner: either a examples module or a genuinely generic finite action schema.
-  Delete or replace: concrete `BinarySwap` shared-layer declarations if they
-  are only example material.
-  Validation:
-  ```bash
-  rg -n 'BinarySwap|unorderedPair' BijForm/TupleAction.lean BijForm/Examples
-  ```
-
-- [ ] Fix README/API drift for string-diagram finite coding rank names after
-  the finite-coding rank schema is simplified.
-  Evidence: README mentions `StringDiagram.singleSortedFiniteLayer_child_rank_lt`,
-  while source currently has private `singleSortedFiniteLayer_shape_child_rank_lt`.
-  Owner: README only after the source API is settled.
-  Delete or replace: stale public-surface names in docs.
-  Validation:
-  ```bash
-  rg -n 'singleSortedFiniteLayer_child_rank_lt|singleSortedFiniteLayer_shape_child_rank_lt' README.md BijForm
   ```
