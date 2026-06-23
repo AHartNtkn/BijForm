@@ -81,7 +81,11 @@ lake exe bijform
   - `TupleAction.FixedTuple.orbitCodingData_toConcreteActionCode`
 
 - `BijForm.Examples.BinarySwap`
-  Gives a concrete unordered-pair example via a two-element swap action:
+  Gives a concrete unordered-pair example routed through the fixed-tuple
+  orbit-coding pipeline for the two-element swap action:
+  - `Examples.BinarySwap.permFamily`
+  - `Examples.BinarySwap.orbitCodingData`
+  - `Examples.BinarySwap.tupleConcreteCode`
   - `Examples.BinarySwap.concreteCode`
   - `Examples.BinarySwap.encode`
   - `Examples.BinarySwap.decode`
@@ -588,9 +592,9 @@ tuples by a finite permutation group action. `TupleAction.FixedTuple.PermFamily`
 packages the finite action and the identity, inverse, and composition laws that
 make the orbit relation a setoid. A concrete quotient code is then described by
 `TupleAction.FixedTuple.OrbitCodingData`: each tuple is normalized to a sorted
-representative together with a residual image index for that representative,
-and `TupleAction.FixedTuple.ResidualImageData` requires that this residual type
-enumerates the distinct group images of the sorted tuple. From that data,
+representative together with a canonical residual representative for that
+sorted fiber, and `TupleAction.FixedTuple.ResidualImageData` provides the
+finite residual carrier and its representative tuple. From that data,
 `TupleAction.FixedTuple.orbitCodingData_toConcreteActionCode` constructs the
 generic `ConcreteActionCode`. The current generic theorem consumes these
 normalization and residual-indexing functions as explicit data. The repository

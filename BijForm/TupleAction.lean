@@ -107,6 +107,13 @@ namespace FiniteAction
 def orbitStep {Raw : Type u} (A : FiniteAction Raw) (x y : Raw) : Prop :=
   ∃ g : A.Elem, A.act g x = y
 
+def reindex {Raw : Type u} {Raw' : Type w} (A : FiniteAction Raw)
+    (e : Raw' ≃ᵢ Raw) : FiniteAction Raw' where
+  Elem := A.Elem
+  size := A.size
+  elemCode := A.elemCode
+  act := fun g x => e.invFun (A.act g (e.toFun x))
+
 end FiniteAction
 
 /-- Concrete quotient coding for a finite action. `action_sound` records that
@@ -114,6 +121,58 @@ every action step is included in the quotient relation being normalized. -/
 structure ConcreteActionCode {Raw : Type u} (A : FiniteAction Raw) extends
     ConcreteQuotientCode Raw where
   action_sound : ∀ g x, Rel (A.act g x) x
+
+namespace ConcreteQuotientCode
+
+def reindex {Raw : Type u} {Raw' : Type w} (C : ConcreteQuotientCode Raw)
+    (e : Raw' ≃ᵢ Raw) : ConcreteQuotientCode Raw' where
+  Rel x y := C.Rel (e.toFun x) (e.toFun y)
+  rel_refl := by
+    intro x
+    exact C.rel_refl (e.toFun x)
+  rel_symm := by
+    intro x y hxy
+    exact C.rel_symm hxy
+  rel_trans := by
+    intro x y z hxy hyz
+    exact C.rel_trans hxy hyz
+  Canon := C.Canon
+  code := C.code
+  normalize := fun x => C.normalize (e.toFun x)
+  denormalize := fun c => e.invFun (C.denormalize c)
+  normalize_respects := by
+    intro x y hxy
+    exact C.normalize_respects hxy
+  denormalize_normalize_rel := by
+    intro x
+    change C.Rel
+      (e.toFun (e.invFun (C.denormalize (C.normalize (e.toFun x)))))
+      (e.toFun x)
+    rw [e.right_inv]
+    exact C.denormalize_normalize_rel (e.toFun x)
+  normalize_denormalize := by
+    intro c
+    change C.normalize (e.toFun (e.invFun (C.denormalize c))) = c
+    rw [e.right_inv]
+    exact C.normalize_denormalize c
+
+end ConcreteQuotientCode
+
+namespace ConcreteActionCode
+
+def reindex {Raw : Type u} {Raw' : Type w} {A : FiniteAction Raw}
+    (C : ConcreteActionCode A) (e : Raw' ≃ᵢ Raw) :
+    ConcreteActionCode (A.reindex e) where
+  toConcreteQuotientCode := C.toConcreteQuotientCode.reindex e
+  action_sound := by
+    intro g x
+    change C.Rel
+      (e.toFun (e.invFun (A.act g (e.toFun x))))
+      (e.toFun x)
+    rw [e.right_inv]
+    exact C.action_sound g (e.toFun x)
+
+end ConcreteActionCode
 
 namespace FixedTuple
 
@@ -179,9 +238,10 @@ def OrbitRel {n : Nat} (G : PermFamily n) (t u : Tuple n) : Prop :=
 end PermFamily
 
 /--
-Duplicate-aware residual image data for a sorted tuple. `Image` is the
-concrete finite residual index type: it must index distinct images after
-identifying group elements that act the same because tuple entries are equal.
+Duplicate-aware residual representative data for a sorted tuple. `Image` is
+the concrete finite residual index type for canonical quotient representatives
+inside the sorted fiber; it is not a list of all raw group images, because raw
+images in the same action orbit must normalize to the same quotient code.
 -/
 structure ResidualImageData {n : Nat} (G : PermFamily n)
     (s : SortedTuple n) where
@@ -189,18 +249,12 @@ structure ResidualImageData {n : Nat} (G : PermFamily n)
   imageSize : Nat
   imageCode : Image ≃ᵢ Fin imageSize
   tupleOf : Image → Tuple n
-  tupleOf_mem :
-    ∀ r, ∃ g : G.Elem, tupleOf r = (G.perm g).actTuple s.val
-  tupleOf_complete :
-    ∀ g : G.Elem, ∃ r, tupleOf r = (G.perm g).actTuple s.val
-  tupleOf_injective :
-    ∀ {r r'}, tupleOf r = tupleOf r' → r = r'
 
 /--
 Data required to turn finite permutation orbits on fixed-length tuples into a
 concrete code.  The residual image data is where duplicate-sensitive stabilizer
-handling lives: for each sorted tuple, it indexes distinct images, not raw
-group elements.
+handling lives: for each sorted tuple, it indexes canonical residual
+representatives, not raw group elements or all raw group images.
 -/
 structure OrbitCodingData (n : Nat) (G : PermFamily n) where
   sortedCode : SortedTuple n ≃ᵢ Nat
@@ -208,13 +262,13 @@ structure OrbitCodingData (n : Nat) (G : PermFamily n) where
   residualSigmaCode :
     (Σ s : SortedTuple n, (residual s).Image) ≃ᵢ Nat
   normalize : Tuple n → Σ s : SortedTuple n, (residual s).Image
-  denormalize : (Σ s : SortedTuple n, (residual s).Image) → Tuple n
   normalize_respects :
     ∀ {t u : Tuple n}, PermFamily.OrbitRel G t u → normalize t = normalize u
   denormalize_normalize_rel :
-    ∀ t, PermFamily.OrbitRel G (denormalize (normalize t)) t
+    ∀ t, PermFamily.OrbitRel G
+      ((residual (normalize t).1).tupleOf (normalize t).2) t
   normalize_denormalize :
-    ∀ c, normalize (denormalize c) = c
+    ∀ c, normalize ((residual c.1).tupleOf c.2) = c
 
 /-- Orbit coding data for a finite permutation group action produces a concrete
 code for the quotient by that action. -/
@@ -244,7 +298,7 @@ def orbitCodingData_toConcreteActionCode
   Canon := Σ s : SortedTuple n, (D.residual s).Image
   code := D.residualSigmaCode
   normalize := D.normalize
-  denormalize := D.denormalize
+  denormalize := fun c => (D.residual c.1).tupleOf c.2
   normalize_respects := D.normalize_respects
   denormalize_normalize_rel := D.denormalize_normalize_rel
   normalize_denormalize := D.normalize_denormalize
