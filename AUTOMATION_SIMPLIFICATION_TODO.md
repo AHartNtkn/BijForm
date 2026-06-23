@@ -325,7 +325,7 @@ Every proof-debt item below must keep these fields visible:
   rg -n 'endpointLabel_of_appendTrace|edgeLabel_of_appendTrace|nodeLabel_of_appendTrace|nodeIncidentFields_of_appendTrace|hlabelRel|hlengthRel|hincidentRel|hsideRel' BijForm/StringDiagram/Bridge/GraphRenderRelation.lean
   ```
 
-- [ ] Replace connect/bud child frontier-pending preservation with one
+- [x] Replace connect/bud child frontier-pending preservation with one
   child-trace schema.
   Evidence: `connectChild_frontierPending` and `budChild_frontierPending`
   prove the same erased/appended pending-id alignment from
