@@ -285,7 +285,7 @@ Every proof-debt item below must keep these fields visible:
   rg -n 'connectStep_.*Append|budStep_.*Append|RenderDelta' BijForm/StringDiagram/Renderer/Steps.lean
   ```
 
-- [ ] Replace trace append recursion and first-new index/get proofs with
+- [x] Replace trace append recursion and first-new index/get proofs with
   generic trace append schemas.
   Evidence: `renderTrace_endpointsAppend`, `renderTrace_edgesAppend`, and
   `renderTrace_nodesAppend` have the same recursive shape; new edge/node

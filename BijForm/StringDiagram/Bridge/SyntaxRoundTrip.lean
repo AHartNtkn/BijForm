@@ -267,12 +267,21 @@ theorem renderTrace_connect_active_endpointEdge_val
       left_label := rfl
       right_label := (Sig.compatible_edge ok).symm
       compatible := ok }
+  have edgeStep :
+      AppendStep st.edges (connectStep mate ok st).edges [edge] :=
+    ⟨by simpa [edge, mateId] using connectStep_edges mate ok st hids⟩
+  let edgeTrace :=
+    RenderTrace.append RenderTrace.edgesComponent child
+      (connectStep mate ok st)
+  let edgeIndexRaw :=
+    RenderTrace.firstNewIndex edgeStep edgeTrace.step
   let edgeIndex : Fin final.edges.length :=
-    renderTrace_connect_new_edgeIndex mate ok child st hids
+    by
+      simpa [final, renderTrace_connect] using edgeIndexRaw
   have hedgeGet :
       final.edges.get edgeIndex = edge := by
-    simpa [final, mateId, edge, edgeIndex] using
-      renderTrace_connect_new_edge_get mate ok child st hids
+    have hraw := RenderTrace.get_firstNewIndex edgeStep edgeTrace.step
+    simpa [final, edgeIndex, edgeIndexRaw, renderTrace_connect] using hraw
   have hside :
       (⟨activeId, hactive⟩ : Fin final.endpoints.length).val =
         (final.edges.get edgeIndex).left := by
@@ -291,9 +300,9 @@ theorem renderTrace_connect_active_endpointEdge_val
       RenderState.portHypergraphEvidenceOfInvariants,
       RenderState.edgeEvidenceOfPartition,
       RenderState.endpointEdgeEvidenceOfPartition] using heq
-  exact (congrArg Fin.val hraw).trans (by
-    simp [edgeIndex, renderTrace_connect_new_edgeIndex,
-      AppendStep.firstSuffixIndex])
+  have hindexVal : edgeIndex.val = st.edges.length := by
+    simp [edgeIndex, edgeIndexRaw, RenderTrace.firstNewIndex]
+  exact (congrArg Fin.val hraw).trans hindexVal
 
 /--
 In a completed render trace whose current step is `bud`, the active frontier
@@ -329,12 +338,23 @@ theorem renderTrace_bud_active_endpointEdge_val
       left_label := rfl
       right_label := (Sig.compatible_edge ok).symm
       compatible := ok }
+  have edgeStep :
+      AppendStep st.edges (budStep node entry ok st).edges [edge] :=
+    ⟨by
+      simpa [edge, nodeEndpoints, entryIdx] using
+        budStep_edges node entry ok st hids⟩
+  let edgeTrace :=
+    RenderTrace.append RenderTrace.edgesComponent child
+      (budStep node entry ok st)
+  let edgeIndexRaw :=
+    RenderTrace.firstNewIndex edgeStep edgeTrace.step
   let edgeIndex : Fin final.edges.length :=
-    renderTrace_bud_new_edgeIndex node entry ok child st hids
+    by
+      simpa [final, renderTrace_bud] using edgeIndexRaw
   have hedgeGet :
       final.edges.get edgeIndex = edge := by
-    simpa [final, edge, nodeEndpoints, entryIdx, edgeIndex] using
-      renderTrace_bud_new_edge_get node entry ok child st hids
+    have hraw := RenderTrace.get_firstNewIndex edgeStep edgeTrace.step
+    simpa [final, edgeIndex, edgeIndexRaw, renderTrace_bud] using hraw
   have hside :
       (⟨activeId, hactive⟩ : Fin final.endpoints.length).val =
         (final.edges.get edgeIndex).left := by
@@ -353,9 +373,9 @@ theorem renderTrace_bud_active_endpointEdge_val
       RenderState.portHypergraphEvidenceOfInvariants,
       RenderState.edgeEvidenceOfPartition,
       RenderState.endpointEdgeEvidenceOfPartition] using heq
-  exact (congrArg Fin.val hraw).trans (by
-    simp [edgeIndex, renderTrace_bud_new_edgeIndex,
-      AppendStep.firstSuffixIndex])
+  have hindexVal : edgeIndex.val = st.edges.length := by
+    simp [edgeIndex, edgeIndexRaw, RenderTrace.firstNewIndex]
+  exact (congrArg Fin.val hraw).trans hindexVal
 
 /--
 Exact arbitrary-prefix recognition for rendered `bud`.  The constructor found
@@ -403,18 +423,40 @@ theorem renderTrace_bud_entry_edgeMate_exact_of_evidence
   let renderNode : RenderNode Sig :=
     { label := node
       incident := nodeEndpoints }
+  have edgeStep :
+      AppendStep st.edges (budStep node entry ok st).edges [edge] :=
+    ⟨by
+      simpa [edge, nodeEndpoints, entryIdx] using
+        budStep_edges node entry ok st hids⟩
+  let edgeTrace :=
+    RenderTrace.append RenderTrace.edgesComponent child
+      (budStep node entry ok st)
+  let edgeIndexRaw :=
+    RenderTrace.firstNewIndex edgeStep edgeTrace.step
   let edgeIndex : Fin final.edges.length :=
-    renderTrace_bud_new_edgeIndex node entry ok child st hids
+    by
+      simpa [final, renderTrace_bud] using edgeIndexRaw
+  have nodeStep :
+      AppendStep st.nodes (budStep node entry ok st).nodes [renderNode] :=
+    ⟨by
+      simpa [renderNode, nodeEndpoints] using
+        budStep_nodes node entry ok st⟩
+  let nodeTrace :=
+    RenderTrace.append RenderTrace.nodesComponent child
+      (budStep node entry ok st)
+  let nodeIndexTrace :=
+    RenderTrace.firstNewIndex nodeStep nodeTrace.step
   let nodeIndexRaw : Fin final.nodes.length :=
-    renderTrace_bud_new_nodeIndex node entry ok child st
+    by
+      simpa [final, renderTrace_bud] using nodeIndexTrace
   have hedgeGet :
       final.edges.get edgeIndex = edge := by
-    simpa [final, edge, nodeEndpoints, entryIdx, edgeIndex] using
-      renderTrace_bud_new_edge_get node entry ok child st hids
+    have hraw := RenderTrace.get_firstNewIndex edgeStep edgeTrace.step
+    simpa [final, edgeIndex, edgeIndexRaw, renderTrace_bud] using hraw
   have hnodeGet :
       final.nodes.get nodeIndexRaw = renderNode := by
-    simpa [final, renderNode, nodeEndpoints, nodeIndexRaw] using
-      renderTrace_bud_new_node_get node entry ok child st
+    have hraw := RenderTrace.get_firstNewIndex nodeStep nodeTrace.step
+    simpa [final, nodeIndexRaw, nodeIndexTrace, renderTrace_bud] using hraw
   let nodeIndex : Fin G.nodeCount :=
     by
       dsimp [G, final, RenderState.PortHypergraphEvidence.toPortHypergraph,
@@ -479,8 +521,7 @@ theorem renderTrace_bud_entry_edgeMate_exact_of_evidence
         hincidentVals slot entryIdx (by simpa [entryIdx] using hslotVal)
     exact hget.trans hrightEq.symm
   have hnodeIndexVal : nodeIndex.val = st.nodes.length := by
-    simp [nodeIndex, nodeIndexRaw, renderTrace_bud_new_nodeIndex,
-      AppendStep.firstSuffixIndex]
+    simp [nodeIndex, nodeIndexRaw, nodeIndexTrace, RenderTrace.firstNewIndex]
   refine ⟨hactiveBound, nodeIndex, slot, hnodeIndexVal, hnodeLabel, hslotVal,
     hincidentVals, ?_⟩
   simpa [G, final] using
