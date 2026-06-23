@@ -243,7 +243,7 @@ Every proof-debt item below must keep these fields visible:
 
 ## String Diagram Rank And Finite Coding
 
-- [ ] Replace finite single-sorted scaled-payload rank facts with a generic
+- [x] Replace finite single-sorted scaled-payload rank facts with a generic
   open-frontier rank descent schema.
   Evidence: `SingleSortedFinitePayloadBound` rewraps
   `CodeAlgebra.ScaledPayloadBound`; six

@@ -972,26 +972,16 @@ def singleSortedFiniteLayerPresentation
     (singleSortedFiniteLayer_left_inv data)
     (singleSortedFiniteLayer_right_inv data)
 
-private inductive SingleSortedFinitePayloadBound
-    {Sig : Signature} (data : SingleSortedFiniteCodingData Sig)
-    (frontier childBoundary : List Sig.Port)
-    (payload parentCode : Nat) : Prop
-  | strict :
-      childBoundary.length < frontier.length + 1 + data.rankScale →
-      payload < parentCode →
-      SingleSortedFinitePayloadBound data frontier childBoundary payload parentCode
-  | gap :
-      childBoundary.length < frontier.length + 1 →
-      payload ≤ parentCode →
-      SingleSortedFinitePayloadBound data frontier childBoundary payload parentCode
-
-private theorem singleSortedFiniteRank_nonempty_child_lt_of_payload_bound
+private theorem singleSortedFiniteOpenFrontierRankDescends
     {Sig : Signature} (data : SingleSortedFiniteCodingData Sig)
     {active : Sig.Port} {frontier childBoundary : List Sig.Port}
     (hchild : childBoundary ≠ []) {payload : Nat}
     {parentCode : (openFrontierShape Sig (active :: frontier)).Carrier}
-    (hbound : SingleSortedFinitePayloadBound data frontier childBoundary
-      payload (show Nat from parentCode)) :
+    (hbound :
+      (childBoundary.length < frontier.length + 1 + data.rankScale ∧
+        payload < (show Nat from parentCode)) ∨
+      (childBoundary.length < frontier.length + 1 ∧
+        payload ≤ (show Nat from parentCode))) :
     singleSortedFiniteRank data childBoundary
         ((openFrontierNonemptyIso (Sig := Sig) hchild).invFun payload) <
       singleSortedFiniteRank data (active :: frontier) parentCode := by
@@ -1002,7 +992,8 @@ private theorem singleSortedFiniteRank_nonempty_child_lt_of_payload_bound
         childFrontier.length + 1 + data.rankScale * payload <
           frontier.length + 1 + data.rankScale * (show Nat from parentCode)
       cases hbound with
-      | strict hbase hpayload =>
+      | inl hstrict =>
+          rcases hstrict with ⟨hbase, hpayload⟩
           have hbase' :
               childFrontier.length + 1 <
                 frontier.length + 1 + data.rankScale := by
@@ -1020,7 +1011,8 @@ private theorem singleSortedFiniteRank_nonempty_child_lt_of_payload_bound
             omega
           exact Nat.lt_of_lt_of_le hstep
             (Nat.add_le_add_left hmul (frontier.length + 1))
-      | gap hbase hpayload =>
+      | inr hgap =>
+          rcases hgap with ⟨hbase, hpayload⟩
           have hbase' :
               childFrontier.length + 1 < frontier.length + 1 := by
             simpa using hbase
@@ -1030,180 +1022,7 @@ private theorem singleSortedFiniteRank_nonempty_child_lt_of_payload_bound
             Nat.mul_le_mul_left data.rankScale hpayload
           omega
 
-private theorem singleSortedFiniteLayer_one_unary_child_rank_lt
-    {Sig : Signature} (data : SingleSortedFiniteCodingData Sig)
-    {active : Sig.Port} (unary : Sig.UnaryEntry) :
-    singleSortedFiniteRank data [] ⟨0, by decide⟩ <
-      singleSortedFiniteRank data [active]
-        ((singleSortedFiniteLayerShapeCarrierIso data [active]).toFun
-          (Sum.inl unary)) := by
-  simp [singleSortedFiniteLayerShapeCarrierIso]
-  exact Nat.add_pos_left (by decide : 0 < 1) _
-
-private theorem singleSortedFiniteLayer_one_nonunary_child_rank_lt
-    {Sig : Signature} (data : SingleSortedFiniteCodingData Sig)
-    {active : Sig.Port} (nonUnary : Sig.NonUnaryEntry) (payload : Nat) :
-    singleSortedFiniteRank data
-        (Sig.nodePortsExcept nonUnary.val.1 nonUnary.val.2)
-        ((openFrontierNonemptyIso (Sig := Sig)
-          (Signature.nodePortsExcept_ne_nil_of_arity_ne_one
-            (Nat.lt_of_le_of_lt (Nat.zero_le nonUnary.val.2.val)
-              nonUnary.val.2.isLt)
-            nonUnary.property)).invFun payload) <
-      singleSortedFiniteRank data [active]
-        ((singleSortedFiniteLayerShapeCarrierIso data [active]).toFun
-          (Sum.inr (nonUnary, payload))) := by
-  have hpayload :
-      payload <
-        (singleSortedFiniteLayerShapeCarrierIso data [active]).toFun
-          (Sum.inr (nonUnary, payload)) := by
-    dsimp [singleSortedFiniteLayerShapeCarrierIso]
-    exact CodeAlgebra.finiteRecursiveNat_payload_lt_of_prefix_or_tag
-      data.unaryCount data.nonUnaryCount data.nonUnaryCount_pos
-      (data.nonUnaryIso.toFun nonUnary, payload)
-      (Or.inl data.unaryCount_pos)
-  refine singleSortedFiniteRank_nonempty_child_lt_of_payload_bound
-    (data := data) (active := active) (frontier := [])
-    (childBoundary := Sig.nodePortsExcept nonUnary.val.1 nonUnary.val.2)
-    (Signature.nodePortsExcept_ne_nil_of_arity_ne_one
-      (Nat.lt_of_le_of_lt (Nat.zero_le nonUnary.val.2.val)
-        nonUnary.val.2.isLt)
-      nonUnary.property)
-    ?_
-  apply SingleSortedFinitePayloadBound.strict
-  · have harity := data.arity_lt_rankScale nonUnary.val.1
-    simp [Signature.nodePortsExcept_length]
-    omega
-  · exact hpayload
-
-private theorem singleSortedFiniteLayer_two_connect_child_rank_lt
-    {Sig : Signature} (data : SingleSortedFiniteCodingData Sig)
-    {active first : Sig.Port} (connect : Fin 1) :
-    singleSortedFiniteRank data [] ⟨0, by decide⟩ <
-      singleSortedFiniteRank data [active, first]
-        ((singleSortedFiniteLayerShapeCarrierIso data [active, first]).toFun
-          (Sum.inl connect)) := by
-  simp [singleSortedFiniteLayerShapeCarrierIso]
-  exact Nat.add_pos_left (by decide : 0 < 2) _
-
-private theorem singleSortedFiniteLayer_two_bud_child_rank_lt
-    {Sig : Signature} (data : SingleSortedFiniteCodingData Sig)
-    {active first : Sig.Port} (entry : Sig.Entry) (payload : Nat) :
-    singleSortedFiniteRank data
-        ([first] ++ Sig.nodePortsExcept entry.1 entry.2) payload <
-      singleSortedFiniteRank data [active, first]
-        ((singleSortedFiniteLayerShapeCarrierIso data [active, first]).toFun
-          (Sum.inr (entry, payload))) := by
-  have hchild : [first] ++ Sig.nodePortsExcept entry.1 entry.2 ≠ [] := by
-    simp
-  have hpayload :
-      payload <
-        (singleSortedFiniteLayerShapeCarrierIso data [active, first]).toFun
-          (Sum.inr (entry, payload)) := by
-    dsimp [singleSortedFiniteLayerShapeCarrierIso]
-    exact CodeAlgebra.finiteRecursiveNat_payload_lt_of_prefix_or_tag
-      1 (data.unaryCount + data.nonUnaryCount)
-      (Nat.lt_add_right data.nonUnaryCount data.unaryCount_pos)
-      (data.entryIso.toFun entry, payload)
-      (Or.inl (by decide))
-  simpa [openFrontierNonemptyIso] using
-    singleSortedFiniteRank_nonempty_child_lt_of_payload_bound
-      (data := data) (active := active) (frontier := [first])
-      (childBoundary := [first] ++ Sig.nodePortsExcept entry.1 entry.2)
-      hchild
-      (parentCode :=
-        (singleSortedFiniteLayerShapeCarrierIso data [active, first]).toFun
-          (Sum.inr (entry, payload)))
-      (by
-        apply SingleSortedFinitePayloadBound.strict
-        · have harity := data.arity_lt_rankScale entry.1
-          simp [Signature.nodePortsExcept_length]
-          omega
-        · exact hpayload)
-
-private theorem singleSortedFiniteLayer_many_connect_child_rank_lt
-    {Sig : Signature} (data : SingleSortedFiniteCodingData Sig)
-    {active first second : Sig.Port} {rest : List Sig.Port}
-    (mate : Fin (first :: second :: rest).length) (payload : Nat) :
-    singleSortedFiniteRank data
-        (eraseFin (first :: second :: rest) mate)
-        ((openFrontierNonemptyIso (Sig := Sig)
-          (eraseFin_ne_nil_of_length_gt_one mate (by simp))).invFun payload) <
-      singleSortedFiniteRank data (active :: first :: second :: rest)
-        ((singleSortedFiniteLayerShapeCarrierIso data
-          (active :: first :: second :: rest)).toFun
-            (Sum.inl (mate, payload))) := by
-  have hpayload :
-      payload ≤
-        (singleSortedFiniteLayerShapeCarrierIso data
-            (active :: first :: second :: rest)).toFun
-          (Sum.inl (mate, payload)) := by
-    dsimp [singleSortedFiniteLayerShapeCarrierIso]
-    exact CodeAlgebra.finSumProdNat_toFun_inl_snd_le
-      (first :: second :: rest).length
-      (data.unaryCount + data.nonUnaryCount)
-      (by simp)
-      (Nat.lt_add_right data.nonUnaryCount data.unaryCount_pos)
-      (mate, payload)
-  exact singleSortedFiniteRank_nonempty_child_lt_of_payload_bound
-    (data := data) (active := active)
-    (frontier := first :: second :: rest)
-    (childBoundary := eraseFin (first :: second :: rest) mate)
-    (eraseFin_ne_nil_of_length_gt_one mate (by simp))
-    (parentCode :=
-      (singleSortedFiniteLayerShapeCarrierIso data
-        (active :: first :: second :: rest)).toFun
-          (Sum.inl (mate, payload)))
-    (by
-      apply SingleSortedFinitePayloadBound.gap
-      · simp [eraseFin_length]
-      · exact hpayload)
-
-private theorem singleSortedFiniteLayer_many_bud_child_rank_lt
-    {Sig : Signature} (data : SingleSortedFiniteCodingData Sig)
-    {active first second : Sig.Port} {rest : List Sig.Port}
-    (entry : Sig.Entry) (payload : Nat) :
-    singleSortedFiniteRank data
-        ((first :: second :: rest) ++ Sig.nodePortsExcept entry.1 entry.2)
-        payload <
-      singleSortedFiniteRank data (active :: first :: second :: rest)
-        ((singleSortedFiniteLayerShapeCarrierIso data
-          (active :: first :: second :: rest)).toFun
-            (Sum.inr (entry, payload))) := by
-  have hchild :
-      (first :: second :: rest) ++ Sig.nodePortsExcept entry.1 entry.2 ≠ [] := by
-    simp
-  have hpayload :
-      payload <
-        (singleSortedFiniteLayerShapeCarrierIso data
-            (active :: first :: second :: rest)).toFun
-          (Sum.inr (entry, payload)) := by
-    dsimp [singleSortedFiniteLayerShapeCarrierIso]
-    exact CodeAlgebra.finSumProdNat_toFun_inr_snd_lt
-      (first :: second :: rest).length
-      (data.unaryCount + data.nonUnaryCount)
-      (by simp)
-      (Nat.lt_add_right data.nonUnaryCount data.unaryCount_pos)
-      (data.entryIso.toFun entry, payload)
-  simpa [openFrontierNonemptyIso] using
-    singleSortedFiniteRank_nonempty_child_lt_of_payload_bound
-      (data := data) (active := active)
-      (frontier := first :: second :: rest)
-      (childBoundary :=
-        (first :: second :: rest) ++ Sig.nodePortsExcept entry.1 entry.2)
-      hchild
-      (parentCode :=
-        (singleSortedFiniteLayerShapeCarrierIso data
-          (active :: first :: second :: rest)).toFun
-            (Sum.inr (entry, payload)))
-      (by
-        apply SingleSortedFinitePayloadBound.strict
-        · have harity := data.arity_lt_rankScale entry.1
-          simp [Signature.nodePortsExcept_length]
-          omega
-        · exact hpayload)
-
-private theorem singleSortedFiniteLayer_shape_child_rank_lt
+private theorem singleSortedFiniteShapeRankDescends
     {Sig : Signature} (data : SingleSortedFiniteCodingData Sig) :
     ∀ {boundary : List Sig.Port}
       (shape : singleSortedFiniteLayerShape data boundary)
@@ -1243,54 +1062,202 @@ private theorem singleSortedFiniteLayer_shape_child_rank_lt
         intro shape q
         cases shape with
         | inl unary =>
+            have h :
+                singleSortedFiniteRank data [] ⟨0, by decide⟩ <
+                  singleSortedFiniteRank data [active]
+                    ((singleSortedFiniteLayerShapeCarrierIso data [active]).toFun
+                      (Sum.inl unary)) := by
+              simp [singleSortedFiniteLayerShapeCarrierIso]
+              exact Nat.add_pos_left (by decide : 0 < 1) _
             simpa [singleSortedFiniteLayerFromShape, inversion,
               OutputIndexInversion.canonical, poly, input] using
-              singleSortedFiniteLayer_one_unary_child_rank_lt
-                (data := data) (active := active) unary
+              h
         | inr tagged =>
             cases tagged with
             | mk nonUnary payload =>
+                have h :
+                    singleSortedFiniteRank data
+                        (Sig.nodePortsExcept nonUnary.val.1 nonUnary.val.2)
+                        ((openFrontierNonemptyIso (Sig := Sig)
+                          (Signature.nodePortsExcept_ne_nil_of_arity_ne_one
+                            (Nat.lt_of_le_of_lt
+                              (Nat.zero_le nonUnary.val.2.val)
+                              nonUnary.val.2.isLt)
+                            nonUnary.property)).invFun payload) <
+                      singleSortedFiniteRank data [active]
+                        ((singleSortedFiniteLayerShapeCarrierIso data [active]).toFun
+                          (Sum.inr (nonUnary, payload))) := by
+                  have hpayload :
+                      payload <
+                        (singleSortedFiniteLayerShapeCarrierIso data [active]).toFun
+                          (Sum.inr (nonUnary, payload)) := by
+                    dsimp [singleSortedFiniteLayerShapeCarrierIso]
+                    exact CodeAlgebra.finiteRecursiveNat_payload_lt_of_prefix_or_tag
+                      data.unaryCount data.nonUnaryCount data.nonUnaryCount_pos
+                      (data.nonUnaryIso.toFun nonUnary, payload)
+                      (Or.inl data.unaryCount_pos)
+                  refine singleSortedFiniteOpenFrontierRankDescends
+                    (data := data) (active := active) (frontier := [])
+                    (childBoundary :=
+                      Sig.nodePortsExcept nonUnary.val.1 nonUnary.val.2)
+                    (Signature.nodePortsExcept_ne_nil_of_arity_ne_one
+                      (Nat.lt_of_le_of_lt
+                        (Nat.zero_le nonUnary.val.2.val)
+                        nonUnary.val.2.isLt)
+                      nonUnary.property)
+                    ?_
+                  exact Or.inl ⟨by
+                    have harity := data.arity_lt_rankScale nonUnary.val.1
+                    simp [Signature.nodePortsExcept_length]
+                    omega, hpayload⟩
                 simpa [singleSortedFiniteLayerFromShape, inversion,
                   OutputIndexInversion.canonical, poly, input] using
-                  singleSortedFiniteLayer_one_nonunary_child_rank_lt
-                    (data := data) (active := active) nonUnary payload)
+                  h)
       (fun active first => by
         intro shape q
         cases shape with
         | inl connect =>
+            have h :
+                singleSortedFiniteRank data [] ⟨0, by decide⟩ <
+                  singleSortedFiniteRank data [active, first]
+                    ((singleSortedFiniteLayerShapeCarrierIso data
+                      [active, first]).toFun (Sum.inl connect)) := by
+              simp [singleSortedFiniteLayerShapeCarrierIso]
+              exact Nat.add_pos_left (by decide : 0 < 2) _
             simpa [singleSortedFiniteLayerFromShape, inversion,
               OutputIndexInversion.canonical, poly, input, eraseFin] using
-              singleSortedFiniteLayer_two_connect_child_rank_lt
-                (data := data) (active := active) (first := first) connect
+              h
         | inr tagged =>
             cases tagged with
             | mk entry payload =>
+                have h :
+                    singleSortedFiniteRank data
+                        ([first] ++ Sig.nodePortsExcept entry.1 entry.2) payload <
+                      singleSortedFiniteRank data [active, first]
+                        ((singleSortedFiniteLayerShapeCarrierIso data
+                          [active, first]).toFun (Sum.inr (entry, payload))) := by
+                  have hchild :
+                      [first] ++ Sig.nodePortsExcept entry.1 entry.2 ≠ [] := by
+                    simp
+                  have hpayload :
+                      payload <
+                        (singleSortedFiniteLayerShapeCarrierIso data
+                          [active, first]).toFun (Sum.inr (entry, payload)) := by
+                    dsimp [singleSortedFiniteLayerShapeCarrierIso]
+                    exact CodeAlgebra.finiteRecursiveNat_payload_lt_of_prefix_or_tag
+                      1 (data.unaryCount + data.nonUnaryCount)
+                      (Nat.lt_add_right data.nonUnaryCount data.unaryCount_pos)
+                      (data.entryIso.toFun entry, payload)
+                      (Or.inl (by decide))
+                  simpa [openFrontierNonemptyIso] using
+                    singleSortedFiniteOpenFrontierRankDescends
+                      (data := data) (active := active) (frontier := [first])
+                      (childBoundary :=
+                        [first] ++ Sig.nodePortsExcept entry.1 entry.2)
+                      hchild
+                      (parentCode :=
+                        (singleSortedFiniteLayerShapeCarrierIso data
+                          [active, first]).toFun (Sum.inr (entry, payload)))
+                      (Or.inl ⟨by
+                        have harity := data.arity_lt_rankScale entry.1
+                        simp [Signature.nodePortsExcept_length]
+                        omega, hpayload⟩)
                 simpa [singleSortedFiniteLayerFromShape, inversion,
                   OutputIndexInversion.canonical, poly, input] using
-                  singleSortedFiniteLayer_two_bud_child_rank_lt
-                    (data := data) (active := active) (first := first)
-                    entry payload)
+                  h)
       (fun active first second rest => by
         intro shape q
         cases shape with
         | inl tagged =>
             cases tagged with
             | mk mate payload =>
+                have h :
+                    singleSortedFiniteRank data
+                        (eraseFin (first :: second :: rest) mate)
+                        ((openFrontierNonemptyIso (Sig := Sig)
+                          (eraseFin_ne_nil_of_length_gt_one mate
+                            (by simp))).invFun payload) <
+                      singleSortedFiniteRank data
+                        (active :: first :: second :: rest)
+                        ((singleSortedFiniteLayerShapeCarrierIso data
+                          (active :: first :: second :: rest)).toFun
+                            (Sum.inl (mate, payload))) := by
+                  have hpayload :
+                      payload ≤
+                        (singleSortedFiniteLayerShapeCarrierIso data
+                            (active :: first :: second :: rest)).toFun
+                          (Sum.inl (mate, payload)) := by
+                    dsimp [singleSortedFiniteLayerShapeCarrierIso]
+                    exact CodeAlgebra.finSumProdNat_toFun_inl_snd_le
+                      (first :: second :: rest).length
+                      (data.unaryCount + data.nonUnaryCount)
+                      (by simp)
+                      (Nat.lt_add_right data.nonUnaryCount data.unaryCount_pos)
+                      (mate, payload)
+                  exact singleSortedFiniteOpenFrontierRankDescends
+                    (data := data) (active := active)
+                    (frontier := first :: second :: rest)
+                    (childBoundary := eraseFin (first :: second :: rest) mate)
+                    (eraseFin_ne_nil_of_length_gt_one mate (by simp))
+                    (parentCode :=
+                      (singleSortedFiniteLayerShapeCarrierIso data
+                        (active :: first :: second :: rest)).toFun
+                          (Sum.inl (mate, payload)))
+                    (Or.inr ⟨by
+                      simp [eraseFin_length], hpayload⟩)
                 simpa [singleSortedFiniteLayerFromShape, inversion,
                   OutputIndexInversion.canonical, poly, input,
                   openFrontierNonemptyIso] using
-                  singleSortedFiniteLayer_many_connect_child_rank_lt
-                    (data := data) (active := active) (first := first)
-                    (second := second) (rest := rest) mate payload
+                  h
         | inr tagged =>
             cases tagged with
             | mk entry payload =>
+                have h :
+                    singleSortedFiniteRank data
+                        ((first :: second :: rest) ++
+                          Sig.nodePortsExcept entry.1 entry.2)
+                        payload <
+                      singleSortedFiniteRank data
+                        (active :: first :: second :: rest)
+                        ((singleSortedFiniteLayerShapeCarrierIso data
+                          (active :: first :: second :: rest)).toFun
+                            (Sum.inr (entry, payload))) := by
+                  have hchild :
+                      (first :: second :: rest) ++
+                          Sig.nodePortsExcept entry.1 entry.2 ≠ [] := by
+                    simp
+                  have hpayload :
+                      payload <
+                        (singleSortedFiniteLayerShapeCarrierIso data
+                            (active :: first :: second :: rest)).toFun
+                          (Sum.inr (entry, payload)) := by
+                    dsimp [singleSortedFiniteLayerShapeCarrierIso]
+                    exact CodeAlgebra.finSumProdNat_toFun_inr_snd_lt
+                      (first :: second :: rest).length
+                      (data.unaryCount + data.nonUnaryCount)
+                      (by simp)
+                      (Nat.lt_add_right data.nonUnaryCount data.unaryCount_pos)
+                      (data.entryIso.toFun entry, payload)
+                  simpa [openFrontierNonemptyIso] using
+                    singleSortedFiniteOpenFrontierRankDescends
+                      (data := data) (active := active)
+                      (frontier := first :: second :: rest)
+                      (childBoundary :=
+                        (first :: second :: rest) ++
+                          Sig.nodePortsExcept entry.1 entry.2)
+                      hchild
+                      (parentCode :=
+                        (singleSortedFiniteLayerShapeCarrierIso data
+                          (active :: first :: second :: rest)).toFun
+                            (Sum.inr (entry, payload)))
+                      (Or.inl ⟨by
+                        have harity := data.arity_lt_rankScale entry.1
+                        simp [Signature.nodePortsExcept_length]
+                        omega, hpayload⟩)
                 simpa [singleSortedFiniteLayerFromShape, inversion,
                   OutputIndexInversion.canonical, poly, input,
                   openFrontierNonemptyIso] using
-                  singleSortedFiniteLayer_many_bud_child_rank_lt
-                    (data := data) (active := active) (first := first)
-                    (second := second) (rest := rest) entry payload)
+                  h)
       boundary
 
 /-- Generic generated shape-code data for finite single-sorted string diagrams. -/
@@ -1310,7 +1277,7 @@ def singleSortedFiniteGeneratedShapeCode
             (singleSortedFiniteRank data)
             (by
               intro boundary shape q
-              exact singleSortedFiniteLayer_shape_child_rank_lt
+              exact singleSortedFiniteShapeRankDescends
                 (data := data) (boundary := boundary) shape q)) }
 
 /-- Syntax for any open frontier is coded by the generated open-frontier shape. -/
