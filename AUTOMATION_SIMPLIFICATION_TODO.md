@@ -337,7 +337,7 @@ Every proof-debt item below must keep these fields visible:
   rg -n 'connectChild_frontierPending|budChild_frontierPending|pending_cons_values|FrontierPendingFields' BijForm/StringDiagram/Bridge/GraphRenderRelation.lean
   ```
 
-- [ ] Replace renderer invariant preservation branch proofs with delta
+- [x] Replace renderer invariant preservation branch proofs with delta
   invariant schemas.
   Evidence: `connectStep_validIds` / `budStep_validIds` and
   `connectStep_endpointPartition` / `budStep_endpointPartition` repeat
