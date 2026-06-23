@@ -191,63 +191,88 @@ end Poly
 abbrev PolyOf {Ty : Type} (S : Signature Ty) : DepPoly (Poly.Ix S) :=
   Poly.depPoly S
 
+/-- Constructor-local parameter code generated from a binding signature. -/
+def FiberParamCode {Ty : Type} (S : Signature Ty) :
+    PolyCtor S → Poly.Ix S → Type
+  | .var, (Γ, t) => Var Γ t
+  | .op c, (_Γ, t) => PLift (S.ret c = t)
+
+namespace FiberParamCode
+
+variable {Ty : Type} {S : Signature Ty}
+
+def decode : {ctor : PolyCtor S} → {i : Poly.Ix S} →
+    FiberParamCode S ctor i →
+      { param : Poly.Param S ctor // Poly.out S ctor param = i }
+  | .var, (Γ, t), v => ⟨⟨Γ, t, v⟩, rfl⟩
+  | .op c, (Γ, _t), h => by
+      cases h with
+      | up h =>
+          cases h
+          exact ⟨Γ, rfl⟩
+
+def encode : {ctor : PolyCtor S} → {i : Poly.Ix S} →
+    { param : Poly.Param S ctor // Poly.out S ctor param = i } →
+      FiberParamCode S ctor i
+  | .var, (_Γ, _t), ⟨param, h⟩ => by
+      rcases param with ⟨Γ, t, v⟩
+      cases h
+      exact v
+  | .op _c, (_Γ, _t), ⟨Γ, h⟩ => by
+      cases h
+      exact PLift.up rfl
+
+end FiberParamCode
+
 /-- Same-fiber constructor code generated from the binding signature. -/
-inductive FiberCode {Ty : Type} (S : Signature Ty) : Poly.Ix S → Type
-  | var {Γ : List Ty} {t : Ty} (v : Var Γ t) : FiberCode S (Γ, t)
-  | op {Γ : List Ty} {t : Ty} (c : S.Ctor) (h : S.ret c = t) :
-      FiberCode S (Γ, t)
+abbrev FiberCode {Ty : Type} (S : Signature Ty) (i : Poly.Ix S) : Type :=
+  Σ ctor : PolyCtor S, FiberParamCode S ctor i
 
 namespace FiberCode
 
 variable {Ty : Type} {S : Signature Ty}
 
-def decode (i : Poly.Ix S) : FiberCode S i → Fiber (PolyOf S) i
-  | var (Γ := Γ) (t := t) v =>
-      ⟨.var, ⟨Γ, t, v⟩, rfl⟩
-  | op (Γ := Γ) c h => by
-      cases h
-      exact ⟨.op c, Γ, rfl⟩
+def var {Γ : List Ty} {t : Ty} (v : Var Γ t) : FiberCode S (Γ, t) :=
+  ⟨.var, v⟩
 
-def encode (i : Poly.Ix S) : Fiber (PolyOf S) i → FiberCode S i
-  | ⟨.var, p, h⟩ => by
-      rcases p with ⟨Γ, t, v⟩
-      cases h
-      exact var v
-  | ⟨.op c, Γ, h⟩ => by
-      cases h
-      exact op c rfl
-
-theorem decode_encode (i : Poly.Ix S) (f : Fiber (PolyOf S) i) :
-    decode i (encode i f) = f := by
-  cases f with
-  | mk ctor param out_eq =>
-      cases ctor with
-      | var =>
-          rcases param with ⟨Γ, t, v⟩
-          cases out_eq
-          rfl
-      | op c =>
-          cases out_eq
-          rfl
-
-theorem encode_decode (i : Poly.Ix S) (c : FiberCode S i) :
-    encode i (decode i c) = c := by
-  cases c with
-  | var v => rfl
-  | op c h =>
-      cases h
-      rfl
+def op {Γ : List Ty} {t : Ty} (c : S.Ctor) (h : S.ret c = t) :
+    FiberCode S (Γ, t) :=
+  ⟨.op c, PLift.up h⟩
 
 end FiberCode
 
 /-- Output-index inversion generated from the binding signature. -/
 def inversion {Ty : Type} (S : Signature Ty) :
-    OutputIndexInversion (PolyOf S) where
-  Code := FiberCode S
-  decode := FiberCode.decode
-  encode := FiberCode.encode
-  decode_encode := FiberCode.decode_encode
-  encode_decode := FiberCode.encode_decode
+    OutputIndexInversion (PolyOf S) :=
+  OutputIndexInversion.ofConstructorParamCodes
+    (FiberParamCode S)
+    (decodeParam := FiberParamCode.decode (S := S))
+    (encodeParam := FiberParamCode.encode (S := S))
+    (by
+      intro ctor i param
+      cases i with
+      | mk Γ t =>
+          cases ctor with
+          | var =>
+              rcases param with ⟨param, h⟩
+              rcases param with ⟨Γ', t', v⟩
+              cases h
+              rfl
+          | op c =>
+              rcases param with ⟨Γ', h⟩
+              cases h
+              rfl)
+    (by
+      intro ctor i code
+      cases i with
+      | mk Γ t =>
+          cases ctor with
+          | var => rfl
+          | op c =>
+              cases code with
+              | up h =>
+                  cases h
+                  rfl)
 
 namespace SyntaxIso
 
@@ -256,21 +281,23 @@ variable {Ty : Type} {S : Signature Ty}
 def layerToTerm (i : Poly.Ix S) :
     CodeLayer (PolyOf S) (inversion S) (fun i => Term S i.1 i.2) i →
       Term S i.1 i.2
-  | ⟨.var v, _child⟩ => Term.var v
-  | ⟨.op c h, child⟩ => by
+  | ⟨⟨.var, v⟩, _child⟩ => Term.var v
+  | ⟨⟨.op c, h⟩, child⟩ => by
       cases i with
       | mk Γ t =>
-        cases h
-        refine Term.op (S := S) (Γ := Γ) c ?_
-        intro q
-        exact child q
+        cases h with
+        | up h =>
+            cases h
+            refine Term.op (S := S) (Γ := Γ) c ?_
+            intro q
+            exact child q
 
 def termToLayer : {Γ : List Ty} → {t : Ty} →
     Term S Γ t →
       CodeLayer (PolyOf S) (inversion S) (fun i => Term S i.1 i.2) (Γ, t)
-  | _, _, Term.var v => ⟨.var v, fun q => nomatch q⟩
+  | _, _, Term.var v => ⟨FiberCode.var v, fun q => nomatch q⟩
   | _, _, Term.op c child => by
-      refine ⟨.op c rfl, ?_⟩
+      refine ⟨FiberCode.op c rfl, ?_⟩
       intro q
       exact child q
 
@@ -284,7 +311,13 @@ theorem layer_right_inv (i : Poly.Ix S) :
     cases t with
     | var v => rfl
     | op c child =>
-        simp [layerToTerm, termToLayer]
+        change
+          layerToTerm (S := S) (Γ, S.ret c)
+            (⟨FiberCode.op c rfl, fun q => child q⟩ :
+              CodeLayer (PolyOf S) (inversion S)
+                (fun i => Term S i.1 i.2) (Γ, S.ret c)) =
+            Term.op c child
+        rfl
 
 def layerIso (i : Poly.Ix S) :
     CodeLayer (PolyOf S) (inversion S) (fun i => Term S i.1 i.2) i ≃ᵢ
@@ -297,11 +330,15 @@ def layerIso (i : Poly.Ix S) :
     | mk Γ t =>
       rcases layer with ⟨code, child⟩
       cases code with
-      | var v =>
-          exact CodeLayer.ext_layer rfl (heq_of_eq (by funext q; cases q))
-      | op c h =>
-          cases h
-          exact CodeLayer.ext_layer rfl (heq_of_eq rfl)
+      | mk ctor paramCode =>
+          cases ctor with
+          | var =>
+              exact CodeLayer.ext_layer rfl (heq_of_eq (by funext q; cases q))
+          | op c =>
+              cases paramCode with
+              | up h =>
+                  cases h
+                  exact CodeLayer.ext_layer rfl (heq_of_eq rfl)
   right_inv := layer_right_inv (S := S) i
 
 theorem layer_child_rank_lt :
@@ -622,20 +659,22 @@ variable {Ty : Type} {S : Signature Ty} {Code : Poly.Ix S → Type}
 def layerToShape (Γ : List Ty) (t : Ty) :
     CodeLayer (PolyOf S) (inversion S) Code (Γ, t) →
       LayerShape S Code Γ t
-  | ⟨.var v, _child⟩ => Sum.inl v
-  | ⟨.op c h, child⟩ => by
-      cases h
-      exact Sum.inr ⟨c, rfl, child⟩
+  | ⟨⟨.var, v⟩, _child⟩ => Sum.inl v
+  | ⟨⟨.op c, h⟩, child⟩ => by
+      cases h with
+      | up h =>
+          cases h
+          exact Sum.inr ⟨c, rfl, child⟩
 
 def shapeToLayer (Γ : List Ty) (t : Ty) :
     LayerShape S Code Γ t →
       CodeLayer (PolyOf S) (inversion S) Code (Γ, t)
-  | Sum.inl v => ⟨.var v, fun q => nomatch q⟩
+  | Sum.inl v => ⟨FiberCode.var v, fun q => nomatch q⟩
   | Sum.inr ctor => by
       cases ctor with
       | mk c h child =>
         cases h
-        exact ⟨.op c rfl, child⟩
+        exact ⟨FiberCode.op c rfl, child⟩
 
 theorem layerShape_left_inv (Γ : List Ty) (t : Ty) :
     Function.LeftInverse (shapeToLayer (S := S) (Code := Code) Γ t)
@@ -643,11 +682,15 @@ theorem layerShape_left_inv (Γ : List Ty) (t : Ty) :
   intro layer
   rcases layer with ⟨code, child⟩
   cases code with
-  | var v =>
-      exact CodeLayer.ext_layer rfl (heq_of_eq (by funext q; cases q))
-  | op c h =>
-      cases h
-      exact CodeLayer.ext_layer rfl (heq_of_eq rfl)
+  | mk ctor paramCode =>
+      cases ctor with
+      | var =>
+          exact CodeLayer.ext_layer rfl (heq_of_eq (by funext q; cases q))
+      | op c =>
+          cases paramCode with
+          | up h =>
+              cases h
+              exact CodeLayer.ext_layer rfl (heq_of_eq rfl)
 
 theorem layerShape_right_inv (Γ : List Ty) (t : Ty) :
     Function.RightInverse (shapeToLayer (S := S) (Code := Code) Γ t)
@@ -815,12 +858,16 @@ theorem of_op
   cases layer with
   | mk code child =>
     cases code with
-    | var v =>
-        cases q
-    | op c h =>
-        cases h
-        simpa [LayerShape.layerCoding_op_toFun, Poly.input, Poly.depPoly] using
-          hop Γ c child q
+    | mk ctor paramCode =>
+        cases ctor with
+        | var =>
+            cases q
+        | op c =>
+            cases paramCode with
+            | up h =>
+                cases h
+                simpa [LayerShape.layerCoding_op_toFun, Poly.input, Poly.depPoly] using
+                  hop Γ c child q
 
 end LayerShapeRankProof
 

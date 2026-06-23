@@ -90,7 +90,7 @@ Every proof-debt item below must keep these fields visible:
   rg -n 'canonical_left_inv|child_eta|finish_code_layer_left_inv|layer_left_inv|codeLayer_left_inv|codeLayer_eta|CodeLayer\.ext_rfl|\bext_rfl\b' BijForm
   ```
 
-- [ ] Add reusable output-index inversion constructors instead of manual
+- [x] Add reusable output-index inversion constructors instead of manual
   decode/encode proof blocks.
   Evidence: `OutputIndexInversion.ofIso` is opaque; comments say examples
   should prefer concrete generated inversion data. Typed-binding still has
@@ -100,7 +100,7 @@ Every proof-debt item below must keep these fields visible:
   output-index changes and constructor parameters.
   Validation:
   ```bash
-  rg -n 'OutputIndexInversion\.ofIso|decode_encode|encode_decode' BijForm
+  rg -n 'OutputIndexInversion\.ofIso|FiberCode\.(decode|encode|decode_encode|encode_decode)|def decode \(i : Poly\.Ix S\)|def encode \(i : Poly\.Ix S\)|theorem decode_encode \(i : Poly\.Ix S\)|theorem encode_decode \(i : Poly\.Ix S\)' BijForm/DependentPolynomial.lean BijForm/TypedBinding.lean
   ```
 
 ## Codec Bounds And Carrier Ranks

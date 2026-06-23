@@ -95,22 +95,55 @@ def canonical (P : DepPoly ι) : OutputIndexInversion P where
     rfl
 
 /--
-Low-level constructor for output-index inversion from caller-supplied fiber
-equivalences.  Examples should prefer concrete generated inversion data, such
-as `canonical` or reusable index-change constructors, so the construction of
-same-fiber data remains visible.
+Build an output-index inversion from constructor-local parameter codes.
+
+For each constructor `ctor` and target output index `i`, `ParamCode ctor i`
+codes exactly the parameters whose output is `i`.  This constructor owns the
+assembly of those local preimages into full `Fiber` decode/encode laws.
 -/
-def ofIso {P : DepPoly ι} (Code : ι → Type u)
-    (e : ∀ i, Code i ≃ᵢ Fiber P i) : OutputIndexInversion P where
-  Code := Code
-  decode := fun i c => (e i).toFun c
-  encode := fun i f => (e i).invFun f
+def ofConstructorParamCodes {P : DepPoly ι}
+    (ParamCode : P.Ctor → ι → Type u)
+    (decodeParam :
+      ∀ {ctor : P.Ctor} {i : ι},
+        ParamCode ctor i → { param : P.Param ctor // P.out ctor param = i })
+    (encodeParam :
+      ∀ {ctor : P.Ctor} {i : ι},
+        { param : P.Param ctor // P.out ctor param = i } → ParamCode ctor i)
+    (decodeParam_encodeParam :
+      ∀ {ctor : P.Ctor} {i : ι}
+        (param : { param : P.Param ctor // P.out ctor param = i }),
+        decodeParam (encodeParam param) = param)
+    (encodeParam_decodeParam :
+      ∀ {ctor : P.Ctor} {i : ι} (code : ParamCode ctor i),
+        encodeParam (decodeParam code) = code) :
+    OutputIndexInversion P where
+  Code := fun i => Σ ctor : P.Ctor, ParamCode ctor i
+  decode := fun i code =>
+    let decoded := decodeParam (ctor := code.1) (i := i) code.2
+    ⟨code.1, decoded.1, decoded.2⟩
+  encode := fun i f =>
+    ⟨f.ctor, encodeParam (ctor := f.ctor) (i := i) ⟨f.param, f.out_eq⟩⟩
   decode_encode := by
     intro i f
-    exact (e i).right_inv f
+    cases f with
+    | mk ctor param out_eq =>
+        dsimp
+        have h :
+            decodeParam
+              (ctor := ctor) (i := i)
+              (encodeParam (ctor := ctor) (i := i) ⟨param, out_eq⟩) =
+                ⟨param, out_eq⟩ :=
+          decodeParam_encodeParam (ctor := ctor) (i := i) ⟨param, out_eq⟩
+        rw [h]
   encode_decode := by
     intro i c
-    exact (e i).left_inv c
+    cases c with
+    | mk ctor code =>
+        dsimp
+        change
+          (⟨ctor, encodeParam (decodeParam code)⟩ :
+            Σ ctor : P.Ctor, ParamCode ctor i) = ⟨ctor, code⟩
+        rw [encodeParam_decodeParam (ctor := ctor) (i := i) code]
 
 def fiberIso {P : DepPoly ι} (H : OutputIndexInversion P) (i : ι) :
     H.Code i ≃ᵢ Fiber P i where
